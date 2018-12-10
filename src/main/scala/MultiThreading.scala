@@ -45,7 +45,7 @@ trait Accumulator[A] {
 }
 
 
-/** A common interface for [[Thread]]s and [[ParallelExecutor]]s
+/** A common interface for Threads and ParallelExecutors
     (multi-threaded processes).
 */
 trait Executable[T] {

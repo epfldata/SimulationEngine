@@ -251,3 +251,23 @@ console
 compile
 :q
 exit
+compile
+doc
+console
+run
+console
+run 1
+run
+run [1]
+run Securities.OptionTest
+run
+compile
+quit
+exit
+compile
+run
+1
+run
+1
+run
+exit

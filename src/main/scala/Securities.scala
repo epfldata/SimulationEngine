@@ -1,9 +1,15 @@
 package Securities {
-import breeze.stats.distributions._
 
 
-/** Mann ohne Eigenschaften. */
 abstract class Security {
+  /** given the risk free rate, and a value S, get compounded value after
+      time delta_t.
+
+      @param delta_t      is in years
+  */
+  def compound_interest(risk_free_rate: Double, S: Double, delta_t: Double) =
+    S * math.exp(risk_free_rate * delta_t)
+
   /** The price of the security `t` time steps from now.
 
       @param S0            current price of security
@@ -81,9 +87,10 @@ abstract class Security {
   def plot_price(S0: Double, current_time : Double, until_time: Double,
     samples_per_tick : Int = 1000
   ) = {
-    val inc = (until_time - current_time) / 100;
+    val resolution = 100;
+    val inc = (until_time - current_time) / resolution;
 
-    val xy = (for(k <- 1 to 100) yield {
+    val xy = (for(k <- 1 to resolution) yield {
       val p = expectation(() => sample_price(S0, current_time + k * inc, k),
               samples_per_tick);
 
@@ -96,6 +103,11 @@ abstract class Security {
     plot("Price Forecast for " + this + ", starting at price " + S0,
          "time", "price", x, List(y));
   }
+
+  /* private */
+  def Nsample(mu: Double, sigma: Double) : Double =
+    (breeze.stats.distributions.Gaussian(mu, sigma).sample(1))(0)
+     // argument of sample is # of samples to take; produces a vector
 }
 
 
@@ -126,22 +138,80 @@ case class VanillaSecurity(r: Double, val stddev: Double
     goal_time    : Double,
     resolution   : Int = 1
   ) : Double = {
-    def Nsample(mu: Double, sigma: Double) = (Gaussian(mu, sigma).sample(1))(0)
-
     assert(current_time <= goal_time);
+    assert(resolution >= 1);
+
+    val dt      = goal_time - current_time; // look this far into the future
+    val inc     = dt / resolution;          // time step size
 
     var S       = S0;
-    val t       = goal_time - current_time; // look this far into the future
-    val inc     = t / resolution;           // time step size
+/*
     val stddev2 = stddev * math.sqrt(inc);  // stddev in inc units of time
-
-    assert(resolution >= 1);
-    assert(t >= 0);
-
     for(_ <- 1 to resolution)
-      S = Nsample(S, S * stddev2); // * math.exp(r * inc);
+      S = Nsample(S, S * stddev2);
+    
+    // or alternatively, in one jump,
+    //S = S0 + Nsample(0, S0 * stddev * math.sqrt(dt));
 
-    S * math.exp(r * t)
+    // in both cases,
+    S = compound_interest(r, S, dt);
+*/
+
+
+    // geometric Brownian Motion
+    for(_ <- 1 to resolution)
+      S = S * math.exp((r - stddev*stddev / 2) * inc
+                        + stddev * Nsample(0, math.sqrt(inc)))
+
+/*
+    // or alternatively, in one step
+    S = S0 * math.exp((r - stddev*stddev / 2) * dt
+                      + stddev * Nsample(0, math.sqrt(dt)))
+*/
+
+    S
+  }
+}
+
+
+case class FundamentalsSecurity(
+  r: Double,
+  stddev: Double,
+  frequency: Integer,
+  amplitude: Double
+) extends Security {
+
+  private def fundamental_value_change(): Double = {
+    val rnd = scala.util.Random
+
+    // do we have an event now?
+    val now = (rnd.nextInt % frequency) == 0;
+    val magnitude = (rnd.nextDouble * 2 - 1) * amplitude;
+
+    if(now) magnitude else 0.0
+  }
+
+  def sample_future_price(
+    S0           : Double, // start_price
+    current_time : Double,
+    goal_time    : Double,
+    resolution   : Int = 1
+  ) : Double = {
+    assert(current_time <= goal_time);
+    assert(resolution >= 1);
+
+    val dt      = goal_time - current_time; // look this far into the future
+    val inc     = dt / resolution;          // time step size
+
+    var S       = S0;
+
+    // geometric Brownian Motion
+    for(_ <- 1 to resolution)
+      S = S * math.exp((r - stddev*stddev / 2) * inc
+                        + stddev * Nsample(0, math.sqrt(inc)))
+        + fundamental_value_change();
+
+    S
   }
 }
 
@@ -167,6 +237,12 @@ abstract class SingleSecurityDerivative(
   val security : Security
 ) extends Security {
 
+  /** Note: The price of buying the derivative is NOT taken into account.
+
+      This is based on simulation. Try a current_time earlier than the
+      execution date and a small n to see that the textbook
+      curves are, in the limit, what simulation gives us.
+  */
   def plot_payoff_profile(S_from: Double, S_to: Double, current_time : Double,
     n: Int = 1
   ) {
@@ -213,9 +289,10 @@ case class Hedge(
   def plot_payoff_profile(S_from: Double, S_to: Double, current_time : Double,
     n: Int = 1
   ) {
-    val x = (for(k <- 1 to 100) yield {
-      S_from + (S_to - S_from) * k / 100;
-    }).toArray;
+    val resolution = 100;
+    val x = (for(k <- 1 to resolution) yield {
+                S_from + (S_to - S_from) * k / resolution;
+             }).toArray;
 
 /*
     val ys = securities.map((sec: Security) =>
@@ -297,9 +374,12 @@ abstract class FutOpt(
   /** Uses protected abstract function `value_at_expiration_time`, which
       is specific to the derivative.
 
-    @param S0            current price
-    @param current_time  must not be greater than `due_date`.
-    @param goal_time     may be greater or smaller than `due_date`.
+    @param S0            current price of the underlying security
+    @param current_time  the current time at which S0 is the prict.
+                         must not be greater than `due_date`.
+    @param goal_time     the time at which the price is to be queries.
+                         This is in general not the expiration date.
+                         may be greater or smaller than `due_date`.
     @param resolution    used for sampling future price of underlying
                          security.
   */
@@ -311,12 +391,18 @@ abstract class FutOpt(
   ) : Double = {
     assert(current_time <= due_date);
 
-    // the price of the security at expiration time
-    val S = security.sample_future_price(
+    // the price of the underlying security at expiration time
+    val sec_S = security.sample_future_price(
       S0, current_time, due_date, resolution);
 
-    value_at_expiration_time(S) *
-      math.exp(risk_free_rate * (goal_time - due_date))
+    // the value of the derivative at expiration time
+    val drv_S = value_at_expiration_time(sec_S);
+
+    // what is the current value of being able to sell the derivative at the
+    // expiration time at price drv_S?
+    drv_S * math.exp(risk_free_rate * (goal_time - due_date))
+    // same as:
+    // compound_interest(risk_free_rate, drv_S, goal_time - due_date)
   }
 
   /** Not implemented. */
@@ -334,7 +420,8 @@ case class EuropeanCallOption(
   protected def value_at_expiration_time(S: Double) =
     math.max(0, S - strike_price)
 
-  /** Compute the current price of the option using the Black-Scholes model.
+  /** Compute the current price of the option using the Black-Scholes formula.
+      Must only be used for VanillaSecurities.
 
       @param S0 security price
   */
@@ -347,7 +434,8 @@ case class EuropeanCallOption(
 
     assert(T >= 0);
 
-    def N(d: Double) = Gaussian(0, 1).probability(-1.0/0, d)
+    def N(d: Double) =
+      breeze.stats.distributions.Gaussian(0, 1).probability(-1.0/0, d)
 
     val nrm = stddev * math.sqrt(T);
     val d = (math.log(S0 / K) + (r + 0.5 * stddev * stddev) * T) / nrm;
@@ -388,7 +476,6 @@ case class Future(
 
 
 
-
 package object Securities {
 
   val Wheat       = Commodity("wheat")
@@ -412,42 +499,57 @@ package object Securities {
       d*d
     }).sum) / (n-1)
 
-  /** According to a book, a collar is something else, but they are WRONG. */
   def Collar(s: Security, K1: Double, K2: Double, T: Double, r: Double) =
     Hedge(List(
       Short(EuropeanCallOption(s, K2, T, r)),
             EuropeanCallOption(s, K1, T, r)
   ))
 
-
-  object OptionTest {
-    //import Securities._;
-    val S0     = 100.0;
-    val K      = 100.0;
-    val T      = 2.0;
-    val stddev = 0.05;
-    val r      = 0.03;
-    val now    = 0.1;
-
-    val s = VanillaSecurity(r, stddev);
-
-    val o = EuropeanCallOption(s, K, T, r);
-
-    val c  = o.estimate_price(S0, now, 1000, 100);
-    val bs = o.BlackScholes(  S0, now);
-
-    o.plot_distribution(S0, now, 1000000);
-    //o.plot_price(S0, now, T, 10000);
-    o.plot_payoff_profile(80, 120, 2.0);
-
-    Collar(s, 90, 110, T, r).plot_payoff_profile(80, 120, 2.0);
-
-    val oo = EuropeanCallOption(o, 5.0, 1.5, r);
-    oo.plot_payoff_profile(90, 120, 1.5, 10);
-  }
-
 } // end package object Securities
 
+
+
+package Securities {
+
+object OptionTest {
+  def main(args: Array[String]) {
+  val S0     = 100.0;
+  val K      = 100.0;
+  val T      = 2.0;
+  val stddev = 0.05;
+  val r      = 0.03;
+  val now    = 0.1;
+
+  //val s = VanillaSecurity(r, stddev);
+  val s = FundamentalsSecurity(r, stddev, 50, 30.0);
+  val o = EuropeanCallOption(s, K, T, r);
+
+  // Two ways of computing the current price of an option with execution
+  // date T. The first is by simulation, the second by the closed-form
+  // solution given by the Black-Scholes formula.
+  val c  = o.estimate_price(S0, now, 100000, 100); // better make it 100000 it
+//  val bs = o.BlackScholes(  S0, now); // only for European options
+                                        // on VanillaSecurities
+
+  println("PRICE ESTIMATE: " + c);
+//  println("bs="+bs);
+
+/*
+  // Distribution of current prices, calculated from many simulations...
+  o.plot_distribution(S0, now, 1000000);
+  o.plot_payoff_profile(80, 120, 2.0);
+  //o.plot_payoff_profile(80, 120, 1.5, 1000);
+
+  // Option price forecast as we move closer to the execution date, assuming
+  // that, at any point, the security price is exactly the strike price.
+  // (at the execution date, the price will be zero).
+  // This simulation is slower.
+  o.plot_price(S0, now, T, 10000);
+*/
+  }
+} // end OptionTest
+
+} // end package Securities
 
 
 

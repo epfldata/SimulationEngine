@@ -1,5 +1,5 @@
 lazy val root = (project in file(".")).settings(
-  name := "cakania",
+  name := "economic_simulations",
   organization := "ch.epfl.data",
   version := "1.0",
   scalaVersion := "2.11.8"
