@@ -9,7 +9,7 @@ abstract class Investor {
 }
 
 
-/** The investors valuation cannot changed in act(), it is currently set
+/** The investor's valuation is not changed in act(), it is currently set
     from the outside.
 */
 case class ValueInvestor(
@@ -31,9 +31,9 @@ case class ValueInvestor(
 
 case class TechnicalTrader(laziness: Int, sensitivity: Double
 ) extends Investor {
+  private var rrobin = 0;
   private val mem = new Array[Double](10); // buffer for the prices of the
                                            // last 10 time ticks.
-  var rrobin = 0;
 
   def act(current_price: Double) = {
     val avg = mem.sum/10;
@@ -103,8 +103,7 @@ case class FundamentalsSecurity() extends Security {
       if(i == fu_event_time) {
         for (p <- vplayers) {
           // update the player's valuation of the security
-          p.valuation = (p.valuation + fu_event_magnitude) *
-                        (1 + 0.1 * Nsample(0, 1));
+          p.valuation = (p.valuation + fu_event_magnitude) * Nsample(1, 0.1);
         }
       }
 
