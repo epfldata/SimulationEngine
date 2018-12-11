@@ -1,7 +1,9 @@
 package object Securities {
+
   def expectation(sample: () => Double, n: Int) : Double = {
     (for(_ <- 1 to n) yield sample()).sum / n
   }
+
 
   def compute_standard_deviation(
     mean: Double, sample: () => Double, n: Int
@@ -10,6 +12,7 @@ package object Securities {
       val d = mean - sample();
       d*d
     }).sum) / (n-1)
+
 
   /** geometric Brownian Motion. For a security in the Black-Scholes Model,
       this needs to be scaled by (multiplied with) the starting price of the
@@ -26,6 +29,7 @@ package object Securities {
                + sigma * Nsample(0, math.sqrt(dt)))
   }
 
+
   /** given the risk free rate, and a value S, get compounded value after
       time delta_t.
 
@@ -34,9 +38,11 @@ package object Securities {
   def compound_interest(risk_free_rate: Double, S: Double, delta_t: Double) =
     S * math.exp(risk_free_rate * delta_t)
 
+
   def Nsample(mu: Double, sigma: Double) : Double =
     (breeze.stats.distributions.Gaussian(mu, sigma).sample(1))(0)
      // argument of sample is # of samples to take; produces a vector
+
 
   def plot(name: String, xl: String, yl: String,
            _x: Array[Double], _ys: List[Array[Double]]
@@ -54,6 +60,7 @@ package object Securities {
     for(y <- ys) p += breeze.plot.plot(x, y);
     f.refresh;
   }
+
 
   def plot_distribution(
     label: String, xlabel: String, sample: () => Int, num_samples: Int
@@ -104,6 +111,7 @@ abstract class Security {
     (compute_time_series(S0, current_time, goal_time, resolution))(resolution)
   }
 
+  /** volatility */
   def stddev : Double
 
   def plot_chart(
@@ -206,68 +214,6 @@ case class FundamentalsSecurity0(
     for(i <- 1 to resolution)
       S(i) = S(i-1) * geoBM(r, stddev, dt/resolution)
         + fundamental_value_change();
-
-    S
-  }
-}
-
-
-/**
-  Note: this Security does NOT behave like the VanillaSecurity in the absence
-  of fundamental events. The effect of the risk-free-rate has to be explicitly
-  computed in the form of fundamental events (the company increasing its
-  value over time and reporting it at discrete times -- e.g. by releasing
-  quarterly sales/asset numbers).
-*/
-case class FundamentalsSecurity(
-  r: Double,
-  stddev: Double,
-  dummy1: Integer,
-  dummy2: Double
-) extends Security {
-  // hardwiring exactly one fundamental event
-  val fu_event_time = 50; // time tick in 1 .. resolution
-  val fu_event_magnitude = 10.0;
-  val num_players = 50;
-  val delay_p = 0.4; // probability that, after the event, the player takes
-                     // at least another tick until realizing that the event
-                     // took place.
-  // initialize valuation for each player based on distribution
-  /*
-     val valu = new Array[Double](num_players);
-     for(i <- 0 .. num_players-1)
-       valu(i) = S0 * Nsample(0, 1);
-  */
-
-  def compute_time_series(
-    S0           : Double, // start_price
-    current_time : Double,
-    goal_time    : Double,
-    resolution   : Int = 1
-  ) : Array[Double] = {
-    assert(current_time <= goal_time);
-    assert(resolution >= 1);
-
-    val dt  = goal_time - current_time; // look this far into the future
-    val inc = dt / resolution;          // time step size
-
-    val S   = new Array[Double](resolution + 1);
-    S(0) = S0;
-
-    // TODO -- FINISH
-    assert(false);
-
-    for(i <- 1 to resolution; p <- 1 to num_players) {
-      val t_after_evt = i - fu_event_time;
-      if(t_after_evt >= 0) {
-      /*
-         breeze.stats.distributions.Binomial(k, 0.5).probabilityOf(t_after_evt)
-         * update the players valuation of the security
-         * decide if to trade on their perception that the current price
-           is off the true value.
-      */
-      }
-    }
 
     S
   }
