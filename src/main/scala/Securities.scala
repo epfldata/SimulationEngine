@@ -206,6 +206,7 @@ case class VanillaSecurity(r: Double, val stddev: Double
     S
   }
 
+  // this is redundant but more efficient than super.sample_future_price
   override def sample_future_price(
     S0           : Double,
     current_time : Double,
@@ -355,7 +356,7 @@ class Portfolio(
   securities : List[Security]
 ) extends Security {
 
-  // TODO chart
+  // TODO chart: this only requires summing up
   def compute_time_series(
     S0           : Double, // start_price
     current_time : Double,
@@ -371,10 +372,9 @@ class Portfolio(
     current_time : Double,
     goal_time    : Double,
     resolution   : Int = 1
-  ) : Double = {
+  ) : Double =
     securities.map(sec => sec.sample_future_price(
       S0, current_time, goal_time, resolution)).sum
-  }
 
   /** Not implemented. */
   def stddev = { assert(false); 0.0 }
@@ -387,6 +387,11 @@ case class Hedge(
 
 //  for(sec <- securities.tail) assert(securities.head.security == sec.security);
 
+  /** TODO:
+      This should be also supported for combined derivatives on the same single
+      security, e.g. a Times security or a combination of multiple options of
+      the same stock.
+  */
   def plot_payoff_profile(S_from: Double, S_to: Double, current_time : Double,
     n: Int = 1
   ) {
@@ -415,27 +420,22 @@ case class Short(
   override val security : Security
 ) extends SingleSecurityDerivative(security) {
 
-  // TODO chart
   def compute_time_series(
-    S0           : Double, // start_price
+    S0           : Double,
     current_time : Double,
     goal_time    : Double,
     resolution   : Int = 1
-  ) : Array[Double] = {
-    assert(false);
-    new Array[Double](0)
-  }
+  ) : Array[Double] =
+    security.compute_time_series(
+       S0, current_time, goal_time, resolution).map(x => - x)
 
   override def sample_future_price(
     S0           : Double,
     current_time : Double,
     goal_time    : Double,
     resolution   : Int = 1
-  ) : Double = {
-    val S = security.sample_future_price(
-      S0, current_time, goal_time, resolution);
-    -S
-  }
+  ) : Double =
+    - security.sample_future_price(S0, current_time, goal_time, resolution)
 
   def stddev = security.stddev
 }
@@ -449,25 +449,22 @@ case class Times(
 
   // TODO chart
   def compute_time_series(
-    S0           : Double, // start_price
+    S0           : Double,
     current_time : Double,
     goal_time    : Double,
     resolution   : Int = 1
-  ) : Array[Double] = {
-    assert(false);
-    new Array[Double](0)
-  }
+  ) : Array[Double] =
+    security.compute_time_series(
+      S0, current_time, goal_time, resolution).map(x => n * x)
 
   override def sample_future_price(
     S0           : Double,
     current_time : Double,
     goal_time    : Double,
     resolution   : Int = 1
-  ) : Double = {
-    val S = security.sample_future_price(
+  ) : Double =
+    n * security.sample_future_price(
       S0, current_time, goal_time, resolution);
-    S * n
-  }
 
   /** Is that correct? */
   def stddev = security.stddev * math.sqrt(n)
@@ -490,7 +487,9 @@ abstract class FutOpt(
   risk_free_rate        : Double
 ) extends SingleSecurityDerivative(security) {
 
-  // TODO chart
+  // TODO chart: we could do all kinds of things here, but the interesting
+  // prices to be charted here are at which the derivative is TRADED.
+  // We only know this by running a market.
   def compute_time_series(
     S0           : Double, // start_price
     current_time : Double,
@@ -608,18 +607,7 @@ case class Future(
 
 
 
-
-/* don't need this now.
-  def Collar(s: Security, K1: Double, K2: Double, T: Double, r: Double) =
-    Hedge(List(
-      Short(EuropeanCallOption(s, K2, T, r)),
-            EuropeanCallOption(s, K1, T, r)
-  ))
-*/
-
-
 object OptionTest {
-  def main(args: Array[String]) {
   val S0     = 100.0;
   val K      = 100.0;
   val T      = 2.0;
@@ -627,32 +615,33 @@ object OptionTest {
   val r      = 0.03;
   val now    = 0.1;
 
-  //val s = VanillaSecurity(r, stddev);
-  val s = FundamentalsSecurity0(r, stddev, 50, 30.0);
-  val o = EuropeanCallOption(s, K, T, r);
+  def main(args: Array[String]) {
+    //val s = VanillaSecurity(r, stddev);
+    val s = FundamentalsSecurity0(r, stddev, 50, 30.0);
+    val o = EuropeanCallOption(s, K, T, r);
 
-  // Two ways of computing the current price of an option with execution
-  // date T. The first is by simulation, the second by the closed-form
-  // solution given by the Black-Scholes formula.
-  val c  = o.estimate_price(S0, now, 100000, 100); // better make it 100000 it
-//  val bs = o.BlackScholes(  S0, now); // only for European options
-                                        // on VanillaSecurities
+    // Two ways of computing the current price of an option with execution
+    // date T. The first is by simulation, the second by the closed-form
+    // solution given by the Black-Scholes formula.
+    val c  = o.estimate_price(S0, now, 100000, 100); // better make it 100000 it
+    // val bs = o.BlackScholes(  S0, now); // only for European options
+                                           // on VanillaSecurities
 
-  println("PRICE ESTIMATE: " + c);
-//  println("bs="+bs);
+    println("PRICE ESTIMATE: " + c);
+    // println("bs="+bs);
 
-/*
-  // Distribution of current prices, calculated from many simulations...
-  o.plot_distribution(S0, now, 1000000);
-  o.plot_payoff_profile(80, 120, 2.0);
-  //o.plot_payoff_profile(80, 120, 1.5, 1000);
+    /*
+      // Distribution of current prices, calculated from many simulations...
+      o.plot_distribution(S0, now, 1000000);
+      o.plot_payoff_profile(80, 120, 2.0);
+      //o.plot_payoff_profile(80, 120, 1.5, 1000);
 
-  // Option price forecast as we move closer to the execution date, assuming
-  // that, at any point, the security price is exactly the strike price.
-  // (at the execution date, the price will be zero).
-  // This simulation is slower.
-  o.plot_price(S0, now, T, 10000);
-*/
+      // Option price forecast as we move closer to the execution date, assuming
+      // that, at any point, the security price is exactly the strike price.
+      // (at the execution date, the price will be zero).
+      // This simulation is slower.
+      o.plot_price(S0, now, T, 10000);
+    */
   }
 } // end OptionTest
 
