@@ -3,7 +3,7 @@ import code._
 import Simulation._
 import Simulation.Factory._
 import Markets._
-import Securities._
+import Securities.Commodities._
 
 
 class Source(commodity: Commodity, units: Int, p: Int,

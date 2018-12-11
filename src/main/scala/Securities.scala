@@ -1,7 +1,31 @@
-package Securities {
+package object Securities {
+  def expectation(sample: () => Double, n: Int) : Double = {
+    (for(_ <- 1 to n) yield sample()).sum / n
+  }
 
+  def compute_standard_deviation(
+    mean: Double, sample: () => Double, n: Int
+  ) =
+    math.sqrt((for(_ <- 1 to n) yield {
+      val d = mean - sample();
+      d*d
+    }).sum) / (n-1)
 
-abstract class Security {
+  /** geometric Brownian Motion. For a security in the Black-Scholes Model,
+      this needs to be scaled by (multiplied with) the starting price of the
+      security. This approximates continuous Brownian Motin for dt time.
+
+    @param mu -- risk-free rate
+    @param sigma -- volatility
+    @param dt -- time to run.
+  */
+  def geoBM(
+     mu: Double, sigma: Double, dt: Double
+  ) : Double = {
+     math.exp((mu - sigma*sigma / 2) * dt
+               + sigma * Nsample(0, math.sqrt(dt)))
+  }
+
   /** given the risk free rate, and a value S, get compounded value after
       time delta_t.
 
@@ -10,23 +34,46 @@ abstract class Security {
   def compound_interest(risk_free_rate: Double, S: Double, delta_t: Double) =
     S * math.exp(risk_free_rate * delta_t)
 
-  /** The price of the security `t` time steps from now.
+  def Nsample(mu: Double, sigma: Double) : Double =
+    (breeze.stats.distributions.Gaussian(mu, sigma).sample(1))(0)
+     // argument of sample is # of samples to take; produces a vector
+} // end package object Securities
 
-      @param S0            current price of security
-      @param current_time  now
-      @param goal_time     (future) time at which the price is to be estimated.
-      @param resolution    The number of steps into which the time to
-                           process (`goal_time - current_time`) is split up.
+
+
+package Securities {
+
+
+abstract class Security {
+  /** computes the sequence of actual prices at resolution
+
+      @param S0           current price of security
+      @param current_time now
+      @param goal_time    future time at which the price is to be estimated.
+      @param resolution   The number of steps into which the time to
+                          process (`goal_time - current_time`) is split up.
+  */
+  def compute_time_series(
+    S0           : Double, // start_price
+    current_time : Double,
+    goal_time    : Double,
+    resolution   : Int = 1
+  ) : Array[Double]
+
+  /** The price of the security at future point.
+      The parameters are as for compute_time_series().
   */
   def sample_future_price(
     S0           : Double,
     current_time : Double,
     goal_time    : Double,
     resolution   : Int = 1
-  ) : Double
+  ) : Double = {
+    assert(current_time <= goal_time);
+    (compute_time_series(S0, current_time, goal_time, resolution))(resolution)
+  }
 
   def stddev : Double
-
 
   /** Current price */
   def sample_price(
@@ -72,6 +119,20 @@ abstract class Security {
     f.refresh;
   }
 
+  def plot_chart(
+    S0           : Double, // start_price
+    current_time : Double,
+    goal_time    : Double,
+    resolution   : Int = 1
+  ) {
+    val S = compute_time_series(S0, current_time, goal_time, resolution);
+    val x = (0 to resolution).map((x0: Int) =>
+       current_time + x0*(goal_time-current_time)/resolution).toArray;
+
+    plot("Chart for" + this + ", starting at time " + current_time,
+    "time", "price", x, List(S))
+  }
+
   def plot_distribution(S0: Double, current_time : Double, n: Int) {
     val v = (for(_ <- 1 to n) yield (sample_price(S0, current_time).toInt));
     val m = v.groupBy((x: Int) => x).mapValues(_.length);
@@ -103,11 +164,6 @@ abstract class Security {
     plot("Price Forecast for " + this + ", starting at price " + S0,
          "time", "price", x, List(y));
   }
-
-  /* private */
-  def Nsample(mu: Double, sigma: Double) : Double =
-    (breeze.stats.distributions.Gaussian(mu, sigma).sample(1))(0)
-     // argument of sample is # of samples to take; produces a vector
 }
 
 
@@ -122,8 +178,7 @@ abstract class Security {
 */
 case class VanillaSecurity(r: Double, val stddev: Double
 ) extends Security {
-  /** The price of the security `t` time steps from now.
-
+  /** computes the sequence of actual prices at resolution
       Does an approximation of Brownian motion.
 
       @param S0           current price of security
@@ -132,49 +187,38 @@ case class VanillaSecurity(r: Double, val stddev: Double
       @param resolution   The number of steps into which the time to
                           process (`goal_time - current_time`) is split up.
   */
-  def sample_future_price(
+  def compute_time_series(
+    S0           : Double, // start_price
+    current_time : Double,
+    goal_time    : Double,
+    resolution   : Int = 1
+  ) : Array[Double] = {
+    assert(current_time <= goal_time);
+    assert(resolution >= 1);
+
+    val dt = goal_time - current_time; // look this far into the future
+    val S  = new Array[Double](resolution + 1);
+    S(0) = S0;
+
+    for(i <- 1 to resolution)
+      S(i) = S(i-1) * geoBM(r, stddev, dt/resolution)
+
+    S
+  }
+
+  override def sample_future_price(
     S0           : Double,
     current_time : Double,
     goal_time    : Double,
     resolution   : Int = 1
   ) : Double = {
     assert(current_time <= goal_time);
-    assert(resolution >= 1);
-
-    val dt      = goal_time - current_time; // look this far into the future
-    val inc     = dt / resolution;          // time step size
-
-    var S       = S0;
-/*
-    val stddev2 = stddev * math.sqrt(inc);  // stddev in inc units of time
-    for(_ <- 1 to resolution)
-      S = Nsample(S, S * stddev2);
-    
-    // or alternatively, in one jump,
-    //S = S0 + Nsample(0, S0 * stddev * math.sqrt(dt));
-
-    // in both cases,
-    S = compound_interest(r, S, dt);
-*/
-
-
-    // geometric Brownian Motion
-    for(_ <- 1 to resolution)
-      S = S * math.exp((r - stddev*stddev / 2) * inc
-                        + stddev * Nsample(0, math.sqrt(inc)))
-
-/*
-    // or alternatively, in one step
-    S = S0 * math.exp((r - stddev*stddev / 2) * dt
-                      + stddev * Nsample(0, math.sqrt(dt)))
-*/
-
-    S
+    S0 * geoBM(r, stddev, goal_time - current_time)
   }
 }
 
 
-case class FundamentalsSecurity(
+case class FundamentalsSecurity0(
   r: Double,
   stddev: Double,
   frequency: Integer,
@@ -191,24 +235,22 @@ case class FundamentalsSecurity(
     if(now) magnitude else 0.0
   }
 
-  def sample_future_price(
+  /** computes the sequence of actual prices at resolution */
+  def compute_time_series(
     S0           : Double, // start_price
     current_time : Double,
     goal_time    : Double,
     resolution   : Int = 1
-  ) : Double = {
+  ) : Array[Double] = {
     assert(current_time <= goal_time);
     assert(resolution >= 1);
 
-    val dt      = goal_time - current_time; // look this far into the future
-    val inc     = dt / resolution;          // time step size
+    val dt = goal_time - current_time; // look this far into the future
+    val S  = new Array[Double](resolution + 1);
+    S(0) = S0;
 
-    var S       = S0;
-
-    // geometric Brownian Motion
-    for(_ <- 1 to resolution)
-      S = S * math.exp((r - stddev*stddev / 2) * inc
-                        + stddev * Nsample(0, math.sqrt(inc)))
+    for(i <- 1 to resolution)
+      S(i) = S(i-1) * geoBM(r, stddev, dt/resolution)
         + fundamental_value_change();
 
     S
@@ -216,18 +258,66 @@ case class FundamentalsSecurity(
 }
 
 
-case class Commodity(name: String) extends Security {
-  /** Assumes price remains constant. */
-  def sample_future_price(
-    S0           : Double,
+/**
+  Note: this Security does NOT behave like the VanillaSecurity in the absence
+  of fundamental events. The effect of the risk-free-rate has to be explicitly
+  computed in the form of fundamental events (the company increasing its
+  value over time and reporting it at discrete times -- e.g. by releasing
+  quarterly sales/asset numbers).
+*/
+case class FundamentalsSecurity(
+  r: Double,
+  stddev: Double,
+  dummy1: Integer,
+  dummy2: Double
+) extends Security {
+  // hardwiring exactly one fundamental event
+  val fu_event_time = 50; // time tick in 1 .. resolution
+  val fu_event_magnitude = 10.0;
+  val num_players = 50;
+  val delay_p = 0.4; // probability that, after the event, the player takes
+                     // at least another tick until realizing that the event
+                     // took place.
+  // initialize valuation for each player based on distribution
+  /*
+     val valu = new Array[Double](num_players);
+     for(i <- 0 .. num_players-1)
+       valu(i) = S0 * Nsample(0, 1);
+  */
+
+  def compute_time_series(
+    S0           : Double, // start_price
     current_time : Double,
     goal_time    : Double,
     resolution   : Int = 1
-  ) : Double = S0
+  ) : Array[Double] = {
+    assert(current_time <= goal_time);
+    assert(resolution >= 1);
 
-  def stddev = 0.0
+    val dt  = goal_time - current_time; // look this far into the future
+    val inc = dt / resolution;          // time step size
+
+    val S   = new Array[Double](resolution + 1);
+    S(0) = S0;
+
+    // TODO -- FINISH
+    assert(false);
+
+    for(i <- 1 to resolution; p <- 1 to num_players) {
+      val t_after_evt = i - fu_event_time;
+      if(t_after_evt >= 0) {
+      /*
+         breeze.stats.distributions.Binomial(k, 0.5).probabilityOf(t_after_evt)
+         * update the players valuation of the security
+         * decide if to trade on their perception that the current price
+           is off the true value.
+      */
+      }
+    }
+
+    S
+  }
 }
-
 
 
 /** There is only one reference security, so we can plot a payoff profile
@@ -265,7 +355,18 @@ class Portfolio(
   securities : List[Security]
 ) extends Security {
 
-  def sample_future_price(
+  // TODO chart
+  def compute_time_series(
+    S0           : Double, // start_price
+    current_time : Double,
+    goal_time    : Double,
+    resolution   : Int = 1
+  ) : Array[Double] = {
+    assert(false);
+    new Array[Double](0)
+  }
+
+  override def sample_future_price(
     S0           : Double,
     current_time : Double,
     goal_time    : Double,
@@ -314,7 +415,18 @@ case class Short(
   override val security : Security
 ) extends SingleSecurityDerivative(security) {
 
-  def sample_future_price(
+  // TODO chart
+  def compute_time_series(
+    S0           : Double, // start_price
+    current_time : Double,
+    goal_time    : Double,
+    resolution   : Int = 1
+  ) : Array[Double] = {
+    assert(false);
+    new Array[Double](0)
+  }
+
+  override def sample_future_price(
     S0           : Double,
     current_time : Double,
     goal_time    : Double,
@@ -329,12 +441,24 @@ case class Short(
 }
 
 
+/** Multiple copies of a SingleSecurityDerivative */
 case class Times(
   override val security : Security,
   n: Int
 ) extends SingleSecurityDerivative(security) {
 
-  def sample_future_price(
+  // TODO chart
+  def compute_time_series(
+    S0           : Double, // start_price
+    current_time : Double,
+    goal_time    : Double,
+    resolution   : Int = 1
+  ) : Array[Double] = {
+    assert(false);
+    new Array[Double](0)
+  }
+
+  override def sample_future_price(
     S0           : Double,
     current_time : Double,
     goal_time    : Double,
@@ -366,6 +490,17 @@ abstract class FutOpt(
   risk_free_rate        : Double
 ) extends SingleSecurityDerivative(security) {
 
+  // TODO chart
+  def compute_time_series(
+    S0           : Double, // start_price
+    current_time : Double,
+    goal_time    : Double,
+    resolution   : Int = 1
+  ) : Array[Double] = {
+    assert(false);
+    new Array[Double](0)
+  }
+
   /** Value at expiration time of the derivative as a function of the
       price `S` of the underlying security at expiration time.
   */
@@ -383,7 +518,7 @@ abstract class FutOpt(
     @param resolution    used for sampling future price of underlying
                          security.
   */
-  def sample_future_price(
+  override def sample_future_price(
     S0           : Double,
     current_time : Double,
     goal_time    : Double,
@@ -472,44 +607,16 @@ case class Future(
 }
 
 
-} // end package Securities
 
 
-
-package object Securities {
-
-  val Wheat       = Commodity("wheat")
-  val Flour       = Commodity("flour")
-  val Land        = Commodity("land")
-  val MovieTicket = Commodity("ticket")
-  val Beef        = Commodity("beef")
-  val Burger      = Commodity("burger")
-
-  val all_commodities = List(Wheat, Flour, Land, MovieTicket, Beef, Burger);
-
-
-  def expectation(sample: () => Double, n: Int) : Double = {
-    (for(_ <- 1 to n) yield sample()).sum / n
-  }
-
-  def compute_standard_deviation(
-    mean: Double, sample: () => Double, n: Int) =
-    math.sqrt((for(_ <- 1 to n) yield {
-      val d = mean - sample();
-      d*d
-    }).sum) / (n-1)
-
+/* don't need this now.
   def Collar(s: Security, K1: Double, K2: Double, T: Double, r: Double) =
     Hedge(List(
       Short(EuropeanCallOption(s, K2, T, r)),
             EuropeanCallOption(s, K1, T, r)
   ))
+*/
 
-} // end package object Securities
-
-
-
-package Securities {
 
 object OptionTest {
   def main(args: Array[String]) {
@@ -521,7 +628,7 @@ object OptionTest {
   val now    = 0.1;
 
   //val s = VanillaSecurity(r, stddev);
-  val s = FundamentalsSecurity(r, stddev, 50, 30.0);
+  val s = FundamentalsSecurity0(r, stddev, 50, 30.0);
   val o = EuropeanCallOption(s, K, T, r);
 
   // Two ways of computing the current price of an option with execution

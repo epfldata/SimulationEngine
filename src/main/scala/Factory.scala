@@ -2,7 +2,7 @@ package Simulation.Factory
 import code._
 import Owner._
 import Simulation._
-import Securities._
+import Securities.Commodities._
 
 
 case class ProductionLineSpec(employees_needed: Int,

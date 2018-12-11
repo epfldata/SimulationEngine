@@ -1,6 +1,7 @@
 package Owner {
 import Timeseries._
 import Securities._
+import Commodities._
 
 
 case class SalesRecord(
@@ -66,6 +67,7 @@ package Markets {
 import Owner._
 import Timeseries._
 import Securities._
+import Commodities._
 
 
 /**

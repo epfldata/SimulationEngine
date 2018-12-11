@@ -1,6 +1,6 @@
 package Simulation
 import code._
-import Securities._
+import Securities.Commodities._
 
 
 class Person(

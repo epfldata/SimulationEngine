@@ -1,6 +1,6 @@
 package Simulation
 import SimLib._
-import Securities._
+import Securities.Commodities._
 
 
 object MainExample {

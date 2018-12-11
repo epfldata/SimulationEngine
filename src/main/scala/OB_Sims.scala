@@ -3,6 +3,7 @@ import code._
 import Simulation._
 import Markets._
 import Securities._
+import Commodities._
 import Timeseries._
 
 
