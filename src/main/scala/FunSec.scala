@@ -3,8 +3,15 @@ package Securities
 
 /** an investor currently "belongs" to just one security.
 */
-abstract class Investor { def act(current_price: Double): Double }
+abstract class Investor {
+  /** returns 1 (buy), -1 (sell), or 0 (do nothing) */
+  def act(current_price: Double): Double
+}
 
+
+/** The investors valuation cannot changed in act(), it is currently set
+    from the outside.
+*/
 case class ValueInvestor(
   initial_val: Double,
   eagerness:    Double // to do arbitrage between the current price
@@ -13,7 +20,6 @@ case class ValueInvestor(
   private val rnd = scala.util.Random
   var valuation = initial_val // the own valuation
 
-  /** returns 1 (buy), -1 (sell), or 0 (do nothing) */
   def act(current_price: Double): Double = {
     // decide whether to trade on the perception that the current price
     // is off the true value.
@@ -25,7 +31,8 @@ case class ValueInvestor(
 
 case class TechnicalTrader(laziness: Int, sensitivity: Double
 ) extends Investor {
-  private val mem = new Array[Double](10);
+  private val mem = new Array[Double](10); // buffer for the prices of the
+                                           // last 10 time ticks.
   var rrobin = 0;
 
   def act(current_price: Double) = {
@@ -48,7 +55,7 @@ case class TechnicalTrader(laziness: Int, sensitivity: Double
 /**
   Note: this Security does NOT behave like the VanillaSecurity in the absence
   of fundamental events. The effect of the risk-free-rate has to be explicitly
-  computed in the form of fundamental events (the company increasing its
+  forced in the form of fundamental events (the company increasing its
   value over time and reporting it at discrete times -- e.g. by releasing
   quarterly sales/asset numbers).
 */
@@ -60,7 +67,10 @@ case class FundamentalsSecurity() extends Security {
   val fu_event_magnitude = 20.0;
   val num_vplayers = 10;
   val num_tplayers = 22;
-  val delay_p = 0.4; // probability that, after the event, the player takes
+
+  // todo: currently not used.
+  val delay_p = 0.4; // probability that, after a fundamental event, the
+                     // value investor takes
                      // at least another tick until realizing that the event
                      // took place.
 
@@ -72,6 +82,8 @@ case class FundamentalsSecurity() extends Security {
   ) : Array[Double] = {
     assert(resolution >= 1);
 
+
+    // initialization
     val vplayers = (for(p <- 1 to num_vplayers) yield {
       val init_val  = Nsample(S0, S0 * 0.05);
       val eagerness = Nsample(0.1, 0.01);
@@ -85,6 +97,8 @@ case class FundamentalsSecurity() extends Security {
     val S = new Array[Double](resolution + 1); // time series
     S(0) = S0;
 
+
+    // moving forward in time
     for(i <- 1 to resolution) {
       if(i == fu_event_time) {
         for (p <- vplayers) {
