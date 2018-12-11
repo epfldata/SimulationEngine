@@ -13,7 +13,7 @@ package object Securities {
 
   /** geometric Brownian Motion. For a security in the Black-Scholes Model,
       this needs to be scaled by (multiplied with) the starting price of the
-      security. This approximates continuous Brownian Motin for dt time.
+      security. This approximates continuous Brownian Motion for dt time.
 
     @param mu -- risk-free rate
     @param sigma -- volatility
@@ -37,6 +37,37 @@ package object Securities {
   def Nsample(mu: Double, sigma: Double) : Double =
     (breeze.stats.distributions.Gaussian(mu, sigma).sample(1))(0)
      // argument of sample is # of samples to take; produces a vector
+
+  def plot(name: String, xl: String, yl: String,
+           _x: Array[Double], _ys: List[Array[Double]]
+  ) = {
+    import breeze.linalg._
+    import breeze.plot._
+
+    val x = DenseVector(_x);
+    val ys = _ys.map(DenseVector(_));
+
+    val f = Figure(name);
+    val p = f.subplot(0);
+    p.xlabel = xl;
+    p.ylabel = yl;
+    for(y <- ys) p += breeze.plot.plot(x, y);
+    f.refresh;
+  }
+
+  def plot_distribution(
+    label: String, xlabel: String, sample: () => Int, num_samples: Int
+  ) {
+    val v = for(_ <- 1 to num_samples) yield sample();
+    val m = v.groupBy((x: Int) => x).mapValues(_.length);
+
+    val x0 = (m.min._1 to m.max._1).toArray;
+    val x  = x0.map(_.toDouble);
+    val y  = x0.map((v: Int) => m.getOrElse(v, 0).toDouble);
+
+    plot("Distribution Plot for " + label, xlabel, "#", x, List(y));
+  }
+
 } // end package object Securities
 
 
@@ -75,94 +106,16 @@ abstract class Security {
 
   def stddev : Double
 
-  /** Current price */
-  def sample_price(
-    S0           : Double,
-    current_time : Double,
-    resolution   : Int = 1
-  ) : Double =
-      sample_future_price(S0, current_time, current_time, resolution)
-
-  /** Estimate the current price of the security using sampling. */
-  def estimate_price(
-    S0: Double,
-    current_time: Double,
-    num_it: Int = 1000,
-    resolution: Int = 100
-  ) =
-    expectation(() => sample_price(S0, current_time, resolution), num_it)
-
-  def estimate_stddev(
-    S0: Double,
-    current_time : Double,
-    num_it: Int = 1000,
-    resolution: Int = 100
-  ) =
-    compute_standard_deviation(
-      estimate_price(S0, current_time, num_it, resolution),
-      () => sample_price(S0, current_time, resolution), num_it)
-
-  protected def plot(name: String, xl: String, yl: String,
-           _x: Array[Double], _ys: List[Array[Double]]
-  ) = {
-    import breeze.linalg._
-    import breeze.plot._
-
-    val x = DenseVector(_x);
-    val ys = _ys.map(DenseVector(_));
-
-    val f = Figure(name);
-    val p = f.subplot(0);
-    p.xlabel = xl;
-    p.ylabel = yl;
-    for(y <- ys) p += breeze.plot.plot(x, y);
-    f.refresh;
-  }
-
   def plot_chart(
-    S0           : Double, // start_price
-    current_time : Double,
-    goal_time    : Double,
-    resolution   : Int = 1
+    S0: Double, current_time : Double, until_time: Double, resolution: Int
   ) {
-    val S = compute_time_series(S0, current_time, goal_time, resolution);
-    val x = (0 to resolution).map((x0: Int) =>
-       current_time + x0*(goal_time-current_time)/resolution).toArray;
-
-    plot("Chart for" + this + ", starting at time " + current_time,
-    "time", "price", x, List(S))
-  }
-
-  def plot_distribution(S0: Double, current_time : Double, n: Int) {
-    val v = (for(_ <- 1 to n) yield (sample_price(S0, current_time).toInt));
-    val m = v.groupBy((x: Int) => x).mapValues(_.length);
-
-    val x0 = (m.min._1 to m.max._1).toArray;
-    val x  = x0.map(_.toDouble);
-    val y  = x0.map((v: Int) => m.getOrElse(v, 0).toDouble);
-
-    plot("Distribution Plot for " + this + ", starting at price " + S0 +
-         ", at time " + current_time, "price", "#", x, List(y));
-  }
-
-  def plot_price(S0: Double, current_time : Double, until_time: Double,
-    samples_per_tick : Int = 1000
-  ) = {
-    val resolution = 100;
     val inc = (until_time - current_time) / resolution;
-
-    val xy = (for(k <- 1 to resolution) yield {
-      val p = expectation(() => sample_price(S0, current_time + k * inc, k),
-              samples_per_tick);
-
-      (current_time + k * inc ,p)
+    val S = compute_time_series(S0, current_time, until_time, resolution);
+    val x = (for (k <- 0 to resolution) yield {
+       current_time + k * inc
     }).toArray;
 
-    val x = xy.map(_._1);
-    val y = xy.map(_._2);
-
-    plot("Price Forecast for " + this + ", starting at price " + S0,
-         "time", "price", x, List(y));
+    plot("Price Chart for" + this, "time", "price", x, List(S))
   }
 }
 
@@ -328,6 +281,52 @@ abstract class SingleSecurityDerivative(
   val security : Security
 ) extends Security {
 
+  /** current price. for futures and options this is nontrivial. */
+  def sample_price(
+    S0           : Double,
+    current_time : Double,
+    resolution   : Int = 1
+  ) : Double =
+      sample_future_price(S0, current_time, current_time, resolution)
+
+  /** Estimate the current price of the security using sampling. */
+  def estimate_price(
+    S0: Double,
+    current_time: Double,
+    num_it: Int = 1000,
+    resolution: Int = 100
+  ) =
+    expectation(() => sample_price(S0, current_time, resolution), num_it)
+
+  def estimate_stddev(
+    S0: Double,
+    current_time : Double,
+    num_it: Int = 1000,
+    resolution: Int = 100
+  ) =
+    compute_standard_deviation(
+      estimate_price(S0, current_time, num_it, resolution),
+      () => sample_price(S0, current_time, resolution), num_it)
+
+  def plot_price(
+    S0: Double, current_time : Double, until_time: Double, resolution: Int,
+    samples_per_tick : Int = 1000
+  ) = {
+    val inc = (until_time - current_time) / resolution;
+
+    val xy = (for(k <- 0 to resolution) yield {
+      val p = expectation(() => sample_price(S0, current_time + k * inc, k),
+              samples_per_tick);
+
+      (current_time + k * inc ,p)
+    }).toArray;
+
+    val x = xy.map(_._1);
+    val S = xy.map(_._2);
+
+    plot("Price Forecast for " + this, "time", "price", x, List(S));
+  }
+
   /** Note: The price of buying the derivative is NOT taken into account.
 
       This is based on simulation. Try a current_time earlier than the
@@ -381,6 +380,7 @@ class Portfolio(
 }
 
 
+/*
 case class Hedge(
   securities : List[SingleSecurityDerivative]
 ) extends Portfolio(securities) {
@@ -414,6 +414,7 @@ case class Hedge(
          "price of derivative", x, List(y) /*ys*/);
   }
 }
+*/
 
 
 case class Short(
@@ -616,8 +617,8 @@ object OptionTest {
   val now    = 0.1;
 
   def main(args: Array[String]) {
-    //val s = VanillaSecurity(r, stddev);
-    val s = FundamentalsSecurity0(r, stddev, 50, 30.0);
+    val s = VanillaSecurity(r, stddev);
+    //val s = FundamentalsSecurity0(r, stddev, 50, 30.0);
     val o = EuropeanCallOption(s, K, T, r);
 
     // Two ways of computing the current price of an option with execution
@@ -630,9 +631,10 @@ object OptionTest {
     println("PRICE ESTIMATE: " + c);
     // println("bs="+bs);
 
+    // Distribution of current prices, calculated from many simulations...
+    def f() = o.sample_price(S0, now).toInt;
+    plot_distribution(o.toString, "price", f, 1000000);
     /*
-      // Distribution of current prices, calculated from many simulations...
-      o.plot_distribution(S0, now, 1000000);
       o.plot_payoff_profile(80, 120, 2.0);
       //o.plot_payoff_profile(80, 120, 1.5, 1000);
 
@@ -640,7 +642,7 @@ object OptionTest {
       // that, at any point, the security price is exactly the strike price.
       // (at the execution date, the price will be zero).
       // This simulation is slower.
-      o.plot_price(S0, now, T, 10000);
+      o.plot_price(S0, now, T, 100, 10000);
     */
   }
 } // end OptionTest
