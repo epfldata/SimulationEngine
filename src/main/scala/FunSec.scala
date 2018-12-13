@@ -1,5 +1,10 @@
 package Securities
 
+object Glob {
+  val rnd = scala.util.Random
+}
+import Glob._
+
 
 /** an investor currently "belongs" to just one security.
 */
@@ -14,10 +19,9 @@ abstract class Investor {
 */
 case class ValueInvestor(
   initial_val: Double,
-  eagerness:    Double // to do arbitrage between the current price
-                       // and one's own valuation
+  eagerness:   Double // to do arbitrage between the current price
+                      // and one's own valuation
 ) extends Investor {
-  private val rnd = scala.util.Random
   private var valuation = initial_val // the own valuation
   private var event_queue = List[(Int, Double)]()
 
@@ -29,7 +33,7 @@ case class ValueInvestor(
     // decide whether to trade on the perception that the current price
     // is off the true value.
     val laziness = (1.0 / eagerness).toInt;
-    val now = (rnd.nextInt % laziness) == 0;
+    val now = rnd.nextInt(laziness) == 0;
     if(now) math.signum(valuation - current_price) else 0
   }
 
@@ -37,11 +41,11 @@ case class ValueInvestor(
       update the player's valuation of the security.
   */
   def event(magnitude: Double) {
-    val my_mag = magnitude * Nsample(1, 0.1);
+    val my_mag = magnitude * (1 + 0.1 * rnd.nextGaussian());
 
     // set time delay for how many time ticks from now the valuation change
     // is to be performed.
-    val when   = (rnd.nextInt % 50) + 49; // 0 to 2*49
+    val when   = rnd.nextInt(50);
     println(when, my_mag);
     event_queue = (when, my_mag) :: event_queue;
   }
@@ -56,6 +60,8 @@ case class TechnicalTrader(
   private val mem = new Array[Double](10); // buffer for the prices of the
                                            // last 10 time ticks.
   for(i <- 0 to 9) mem(i) = init_price;
+
+  println("new TechnicalTrader("+laziness+", "+sensitivity+", "+init_price+")");
 
   // This is written for readability, not efficiency.
   def act(current_price: Double) = {
@@ -75,9 +81,7 @@ case class TechnicalTrader(
 }
 
 case class RandomTrader() extends Investor {
-  private val rnd = scala.util.Random
-
-  def act(current_price: Double) = rnd.nextInt() % 2
+  def act(current_price: Double) = rnd.nextInt(3) - 1
 }
 
 
@@ -94,9 +98,9 @@ case class FundamentalsSecurity() extends Security {
   // hardwiring exactly one fundamental event
   val fu_event_time = 500; // time tick in 1 .. resolution
   val fu_event_magnitude = 20.0;
-  val num_vplayers = 5;
-  val num_tplayers = 22;
-  val num_rplayers = 5;
+  val num_vplayers = 0;
+  val num_tplayers = 0; //22;
+  val num_rplayers = 1; //5;
 
   def compute_time_series(
     S0           : Double, // start_price
@@ -109,15 +113,16 @@ case class FundamentalsSecurity() extends Security {
 
     // initialization
     val vplayers = (1 to num_vplayers).map(_ => {
-      val init_val  = Nsample(S0, S0 * 0.05);
-      val eagerness = Nsample(0.1, 0.01);
+      val init_val  = S0 + S0 * 0.05 * rnd.nextGaussian();
+      val eagerness = 0.1 + 0.01 * rnd.nextGaussian();
       new ValueInvestor(init_val, eagerness)
     }).toList
 
     val players: List[Investor] =
       vplayers ++
       (1 to num_tplayers).map(_ => {
-        new TechnicalTrader(Nsample(4, 1).toInt, Nsample(0.1, 0.05), S0)
+        new TechnicalTrader(1 + rnd.nextInt(5),
+                            0.1 + rnd.nextGaussian() * 0.05, S0)
       }).toList ++
       (1 to num_rplayers).map(_ => {
         new RandomTrader()
