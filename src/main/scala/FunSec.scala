@@ -14,9 +14,6 @@ abstract class Investor {
 }
 
 
-/** The investor's valuation is not changed in act(), it is currently set
-    from the outside.
-*/
 case class ValueInvestor(
   initial_val: Double,
   eagerness:   Double // to do arbitrage between the current price
