@@ -553,6 +553,18 @@ case class Future(
 }
 
 
+/*
+import Securities._
+val S0     = 100.0;
+  val K      = 100.0;
+  val T      = 2.0;
+  val stddev = 0.05;
+  val r      = 0.03;
+  val now    = 0.1;
+  val s = VanillaSecurity(r, stddev);
+  s.plot_chart(S0, 1.0, 2.0, 100)
+*/
+
 
 object OptionTest {
   val S0     = 100.0;
