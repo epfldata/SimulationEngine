@@ -1,10 +1,8 @@
 package Simulation.SimLib.OB_Sims
-import code._
-import Simulation._
 import Markets._
 import Securities._
-import Commodities._
-import Timeseries._
+import Simulation._
+import code._
 
 
 class MarketMaker(security: Security,
@@ -301,9 +299,9 @@ class Arbitrageur(
 
 
 class OBExample {
-  import Simulation._
   import Markets._
   import Owner._
+  import Simulation._
 
   def chicago_builder() = {
     for(c <- List(Flour, Wheat)) { //Securities.all_commodities) {

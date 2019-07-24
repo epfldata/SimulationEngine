@@ -1,7 +1,6 @@
 package Owner {
-import Timeseries._
 import Securities._
-import Commodities._
+import Timeseries._
 
 
 case class SalesRecord(
@@ -65,9 +64,8 @@ class Seller extends Owner {
 
 package Markets {
 import Owner._
-import Timeseries._
 import Securities._
-import Commodities._
+import Timeseries._
 
 
 /**

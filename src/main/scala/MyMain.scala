@@ -1,6 +1,6 @@
 package Simulation
-import SimLib._
-import Securities.Commodities._
+import Simulation.SimLib._
+import Securities._
 
 
 object MainExample {
@@ -37,8 +37,7 @@ object MainExample {
   }
 }
 
-object TradingExample {
-  import Owner._;
+object TradingExample {;
 
   val simu = new Simulation;
 

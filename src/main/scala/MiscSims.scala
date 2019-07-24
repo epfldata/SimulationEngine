@@ -1,9 +1,8 @@
 package Simulation.SimLib
-import code._
+import Securities._
 import Simulation._
-import Simulation.Factory._
-import Markets._
-import Securities.Commodities._
+import _root_.Simulation.Factory._
+import code._
 
 
 class Source(commodity: Commodity, units: Int, p: Int,

@@ -2,14 +2,13 @@ package Simulation
 import Markets._
 import Owner._
 import Securities._
-import Commodities._
 
 
 class Simulation {
   var timer = 0;
 
   val market = collection.mutable.Map[Commodity, SellersMarket]();
-  for(c <- Commodities.all_commodities) {
+  for(c <- all_commodities) {
     market += (c -> new SellersMarket(c));
   };
 
