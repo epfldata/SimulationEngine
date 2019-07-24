@@ -36,7 +36,7 @@ class Account(
 
 class Handle[T](id : ID_T, table : collection.mutable.Map[ID_T, T]) {
 
-  def get : T = table(id).asInstanceOf[T] 
+  def get : T = table(id).asInstanceOf[T]
 }
 
 
@@ -54,7 +54,7 @@ class Owner {
   /** It is safe to directly modify this.
       Changes the balance, of course.
   */
-  var capital : Int = 0 // EUR cents 
+  var capital : Int = 0 // EUR cents
 
 //  var accounts = List[Account]()
 
@@ -94,7 +94,6 @@ class Owner {
     else
       inventory_avg_cost(item) = (inventory_total_cost(item) +
         units_added * unit_cost) / (inventory(item) + units_added)
-
     println("recalculate_inv_avg_cost: " + units_added + " " + unit_cost +
       " " + inventory_avg_cost(item));
   }
@@ -124,7 +123,7 @@ class Owner {
       units * inventory_avg_cost(item)).sum
 
   protected def assets : Double = math.max(0, capital) + inventory_value
-  
+
   protected def liabilities : Double =
     math.min(0, capital) + inventory_liabilities
 

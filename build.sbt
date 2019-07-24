@@ -5,6 +5,9 @@ lazy val root = (project in file(".")).settings(
   scalaVersion := "2.11.8"
 )
 
+mainClass in (Compile, packageBin) := Some("bo.Main")
+mainClass in (Compile, run) := Some("bo.Main")
+
 // libraryDependencies += "com.quantifind" %% "wisp" % "0.0.4"
 
 libraryDependencies  ++= Seq(
