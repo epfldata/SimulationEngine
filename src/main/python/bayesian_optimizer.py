@@ -6,7 +6,7 @@ import os
 os.chdir('../../..')    #going to the root of the project
 
 def black_box_function(a, b, c):
-    result = subprocess.run(['scala', 'target/scala-2.11/economic_simulations_2.11-1.0.jar'], stdout=subprocess.PIPE)
+    result = subprocess.run(['scala', 'target/scala-2.11/economic_simulations_2.11-1.0.jar', 'evaluate'], stdout=subprocess.PIPE)
     return -float(result.stdout.decode("utf-8")[:-1])
 
 

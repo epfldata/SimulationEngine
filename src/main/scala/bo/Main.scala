@@ -8,16 +8,35 @@ import Simulation.{Person, Simulation}
 import _root_.Simulation.SimLib.{Farm, Source}
 
 object Main {
-  def main(args: Array[String]): Unit = {
+  val metrics: Seq[Int] => Seq[Double] = xs => {
     val s = new Simulation
-    callSimulation(s)
-    println(s.sims.map(_.capital / s.sims.size).sum)
+    initializeSimulation(s)
+    s.sims.zip(xs).foreach(t => t._1.capital = t._2)
+    callSimulation(s, 1000)
+    List(s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum)
   }
 
-  def callSimulation(s: Simulation, mute: Boolean = true): Unit = {
-    if (mute)
-      Console.setOut(new PrintStream(new FileOutputStream("target/scala-2.11/runLog")))
+  val bounds: Seq[(Int, Int)] = for(_ <- 1 to numberOfSims) yield (0, 100)
 
+  def main(args: Array[String]): Unit = {
+    args(0) match {
+      case "generate" => BOResponse.generateXYPairs("target/scala-2.11/xypairs", bounds, metrics)
+      case "evaluate" =>
+        val file = scala.io.Source.fromFile("target/scala-2.11/xypairs")
+        val lines = file.getLines().toList
+        val Xs = lines.filter(_.startsWith("x:")).map(_.substring(2).split(' ').map(_.toInt))
+        val Ys = lines.filter(_.startsWith("y:")).map(_.substring(2).split(' ').map(_.toDouble))
+        println(BOResponse.error(Xs, Ys, metrics))
+    }
+  }
+
+  def numberOfSims = 16
+
+  def initializeSimulation(s: Simulation, mute: Boolean = true): Unit = {
+    if (mute)
+      Console.setOut(new PrintStream(new FileOutputStream("target/scala-2.11/initLog")))
+
+    GLOBAL.silent = true
     val f = new Farm(s)
     val m = new Mill(s)
     //val c   = new Cinema(s);
@@ -40,8 +59,17 @@ object Main {
       // c, rf, mcd,
       mehlbuyer
     ) ++ people.toList)
-    GLOBAL.silent = true
+
+    Console.out.flush()
+    Console.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)))
+  }
+
+  def callSimulation(s: Simulation, iterations: Int, mute: Boolean = true): Unit = {
+    if (mute)
+      Console.setOut(new PrintStream(new FileOutputStream("target/scala-2.11/runLog")))
+
     s.run(1000)
+
     Console.out.flush()
     Console.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)))
   }
