@@ -2,3 +2,5 @@
 project/
 target/
 
+# conda env config file
+*.cfg
