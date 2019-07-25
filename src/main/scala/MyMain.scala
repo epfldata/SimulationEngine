@@ -37,7 +37,7 @@ object MainExample {
   }
 }
 
-object TradingExample {;
+object TradingExample {
 
   val simu = new Simulation;
 
