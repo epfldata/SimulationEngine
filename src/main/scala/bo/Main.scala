@@ -20,13 +20,15 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     args(0) match {
-      case "generate" => BOResponse.generateXYPairs("target/scala-2.11/xypairs", bounds, metrics)
+      case "generate" =>
+        BOUtil.generateXYPairs("target/scala-2.11/xypairs", bounds, metrics, 1)
+
       case "evaluate" =>
         val file = scala.io.Source.fromFile("target/scala-2.11/xypairs")
         val lines = file.getLines().toList
         val Xs = lines.filter(_.startsWith("x:")).map(_.substring(2).split(' ').map(_.toInt))
         val Ys = lines.filter(_.startsWith("y:")).map(_.substring(2).split(' ').map(_.toDouble))
-        println(BOResponse.error(Xs, Ys, metrics))
+        println(BOUtil.error(Xs, Ys, metrics))
     }
   }
 
@@ -68,7 +70,7 @@ object Main {
     if (mute)
       Console.setOut(new PrintStream(new FileOutputStream("target/scala-2.11/runLog")))
 
-    s.run(1000)
+    s.run(iterations)
 
     Console.out.flush()
     Console.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)))
