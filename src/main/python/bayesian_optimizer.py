@@ -6,7 +6,7 @@ import os
 os.chdir('../../..')    #going to the root of the project
 
 def black_box_function(a, b, c):
-    cmd = "sbt --error \"set showSuccess := false\" run \"evaluate\""
+    cmd = "sbt --warn \"run evaluate\""
     process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (result, error) = process.communicate()
 
