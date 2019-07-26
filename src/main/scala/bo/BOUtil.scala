@@ -2,9 +2,6 @@ package bo
 
 import java.io.FileWriter
 
-import scala.util.Random
-
-
 object BOUtil {
 
   /**
@@ -78,7 +75,7 @@ object BOUtil {
       var xs: List[Int] = Nil
       bounds.foreach {
         case (low, high) =>
-          xs = (Random.nextInt(high - low + 1) + low) :: xs
+          xs = (GLOBAL.rnd.nextInt(high - low + 1) + low) :: xs
           fileWriter.write(xs.head + " ")
       }
       fileWriter.write("\n")

@@ -1,5 +1,6 @@
 package Simulation
 import Securities._
+import breeze.stats.distributions.Gaussian
 import code._
 
 
@@ -9,6 +10,8 @@ class Person(
   var happiness : Int = 0, // pursuit of it
   var log : List[String] = List()
 ) extends SimO(shared) {
+
+  val foodUnitDistr: Gaussian = GLOBAL.distributions("foodUnit")
 
   def mycopy(_shared: Simulation,
              _substitution: collection.mutable.Map[SimO, SimO]) = {
@@ -48,9 +51,11 @@ class Person(
         happiness -= 100; // hunger
 
         // assert(market(food).is_at_time(shared.timer));
-        shared.market(food).market_buy_order_now(shared.timer, this, 1);
+        val units = Math.max(1, foodUnitDistr.sample().round.toInt)
+        println("UNITS: " + units)
+        val leftOver = shared.market(food).market_buy_order_now(shared.timer, this, units);
            // needs to eat
-        if(available(food) >= 1) consume(food, 1);
+        if(available(food) >= 1) consume(food, units - leftOver);
         shared.market(MovieTicket).market_buy_order_now(shared.timer, this, 1);
            // wants entertainment
         if(available(MovieTicket) >= 1) consume(MovieTicket, 1);

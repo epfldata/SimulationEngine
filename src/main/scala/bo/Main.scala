@@ -19,6 +19,7 @@ object Main {
   val bounds: Seq[(Int, Int)] = for(_ <- 1 to numberOfSims) yield (0, 100)
 
   def main(args: Array[String]): Unit = {
+    GLOBAL.initParams(args)
     args(0) match {
       case "generate" =>
         BOUtil.generateXYPairs("target/scala-2.11/xypairs", bounds, metrics, 1)
@@ -51,7 +52,7 @@ object Main {
     //val billa         = new Trader(Flour, 50, s);
     val mehlbuyer = Buyer(Flour, () => 40, s)
 
-    val people = for (x <- 1 to 12) yield new Person(s, false)
+    val people = for (x <- 1 to 12) yield new Person(s, true)
 
     s.init(List(
       landlord,

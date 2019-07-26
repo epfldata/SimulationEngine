@@ -5,8 +5,8 @@ import os, sys
 os.chdir('../../..')  # going to the root of the project
 
 
-def black_box_function(a, b, c):
-    result = runCmd("scala target/scala-2.11/economic_simulations_2.11-1.0.jar evaluate")
+def black_box_function(foodUnitMu, foodUnitSigma):
+    result = runCmd("sbt --warn \"run evaluate " + str(foodUnitMu) + " " + str(foodUnitSigma) + "\"")
     print(result)
     return -float(result.decode("utf-8")[:-1])
 
@@ -23,8 +23,10 @@ def runCmd(cmd):
     return result
 
 
-runCmd("sbt clean package")
-runCmd("scala target/scala-2.11/economic_simulations_2.11-1.0.jar generate")
-pbounds = {'a': (0, 1), 'b': (0, 1), 'c': (0, 1)}
+trueMu, trueSigma = 2, 5
+runCmd("sbt clean compile")
+runCmd("sbt \"run generate " + str(trueMu) + " " + str(trueSigma) + "\"")
+pbounds = {'foodUnitMu': (1, 20), 'foodUnitSigma': (0, 20)}
 optimizer = BayesianOptimization(black_box_function, pbounds, 10)
 optimizer.maximize(init_points=5, n_iter=25)
+print(optimizer.max)
