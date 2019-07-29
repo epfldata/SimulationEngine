@@ -33,4 +33,5 @@ case class ChaosTest(f: Simulation => Seq[Double], var params: Map[String, Doubl
       case _ => 0
     }.sum
   }
+
 }

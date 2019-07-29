@@ -38,6 +38,11 @@ object Main {
 
       case "lyapunov" =>
         println(ChaosTest(outputFromState, params).lyapunovExponent("movieUnitsMu"))
+
+      case "plot" =>
+        val visulizer = Viz(outputFromState, params)
+        visulizer.plotSimOverTime((0, 1000))
+        visulizer.plotSimOverParam("foodUnitsMu", (0, 100), runSimTill = 100)
     }
   }
 

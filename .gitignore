@@ -4,3 +4,6 @@ target/
 
 # conda env config file
 *.cfg
+
+# plots and figures
+*.png
