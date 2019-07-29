@@ -2,10 +2,17 @@ package Simulation
 import Markets._
 import Owner._
 import Securities._
+import breeze.stats.distributions.Gaussian
 
 
-class Simulation {
+class Simulation(val params: Map[String, Double]) {
+  def this() = this(Map())
+
   var timer = 0;
+  val distributions: Map[String, Gaussian] = Map(
+    ("food", new Gaussian(params("foodUnitsMu"), params("foodUnitsSigma"))),
+    ("movie", new Gaussian(params("movieUnitsMu"), params("movieUnitsSigma")))
+  )
 
   val market = collection.mutable.Map[Commodity, SellersMarket]();
   for(c <- all_commodities) {
@@ -51,7 +58,7 @@ class Simulation {
       sellers.
   */
   def mycopy() = {
-    val s2 = new Simulation;
+    val s2 = new Simulation(params);
     val old2new = collection.mutable.Map[SimO, SimO]();
 
     // this separation would not be needed if we had a central map from sim ids

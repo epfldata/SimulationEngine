@@ -1,6 +1,5 @@
 package Simulation
 import Securities._
-import breeze.stats.distributions.Gaussian
 import code._
 
 
@@ -10,8 +9,6 @@ class Person(
   var happiness : Int = 0, // pursuit of it
   var log : List[String] = List()
 ) extends SimO(shared) {
-
-  val foodUnitDistr: Gaussian = GLOBAL.distributions("foodUnit")
 
   def mycopy(_shared: Simulation,
              _substitution: collection.mutable.Map[SimO, SimO]) = {
@@ -38,7 +35,7 @@ class Person(
 
   private def consume(consumable: Commodity, units: Int) {
     assert(available(consumable) >= units);
-    happiness += units * expected_enjoyment(consumable) 
+    happiness += units * expected_enjoyment(consumable)
     destroy(consumable, units);
     log = (units + "*" + consumable + "@" + shared.timer) :: log;
   }
@@ -51,14 +48,17 @@ class Person(
         happiness -= 100; // hunger
 
         // assert(market(food).is_at_time(shared.timer));
-        val units = Math.max(1, foodUnitDistr.sample().round.toInt)
-        println("UNITS: " + units)
-        val leftOver = shared.market(food).market_buy_order_now(shared.timer, this, units);
+        val foodUnits = math.max(1, shared.distributions("food").sample().round).toInt
+        println("Food units: " + foodUnits)
+        val foodLeftOver = shared.market(food).market_buy_order_now(shared.timer, this, foodUnits);
            // needs to eat
-        if(available(food) >= 1) consume(food, units - leftOver);
-        shared.market(MovieTicket).market_buy_order_now(shared.timer, this, 1);
+        if(available(food) >= 1) consume(food, foodUnits - foodLeftOver);
+
+        val movieUnits = math.max(0, shared.distributions("movie").sample().round).toInt
+        println("Movie units: " + movieUnits)
+        val movieLeftOver = shared.market(MovieTicket).market_buy_order_now(shared.timer, this, movieUnits);
            // wants entertainment
-        if(available(MovieTicket) >= 1) consume(MovieTicket, 1);
+        if(available(MovieTicket) >= 1) consume(MovieTicket, movieUnits - movieLeftOver);
 
         // shared.market("miete").market_buy_order_now(shared.timer, this, 1);
       }

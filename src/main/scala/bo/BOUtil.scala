@@ -15,7 +15,7 @@ object BOUtil {
     */
   def error(Xs: Seq[Array[Int]],
             Ys: Seq[Array[Double]],
-            f: Seq[Int] => Seq[Double],
+            f:  Seq[Int] => Seq[Double],
             distance: (Double, Double) => Double = (y1, y2) => math.abs(y2 - y1)): Double = {
     val numberOfXYPairs = Xs.size
     Xs.zip(Ys).map {
@@ -57,15 +57,17 @@ object BOUtil {
     *
     * @param fileName the file where parameter values and input/output pairs made with it will be written
     * @param bounds   input(predictor) data will be randomly generated within the given bounds
-    * @param f        the function to be applied to input(predictor) and result the output(target) values
+    * @param f        the function to be applied to input(params and predictor) and result the output(target) values
+    * @param params   The params for the simulation
     * @param numberOfXYPairs
     */
   def generateXYPairs(fileName: String,
                       bounds: Seq[(Int, Int)],
-                      f: Seq[Int] => Seq[Double],
+                      f: Map[String, Double] => Seq[Int] => Seq[Double],
+                      params: Map[String, Double],
                       numberOfXYPairs: Int): Unit = {
     val fileWriter = new FileWriter(fileName)
-    GLOBAL.parameters.foreach {
+    params.foreach {
       case (param, value) =>
         fileWriter.write(s"$param: $value\t")
     }
@@ -80,7 +82,7 @@ object BOUtil {
       }
       fileWriter.write("\n")
       fileWriter.write("y:")
-      f(xs).foreach(metric => fileWriter.write(metric + " "))
+      f(params)(xs).foreach(metric => fileWriter.write(metric + " "))
       fileWriter.write('\n')
     }
     fileWriter.close()

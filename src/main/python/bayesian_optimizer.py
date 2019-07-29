@@ -5,8 +5,8 @@ import os, sys
 os.chdir('../../..')  # going to the root of the project
 
 
-def black_box_function(foodUnitMu, foodUnitSigma):
-    result = runCmd("sbt --warn \"run evaluate " + str(foodUnitMu) + " " + str(foodUnitSigma) + "\"")
+def black_box_function(foodMu, foodSigma, movieMu, movieSigma):
+    result = runCmd("sbt --warn \"run evaluate " + str(foodMu) + " " + str(foodSigma) + " " + str(movieMu) + " " + str(movieSigma) + "\"")
     print(result)
     return -float(result.decode("utf-8")[:-1])
 
@@ -23,10 +23,11 @@ def runCmd(cmd):
     return result
 
 
-trueMu, trueSigma = 2, 5
+trueFoodMu, trueFoodSigma = 2, 5
+trueMovieMu, trueMovieSigma = 0, 1
 runCmd("sbt clean compile")
-runCmd("sbt \"run generate " + str(trueMu) + " " + str(trueSigma) + "\"")
-pbounds = {'foodUnitMu': (1, 20), 'foodUnitSigma': (0, 20)}
+runCmd("sbt \"run generate " + str(trueFoodMu) + " " + str(trueFoodSigma) + " " + str(trueMovieMu) + " " + str(trueMovieSigma) + "\"")
+pbounds = {'foodMu': (1, 20), 'foodSigma': (0, 20), "movieMu": (0, 5), "movieSigma": (0, 5)}
 optimizer = BayesianOptimization(black_box_function, pbounds, 10)
-optimizer.maximize(init_points=5, n_iter=25)
+optimizer.maximize(init_points=10, n_iter=25, acq="poi")
 print(optimizer.max)

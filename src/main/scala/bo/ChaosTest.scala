@@ -2,7 +2,7 @@ package bo
 
 import Simulation.Simulation
 
-case class ChaosTest(f: Simulation => Seq[Double]) {
+case class ChaosTest(f: Simulation => Seq[Double], var params: Map[String, Double]) {
   def lyapunovExponent(name: String,
                        iterations: Int = 1000,
                        deltaFraction: Double = 1,
@@ -15,12 +15,12 @@ case class ChaosTest(f: Simulation => Seq[Double]) {
       }
     }
 
-    val paramValue = GLOBAL.parameters(name)
-    var s = new Simulation
+    val paramValue = params(name)
+    var s = new Simulation(params)
     val result0 = getTimeSeries(s)
 
-    GLOBAL.parameters += name -> paramValue * (1 + deltaFraction)
-    s = new Simulation
+    params += name -> paramValue * (1 + deltaFraction)
+    s = new Simulation(params)
     val result1 = getTimeSeries(s)
 
     val time = for (t <- 1 to iterations) yield t

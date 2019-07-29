@@ -10,37 +10,36 @@ import _root_.Simulation.SimLib.{Farm, Source}
 object Main {
   val outputFromState: Simulation => Seq[Double] = s => List(s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum)
 
-  val metrics: Seq[Int] => Seq[Double] = xs => {
-    val s = new Simulation
+  val numberOfSims = 120
+  val bounds: Seq[(Int, Int)] = for(_ <- 1 to numberOfSims) yield (0, 100)
+
+  def metrics(params: Map[String, Double])(xs: Seq[Int]): Seq[Double] = {
+    val s = new Simulation(params)
     initializeSimulation(s)
     s.sims.zip(xs).foreach(t => t._1.capital = t._2)
     callSimulation(s, 1000)
     outputFromState(s)
   }
 
-  val bounds: Seq[(Int, Int)] = for(_ <- 1 to numberOfSims) yield (0, 100)
-
   def main(args: Array[String]): Unit = {
+    val params = Map(
+      ("foodUnitsMu", args(1).toDouble), ("foodUnitsSigma", args(2).toDouble),
+      ("movieUnitsMu", args(3).toDouble), ("movieUnitsSigma", args(4).toDouble)
+    )
     args(0) match {
       case "generate" =>
-        GLOBAL.initParams(args)
-        BOUtil.generateXYPairs("target/scala-2.11/xypairs", bounds, metrics, 1)
-
+        BOUtil.generateXYPairs("target/scala-2.11/xypairs", bounds, metrics, params, 1)
       case "evaluate" =>
-        GLOBAL.initParams(args)
         val file = scala.io.Source.fromFile("target/scala-2.11/xypairs")
         val lines = file.getLines().toList
         val Xs = lines.filter(_.startsWith("x:")).map(_.substring(2).split(' ').map(_.toInt))
         val Ys = lines.filter(_.startsWith("y:")).map(_.substring(2).split(' ').map(_.toDouble))
-        println(BOUtil.error(Xs, Ys, metrics))
+        println(BOUtil.error(Xs, Ys, metrics(params)))
 
       case "lyapunov" =>
-        GLOBAL.initParams(args)
-        println(ChaosTest(outputFromState).lyapunovExponent(args.last))
+        println(ChaosTest(outputFromState, params).lyapunovExponent("movieUnitsMu"))
     }
   }
-
-  def numberOfSims = 16
 
   def initializeSimulation(s: Simulation, mute: Boolean = true): Unit = {
     if (mute)
@@ -59,7 +58,7 @@ object Main {
     //val billa         = new Trader(Flour, 50, s);
     val mehlbuyer = Buyer(Flour, () => 40, s)
 
-    val people = for (x <- 1 to 12) yield new Person(s, true)
+    val people = for (x <- 1 to numberOfSims) yield new Person(s, true)
 
     s.init(List(
       landlord,
