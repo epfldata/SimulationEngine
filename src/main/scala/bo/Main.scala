@@ -8,28 +8,35 @@ import Simulation.{Person, Simulation}
 import _root_.Simulation.SimLib.{Farm, Source}
 
 object Main {
+  val outputFromState: Simulation => Seq[Double] = s => List(s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum)
+
   val metrics: Seq[Int] => Seq[Double] = xs => {
     val s = new Simulation
     initializeSimulation(s)
     s.sims.zip(xs).foreach(t => t._1.capital = t._2)
     callSimulation(s, 1000)
-    List(s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum)
+    outputFromState(s)
   }
 
   val bounds: Seq[(Int, Int)] = for(_ <- 1 to numberOfSims) yield (0, 100)
 
   def main(args: Array[String]): Unit = {
-    GLOBAL.initParams(args)
     args(0) match {
       case "generate" =>
+        GLOBAL.initParams(args)
         BOUtil.generateXYPairs("target/scala-2.11/xypairs", bounds, metrics, 1)
 
       case "evaluate" =>
+        GLOBAL.initParams(args)
         val file = scala.io.Source.fromFile("target/scala-2.11/xypairs")
         val lines = file.getLines().toList
         val Xs = lines.filter(_.startsWith("x:")).map(_.substring(2).split(' ').map(_.toInt))
         val Ys = lines.filter(_.startsWith("y:")).map(_.substring(2).split(' ').map(_.toDouble))
         println(BOUtil.error(Xs, Ys, metrics))
+
+      case "lyapunov" =>
+        GLOBAL.initParams(args)
+        println(ChaosTest(outputFromState).lyapunovExponent(args.last))
     }
   }
 
