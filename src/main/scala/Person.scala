@@ -54,11 +54,10 @@ class Person(
            // needs to eat
         if(available(food) >= 1) consume(food, foodUnits - foodLeftOver);
 
-        val movieUnits = math.max(0, shared.distributions("movie").sample().round).toInt
-        println("Movie units: " + movieUnits)
-        val movieLeftOver = shared.market(MovieTicket).market_buy_order_now(shared.timer, this, movieUnits);
+        val movieUnits = 1
+        shared.market(MovieTicket).market_buy_order_now(shared.timer, this, movieUnits);
            // wants entertainment
-        if(available(MovieTicket) >= 1) consume(MovieTicket, movieUnits - movieLeftOver);
+        if(available(MovieTicket) >= 1) consume(MovieTicket, movieUnits);
 
         // shared.market("miete").market_buy_order_now(shared.timer, this, 1);
       }

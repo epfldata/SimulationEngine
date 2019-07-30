@@ -16,7 +16,9 @@ libraryDependencies  ++= Seq(
   "org.scalanlp" %% "breeze" % "0.12",
 //  "org.scalanlp" %% "breeze-natives" % "0.12",
   "org.scalanlp" %% "breeze-viz" % "0.12",
-  "org.scalatest" %% "scalatest" % "3.0.0" % "test"
+  "org.scalatest" %% "scalatest" % "3.0.0" % "test",
+
+  "io.spray" %%  "spray-json" % "1.3.5"
 )
 
 resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"

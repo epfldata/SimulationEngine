@@ -10,8 +10,7 @@ class Simulation(val params: Map[String, Double]) {
 
   var timer = 0;
   val distributions: Map[String, Gaussian] = Map(
-    ("food", new Gaussian(params("foodUnitsMu"), params("foodUnitsSigma"))),
-    ("movie", new Gaussian(params("movieUnitsMu"), params("movieUnitsSigma")))
+    ("food", new Gaussian(params("foodUnitsMu"), params("foodUnitsSigma")))
   )
 
   val market = collection.mutable.Map[Commodity, SellersMarket]();

@@ -6,6 +6,7 @@ import Securities.{Flour, Land}
 import Simulation.SimLib.{Buyer, Mill}
 import Simulation.{Person, Simulation}
 import _root_.Simulation.SimLib.{Farm, Source}
+import spray.json.{JsNumber, JsObject, JsonParser}
 
 object Main {
   val outputFromState: Simulation => Seq[Double] = s => List(s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum)
@@ -22,10 +23,12 @@ object Main {
   }
 
   def main(args: Array[String]): Unit = {
-    val params = Map(
-      ("foodUnitsMu", args(1).toDouble), ("foodUnitsSigma", args(2).toDouble),
-      ("movieUnitsMu", args(3).toDouble), ("movieUnitsSigma", args(4).toDouble)
-    )
+    val source = scala.io.Source.fromFile(args(1))
+    val jsonString = source.mkString
+    source.close()
+
+    val jsonAst = JsonParser(jsonString)
+    val params = jsonAst.asInstanceOf[JsObject].fields.mapValues(_.toString().toDouble)
     args(0) match {
       case "generate" =>
         BOUtil.generateXYPairs("target/scala-2.11/xypairs", bounds, metrics, params, 1)
@@ -37,7 +40,7 @@ object Main {
         println(BOUtil.error(Xs, Ys, metrics(params)))
 
       case "lyapunov" =>
-        println(ChaosTest(outputFromState, params).lyapunovExponent("movieUnitsMu"))
+        println(ChaosTest(outputFromState, params).lyapunovExponent("foodUnitsMu"))
 
       case "plot" =>
         val visulizer = Viz(outputFromState, params)
