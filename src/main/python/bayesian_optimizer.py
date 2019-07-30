@@ -1,12 +1,17 @@
 from bayes_opt import BayesianOptimization
 import subprocess
-import os, sys
+import os, sys, json
 
 os.chdir('../../..')  # going to the root of the project
+json_original = 'params.json'
+json_temp = 'temp.json'
 
+def black_box_function(**params):
+    f = open(json_temp, "w")
+    f.write(json.dumps(params))
+    f.close()
 
-def black_box_function(foodMu, foodSigma, movieMu, movieSigma):
-    result = runCmd("sbt --warn \"run evaluate " + str(foodMu) + " " + str(foodSigma) + " " + str(movieMu) + " " + str(movieSigma) + "\"")
+    result = runCmd('sbt --warn "run evaluate ' + json_temp + '"')
     print(result)
     return -float(result.decode("utf-8")[:-1])
 
@@ -23,11 +28,13 @@ def runCmd(cmd):
     return result
 
 
-trueFoodMu, trueFoodSigma = 2, 5
-trueMovieMu, trueMovieSigma = 0, 1
+f = open(json_original, "r")
+params = json.loads(f.read())
+f.close()
+
 runCmd("sbt clean compile")
-runCmd("sbt \"run generate " + str(trueFoodMu) + " " + str(trueFoodSigma) + " " + str(trueMovieMu) + " " + str(trueMovieSigma) + "\"")
-pbounds = {'foodMu': (1, 20), 'foodSigma': (0, 20), "movieMu": (0, 5), "movieSigma": (0, 5)}
+runCmd('sbt "run generate ' + json_original + '"')
+pbounds = {param: (0, 20) for param in params}
 optimizer = BayesianOptimization(black_box_function, pbounds, 10)
 optimizer.maximize(init_points=10, n_iter=25, acq="poi")
 print(optimizer.max)

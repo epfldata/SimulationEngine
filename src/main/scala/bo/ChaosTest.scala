@@ -5,12 +5,13 @@ import Simulation.Simulation
 case class ChaosTest(f: Simulation => Seq[Double], var params: Map[String, Double]) {
   def lyapunovExponent(name: String,
                        iterations: Int = 1000,
-                       deltaFraction: Double = 1,
+                       step: Int = 1,
+                       deltaFraction: Double = 20,
                        distance: (Double, Double) => Double = (a, b) => math.abs(a - b)): Double = {
     def getTimeSeries(s: Simulation) = {
       Main.initializeSimulation(s)
       for (_ <- 1 to iterations) yield {
-        Main.callSimulation(s, 1)
+        Main.callSimulation(s, step)
         f(s)
       }
     }

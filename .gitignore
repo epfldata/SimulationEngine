@@ -5,5 +5,9 @@ target/
 # conda env config file
 *.cfg
 
-# plots and figures
-*.png
+# plots, figures and ...
+results/
+
+# models and parameters
+*.json
+

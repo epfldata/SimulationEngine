@@ -25,7 +25,7 @@ case class Viz(f: Simulation => Seq[Double], var params: Map[String, Double]) {
     p += plot(x, y)
     p.xlabel = s"$param"
     p.ylabel = "f"
-    figure.saveas("plotOverParam2.png")
+    figure.saveas(s"results/plotOver$param.png")
   }
 
   def plotSimOverTime(bounds: (Int, Int),
@@ -45,6 +45,6 @@ case class Viz(f: Simulation => Seq[Double], var params: Map[String, Double]) {
     p += plot(t, y)
     p.xlabel = "time"
     p.ylabel = "f"
-    figure.saveas("plotOverTime.png")
+    figure.saveas("results/plotOverTime.png")
   }
 }
