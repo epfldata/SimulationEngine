@@ -1,6 +1,7 @@
 
 package Owner {
 
+  import GLOBAL.{print, println}
 
 object TheBank { // Could be a Factory[Debit => Credit]
   var capital = 0;

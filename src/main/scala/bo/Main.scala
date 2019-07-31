@@ -6,19 +6,24 @@ import Securities.{Flour, Land}
 import Simulation.SimLib.{Buyer, Mill}
 import Simulation.{Person, Simulation}
 import _root_.Simulation.SimLib.{Farm, Source}
-import spray.json.{JsNumber, JsObject, JsonParser}
+import breeze.stats.distributions.Gaussian
+import spray.json.{JsObject, JsonParser}
+
+import scala.util.Random
 
 object Main {
   val outputFromState: Simulation => Seq[Double] = s => List(s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum)
-
+  println()
   val numberOfSims = 120
-  val bounds: Seq[(Int, Int)] = for(_ <- 1 to numberOfSims) yield (0, 100)
+
+  val inputGenerator: () => Seq[Int] = () => List(Random.nextInt(100000000) + 50, Random.nextInt(100000))
 
   def metrics(params: Map[String, Double])(xs: Seq[Int]): Seq[Double] = {
     val s = new Simulation(params)
     initializeSimulation(s)
-    s.sims.zip(xs).foreach(t => t._1.capital = t._2)
-    callSimulation(s, 1000)
+    val capitals = Gaussian(xs.head, xs.last).sample(s.sims.length)
+    s.sims.zip(capitals).foreach(t => t._1.capital = t._2.round.toInt)
+    callSimulation(s, 300)
     outputFromState(s)
   }
 
@@ -29,23 +34,38 @@ object Main {
 
     val jsonAst = JsonParser(jsonString)
     val params = jsonAst.asInstanceOf[JsObject].fields.mapValues(_.toString().toDouble)
+
+    def readPairs(ratio: Double, isTraining: Boolean = true) = {
+      val file = scala.io.Source.fromFile("target/scala-2.11/xypairs")
+      val lines = file.getLines().toList
+      val Xs = lines.filter(_.startsWith("x:")).map(_.substring(2).split(' ').map(_.toInt))
+      val Ys = lines.filter(_.startsWith("y:")).map(_.substring(2).split(' ').map(_.toDouble))
+      val from = if (isTraining) 0 else (Xs.length * ratio).round.toInt
+      val to = if (isTraining) (Xs.length * ratio).round.toInt else Xs.length
+      (Xs.slice(from, to), Ys.slice(from, to))
+    }
+
     args(0) match {
       case "generate" =>
-        BOUtil.generateXYPairs("target/scala-2.11/xypairs", bounds, metrics, params, 1)
+        BOUtil.generateXYPairs("target/scala-2.11/xypairs", inputGenerator, metrics, params, 20)
+
       case "evaluate" =>
-        val file = scala.io.Source.fromFile("target/scala-2.11/xypairs")
-        val lines = file.getLines().toList
-        val Xs = lines.filter(_.startsWith("x:")).map(_.substring(2).split(' ').map(_.toInt))
-        val Ys = lines.filter(_.startsWith("y:")).map(_.substring(2).split(' ').map(_.toDouble))
-        println(BOUtil.error(Xs, Ys, metrics(params)))
+        val trainTestRatio = args(2).toDouble
+        val pairs = readPairs(trainTestRatio)
+        println(BOUtil.error(pairs._1, pairs._2, metrics(params)))
+
+      case "test" =>
+        val trainTestRatio = args(2).toDouble
+        val pairs = readPairs(trainTestRatio, isTraining = false)
+        println(BOUtil.error(pairs._1, pairs._2, metrics(params)) / pairs._2.map(_.sum).sum)
 
       case "lyapunov" =>
-        println(ChaosTest(outputFromState, params).lyapunovExponent("foodUnitsMu"))
+        println(ChaosTest(outputFromState, params).lyapunovExponent(args(2)))
 
       case "plot" =>
         val visulizer = Viz(outputFromState, params)
-        visulizer.plotSimOverTime((0, 1000))
-        visulizer.plotSimOverParam("foodUnitsMu", (0, 100), runSimTill = 100)
+//        visulizer.plotSimOverTime((0, 300), 300)
+          visulizer.plotSimOverParam(args(2), (0, 100), runSimTill = 300)
     }
   }
 
@@ -54,6 +74,7 @@ object Main {
       Console.setOut(new PrintStream(new FileOutputStream("target/scala-2.11/initLog")))
 
     GLOBAL.silent = true
+    GLOBAL.strongSilence = true
     val f = new Farm(s)
     val m = new Mill(s)
     //val c   = new Cinema(s);

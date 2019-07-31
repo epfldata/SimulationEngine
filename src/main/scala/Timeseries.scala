@@ -1,5 +1,6 @@
 package Timeseries {
 
+  import GLOBAL.{print, println}
 
 class Timeseries[T](_from: Int, _to: Int, _fn: Int => T) {
   def from = _from

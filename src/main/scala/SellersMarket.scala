@@ -1,6 +1,7 @@
 package Owner {
 import Securities._
 import Timeseries._
+import GLOBAL.{print, println}
 
 
 case class SalesRecord(

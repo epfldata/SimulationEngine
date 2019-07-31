@@ -4,6 +4,7 @@ import Securities._
 import Simulation._
 import code._
 
+import GLOBAL.{print, println}
 
 class MarketMaker(security: Security,
                   shared: Simulation

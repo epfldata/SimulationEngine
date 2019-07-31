@@ -1,5 +1,6 @@
 package Timeseries;
 
+import GLOBAL.{print, println}
 
 case class LogList[T](
   var l : List[(Int, T)] = List[(Int, T)](),

@@ -1,3 +1,5 @@
+import GLOBAL.{print, println}
+
 package Securities {
   import breeze.stats.distributions._
 

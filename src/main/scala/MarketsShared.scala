@@ -1,6 +1,7 @@
 package Markets;
 import Owner._;
 
+import GLOBAL.{print, println}
 
 trait MarketMatchingUtilities[L] {
   type mm_match_t = (Int,    L);

@@ -1,5 +1,7 @@
 package code.multithreading
 
+import GLOBAL.{print, println}
+
 
 trait Precursor[T, A] {
   def start(start_time: T) : A

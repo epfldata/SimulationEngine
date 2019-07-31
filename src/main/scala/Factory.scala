@@ -3,6 +3,7 @@ import Owner._
 import Simulation._
 import code._
 import Securities._
+import GLOBAL.{print, println}
 
 case class ProductionLineSpec(employees_needed: Int,
                               required: List[(Commodity, Int)],

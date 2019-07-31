@@ -2,6 +2,7 @@ package Simulation
 import Simulation.SimLib._
 import Securities._
 
+import GLOBAL.{print, println}
 
 object MainExample {
   val s = new Simulation;

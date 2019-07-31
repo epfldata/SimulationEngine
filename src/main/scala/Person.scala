@@ -1,7 +1,7 @@
 package Simulation
 import Securities._
 import code._
-
+import GLOBAL.{print, println}
 
 class Person(
   val shared: Simulation,

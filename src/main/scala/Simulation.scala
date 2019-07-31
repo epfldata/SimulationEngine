@@ -3,6 +3,7 @@ import Markets._
 import Owner._
 import Securities._
 import breeze.stats.distributions.Gaussian
+import GLOBAL.{print, println}
 
 
 class Simulation(val params: Map[String, Double]) {

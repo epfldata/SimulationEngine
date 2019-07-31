@@ -15,7 +15,7 @@ object BOUtil {
     */
   def error(Xs: Seq[Array[Int]],
             Ys: Seq[Array[Double]],
-            f:  Seq[Int] => Seq[Double],
+            f: Seq[Int] => Seq[Double],
             distance: (Double, Double) => Double = (y1, y2) => math.abs(y2 - y1)): Double = {
     val numberOfXYPairs = Xs.size
     Xs.zip(Ys).map {
@@ -55,14 +55,14 @@ object BOUtil {
   /**
     * Generates input/output pairs as a data to begin optimization with
     *
-    * @param fileName the file where parameter values and input/output pairs made with it will be written
-    * @param bounds   input(predictor) data will be randomly generated within the given bounds
-    * @param f        the function to be applied to input(params and predictor) and result the output(target) values
-    * @param params   The params for the simulation
+    * @param fileName       the file where parameter values and input/output pairs made with it will be written
+    * @param inputGenerator the random generator of the input(predictor) values
+    * @param f              the function to be applied to input(params and predictor) and result the output(target) values
+    * @param params         The params for the simulation
     * @param numberOfXYPairs
     */
   def generateXYPairs(fileName: String,
-                      bounds: Seq[(Int, Int)],
+                      inputGenerator: () => Seq[Int],
                       f: Map[String, Double] => Seq[Int] => Seq[Double],
                       params: Map[String, Double],
                       numberOfXYPairs: Int): Unit = {
@@ -72,14 +72,11 @@ object BOUtil {
         fileWriter.write(s"$param: $value\t")
     }
     fileWriter.write("\n")
-    for (_ <- 1 to numberOfXYPairs) {
+    for (i <- 1 to numberOfXYPairs) {
+      println(s"Generating pair number $i")
       fileWriter.write("x:")
-      var xs: List[Int] = Nil
-      bounds.foreach {
-        case (low, high) =>
-          xs = (GLOBAL.rnd.nextInt(high - low + 1) + low) :: xs
-          fileWriter.write(xs.head + " ")
-      }
+      val xs = inputGenerator()
+      xs.foreach(x => fileWriter.write(x + " "))
       fileWriter.write("\n")
       fileWriter.write("y:")
       f(params)(xs).foreach(metric => fileWriter.write(metric + " "))

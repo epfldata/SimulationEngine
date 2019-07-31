@@ -1,3 +1,5 @@
+import GLOBAL.{print, println}
+
 package code {
 
 

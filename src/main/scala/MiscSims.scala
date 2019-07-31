@@ -3,7 +3,7 @@ import Securities._
 import Simulation._
 import _root_.Simulation.Factory._
 import code._
-
+import GLOBAL.{print, println}
 
 class Source(commodity: Commodity, units: Int, p: Int,
              shared: Simulation) extends

@@ -1,6 +1,7 @@
 package Simulation
 import code._
 import Owner._
+import GLOBAL.{print, println}
 
 
 trait Sim {
