@@ -2,7 +2,8 @@ package Simulation
 import Markets._
 import Owner._
 import Securities._
-import breeze.stats.distributions.Gaussian
+import breeze.stats.distributions.{Gaussian, RandBasis, ThreadLocalRandomGenerator}
+import org.apache.commons.math3.random.MersenneTwister
 import GLOBAL.{print, println}
 
 
@@ -10,9 +11,19 @@ class Simulation(val params: Map[String, Double]) {
   def this() = this(Map())
 
   var timer = 0;
-  val distributions: Map[String, Gaussian] = Map(
-    ("food", new Gaussian(params("foodUnitsMu"), params("foodUnitsSigma")))
-  )
+
+  implicit val randBasis: RandBasis = new RandBasis(new ThreadLocalRandomGenerator(new MersenneTwister(19)))
+  def distributions(sim: Sim): Map[String, Gaussian] = sim match {
+    case person: Person =>
+      val gender = if (person.male) "male" else "female"
+      val addFood = if (person.happiness < 0) 1 else 0
+      Map(
+        ("food", new Gaussian(params(gender + "FoodMu") + addFood, params(gender + "FoodSigma"))),
+        ("edu", new Gaussian(params(gender + "EduMu"), params(gender + "EduSigma"))),
+        ("bonusSal", new Gaussian(params(gender + "BonusSalMu"), params(gender + "BonusSalSigma")))
+      )
+    case _ => Map()
+  }
 
   val market = collection.mutable.Map[Commodity, SellersMarket]();
   for(c <- all_commodities) {

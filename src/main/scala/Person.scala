@@ -10,6 +10,12 @@ class Person(
   var log : List[String] = List()
 ) extends SimO(shared) {
 
+  val male = GLOBAL.rnd.nextBoolean()
+
+  // between 1 and 10
+  var education = math.max(1, math.min(10, shared.distributions(this)("edu").sample.round.toInt))
+  private val bonusSalDistr = shared.distributions(this)("bonusSal")
+
   def mycopy(_shared: Simulation,
              _substitution: collection.mutable.Map[SimO, SimO]) = {
     val p = new Person(_shared, active, happiness, log);
@@ -22,6 +28,8 @@ class Person(
         (Burger -> Map("calories" -> 500)));
 
   private val foodstuffs = List(Flour, Burger);
+
+  def bonusSalary(): Int = bonusSalDistr.sample.round.toInt * education
 
   // TODO: factor in bounded rationality: far-off rewards are to be discounted
   private def expected_enjoyment(item: Commodity) : Int = {
@@ -48,7 +56,7 @@ class Person(
         happiness -= 100; // hunger
 
         // assert(market(food).is_at_time(shared.timer));
-        val foodUnits = math.max(1, shared.distributions("food").sample().round).toInt
+        val foodUnits = math.max(1, shared.distributions(this)("food").sample().round).toInt
         println("Food units: " + foodUnits)
         val foodLeftOver = shared.market(food).market_buy_order_now(shared.timer, this, foodUnits);
            // needs to eat

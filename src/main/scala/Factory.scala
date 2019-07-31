@@ -108,7 +108,7 @@ case class HR(private val shared: Simulation,
               employees: collection.mutable.Stack[Person] =
                          collection.mutable.Stack[Person]()
 ) {
-  def pay_workers() { for(a <- employees) o.transfer_money_to(a, salary); }
+  def pay_workers() { for(a <- employees) o.transfer_money_to(a, salary + a.bonusSalary()); }
   def salary_cost() = salary * employees.length
 
   protected def hire_one() {
