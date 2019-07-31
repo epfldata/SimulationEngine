@@ -9,14 +9,12 @@ import _root_.Simulation.SimLib.{Farm, Source}
 import breeze.stats.distributions.Gaussian
 import spray.json.{JsObject, JsonParser}
 
-import scala.util.Random
-
 object Main {
   val outputFromState: Simulation => Seq[Double] = s => List(s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum)
   println()
   val numberOfSims = 120
 
-  val inputGenerator: () => Seq[Int] = () => List(Random.nextInt(100000000) + 50, Random.nextInt(100000))
+  val inputGenerator: () => Seq[Int] = () => List(GLOBAL.rnd.nextInt(100000000) + 50, GLOBAL.rnd.nextInt(100000))
 
   def metrics(params: Map[String, Double])(xs: Seq[Int]): Seq[Double] = {
     val s = new Simulation(params)
@@ -52,12 +50,12 @@ object Main {
       case "evaluate" =>
         val trainTestRatio = args(2).toDouble
         val pairs = readPairs(trainTestRatio)
-        println(BOUtil.error(pairs._1, pairs._2, metrics(params)))
+        println(BOUtil.meanRelativeError(pairs._1, pairs._2, metrics(params)))
 
       case "test" =>
         val trainTestRatio = args(2).toDouble
         val pairs = readPairs(trainTestRatio, isTraining = false)
-        println(BOUtil.error(pairs._1, pairs._2, metrics(params)) / pairs._2.map(_.sum).sum)
+        println(BOUtil.meanRelativeError(pairs._1, pairs._2, metrics(params)))
 
       case "lyapunov" =>
         println(ChaosTest(outputFromState, params).lyapunovExponent(args(2)))

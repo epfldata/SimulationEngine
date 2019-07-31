@@ -5,24 +5,22 @@ import java.io.FileWriter
 object BOUtil {
 
   /**
-    * Calculates the error between f(x) and y
+    * Calculates the mean relative error between f(x) and y
     *
     * @param Xs       a sequence of predictor inputs (each input can be a vector-like itself)
     * @param Ys       a sequence of target values (each target value can be a vector-like itself)
     * @param f        the function to be applied on predictor inputs
-    * @param distance the distance measure for calculating the error
     * @return
     */
-  def error(Xs: Seq[Array[Int]],
-            Ys: Seq[Array[Double]],
-            f: Seq[Int] => Seq[Double],
-            distance: (Double, Double) => Double = (y1, y2) => math.abs(y2 - y1)): Double = {
-    val numberOfXYPairs = Xs.size
+  def meanRelativeError(Xs: Seq[Array[Int]],
+                        Ys: Seq[Array[Double]],
+                        f: Seq[Int] => Seq[Double]): Double = {
+    val avgY = Ys.map(_.sum).sum / Ys.size
     Xs.zip(Ys).map {
       case (xs, ys) =>
         val results = f(xs)
-        results.zip(ys).map(t => distance(t._1, t._2)).sum / numberOfXYPairs
-    }.sum
+        results.zip(ys).map(t => math.abs(t._1 - t._2)).sum
+    }.sum / Ys.map(ys => math.abs(ys.sum - avgY)).sum
   }
 
   /**
