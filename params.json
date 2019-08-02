@@ -1,0 +1,30 @@
+{
+  "maleFoodMu": 2.0,
+  "maleFoodSigma": 1.0,
+  "femaleFoodMu": 1.0,
+  "femaleFoodSigma": 1.0,
+
+  "maleEduMu": 6.0,
+  "maleEduSigma": 1.0,
+  "femaleEduMu": 5.0,
+  "femaleEduSigma": 1.0,
+
+  "maleBonusSalMu": 100.0,
+  "maleBonusSalSigma": 10.0,
+  "femaleBonusSalMu": 80.0,
+  "femaleBonusSalSigma": 7.0,
+
+  "factorySalaryMu": 28000.0,
+  "factorySalarySigma": 200.0,
+  "farmSalaryMu": 20000.0,
+  "farmSalarySigma": 100.0,
+  "millSalaryMu": 25000.0,
+  "millSalarySigma": 150.0,
+
+  "factoryItersMu": 10.0,
+  "factoryItersSigma": 1.0,
+  "farmItersMu": 7.0,
+  "farmItersSigma": 0.8,
+  "millItersMu": 9.0,
+  "millItersSigma": 1.0
+}

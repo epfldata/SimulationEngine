@@ -25,7 +25,7 @@ def runCmd(cmd):
     rc = process.wait()
     if rc != 0:
         print("Error: failed to execute command:", cmd)
-        print(result, error)
+        print(result.decode("utf-8"), error.decode("utf-8"))
         sys.exit(rc)
     return result
 
@@ -36,7 +36,7 @@ f.close()
 
 runCmd("sbt clean compile")
 runCmd('sbt "run generate ' + json_original + '"')
-pbounds = {param: (0, 20) for param in params}
+pbounds = {param: (0, 10 ** 6) for param in params}
 optimizer = BayesianOptimization(black_box_function, pbounds, 10)
 optimizer.maximize(init_points=10, n_iter=25, acq="poi")
 print(optimizer.max)

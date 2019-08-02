@@ -129,8 +129,9 @@ class Factory(pls: ProductionLineSpec,
   var pl : List[ProductionLine] = List()
   private var zombie_cost2 : Double = 0.0 // cost from canceled prod. runs
   var prev_mgmt_action : Int = 0
-  protected var hr : HR = new HR(shared, this)
+  protected var hr : HR = HR(shared, this, shared.distributions(this)("salary").sample.round.toInt)
   protected var goal_num_pl = 0;
+  private var nestedSimIters = shared.distributions(this)("iters").sample.round.toInt
 
   // constructor
   {
@@ -153,6 +154,7 @@ class Factory(pls: ProductionLineSpec,
        hr.employees.map(old2new(_).asInstanceOf[Person])
        );
     _to.goal_num_pl = goal_num_pl;
+    _to.nestedSimIters = nestedSimIters
   }
   def mycopy(_shared: Simulation,
              _substitution: collection.mutable.Map[SimO, SimO]) = {
@@ -310,7 +312,7 @@ class Factory(pls: ProductionLineSpec,
     if(suitable_num_pl >= 1) {
       println(this + ": First nested simulation starts.");
       goal_num_pl = suitable_num_pl;
-      val old2new1 = shared.run_sim(10);
+      val old2new1 = shared.run_sim(nestedSimIters);
       val future_self1 = old2new1(this).asInstanceOf[Factory];
       future_self1.stat;
       println(this + ": First nested simulation ends.");
@@ -318,7 +320,7 @@ class Factory(pls: ProductionLineSpec,
       println(this + ": Second nested simulation starts.");
       //run simulation to see whether this is better.
       goal_num_pl -= 1;
-      val old2new2 = shared.run_sim(10);
+      val old2new2 = shared.run_sim(nestedSimIters);
       val future_self2 = old2new2(this).asInstanceOf[Factory];
       future_self2.stat;
       goal_num_pl += 1;

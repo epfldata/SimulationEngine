@@ -5,6 +5,8 @@ import Securities._
 import breeze.stats.distributions.{Gaussian, RandBasis, ThreadLocalRandomGenerator}
 import org.apache.commons.math3.random.MersenneTwister
 import GLOBAL.{print, println}
+import Simulation.Factory.Factory
+import Simulation.SimLib.{Farm, Mill}
 
 
 class Simulation(val params: Map[String, Double]) {
@@ -22,6 +24,18 @@ class Simulation(val params: Map[String, Double]) {
         ("edu", new Gaussian(params(gender + "EduMu"), params(gender + "EduSigma"))),
         ("bonusSal", new Gaussian(params(gender + "BonusSalMu"), params(gender + "BonusSalSigma")))
       )
+
+    case factory: Factory =>
+      val factoryType = factory match {
+        case _: Farm => "farm"
+        case _: Mill => "mill"
+        case _ => "factory"
+      }
+      Map(
+        ("salary", new Gaussian(params(factoryType + "SalaryMu"), params(factoryType + "SalarySigma"))),
+        ("iters", new Gaussian(params(factoryType + "ItersMu"), params(factoryType + "ItersSigma")))
+      )
+
     case _ => Map()
   }
 

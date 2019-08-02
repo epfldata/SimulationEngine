@@ -10,4 +10,5 @@ results/
 
 # models and parameters
 *.json
+!params.json
 

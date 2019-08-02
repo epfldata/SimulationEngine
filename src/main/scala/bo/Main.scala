@@ -12,7 +12,7 @@ import spray.json.{JsObject, JsonParser}
 object Main {
   val outputFromState: Simulation => Seq[Double] = s => List(s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum)
   println()
-  val numberOfSims = 120
+  val numberPeople = 120
 
   val inputGenerator: () => Seq[Int] = () => List(GLOBAL.rnd.nextInt(100000000) + 50, GLOBAL.rnd.nextInt(100000))
 
@@ -85,7 +85,7 @@ object Main {
     //val billa         = new Trader(Flour, 50, s);
     val mehlbuyer = Buyer(Flour, () => 40, s)
 
-    val people = for (x <- 1 to numberOfSims) yield new Person(s, true)
+    val people = for (x <- 1 to numberPeople) yield new Person(s, true)
 
     s.init(List(
       landlord,
