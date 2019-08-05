@@ -12,3 +12,5 @@ results/
 *.json
 !params.json
 
+# debug
+debug/

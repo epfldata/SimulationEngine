@@ -14,11 +14,11 @@
   "femaleBonusSalMu": 80.0,
   "femaleBonusSalSigma": 7.0,
 
-  "factorySalaryMu": 28000.0,
+  "factorySalaryMu": 2800000.0,
   "factorySalarySigma": 200.0,
-  "farmSalaryMu": 20000.0,
+  "farmSalaryMu": 2000000.0,
   "farmSalarySigma": 100.0,
-  "millSalaryMu": 25000.0,
+  "millSalaryMu": 2500000.0,
   "millSalarySigma": 150.0,
 
   "factoryItersMu": 10.0,

@@ -60,10 +60,19 @@ object Main {
       case "lyapunov" =>
         println(ChaosTest(outputFromState, params).lyapunovExponent(args(2)))
 
-      case "plot" =>
-        val visulizer = Viz(outputFromState, params)
-//        visulizer.plotSimOverTime((0, 300), 300)
-          visulizer.plotSimOverParam(args(2), (0, 100), runSimTill = 300)
+      case "plot-time" =>
+        val visualizer = Viz(outputFromState, params)
+        val from = if (args.length > 2) args(2).toInt else 0
+        val to = if (args.length > 3) args(3).toInt else 300
+        val points = if (args.length > 4) args(4).toInt else 300
+        visualizer.plotSimOverTime((from, to), points)
+
+      case "plot-param" =>
+        val visualizer = Viz(outputFromState, params)
+        val from = if (args.length > 3) args(3).toInt else 0
+        val to = if (args.length > 4) args(4).toInt else 100
+        val simIters = if (args.length > 5) args(5).toInt else 300
+        visualizer.plotSimOverParam(args(2), (from, to), runSimTill = simIters)
     }
   }
 
