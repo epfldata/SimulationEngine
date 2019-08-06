@@ -15,12 +15,27 @@ object BOUtil {
   def meanRelativeError(Xs: Seq[Array[Int]],
                         Ys: Seq[Array[Double]],
                         f: Seq[Int] => Seq[Double]): Double = {
-    val avgY = Ys.map(_.sum).sum / Ys.size
-    Xs.zip(Ys).map {
-      case (xs, ys) =>
-        val results = f(xs)
-        results.zip(ys).map(t => math.abs(t._1 - t._2)).sum
-    }.sum / Ys.map(ys => math.abs(ys.sum - avgY)).sum
+    val measuresPerRun: Seq[Seq[Double]] = Xs.map(f(_))  // contains for each run the measurements
+    val predictedPerMeasure: Seq[Seq[Double]] = extractRunsPerMeasure(measuresPerRun)
+    val actualPerMeasure: Seq[Seq[Double]] = extractRunsPerMeasure(Ys.map(_.toSeq))
+    val errors: Seq[Double] = predictedPerMeasure.zip(actualPerMeasure).map{
+      case (predicted, actual) => meanRelativeError(predicted, actual)}
+    errors.sum / errors.size
+  }
+
+  /**
+   * Simple: Turns a List(List(1,2), List(1,2)) into a List(List(1,1), List(2,2))
+   * @return all runs indexed by measure, e.g. index 0 contains for 1st measure list of all run results
+   */
+  private def extractRunsPerMeasure(measuresPerRun: Seq[Seq[Double]]): Seq[Seq[Double]] = {
+    val indices = measuresPerRun.indices
+    val runsPerMeasureMap: Map[Int, Seq[(Int, Double)]] = measuresPerRun.flatMap(measures => indices.zip(measures)).groupBy(_._1)
+    runsPerMeasureMap.mapValues(list => list.map(_._2)).toSeq.sortBy(_._1).map(_._2)
+  }
+
+  private def meanRelativeError(predicted: Seq[Double], actuals: Seq[Double]): Double = {
+    val avg = actuals.sum / actuals.size
+    predicted.zip(actuals).map{case (p, a) => Math.abs(p - a)}.sum / actuals.map(a => math.abs(a - avg)).sum
   }
 
   /**

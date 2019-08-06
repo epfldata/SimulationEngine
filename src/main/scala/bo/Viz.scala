@@ -1,7 +1,7 @@
 package bo
 
 import Simulation.Simulation
-import breeze.linalg.linspace
+import breeze.linalg.{DenseVector, linspace}
 import breeze.plot.{Figure, plot}
 
 case class Viz(f: Simulation => Seq[Double], var params: Map[String, Double]) {
@@ -11,18 +11,20 @@ case class Viz(f: Simulation => Seq[Double], var params: Map[String, Double]) {
                        numberOfPoints: Int = 100,
                        runSimTill: Int = 1000): Unit = {
     val x = linspace(bounds._1, bounds._2, numberOfPoints)
-    val y = x.map(value => {
+    val ys: DenseVector[Seq[Double]] = x.map(value => {
       println(s"running sim for param $value")
       params += param -> value
       val s = new Simulation(params)
       Main.initializeSimulation(s)
       Main.callSimulation(s, runSimTill)
-      f(s).head
+      f(s)
     }).toDenseVector
 
     val figure = Figure()
     val p = figure.subplot(0)
-    p += plot(x, y)
+    for (i <- ys(1).indices) {
+      p += plot(x, ys.map(seq => seq(i)))
+    }
     p.xlabel = s"$param"
     p.ylabel = "f"
     figure.saveas(s"results/plotOver$param.png")

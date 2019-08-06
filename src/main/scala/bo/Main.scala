@@ -1,20 +1,25 @@
 package bo
 
-import java.io.{FileDescriptor, FileOutputStream, PrintStream}
+import java.io.{BufferedOutputStream, FileDescriptor, FileOutputStream, PrintStream}
 
 import Securities.{Flour, Land}
 import Simulation.SimLib.{Buyer, Mill}
 import Simulation.{Person, Simulation}
+import _root_.Simulation.Factory.Factory
 import _root_.Simulation.SimLib.{Farm, Source}
 import breeze.stats.distributions.Gaussian
 import spray.json.{JsObject, JsonParser}
 
 object Main {
-  val outputFromState: Simulation => Seq[Double] = s => List(s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum)
-  println()
   val numberPeople = 120
+  val bufferSize = math.pow(2, 29).toInt // 512 MB
+  val initLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/initLog"), bufferSize)
+  val runLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/runLog"), bufferSize)
 
-  val inputGenerator: () => Seq[Int] = () => List(GLOBAL.rnd.nextInt(100000000) + 50, GLOBAL.rnd.nextInt(100000))
+  def outputFromState(s: Simulation): Seq[Double] = List(
+    s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum,
+    s.sims.map{case f: Factory => f.pl.size; case _ => 0}.sum.toDouble / numberPeople.toDouble
+  )
 
   def metrics(params: Map[String, Double])(xs: Seq[Int]): Seq[Double] = {
     val s = new Simulation(params)
@@ -42,6 +47,8 @@ object Main {
       val to = if (isTraining) (Xs.length * ratio).round.toInt else Xs.length
       (Xs.slice(from, to), Ys.slice(from, to))
     }
+
+    val inputGenerator: () => Seq[Int] = () => List(GLOBAL.rnd.nextInt(100000000) + 50, GLOBAL.rnd.nextInt(100000))
 
     args(0) match {
       case "generate" =>
@@ -74,11 +81,14 @@ object Main {
         val simIters = if (args.length > 5) args(5).toInt else 300
         visualizer.plotSimOverParam(args(2), (from, to), runSimTill = simIters)
     }
+
+    initLog.flush()
+    runLog.flush()
   }
 
   def initializeSimulation(s: Simulation, mute: Boolean = true): Unit = {
     if (mute)
-      Console.setOut(new PrintStream(new FileOutputStream("target/scala-2.11/initLog")))
+      Console.setOut(initLog)
 
     GLOBAL.silent = true
     GLOBAL.strongSilence = true
@@ -111,7 +121,7 @@ object Main {
 
   def callSimulation(s: Simulation, iterations: Int, mute: Boolean = true): Unit = {
     if (mute)
-      Console.setOut(new PrintStream(new FileOutputStream("target/scala-2.11/runLog")))
+      Console.setOut(runLog)
 
     s.run(iterations)
 
