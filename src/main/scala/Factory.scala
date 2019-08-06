@@ -131,7 +131,7 @@ class Factory(pls: ProductionLineSpec,
   var prev_mgmt_action : Int = 0
   protected var hr : HR = HR(shared, this, shared.distributions(this)("salary").sample.round.toInt)
   protected var goal_num_pl = 0;
-  private var nestedSimIters = shared.distributions(this)("iters").sample.round.toInt
+  private var nestedSimIters = math.max(0, math.min(20, shared.distributions(this)("iters").sample.round.toInt))
 
   // constructor
   {

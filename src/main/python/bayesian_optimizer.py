@@ -4,6 +4,7 @@ import os, sys, json
 
 os.chdir('../../..')  # going to the root of the project
 json_original = 'params.json'
+json_optimize = "optimize.json"
 json_temp = 'temp.json'
 json_result = 'result.json'
 train_test_ratio = 0.75
@@ -35,10 +36,19 @@ f = open(json_original, "r")
 all_params = json.loads(f.read())
 f.close()
 
+f = open(json_optimize, "r")
+params = json.loads(f.read())
+f.close()
+
 runCmd("sbt clean compile")
 runCmd('sbt "run generate ' + json_original + '"')
-
-pbounds = {param: (0, 100) for param in sys.argv[1:]}
+pbounds = {
+    **{food: (0, 10) for food in params if "food" in food.lower()},
+    **{edu: (1, 10) for edu in params if "edu" in edu.lower()},
+    **{bonusSal: (0, 1000) for bonusSal in params if "bonussal" in bonusSal.lower()},
+    **{salary: (10 ** 4, 10 ** 6) for salary in params if "salary" in salary.lower()},
+    **{iters: (0, 20) for iters in params if "iters" in iters.lower()}
+}
 optimizer = BayesianOptimization(black_box_function, pbounds, 10)
 optimizer.maximize(init_points=10, n_iter=25, acq="poi")
 print(optimizer.max)

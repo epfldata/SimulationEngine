@@ -20,6 +20,8 @@ object Main {
     s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum,
     s.sims.map{case f: Factory => f.pl.size; case _ => 0}.sum.toDouble / numberPeople.toDouble
   )
+  private val outputNames = Array("CapitalSum", "EmploymentRate")
+  private val outputRanges = Array((Double.MinValue / 2, Double.MaxValue / 2), (0.0, 1.0))
 
   def metrics(params: Map[String, Double])(xs: Seq[Int]): Seq[Double] = {
     val s = new Simulation(params)
@@ -68,14 +70,14 @@ object Main {
         println(ChaosTest(outputFromState, params).lyapunovExponent(args(2)))
 
       case "plot-time" =>
-        val visualizer = Viz(outputFromState, params)
+        val visualizer = Viz(outputFromState, outputNames, outputRanges, params)
         val from = if (args.length > 2) args(2).toInt else 0
         val to = if (args.length > 3) args(3).toInt else 300
         val points = if (args.length > 4) args(4).toInt else 300
         visualizer.plotSimOverTime((from, to), points)
 
       case "plot-param" =>
-        val visualizer = Viz(outputFromState, params)
+        val visualizer = Viz(outputFromState, outputNames, outputRanges, params)
         val from = if (args.length > 3) args(3).toInt else 0
         val to = if (args.length > 4) args(4).toInt else 100
         val simIters = if (args.length > 5) args(5).toInt else 300
