@@ -9,8 +9,9 @@ json_result = 'result.json'
 train_test_ratio = 0.75
 
 def black_box_function(**params):
+    all_params.update(params)
     f = open(json_temp, "w")
-    f.write(json.dumps(params))
+    f.write(json.dumps(all_params))
     f.close()
 
     result = runCmd('sbt --warn "run evaluate ' + json_temp + ' ' + str(train_test_ratio) + '"')
@@ -31,18 +32,20 @@ def runCmd(cmd):
 
 
 f = open(json_original, "r")
-params = json.loads(f.read())
+all_params = json.loads(f.read())
 f.close()
 
 runCmd("sbt clean compile")
 runCmd('sbt "run generate ' + json_original + '"')
-pbounds = {param: (0, 10 ** 6) for param in params}
+
+pbounds = {param: (0, 100) for param in sys.argv[1:]}
 optimizer = BayesianOptimization(black_box_function, pbounds, 10)
 optimizer.maximize(init_points=10, n_iter=25, acq="poi")
 print(optimizer.max)
 
+all_params.update(optimizer.max['params'])
 f = open(json_result, "w")
-f.write(json.dumps(optimizer.max['params']))
+f.write(json.dumps(all_params))
 f.close()
 
 print(runCmd('sbt --warn "run test ' + json_result + ' ' + str(train_test_ratio) + '"'))

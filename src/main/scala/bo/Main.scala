@@ -12,7 +12,7 @@ import spray.json.{JsObject, JsonParser}
 
 object Main {
   val numberPeople = 120
-  val bufferSize = math.pow(2, 29).toInt // 512 MB
+  val bufferSize = math.pow(2, 27).toInt // 128 MB
   val initLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/initLog"), bufferSize)
   val runLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/runLog"), bufferSize)
 
