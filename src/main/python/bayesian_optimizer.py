@@ -1,4 +1,4 @@
-from bayes_opt import BayesianOptimization
+from bayes_opt import BayesianOptimization, UtilityFunction
 import subprocess
 import os, sys, json
 
@@ -48,8 +48,16 @@ pbounds = {
     **{salary: (10 ** 4, 10 ** 6) for salary in params if "salary" in salary.lower()},
     **{iters: (0, 20) for iters in params if "iters" in iters.lower()}
 }
-optimizer = BayesianOptimization(black_box_function, pbounds, 10)
-optimizer.maximize(init_points=10, n_iter=25, acq="poi")
+
+optimizer = BayesianOptimization(None, pbounds, 10)
+utility = UtilityFunction(kind="ucb", kappa=2.5, xi=0.0)
+for i in range(20):
+    print("iteration:", i)
+    next_point = optimizer.suggest(utility)
+    target = black_box_function(**next_point)
+    optimizer.register(params=next_point, target=target)
+    print()
+
 print(optimizer.max)
 
 all_params.update(optimizer.max['params'])
