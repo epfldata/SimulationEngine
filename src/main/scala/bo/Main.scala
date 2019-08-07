@@ -1,13 +1,12 @@
 package bo
 
-import java.io.{BufferedOutputStream, FileDescriptor, FileOutputStream, PrintStream}
+import java.io.{BufferedOutputStream, FileDescriptor, FileOutputStream, FileWriter, PrintStream}
 
 import Securities.{Flour, Land}
 import Simulation.SimLib.{Buyer, Mill}
 import Simulation.{Person, Simulation}
 import _root_.Simulation.Factory.Factory
 import _root_.Simulation.SimLib.{Farm, Source}
-import breeze.stats.distributions.Gaussian
 import spray.json.{JsObject, JsonParser}
 
 object Main {
@@ -23,11 +22,9 @@ object Main {
   private val outputNames = Array("CapitalSum", "EmploymentRate")
   private val outputRanges = Array((Double.MinValue / 2, Double.MaxValue / 2), (0.0, 1.0))
 
-  def metrics(params: Map[String, Double])(xs: Seq[Int]): Seq[Double] = {
+  def simFunction(params: Map[String, Double]): Seq[Double] = {
     val s = new Simulation(params)
     initializeSimulation(s)
-    val capitals = Gaussian(xs.head, xs.last).sample(s.sims.length)
-    s.sims.zip(capitals).foreach(t => t._1.capital = t._2.round.toInt)
     callSimulation(s, 300)
     outputFromState(s)
   }
@@ -40,31 +37,17 @@ object Main {
     val jsonAst = JsonParser(jsonString)
     val params = jsonAst.asInstanceOf[JsObject].fields.mapValues(_.toString().toDouble)
 
-    def readPairs(ratio: Double, isTraining: Boolean = true) = {
-      val file = scala.io.Source.fromFile("target/scala-2.11/xypairs")
-      val lines = file.getLines().toList
-      val Xs = lines.filter(_.startsWith("x:")).map(_.substring(2).split(' ').map(_.toInt))
-      val Ys = lines.filter(_.startsWith("y:")).map(_.substring(2).split(' ').map(_.toDouble))
-      val from = if (isTraining) 0 else (Xs.length * ratio).round.toInt
-      val to = if (isTraining) (Xs.length * ratio).round.toInt else Xs.length
-      (Xs.slice(from, to), Ys.slice(from, to))
-    }
-
-    val inputGenerator: () => Seq[Int] = () => List(GLOBAL.rnd.nextInt(100000000) + 50, GLOBAL.rnd.nextInt(100000))
-
     args(0) match {
       case "generate" =>
-        BOUtil.generateXYPairs("target/scala-2.11/xypairs", inputGenerator, metrics, params, 20)
+        val fileWriter = new FileWriter("target/scala-2.11/actuals")
+        simFunction(params).foreach(observable => fileWriter.write(observable + "\n"))
+        fileWriter.close()
 
       case "evaluate" =>
-        val trainTestRatio = args(2).toDouble
-        val pairs = readPairs(trainTestRatio)
-        println(BOUtil.meanRelativeError(pairs._1, pairs._2, metrics(params)))
-
-      case "test" =>
-        val trainTestRatio = args(2).toDouble
-        val pairs = readPairs(trainTestRatio, isTraining = false)
-        println(BOUtil.meanRelativeError(pairs._1, pairs._2, metrics(params)))
+        val file = scala.io.Source.fromFile("target/scala-2.11/actuals")
+        val actuals = file.getLines().toList.map(_.toDouble)
+        file.close()
+        println(Metrics.meanAbsoluteError(simFunction(params), actuals))
 
       case "lyapunov" =>
         println(ChaosTest(outputFromState, params).lyapunovExponent(args(2)))

@@ -7,7 +7,6 @@ json_original = 'params.json'
 json_optimize = "optimize.json"
 json_temp = 'temp.json'
 json_result = 'result.json'
-train_test_ratio = 0.75
 
 def black_box_function(**params):
     all_params.update(params)
@@ -15,7 +14,7 @@ def black_box_function(**params):
     f.write(json.dumps(all_params))
     f.close()
 
-    result = runCmd('sbt --warn "run evaluate ' + json_temp + ' ' + str(train_test_ratio) + '"')
+    result = runCmd('sbt --warn "run evaluate ' + json_temp + '"')
     print(result)
     return -float(result.decode("utf-8")[:-1])
 
@@ -57,5 +56,3 @@ all_params.update(optimizer.max['params'])
 f = open(json_result, "w")
 f.write(json.dumps(all_params))
 f.close()
-
-print(runCmd('sbt --warn "run test ' + json_result + ' ' + str(train_test_ratio) + '"'))
