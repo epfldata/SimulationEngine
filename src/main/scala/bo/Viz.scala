@@ -4,8 +4,7 @@ import Simulation.Simulation
 import breeze.linalg.{DenseVector, linspace, normalize}
 import breeze.plot.{Figure, plot}
 
-case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], outputRanges: Array[(Double, Double)],
-               var params: Map[String, Double]) {
+case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var params: Map[String, Double]) {
 
   def plotSimOverParam(param: String,
                        bounds: (Double, Double),
