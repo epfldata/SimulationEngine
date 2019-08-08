@@ -7,6 +7,7 @@ import Simulation.SimLib.{Buyer, Mill}
 import Simulation.{Person, Simulation}
 import _root_.Simulation.Factory.Factory
 import _root_.Simulation.SimLib.{Farm, Source}
+import breeze.stats.distributions.Gaussian
 import spray.json.{JsObject, JsonParser}
 
 object Main {
@@ -89,7 +90,9 @@ object Main {
     //val billa         = new Trader(Flour, 50, s);
     val mehlbuyer = Buyer(Flour, () => 40, s)
 
-    val people = for (x <- 1 to numberPeople) yield new Person(s, true)
+    val genderDistr = Gaussian(s.params("genderMu"), s.params("genderSigma"))
+    val male = GLOBAL.rnd.nextDouble() <= math.max(0, math.min(1, genderDistr.sample()))
+    val people = for (x <- 1 to numberPeople) yield new Person(s, true, male)
 
     s.init(List(
       landlord,
@@ -99,6 +102,9 @@ object Main {
       // c, rf, mcd,
       mehlbuyer
     ) ++ people.toList)
+
+    val capitals = Gaussian(s.params("capitalMu"), s.params("capitalSigma")).sample(s.sims.length)
+    s.sims.zip(capitals).foreach(t => t._1.capital = t._2.round.toInt)
 
     Console.out.flush()
     Console.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)))

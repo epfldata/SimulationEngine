@@ -1,7 +1,7 @@
 package bo
 
 import Simulation.Simulation
-import breeze.linalg.{DenseVector, linspace}
+import breeze.linalg.{DenseVector, linspace, normalize}
 import breeze.plot.{Figure, plot}
 
 case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], outputRanges: Array[(Double, Double)],
@@ -24,19 +24,13 @@ case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], outputR
     val figure = Figure()
     val p = figure.subplot(0)
     for (i <- ys(1).indices) {
-      val interpoldated = interpolate(ys.map(seq => seq(i)), outputRanges(i))
-      p += plot(x, interpoldated, name = outputNames(i))
+      val normalized = normalize(ys.map(seq => seq(i))).map(_ * 100)
+      p += plot(x, normalized, name = outputNames(i))
     }
     p.xlabel = s"$param"
     p.ylabel = "f"
     p.legend = true
     figure.saveas(s"results/plotOver$param.png")
-  }
-
-  private def interpolate(vector: DenseVector[Double], ranges: (Double, Double)): DenseVector[Double] = {
-    val (x0, x1) = ranges
-    val (y0, y1) = (0.0, 100.0)
-    vector.map(x => y0 * ((x1 - x) / (x1 - x0)) + y1 * ((x - x0) / (x1 - x0)))
   }
 
   def plotSimOverTime(bounds: (Int, Int),

@@ -1,4 +1,9 @@
 {
+  "genderMu": 0.5,
+  "genderSigma": 0.1,
+  "capitalMu": 1000,
+  "capitalSigma": 100,
+
   "maleFoodMu": 2.0,
   "maleFoodSigma": 1.0,
   "femaleFoodMu": 1.0,

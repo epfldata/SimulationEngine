@@ -6,11 +6,10 @@ import GLOBAL.{print, println}
 class Person(
   val shared: Simulation,
   val active: Boolean,
+  val male: Boolean = GLOBAL.rnd.nextBoolean(),
   var happiness : Int = 0, // pursuit of it
   var log : List[String] = List()
 ) extends SimO(shared) {
-
-  val male = GLOBAL.rnd.nextBoolean()
 
   // between 1 and 10
   var education = math.max(1, math.min(10, shared.distributions(this)("edu").sample.round.toInt))
@@ -18,7 +17,7 @@ class Person(
 
   def mycopy(_shared: Simulation,
              _substitution: collection.mutable.Map[SimO, SimO]) = {
-    val p = new Person(_shared, active, happiness, log);
+    val p = new Person(_shared, active, male, happiness, log);
     copy_state_to(p);
     p
   }
