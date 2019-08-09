@@ -212,6 +212,8 @@ class Factory(pls: ProductionLineSpec,
 
   protected def goodwill: Int = pl.map(_.goodwill).sum.toInt
 
+  def numEmployees: Int = pl.map(_.pls.employees_needed).sum
+
   override def stat {
     val zombie_cost = pl.map(_.lost_runs_cost).sum.toInt;
 
@@ -246,9 +248,10 @@ class Factory(pls: ProductionLineSpec,
 
     def historic_demand : Timeseries[Int] = sum_grp[SalesRecord](
       shared.market(pls.produced._1).order_history.toTimeseries, _.num_ordered);
-
-    val past_demand: Timeseries[Int] =
-      historic_demand.end_at(shared.timer - 1);
+    if (historic_demand.to < shared.timer - 1) {
+      shared.market(pls.produced._1).market_buy_order_now(shared.timer, this, 0)
+    }
+    val past_demand: Timeseries[Int] = historic_demand.end_at(shared.timer - 1);
 
     val demand_fc : Double =
       super_forecast(past_demand).apply(shared.timer - 1);
@@ -377,8 +380,12 @@ class Factory(pls: ProductionLineSpec,
     // this ordering is important, so that bulk buying
     // happens before consumption.
     val nxt1 = super.run_until(until).get;
-    val nxt2 = pl.map(_.run_until(until).get).min;
-    Some(math.min(nxt1, nxt2)) // compute a meaningful next time
+    if (pl.isEmpty) {
+      None
+    } else {
+      val nxt2 = pl.map(_.run_until(until).get).min;
+      Some(math.min(nxt1, nxt2)) // compute a meaningful next time
+    }
   }
 }
 

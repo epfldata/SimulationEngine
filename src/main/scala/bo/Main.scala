@@ -2,11 +2,10 @@ package bo
 
 import java.io.{BufferedOutputStream, FileDescriptor, FileOutputStream, FileWriter, PrintStream}
 
-import Securities.{Flour, Land}
-import Simulation.SimLib.{Buyer, Mill}
+import Securities.{Commodity, Flour, Land}
+import _root_.Simulation.SimLib.{Buyer, CattleFarm, Cinema, Farm, McDonalds, Mill, Source}
 import Simulation.{Person, Simulation}
 import _root_.Simulation.Factory.Factory
-import _root_.Simulation.SimLib.{Farm, Source}
 import breeze.stats.distributions.Gaussian
 import spray.json.{JsObject, JsonParser}
 
@@ -16,11 +15,23 @@ object Main {
   val initLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/initLog"), bufferSize)
   val runLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/runLog"), bufferSize)
 
-  def outputFromState(s: Simulation): Seq[Double] = List(
-    s.sims.map(_.capital.toDouble / 100 / s.sims.size).sum,
-    s.sims.map{case f: Factory => f.pl.size; case _ => 0}.sum.toDouble / numberPeople.toDouble
-  )
-  private val outputNames = Array("CapitalSum", "EmploymentRate")
+  def outputFromState(s: Simulation): Seq[Double] = {
+    def avgPrice(commodity: Commodity) =
+      s.market(commodity).sellers.map(s => s.price(commodity).getOrElse(0.0)).sum / s.market(commodity).sellers.size
+
+    List(
+      s.sims.map(_.capital.toDouble / 100).sum / s.sims.size,
+      (numberPeople - s.sims.map{case f: Factory => f.numEmployees; case _ => 0}.sum).toDouble / numberPeople,
+      s.sims.map{case m: Mill => m.numEmployees; case _ => 0}.sum.toDouble / numberPeople,
+      s.sims.map{case f: Farm => f.numEmployees; case _ => 0}.sum.toDouble / numberPeople,
+      avgPrice(Securities.Wheat),
+      avgPrice(Securities.Flour),
+      avgPrice(Securities.MovieTicket),
+      avgPrice(Securities.Beef),
+      avgPrice(Securities.Burger))
+  }
+  private val outputNames = Array("CapitalAvg", "UnemploymentRate", "MillEmploymentRate", "FarmEmploymentRate",
+    "WheatAvgPrice", "FlourAvgPrice", "MovieAvgPrice", "BeefAvgPrice", "BurgerAvgPrice")
 
   def simFunction(params: Map[String, Double]): Seq[Double] = {
     val s = new Simulation(params)
@@ -79,9 +90,9 @@ object Main {
     GLOBAL.strongSilence = true
     val f = new Farm(s)
     val m = new Mill(s)
-    //val c   = new Cinema(s);
-    //val rf  = new CattleFarm(s);
-    //val mcd = new McDonalds(s);
+    val c   = new Cinema(s);
+    val rf  = new CattleFarm(s);
+    val mcd = new McDonalds(s);
     val landlord = new Source(Land, 20, 100000 * 100, s)
     //val freudensprung = new Source(Beef,   100,  26000*100, s);
     //val silo          = new Source(Wheat, 1000,   6668*100, s);
@@ -98,7 +109,8 @@ object Main {
       //silo,
       // silo2, billa, freudensprung,
       f, m,
-      // c, rf, mcd,
+      c,
+      rf, mcd,
       mehlbuyer
     ) ++ people.toList)
 
