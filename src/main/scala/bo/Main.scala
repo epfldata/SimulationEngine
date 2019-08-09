@@ -72,8 +72,8 @@ object Main {
 
       case "plot-param" =>
         val visualizer = Viz(outputFromState, outputNames, params)
-        val from = if (args.length > 3) args(3).toInt else 0
-        val to = if (args.length > 4) args(4).toInt else 100
+        val from = if (args.length > 3) args(3).toDouble else 0
+        val to = if (args.length > 4) args(4).toDouble else 100
         val simIters = if (args.length > 5) args(5).toInt else 300
         visualizer.plotSimOverParam(args(2), (from, to), runSimTill = simIters)
     }

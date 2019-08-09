@@ -30,6 +30,7 @@ case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var par
     }
     pSingle.xlabel = s"$param"
     pSingle.ylabel = "f"
+    pSingle.setXAxisDecimalTickUnits()
     pSingle.legend = true
     try {
       figureSingle.saveas(s"results/singlePlotsOver$param.png")
@@ -37,13 +38,14 @@ case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var par
       case _: Exception => // ignore
     }
 
-    val sumFigure = Figure("Sum of Measures")
-    val pSum = sumFigure.subplot(0)
+    val figureSum = Figure("Sum of Measures")
+    val pSum = figureSum.subplot(0)
     val normalized: Seq[DenseVector[Double]] = for (i <- 0 until ys.cols) yield normalize(ys(::, i)).map(_ * 100)
     pSum += plot(x, normalized.foldLeft(DenseVector.zeros[Double](normalized.head.size))(_ + _))
     pSum.xlabel = s"$param"
     pSum.ylabel = "f"
-    sumFigure.saveas(s"results/sumPlotOver$param.png")
+    pSum.setXAxisDecimalTickUnits()
+    figureSum.saveas(s"results/sumPlotOver$param.png")
   }
 
   def plotSimOverTime(bounds: (Int, Int),
