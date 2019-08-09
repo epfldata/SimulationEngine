@@ -43,8 +43,9 @@ case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var par
     pSingle.ylabel = "f"
     pSingle.setXAxisDecimalTickUnits()
     pSingle.legend = true
+    val dpi = 720
     try {
-      figureSingle.saveas(s"results/singlePlotsOver$param.png")
+      figureSingle.saveas(s"results/singlePlotsOver$param.png", dpi)
     } catch {
       case _: Exception => // ignore
     }
@@ -56,7 +57,7 @@ case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var par
     pSum.xlabel = s"$param"
     pSum.ylabel = "f"
     pSum.setXAxisDecimalTickUnits()
-    figureSum.saveas(s"results/sumPlotOver$param.png")
+    figureSum.saveas(s"results/sumPlotOver$param.png", dpi)
   }
 
   def plotSimOverTime(bounds: (Int, Int),
