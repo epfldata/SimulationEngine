@@ -18,7 +18,11 @@ libraryDependencies  ++= Seq(
   "org.scalanlp" %% "breeze-viz" % "0.12",
   "org.scalatest" %% "scalatest" % "3.0.0" % "test",
 
-  "io.spray" %%  "spray-json" % "1.3.5"
+  "io.spray" %%  "spray-json" % "1.3.5",
+
+  // https://mvnrepository.com/artifact/org.apache.commons/commons-csv
+  "org.apache.commons" % "commons-csv" % "1.7"
+
 )
 
 resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
