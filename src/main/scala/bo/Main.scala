@@ -66,13 +66,15 @@ object Main {
         val results: List[(Map[String, Double], Seq[(Int, Seq[Double])])] =
           paramsList.zip(paramsList.map(params => seqSimFunction(params, nIters)))
         val paramNames: Array[String] = params.toArray.map(_._1)
-        val matrixAsList: List[List[Double]] = results.flatMap{case (map, seqOutputs: Seq[(Int, Seq[Double])]) =>
-          seqOutputs.map{case (iter, outputs) =>
-            val x: Array[Double] = paramNames.map(name => map(name))
-            iter.toDouble :: x.toList ++ outputs
-          }
-        }
-        CsvManager.writeCsvFile(DenseMatrix(matrixAsList:_*), "target/scala-2.11/train.csv", ("timestep" +: paramNames) ++ outputNames)
+        val x: DenseMatrix[Double] = DenseMatrix(results.map{case (map, _) =>
+          val x: Array[Double] = paramNames.map(name => map(name))
+          x.toList
+        }:_*)
+        val y: DenseMatrix[Double] = DenseMatrix(results.flatMap{case (_, seqOutputs: Seq[(Int, Seq[Double])]) =>
+          seqOutputs.map{case (iter, outputs) => outputs.toList}
+        }:_*)
+        CsvManager.writeCsvFile(x, "target/scala-2.11/train_X.csv", paramNames)
+        CsvManager.writeCsvFile(y, "target/scala-2.11/train_Y.csv", "timestep" +: outputNames)
 
       case "generate" =>
         val fileWriter = new FileWriter("target/scala-2.11/actuals")
