@@ -41,6 +41,15 @@ object Main {
     outputFromState(s)
   }
 
+  private def seqSimFunction(params: Map[String, Double], nIters: Int): Seq[(Int, Seq[Double])] = {
+    val s = new Simulation(params)
+    initializeSimulation(s)
+    for (i <- 1 to nIters) yield {
+      callSimulation(s, 1)
+      (i, outputFromState(s))
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     val source = scala.io.Source.fromFile(args(1))
     val jsonString = source.mkString
@@ -51,15 +60,19 @@ object Main {
 
     args(0) match {
       case "generate-csv" =>
-        val trainsetSize = args(2).toInt
+        val nIters = args(2).toInt
+        val trainsetSize = args(3).toInt
         val paramsList = sampleParams(trainsetSize)
-        val results: List[(Map[String, Double], Seq[Double])] = paramsList.zip(paramsList.map(params => simFunction(params)))
-        val header: Array[String] = params.toArray.map(_._1)
-        val matrixAsList: List[List[Double]] = results.map{case (map, outputs) =>
-          val x: Array[Double] = header.map(name => map(name))
-          x.toList ++ outputs
+        val results: List[(Map[String, Double], Seq[(Int, Seq[Double])])] =
+          paramsList.zip(paramsList.map(params => seqSimFunction(params, nIters)))
+        val paramNames: Array[String] = params.toArray.map(_._1)
+        val matrixAsList: List[List[Double]] = results.flatMap{case (map, seqOutputs: Seq[(Int, Seq[Double])]) =>
+          seqOutputs.map{case (iter, outputs) =>
+            val x: Array[Double] = paramNames.map(name => map(name))
+            iter.toDouble :: x.toList ++ outputs
+          }
         }
-        CsvManager.writeCsvFile(DenseMatrix(matrixAsList:_*), "target/scala-2.11/train.csv", header ++ outputNames)
+        CsvManager.writeCsvFile(DenseMatrix(matrixAsList:_*), "target/scala-2.11/train.csv", ("timestep" +: paramNames) ++ outputNames)
 
       case "generate" =>
         val fileWriter = new FileWriter("target/scala-2.11/actuals")
