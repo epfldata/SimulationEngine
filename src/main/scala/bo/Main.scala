@@ -6,6 +6,7 @@ import Securities.{Commodity, Flour, Land}
 import _root_.Simulation.SimLib.{Buyer, CattleFarm, Cinema, Farm, McDonalds, Mill, Source}
 import Simulation.{Person, Simulation}
 import _root_.Simulation.Factory.Factory
+import breeze.linalg.DenseMatrix
 import breeze.stats.distributions.Gaussian
 import spray.json.{JsObject, JsonParser}
 
@@ -49,6 +50,17 @@ object Main {
     val params = jsonAst.asInstanceOf[JsObject].fields.mapValues(_.toString().toDouble)
 
     args(0) match {
+      case "generate-csv" =>
+        val trainsetSize = args(2).toInt
+        val paramsList = sampleParams(trainsetSize)
+        val results: List[(Map[String, Double], Seq[Double])] = paramsList.zip(paramsList.map(params => simFunction(params)))
+        val header: Array[String] = params.toArray.map(_._1)
+        val matrixAsList: List[List[Double]] = results.map{case (map, outputs) =>
+          val x: Array[Double] = header.map(name => map(name))
+          x.toList ++ outputs
+        }
+        CsvManager.writeCsvFile(DenseMatrix(matrixAsList:_*), "target/scala-2.11/train.csv", header ++ outputNames)
+
       case "generate" =>
         val fileWriter = new FileWriter("target/scala-2.11/actuals")
         simFunction(params).foreach(observable => fileWriter.write(observable + "\n"))
@@ -90,8 +102,8 @@ object Main {
     GLOBAL.strongSilence = true
     val f = new Farm(s)
     val m = new Mill(s)
-    val c   = new Cinema(s);
-    val rf  = new CattleFarm(s);
+    val c = new Cinema(s);
+    val rf = new CattleFarm(s);
     val mcd = new McDonalds(s);
     val landlord = new Source(Land, 20, 100000 * 100, s)
     //val freudensprung = new Source(Beef,   100,  26000*100, s);
@@ -130,4 +142,40 @@ object Main {
     Console.out.flush()
     Console.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)))
   }
+
+  private def sampleParams(trainsetSize: Int): List[Map[String, Double]] = (for (_ <- 0 until trainsetSize) yield
+    Map("genderMu" -> GLOBAL.rnd.nextDouble(),
+      "genderSigma" -> GLOBAL.rnd.nextDouble(),
+      "capitalMu" -> GLOBAL.rnd.nextDouble() * 100000,
+      "capitalSigma" -> GLOBAL.rnd.nextDouble() * 10000,
+
+      "maleFoodMu" -> GLOBAL.rnd.nextDouble() * 10,
+      "maleFoodSigma" -> GLOBAL.rnd.nextDouble() * 10,
+      "femaleFoodMu" -> GLOBAL.rnd.nextDouble() * 10,
+      "femaleFoodSigma" -> GLOBAL.rnd.nextDouble() * 10,
+
+      "maleEduMu" -> GLOBAL.rnd.nextDouble() * 10,
+      "maleEduSigma" -> GLOBAL.rnd.nextDouble() * 10,
+      "femaleEduMu" -> GLOBAL.rnd.nextDouble() * 10,
+      "femaleEduSigma" -> GLOBAL.rnd.nextDouble() * 10,
+
+      "maleBonusSalMu" -> GLOBAL.rnd.nextDouble() * 1000,
+      "maleBonusSalSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+      "femaleBonusSalMu" -> GLOBAL.rnd.nextDouble() * 1000,
+      "femaleBonusSalSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+
+      "factorySalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+      "factorySalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+      "farmSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+      "farmSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+      "millSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+      "millSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+
+      "factoryItersMu" -> GLOBAL.rnd.nextDouble() * 20,
+      "factoryItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
+      "farmItersMu" -> GLOBAL.rnd.nextDouble() * 20,
+      "farmItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
+      "millItersMu" -> GLOBAL.rnd.nextDouble() * 20,
+      "millItersSigma" -> GLOBAL.rnd.nextDouble() * 20
+    )).toList
 }

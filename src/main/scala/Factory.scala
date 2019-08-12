@@ -129,7 +129,7 @@ class Factory(pls: ProductionLineSpec,
   var pl : List[ProductionLine] = List()
   private var zombie_cost2 : Double = 0.0 // cost from canceled prod. runs
   var prev_mgmt_action : Int = 0
-  protected var hr : HR = HR(shared, this, shared.distributions(this)("salary").sample.round.toInt)
+  protected var hr : HR = HR(shared, this, math.abs(shared.distributions(this)("salary").sample.round.toInt))
   protected var goal_num_pl = 0;
   private var nestedSimIters = math.max(0, math.min(20, shared.distributions(this)("iters").sample.round.toInt))
 

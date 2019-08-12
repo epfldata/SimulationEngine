@@ -3,9 +3,8 @@ package bo
 import java.nio.file.{Files, Paths}
 
 import Simulation.Simulation
-import breeze.linalg.{DenseMatrix, DenseVector, linspace, normalize}
+import breeze.linalg.{Axis, DenseMatrix, DenseVector, linspace, normalize}
 import breeze.plot.{Figure, plot}
-import org.apache.commons.csv.{CSVFormat, CSVParser, CSVPrinter}
 
 case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var params: Map[String, Double]) {
 
@@ -16,7 +15,8 @@ case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var par
     val csvFilePath = s"results/csv/plotsOver$param.csv"
     val (x: DenseVector[Double], ys: DenseMatrix[Double]) =
       if (Files.exists(Paths.get(csvFilePath))) {
-        readCsvFile(csvFilePath)
+        val matrix = CsvManager.readCsvFile(csvFilePath, "x" +: outputNames)
+        (matrix(::, 0), matrix.delete(0, Axis._1))
       } else {
         val x = linspace(bounds._1, bounds._2, numberOfPoints)
         val ys = DenseMatrix(
@@ -29,7 +29,7 @@ case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var par
             f(s)
           }).toArray:_*
         )
-        writeCsvFile(x, ys, csvFilePath)
+        CsvManager.writeCsvFile(DenseMatrix(x.data ++ ys.data), csvFilePath, "x" +: outputNames)
         (x, ys)
       }
 
@@ -78,47 +78,5 @@ case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var par
     p.xlabel = "time"
     p.ylabel = "f"
     figure.saveas("results/plotOverTime.png")
-  }
-
-  private def readCsvFile(path: String): (DenseVector[Double], DenseMatrix[Double]) = {
-    var x: Array[Double] = Array()
-    var ys: Array[Array[Double]] = Array()
-    try {
-      val reader = Files.newBufferedReader(Paths.get(path))
-      val csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader.withIgnoreHeaderCase.withTrim)
-      try {
-        val itererator = csvParser.iterator()
-        while (itererator.hasNext) {
-          val csvRecord = itererator.next()
-          x :+= csvRecord.get("x").toDouble
-          var y = Array[Double]()
-          for (name <- outputNames) {
-            y :+= csvRecord.get(name).toDouble
-          }
-          ys :+= y
-        }
-      } finally {
-        if (reader != null) reader.close()
-        if (csvParser != null) csvParser.close()
-      }
-    }
-    (DenseVector(x), DenseMatrix(ys:_*))
-  }
-
-  private def writeCsvFile(x: DenseVector[Double], ys: DenseMatrix[Double], path: String) = {
-    try {
-      val writer = Files.newBufferedWriter(Paths.get(path))
-      val csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader((Array("x") ++ outputNames):_*))
-      try {
-        for (i <- 0 until x.length) {
-          val array: Array[String] = x(i).toString +: ys(i, ::).inner.map(_.toString).toArray
-          csvPrinter.printRecord(array:_*)
-        }
-        csvPrinter.flush()
-      } finally {
-        if (writer != null) writer.close()
-        if (csvPrinter != null) csvPrinter.close()
-      }
-    }
   }
 }
