@@ -1,10 +1,13 @@
+import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import *
+from keras.losses import mean_absolute_error
 import numpy as np
 import os
 import random
 
 random.seed = 19
+os.chdir('../../..')  # going to the root of the project
 
 def getFolds(nFolds, nSamples):
     indices = list(range(nSamples))
@@ -18,38 +21,52 @@ def getFolds(nFolds, nSamples):
         folds.append((train, test))
     return folds
 
-os.chdir('../../..')  # going to the root of the project
+def createSession():
+    # See https://www.tensorflow.org/tutorials/using_gpu#allowing_gpu_memory_growth
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    sess = tf.Session(config=config)
+    try:
+        sess.run(tf.global_variables_initializer())
+        sess.run(tf.local_variables_initializer())
+    except tf.errors.InvalidArgumentError:
+        print(
+            '\n\nThis error most likely means that this notebook is not '
+            'configured to use a GPU.  Change this in Notebook Settings via the '
+            'command palette (cmd/ctrl-shift-P) or the Edit menu.\n\n')
+        raise
+    return sess
 
-samples = 10
-timesteps = 300
+samples = 100
+timesteps = 1000
 features = 28
 observables = 9
 
-
-model = Sequential([
-    Dense(32, input_dim=features),
-    RepeatVector(timesteps),
-    SimpleRNN(32, return_sequences=True),
-    TimeDistributed(Dense(observables))])
-
-model.compile(optimizer='sgd', loss='mse', metrics=["mae"])
+deviceName = "/cpu:0" if tf.test.gpu_device_name() == "" else tf.test.gpu_device_name()
+print("use device", deviceName)
+with tf.device(deviceName):
+    # with tf.device('/device:GPU:0'):
+    input = tf.placeholder(shape=[None, features], dtype=tf.float32)
+    labels = tf.placeholder(shape=[None, timesteps, observables], dtype=tf.float32)
+    model = Sequential([
+        Dense(32, input_dim=features),
+        RepeatVector(timesteps),
+        SimpleRNN(32, return_sequences=True),
+        TimeDistributed(Dense(observables))])
+    preds = model(input)
+    loss = mean_absolute_error(labels, preds)
+    train_step = tf.train.GradientDescentOptimizer(0.5).minimize(loss)
+    metrics = mean_absolute_error(labels, preds)
 
 # shape = (samples, features)
 train_X = np.loadtxt(open("target/scala-2.11/train_X.csv", "r"), delimiter=",", skiprows=1)
 train_Y = np.loadtxt(open("target/scala-2.11/train_Y.csv", "r"), delimiter=",", skiprows=1).reshape((samples, timesteps, observables))
 folds = getFolds(10, samples)
-cvscores = {}
-for name in model.metrics_names:
-    cvscores[name] = []
+cvscores = []
 for train, test in folds:
-    model.fit(train_X[train], train_Y[train], epochs=150, batch_size=10, verbose=0)
-    scores = model.evaluate(train_X[test], train_Y[test], verbose=0)
-    if len(model.metrics_names) > 1:
-        for i in range(len(model.metrics_names)):
-            print("%s: %.2f%%" % (model.metrics_names[i], scores[i]))
-            cvscores[model.metrics_names[i]].append(scores[i])
-    else:
-        print("%s: %.2f%%" % (model.metrics_names[0], scores))
-        cvscores[model.metrics_names[0]].append(scores)
-for name in model.metrics_names:
-    print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores[name]), np.std(cvscores[name])))
+    with createSession() as sess:
+        sess.run(train_step, feed_dict={input: train_X[train], labels: train_Y[train]})
+        mae = sess.run(metrics, feed_dict={input: train_X[test], labels: train_Y[test]})
+        print("Mean absolute error: %.2f%%" % np.mean(mae))
+        cvscores.append(np.mean(mae))
+print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
