@@ -1,4 +1,4 @@
-import GLOBAL.{print, println}
+import GLOBAL.println
 
 package code {
 
@@ -56,7 +56,7 @@ class __repeat(_k: => Int, _block: Instruction*) extends SugarInstruction {
   override def toString = "__repeat(?, " + block + ")"
 }
 object __repeat {
-  def apply(k: => Int, _block: Instruction*) = new __repeat(k, (_block: _*))
+  def apply(k: => Int, _block: Instruction*) = new __repeat(k, _block:_*)
   def unapply(r: __repeat) : Some[(() => Int, Seq[Instruction])] =
     Some((r.k _, r.block))
 }
@@ -69,7 +69,7 @@ class __dowhile(_cond: => Boolean,
 }
 object __dowhile {
   def apply(_block: Instruction*)(_cond: => Boolean) =
-    new __dowhile(_cond, (_block: _*))
+    new __dowhile(_cond, _block:_*)
   def unapply(r: __dowhile) : Some[(Seq[Instruction], () => Boolean)] =
     Some((r.block, r.cond _))
 }
@@ -81,7 +81,7 @@ class __if(_cond: => Boolean, _block: Instruction*) extends SugarInstruction {
 }
 object __if {
   def apply(_cond: => Boolean)(_block: Instruction*) =
-    new __if(_cond, (_block: _*))
+    new __if(_cond, _block:_*)
   def unapply(r: __if) : Some[(() => Boolean, Seq[Instruction])] =
     Some((r.cond _, r.block))
 }
@@ -207,89 +207,6 @@ def exec[T : Numeric](
 
   (pos, time, nt)
 }
-
-
-/** Parallel execution of multiple sims.
-
-    @param sims       A collection of environments. An environment `s` must
-                      be able to provide the first three
-                      arguments of the function [[exec]], say as
-                      `s.program`, `s.pos`, and `s.time`.
-
-    @param exec_f     A function that takes an environment `s` and an end
-                      time `t` and runs `exec(s.program, s.pos, s.time, t)`,
-                      updates its internal state (`pos` and `time`), and
-                      returns `nt` as described in the documentation for
-                      [[exec]].
-
-    @param start_time In the interval from `start_time` to `end_time`, the
-                      sims are executed in parallel, respecting time order.
-                      Any sim whose time in its environment is
-                      initially lower than the start time is
-                      first brought up to start time. This preprocessing is
-                      done sequentially, not in parallel, in the sequence order
-                      of the environments as stored in `sims`.
-
-    @param end_time   See `start_time`.
-
-    @example {{{
-       class MySim(name: String, var time : Int = 0) {
-         var pos  = 0
-         val prog = compile(__forever(__do{ print(name) },
-                                      __wait(1)))
-       }
-
-       def execf(s: MySim, until: Int) = {
-         val (p, t, n) = code.exec(s.prog, s.pos, s.time, until);
-         s.pos = p; s.time = t;
-         n
-       }
-
-       val s1 = new MySim("a", 1);
-       val s2 = new MySim("b");
-       execp[MySim, Int](Vector(s1, s2), execf, 3, 6)
-    }}}
-    will print
-    {{{
-       aaabbbbababab
-    }}}
-    The function `execp`
-    first brings `s1` up to time 3, which needs three iterations of the 
-    loop in prog from time 1 (including 1), then it brings up `s2` from time 0
-    (four iterations, 0, 1, 2, 3), and then there are three parallel iterations
-    from step 4 to 6.
-
-    Calls to `execp` can be composed. If this is done, the return value of the
-    first call should be used as the start time of the second:
-    {{{
-      val Some(t) = execp[MySim, Int](Vector(s1, s2), execf, 3, 6);
-      execp[MySim, Int](Vector(s1, s2), execf, t, 10)
-    }}}
-    will do the same as
-    {{{
-      execp[MySim, Int](Vector(s1, s2), execf, 3, 10)
-    }}}
-    no matter what the sims do.
-*/
-def execp[S, T: Numeric](
-  sims       : Seq[S],
-  exec_f     : (S, T) => Option[T], // returns next_goal_time
-  start_time : T,
-  end_time   : T
-) = {
-  def lte(a: T, b: T) = (! implicitly[Numeric[T]].lt(b, a));
-
-  var highwater = start_time;
-
-  while(lte(highwater, end_time))
-  {
-    // pick the smallest next time.
-    highwater = sims.map(s => exec_f(s, highwater).get).min;
-  }
-
-  Some(highwater)
-}
-
 
 } // end package object code
 

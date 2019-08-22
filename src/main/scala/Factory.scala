@@ -1,9 +1,9 @@
 package Simulation.Factory
+import GLOBAL.println
 import Owner._
+import Securities._
 import Simulation._
 import code._
-import Securities._
-import GLOBAL.{print, println}
 
 case class ProductionLineSpec(employees_needed: Int,
                               required: List[(Commodity, Int)],
@@ -139,7 +139,6 @@ class Factory(pls: ProductionLineSpec,
     goal_num_pl = 1; // have one production line
   }
 
-  protected def copy_state_to(_to: Factory) { assert(false); } // don't call
   protected def copy_state_to(_to: Factory,
       _shared: Simulation,
       old2new: collection.mutable.Map[SimO, SimO]) {
@@ -231,20 +230,6 @@ class Factory(pls: ProductionLineSpec,
   protected def tactics() = {
     import Timeseries._;
 
-    /* cost and price concerns disregarded -- everyone makes market orders.
-       supply of consumables disregarded because we want some stability
-       in the simulation.
-
-    //val labor_cost_fc = new Timeseries(shared.timer, 1.0/0, (t: Int) => salary)
-
-    // absolute volume that will be available to us
-    val sourcing_volume: Forecast = ...
-
-    // not needed now, since everybody makes market orders
-    //val sourcing_unit_cost: Int => Forecast = ... // given volume to be bought
-    // for the same reason, no price forecast is needed now.
-    */
-
 
     def historic_demand : Timeseries[Int] = sum_grp[SalesRecord](
       shared.market(pls.produced._1).order_history.toTimeseries, _.num_ordered);
@@ -255,54 +240,6 @@ class Factory(pls: ProductionLineSpec,
 
     val demand_fc : Double =
       super_forecast(past_demand).apply(shared.timer - 1);
-
-
-    // the number of units we can sell per tick at a price point
-    //val demand_fc2: Double => Forecast = ...
-
-    // TODO: should be big enough to be a buffer against fluctuations
-    // of demand. probabilistic modeling once volatility of demand is
-    // modeled.
-    // val desired_inventory = 2 * demand_fc;
-
-    // TODO: subtract the supply by other suppliers that is actually
-    // traded from demand_fc.
-
-    /*
-    // the number of units we are producing if all production lines
-    // are perfectly efficient (= we can source all consumables)
-    def units_produced(num_pl: Int) =
-      num_pl * pls.theoretical_max_productivity 
-
-    val suitable_num_pl = argmin(1, num_pl,
-          (n: Int) => math.abs(demand_fc - units_produced(n)));
-    */
-
-    // TODO: maximize assets - liabilities, not production we can sell.
-    /*
-      if we run production lines at low efficiency, we lose money.
-
-      take into account how much we can sell at a price point.
-
-      maintaining debt causes us to pay interest.
-
-
-      val v = smoothe(new Timeseries(delta (assets - liabilities)), window);
-      val fc = forecast(v).Apply(shared.timer + 12);
-      probfail = prob(fc < 0)
-    */
-/*
-    // Also reduce production if we are at over capacity with respect to the
-    // available consumables.
-    val efficiencies = pl.flatMap(x => x.log.take(2)).map(_._2);
-    val pl_fail: Boolean = (efficiencies.length - efficiencies.sum >= 2);
-
-    if(pl_fail)
-    {
-      remove_production_line();
-      prev_mgmt_action = shared.timer;
-    } 
-*/
 
     val suitable_num_pl =
       math.ceil(demand_fc / pls.theoretical_max_productivity).toInt;

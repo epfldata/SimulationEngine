@@ -1,12 +1,12 @@
 package Simulation
+import GLOBAL.println
 import Markets._
 import Owner._
 import Securities._
-import breeze.stats.distributions.{Gaussian, RandBasis, ThreadLocalRandomGenerator}
-import org.apache.commons.math3.random.MersenneTwister
-import GLOBAL.{print, println}
 import Simulation.Factory.Factory
 import Simulation.SimLib.{Farm, Mill}
+import breeze.stats.distributions.{Gaussian, RandBasis, ThreadLocalRandomGenerator}
+import org.apache.commons.math3.random.MersenneTwister
 
 
 class Simulation(val params: Map[String, Double]) {
@@ -45,9 +45,6 @@ class Simulation(val params: Map[String, Double]) {
   };
 
   var arbeitsmarkt = collection.mutable.Stack[SimO](); // all Persons
-
-  var chicago = collection.mutable.Map[Security, OrderBook]();
-
 
   /** TODO: We should have a registry of sims here, which can be looked up by
       id. This eliminates the need for substitution when copying a simulation,
@@ -109,11 +106,6 @@ class Simulation(val params: Map[String, Double]) {
     for ((commodity, ma) <- market) {
       ma.copy_state_to(s2.market(commodity),
                        (s: Seller) => old2new(s.asInstanceOf[SimO]));
-    }
-
-    assert(s2.chicago.isEmpty);
-    for ((security, ob) <- chicago) {
-      s2.chicago += (security -> ob.mycopy());
     }
 
     s2.timer = timer;

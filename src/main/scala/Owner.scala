@@ -1,4 +1,4 @@
-import GLOBAL.{print, println}
+import GLOBAL.println
 
 package object Owner {
 import Securities._
@@ -21,35 +21,6 @@ case class BalanceSheet(
 )
 
 
-/*
-class Account(
-  holder      : Owner,
-  _with       : Owner,
-  var balance : Int = 0
-) {
-
-  def value(me: Owner) = {
-    if(me == holder) balance
-    else if(me == _with) -balance
-    else { assert(false); 0 }
-  }
-}
-
-
-class Handle[T](id : ID_T, table : collection.mutable.Map[ID_T, T]) {
-
-  def get : T = table(id).asInstanceOf[T]
-}
-
-
-class CashVirtualization {
-  var accounts = List[Account]()
-
-  def capital = accounts.map(_.value)
-}
-*/
-
-
 /** A legal person who manages its own finances and owns capital and inventory.
 */
 class Owner {
@@ -67,18 +38,12 @@ class Owner {
                                      collection.mutable.Map[ITEM_T, Double]()
   private var total_value_destroyed : Double = 0.0
 
-  /** The probability of bankruptcy, as a basis of a credit rating.
-      TODO: In which time frame?
-  */
-  var probfail : Double = 0.0
-
   protected def copy_state_to(_to: Owner) {
     //println("Owner.copy_state_to: " + this);
     _to.capital               = capital;
     _to.inventory             = inventory.clone();
     _to.inventory_avg_cost    = inventory_avg_cost.clone();
     _to.total_value_destroyed = total_value_destroyed;
-    _to.probfail              = probfail;
   }
 
 //  override def toString = "(" + capital/100 + " " +

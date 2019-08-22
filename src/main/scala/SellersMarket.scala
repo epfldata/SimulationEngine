@@ -1,7 +1,6 @@
 package Owner {
 import Securities._
 import Timeseries._
-import GLOBAL.{print, println}
 
 
 case class SalesRecord(
@@ -10,18 +9,7 @@ case class SalesRecord(
   num_ordered: Int,
   num_sold:    Int,
   total_price: Int
-) {
-  def missed_sales(at_price: Double) : Int = {
-    if(total_price > num_sold * at_price)
-      num_ordered // we would have made a cheaper offer
-    else num_ordered - num_sold
-      // even though we are expensive, we make the deal
-      // because it's a market order
-  }
-}
-
-
-
+)
 
 class Seller extends Owner {
   var order_history : LogList[SalesRecord] = new LogList[SalesRecord]
@@ -112,10 +100,6 @@ class SellersMarket(commodity: Commodity) extends MarketSelling with MarketMatch
     val (left_over, l) = best_match(units, null);
     (compute_price(l), units - left_over)
   }
-  def ask_price() : Option[Double] = {
-    val (p, l) = ask_price(1);
-    if(l == 0) None else Some(p)
-  }
 
   /** execute immediately, partial fulfillment possible. */
   def market_buy_order_now(time: Int, buyer: Owner, units: Int) : Int = {
@@ -128,12 +112,6 @@ class SellersMarket(commodity: Commodity) extends MarketSelling with MarketMatch
 
     order_history.add(time, SalesRecord(buyer, List(), units, sold, p.toInt));
     left_over
-  }
-
-  /** not implemented */
-  def limit_buy_order_now(time: Int, buyer: Owner, units: Int) : Int = {
-    assert(false);
-    0
   }
 }
 

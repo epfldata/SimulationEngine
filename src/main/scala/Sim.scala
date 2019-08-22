@@ -1,7 +1,6 @@
 package Simulation
-import code._
 import Owner._
-import GLOBAL.{print, println}
+import code._
 
 
 trait Sim {
@@ -38,15 +37,6 @@ trait Sim {
     next_goal_time
   }
 }
-
-
-object Sim {
-
-  def execp(sims: Seq[Sim], start_time: Int, end_time: Int) =
-    code.execp[Sim, Int](sims, (s: Sim, t: Int) => s.run_until(t),
-                         start_time, end_time)
-
-} // end object Sim.
 
 
 trait SimpleSim extends Sim {
