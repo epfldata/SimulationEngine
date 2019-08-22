@@ -21,7 +21,7 @@ case class ProductionLineSpec(employees_needed: Int,
 case class ProductionLine(
   val pls: ProductionLineSpec,
   var o: Owner,
-  val salary: Int,
+  val employees: List[(Person, Int)],
   val start_time: Int,
 
 //  var log : List[(Int, Double)] = List(),
@@ -38,6 +38,8 @@ case class ProductionLine(
 
 ) extends Sim {
   init(start_time);
+
+  def salary_cost(): Int = employees.map(_._2).sum
 
   def mycopy(_o: Owner) = {
     val p = this.copy();
@@ -68,15 +70,14 @@ case class ProductionLine(
       __do{
         //print("paying salaries. ");
         // salaries are paid globally (by the factory)
-        goodwill += pls.employees_needed * salary;
+        goodwill += salary_cost()
         rpt += 1;
       }
     )({ rpt < pls.time_to_complete }),
     __do{
       //print("production complete! ");
       val units_produced = (pls.produced._2  * frac).toInt;
-      val personnel_costs = pls.employees_needed * salary *
-                            pls.time_to_complete;
+      val personnel_costs = salary_cost() * pls.time_to_complete;
       val total_cost : Double = costs_consumables + personnel_costs;
       val unit_cost = total_cost / units_produced;
 
@@ -105,19 +106,25 @@ case class ProductionLine(
 case class HR(private val shared: Simulation,
               private val o: Owner,
               salary: Int = 20000 * 100, // 20kEUR
-              employees: collection.mutable.Stack[Person] =
-                         collection.mutable.Stack[Person]()
+              employees: collection.mutable.Stack[(Person, Int)] =
+                         collection.mutable.Stack[(Person, Int)]()
 ) {
-  def pay_workers() { for(a <- employees) o.transfer_money_to(a, salary + a.bonusSalary()); }
-  def salary_cost() = salary * employees.length
+  def pay_workers() { for((employee, salary) <- employees) o.transfer_money_to(employee, salary); }
 
-  protected def hire_one() {
-    if(shared.arbeitsmarkt.length > 0)
-      employees.push(shared.arbeitsmarkt.pop.asInstanceOf[Person]);
+  protected def hire_one(): Option[(Person, Int)] = {
+    if(shared.arbeitsmarkt.nonEmpty) {
+      val employee = shared.arbeitsmarkt.pop.asInstanceOf[Person]
+      employees.push((employee, salary + employee.bonusSalary()))
+      Some(employees.top)
+    } else {
+      None
+    }
   }
-  protected def fire_one() { shared.arbeitsmarkt.push(employees.pop); }
+  protected def fire_one() { shared.arbeitsmarkt.push(employees.pop._1); }
 
-  def hire(n: Int) { for(i <- 1 to n) hire_one(); }
+  def hire(n: Int): List[(Person, Int)] = {
+    (for(_ <- 1 to n) yield hire_one()).flatten.toList
+  }
   def fire(n: Int) { for(i <- 1 to n) fire_one(); }
 }
 
@@ -150,8 +157,8 @@ class Factory(pls: ProductionLineSpec,
     _to.zombie_cost2 = zombie_cost2;
     _to.prev_mgmt_action = prev_mgmt_action;
     _to.hr = new HR(_shared, _to, hr.salary,
-       hr.employees.map(old2new(_).asInstanceOf[Person])
-       );
+       hr.employees.map{case (employee, salary) => (old2new(employee).asInstanceOf[Person], salary)}
+    )
     _to.goal_num_pl = goal_num_pl;
     _to.nestedSimIters = nestedSimIters
   }
@@ -191,9 +198,8 @@ class Factory(pls: ProductionLineSpec,
       // previous production reductions.
       success = bulk_buy_missing(pls.required, pl.length + 1);
       if(success) {
-        hr.hire(pls.employees_needed);
-        pl = new ProductionLine(pls, this, hr.salary, shared.timer) :: pl;
-        //pl.head.init(shared.timer);
+        val employees = hr.hire(pls.employees_needed);
+        pl = new ProductionLine(pls, this, employees, shared.timer) :: pl;
       }
     }
     else success = false;
@@ -202,8 +208,8 @@ class Factory(pls: ProductionLineSpec,
 
   // We don't sell required items (land, etc.) but only fire people.
   protected def remove_production_line() {
-    if(pl.length > 0) {
-      hr.fire(pls.employees_needed);
+    if(pl.nonEmpty) {
+      hr.fire(pl.head.employees.length);
       zombie_cost2 += pl.head.goodwill;
       pl = pl.tail;
     }
