@@ -18,12 +18,19 @@ class Simulation(val params: Map[String, Double]) {
   def distributions(sim: Sim): Map[String, Gaussian] = sim match {
     case person: Person =>
       val gender = if (person.male) "male" else "female"
-      val addFood = if (person.happiness < 0) 1 else 0
-      Map(
-        ("food", new Gaussian(params(gender + "FoodMu") + addFood, params(gender + "FoodSigma"))),
+      var distr: Map[String, Gaussian] = Map(
         ("edu", new Gaussian(params(gender + "EduMu"), params(gender + "EduSigma"))),
-        ("bonusSal", new Gaussian(params(gender + "BonusSalMu"), params(gender + "BonusSalSigma")))
+        ("bonusSal", new Gaussian(params(gender + "BonusSalMu"), params(gender + "BonusSalSigma"))),
+        ("buy", new Gaussian(params("buyMu"), params("buySigma"))),
+        ("consume", new Gaussian(params("consumeMu"), params("consumeSigma")))
       )
+      for (com <- Securities.all_commodities) {
+        val capName = com.name.capitalize
+        if (params.contains("enjoy" + capName + "Mu")) {
+          distr += "enjoy" + capName -> new Gaussian(params("enjoy" + capName + "Mu"), params("enjoy" + capName + "Sigma"))
+        }
+      }
+      distr
 
     case factory: Factory =>
       val factoryType = factory match {

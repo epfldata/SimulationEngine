@@ -114,7 +114,7 @@ case class HR(private val shared: Simulation,
   protected def hire_one(): Option[(Person, Int)] = {
     if(shared.arbeitsmarkt.nonEmpty) {
       val employee = shared.arbeitsmarkt.pop.asInstanceOf[Person]
-      employees.push((employee, salary + employee.bonusSalary()))
+      employees.push((employee, salary + employee.bonusSalary))
       Some(employees.top)
     } else {
       None

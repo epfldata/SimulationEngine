@@ -3,7 +3,6 @@ import Securities._
 import Simulation._
 import _root_.Simulation.Factory._
 import code._
-import GLOBAL.{print, println}
 
 class Source(commodity: Commodity, units: Int, p: Int,
              shared: Simulation) extends
@@ -77,20 +76,19 @@ case class Buyer(commodity: Commodity,
 
 
 class Farm(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List((Land, 1)), List(), (Wheat, 20), 4), s)
+  ProductionLineSpec(1, List((Land, s.params("farmReq").toInt)), List(), (Wheat, s.params("farmProd").toInt), s.params("farmTime").toInt), s)
 
 class Mill(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List(), List((Wheat, 10)), (Flour, 10), 1), s)
+  ProductionLineSpec(1, List(), List((Wheat, s.params("millCons").toInt)), (Flour, s.params("millProd").toInt), s.params("millTime").toInt), s)
 
-class Cinema(s: Simulation) extends Factory(
-  ProductionLineSpec(2, List(), List(), (MovieTicket, 2000), 1), s)
+class Bakery(s: Simulation) extends Factory(
+  ProductionLineSpec(1, List(), List((Flour, s.params("bakeryCons").toInt)), (Bread, s.params("bakeryProd").toInt), s.params("bakeryTime").toInt), s)
 
 class CattleFarm(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List((Land, 1)), List(), (Beef, 5), 6), s)
+  ProductionLineSpec(1, List((Land, s.params("cattleReq").toInt)), List(), (Beef, s.params("cattleProd").toInt), s.params("cattleTime").toInt), s)
 
-class McDonalds(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List(), List((Flour, 10), (Beef, 5)),
-                 (Burger, 10), 2), s)
+class OilField(s: Simulation) extends Factory(
+  ProductionLineSpec(1, List((Land, s.params("oilReq").toInt)), List(), (Oil, s.params("oilProd").toInt), s.params("oilTime").toInt), s)
 
-
-
+class Refinery(s: Simulation) extends Factory(
+  ProductionLineSpec(1, List(), List((Oil, s.params("refineryCons").toInt)), (Fuel, s.params("refineryProd").toInt), s.params("refineryTime").toInt), s)

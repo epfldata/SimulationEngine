@@ -97,12 +97,13 @@ package object Securities {
 
   val Wheat       = Commodity("wheat")
   val Flour       = Commodity("flour")
+  val Bread       = Commodity("bread")
   val Land        = Commodity("land")
-  val MovieTicket = Commodity("ticket")
   val Beef        = Commodity("beef")
-  val Burger      = Commodity("burger")
+  val Oil         = Commodity("oil")
+  val Fuel        = Commodity("fuel")
 
-  val all_commodities = List(Wheat, Flour, Land, MovieTicket, Beef, Burger);
+  val all_commodities = List(Wheat, Flour, Bread, Land, Beef, Oil, Fuel)
 
 
   def expectation(sample: () => Double, n: Int) : Double = {

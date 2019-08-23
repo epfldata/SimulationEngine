@@ -2,10 +2,10 @@ package bo
 
 import java.io.{BufferedOutputStream, FileDescriptor, FileOutputStream, FileWriter, PrintStream}
 
-import Securities.{Commodity, Flour, Land}
-import _root_.Simulation.SimLib.{Buyer, CattleFarm, Cinema, Farm, McDonalds, Mill, Source}
+import Securities.{Commodity, Land}
 import Simulation.{Person, Simulation}
 import _root_.Simulation.Factory.Factory
+import _root_.Simulation.SimLib._
 import breeze.linalg.DenseMatrix
 import breeze.stats.distributions.Gaussian
 import spray.json.{JsObject, JsonParser}
@@ -27,12 +27,14 @@ object Main {
       s.sims.map{case f: Farm => f.numEmployees; case _ => 0}.sum.toDouble / numberPeople,
       avgPrice(Securities.Wheat),
       avgPrice(Securities.Flour),
-      avgPrice(Securities.MovieTicket),
+      avgPrice(Securities.Bread),
       avgPrice(Securities.Beef),
-      avgPrice(Securities.Burger))
+      avgPrice(Securities.Oil),
+      avgPrice(Securities.Fuel)
+    )
   }
   private val outputNames = Array("CapitalAvg", "UnemploymentRate", "MillEmploymentRate", "FarmEmploymentRate",
-    "WheatAvgPrice", "FlourAvgPrice", "MovieAvgPrice", "BeefAvgPrice", "BurgerAvgPrice")
+    "WheatAvgPrice", "FlourAvgPrice", "BreadAvgPrice", "BeefAvgPrice", "OilAvgPrice", "FuelAvgPrice")
 
   def simFunction(params: Map[String, Double]): Seq[Double] = {
     val s = new Simulation(params)
@@ -117,15 +119,11 @@ object Main {
     GLOBAL.strongSilence = true
     val f = new Farm(s)
     val m = new Mill(s)
-    val c = new Cinema(s);
-    val rf = new CattleFarm(s);
-    val mcd = new McDonalds(s);
+    val b = new Bakery(s)
+    val cf = new CattleFarm(s)
+    val o = new OilField(s)
+    val r = new Refinery(s)
     val landlord = new Source(Land, 20, 100000 * 100, s)
-    //val freudensprung = new Source(Beef,   100,  26000*100, s);
-    //val silo          = new Source(Wheat, 1000,   6668*100, s);
-    //val silo2         = new Trader(Whear, 100, s);
-    //val billa         = new Trader(Flour, 50, s);
-    val mehlbuyer = Buyer(Flour, () => 40, s)
 
     val genderDistr = Gaussian(s.params("genderMu"), s.params("genderSigma"))
     val male = GLOBAL.rnd.nextDouble() <= math.max(0, math.min(1, genderDistr.sample()))
@@ -133,12 +131,9 @@ object Main {
 
     s.init(List(
       landlord,
-      //silo,
-      // silo2, billa, freudensprung,
-      f, m,
-      c,
-      rf, mcd,
-      mehlbuyer
+      f, m, b,
+      cf,
+      o, r
     ) ++ people.toList)
 
     val capitals = Gaussian(s.params("capitalMu"), s.params("capitalSigma")).sample(s.sims.length)
@@ -164,10 +159,38 @@ object Main {
       "capitalMu" -> GLOBAL.rnd.nextDouble() * 100000,
       "capitalSigma" -> GLOBAL.rnd.nextDouble() * 10000,
 
-      "maleFoodMu" -> GLOBAL.rnd.nextDouble() * 10,
-      "maleFoodSigma" -> GLOBAL.rnd.nextDouble() * 10,
-      "femaleFoodMu" -> GLOBAL.rnd.nextDouble() * 10,
-      "femaleFoodSigma" -> GLOBAL.rnd.nextDouble() * 10,
+      "buyWheat" -> GLOBAL.rnd.nextDouble(),
+      "buyFlour" -> GLOBAL.rnd.nextDouble(),
+      "buyBread" -> GLOBAL.rnd.nextDouble(),
+      "buyLand" -> GLOBAL.rnd.nextDouble(),
+      "buyBeef" -> GLOBAL.rnd.nextDouble(),
+      "buyOil" -> GLOBAL.rnd.nextDouble(),
+      "buyFuel" -> GLOBAL.rnd.nextDouble(),
+
+      "consumeWheat" -> GLOBAL.rnd.nextDouble(),
+      "consumeFlour" -> GLOBAL.rnd.nextDouble(),
+      "consumeBread" -> GLOBAL.rnd.nextDouble(),
+      "consumeBeef" -> GLOBAL.rnd.nextDouble(),
+      "consumeOil" -> GLOBAL.rnd.nextDouble(),
+      "consumeFuel" -> GLOBAL.rnd.nextDouble(),
+
+      "buyMu" -> (GLOBAL.rnd.nextDouble() * 10.0 + 1),
+      "buySigma" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
+      "consumeMu" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
+      "consumeSigma" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
+
+      "enjoyWheatMu" -> GLOBAL.rnd.nextDouble() * 1000,
+      "enjoyWheatSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+      "enjoyFlourMu" -> GLOBAL.rnd.nextDouble() * 1000,
+      "enjoyFlourSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+      "enjoyBreadMu" -> GLOBAL.rnd.nextDouble() * 1000,
+      "enjoyBreadSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+      "enjoyBeefMu" -> GLOBAL.rnd.nextDouble() * 1000,
+      "enjoyBeefSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+      "enjoyOilMu" -> GLOBAL.rnd.nextDouble() * 1000,
+      "enjoyOilSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+      "enjoyFuelMu" -> GLOBAL.rnd.nextDouble() * 1000,
+      "enjoyFuelSigma" -> GLOBAL.rnd.nextDouble() * 1000,
 
       "maleEduMu" -> GLOBAL.rnd.nextDouble() * 10,
       "maleEduSigma" -> GLOBAL.rnd.nextDouble() * 10,
@@ -191,6 +214,25 @@ object Main {
       "farmItersMu" -> GLOBAL.rnd.nextDouble() * 20,
       "farmItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
       "millItersMu" -> GLOBAL.rnd.nextDouble() * 20,
-      "millItersSigma" -> GLOBAL.rnd.nextDouble() * 20
+      "millItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
+
+      "farmReq" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "farmProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "farmTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "millCons" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "millProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "millTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "bakeryCons" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "bakeryProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "bakeryTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "cattleReq" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "cattleProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "cattleTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "oilReq" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "oilProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "oilTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "refineryCons" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "refineryProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+      "refineryTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble
     )).toList
 }

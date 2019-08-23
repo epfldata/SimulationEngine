@@ -1,7 +1,7 @@
 package Simulation
+import GLOBAL.{print, println}
 import Securities._
 import code._
-import GLOBAL.{print, println}
 
 class Person(
   val shared: Simulation,
@@ -11,9 +11,28 @@ class Person(
   var log : List[String] = List()
 ) extends SimO(shared) {
 
+  private val distr = shared.distributions(this)
   // between 1 and 10
-  var education = math.max(1, math.min(10, shared.distributions(this)("edu").sample.round.toInt))
-  private val bonusSalDistr = shared.distributions(this)("bonusSal")
+  val education = math.max(1, math.min(10, distr("edu").sample.round.toInt))
+  val bonusSalary = distr("bonusSal").sample.round.toInt * education
+  private val (buyProbs, consumeProbs) = {
+    def softmax(list: List[Double]): List[Double] = {
+      val exp = list.map(math.exp)
+      val sum = exp.sum
+      exp.map(_ / sum)
+    }
+    def mapValuesSoftmax(containString: String): List[(Commodity, Double)] = {
+      def getItemByParam(paramName: String) =
+        Securities.all_commodities.find(c => paramName.toLowerCase().contains(c.name))
+      val filtered = shared.params
+        .filter(t => t._1.contains(containString) && getItemByParam(t._1).isDefined)
+        .map{case (name, value) => (getItemByParam(name).get, value)}
+        .toList
+      filtered.zip(softmax(filtered.map(_._2))).map(t => (t._1._1, t._2))
+    }
+
+    (mapValuesSoftmax("buy"), mapValuesSoftmax("consume"))
+  }
 
   def mycopy(_shared: Simulation,
              _substitution: collection.mutable.Map[SimO, SimO]) = {
@@ -22,23 +41,8 @@ class Person(
     p
   }
 
-  private val properties : Map[Commodity, Map[String, Int]] =
-    Map((Flour  -> Map("calories" -> 100)),
-        (Burger -> Map("calories" -> 500)));
-
-  private val foodstuffs = List(Flour, Burger);
-
-  def bonusSalary(): Int = bonusSalDistr.sample.round.toInt * education
-
-  // TODO: factor in bounded rationality: far-off rewards are to be discounted
-  private def expected_enjoyment(item: Commodity) : Int = {
-    item match {
-      case MovieTicket => 1
-      case _ if properties(item).contains("calories") =>
-        properties(item)("calories")
-      case _ => 0
-    }
-  }
+  private def expected_enjoyment(item: Commodity): Int =
+    distr("enjoy" + item.name.capitalize).sample.round.toInt
 
   private def consume(consumable: Commodity, units: Int) {
     assert(available(consumable) >= units);
@@ -50,23 +54,14 @@ class Person(
   protected def algo = __forever(
     __do{
       if(active) {
-        val food = if(GLOBAL.rnd.nextInt(2) == 0) Flour else Burger;
+        val buy = getNextCommodity(buyProbs)
+        val buyUnits = math.max(1, distr("buy").sample().round.toInt)
+        println("Food units: " + buyUnits)
+        shared.market(buy).market_buy_order_now(shared.timer, this, buyUnits);
 
-        happiness -= 100; // hunger
-
-        // assert(market(food).is_at_time(shared.timer));
-        val foodUnits = math.max(1, shared.distributions(this)("food").sample().round).toInt
-        println("Food units: " + foodUnits)
-        val foodLeftOver = shared.market(food).market_buy_order_now(shared.timer, this, foodUnits);
-           // needs to eat
-        if(available(food) >= 1) consume(food, foodUnits - foodLeftOver);
-
-        val movieUnits = 1
-        shared.market(MovieTicket).market_buy_order_now(shared.timer, this, movieUnits);
-           // wants entertainment
-        if(available(MovieTicket) >= 1) consume(MovieTicket, movieUnits);
-
-        // shared.market("miete").market_buy_order_now(shared.timer, this, 1);
+        val consumable = getNextCommodity(consumeProbs)
+        val consumeUnits = math.min(available(consumable), distr("consume").sample.round.toInt)
+        consume(consumable, consumeUnits)
       }
     },
     __wait(1)
@@ -74,6 +69,18 @@ class Person(
 
   override def stat {
     print("(Person@" + happiness + " " + capital/100 + ")  ");
+  }
+
+  private def getNextCommodity(probs: List[(Commodity, Double)]): Commodity = {
+    val prob = GLOBAL.rnd.nextDouble()
+    var cumul = 0.0
+    for ((commodity, value) <- probs) {
+      if (prob < cumul + value) {
+        return commodity
+      }
+      cumul += value
+    }
+    probs.last._1
   }
 }
 
