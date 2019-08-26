@@ -5,12 +5,6 @@ import breeze.linalg.DenseMatrix
 
 object DatasetCreator {
 
-  private val outputHeader = List("happiness", "capital", "salary")
-  private val inputHeader = List("male", "education", "bonusSalary", "buyWheat", "buyFlour", "buyBread",
-    "buyLand", "buyBeef", "buyOil", "buyFuel", "consumeWheat", "consumeFlour", "consumeBread", "consumeBeef",
-    "consumeOil", "consumeFuel", "enjoyWheat", "enjoyFlour", "enjoyBread", "enjoyBeef", "enjoyOil", "enjoyFuelMu") ++
-    outputHeader ++ Main.outputNames
-
   def separateDatasets(trainsetSize: Int) = {
     val nIters = 100
     val paramsList = sampleParams(trainsetSize / nIters)
@@ -53,7 +47,8 @@ object DatasetCreator {
     val s = new Simulation(params)
     Main.initializeSimulation(s)
     (for (_ <- 1 to nIters) yield {
-      val personInputRows: Map[Person, Map[String, Double]] = s.sims.map{case p: Person => (p, p.getInputRow())}.toMap
+      val personInputRows: Map[Person, Map[String, Double]] = s.sims.filter(_.isInstanceOf[Person])
+        .map{case p: Person => (p, p.getInputRow())}.toMap
       Main.callSimulation(s, 1)
       val personOutputRows: Map[Person, Map[String, Double]] = personInputRows.map{case (p, _) => (p, p.getOutputRow())}
       personInputRows.map{case (person, map) => (map.toList.sortBy(_._1), personOutputRows(person).toList.sortBy(_._1))}.toList

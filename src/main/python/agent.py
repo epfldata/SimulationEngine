@@ -1,7 +1,10 @@
+import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras.models import Sequential
+
+os.chdir('../../..')  # going to the root of the project
 
 
 class Agent:
@@ -59,12 +62,22 @@ class Agent:
             predictors[:, i].var(ddof=1) * targets[:, j].var(ddof=1))
 
 
+def zscore(x):
+    mean, sd = np.mean(x, axis=0), np.std(x, axis=0)
+    return (x - mean) / sd
+
 if __name__ == '__main__':
+    train_x = np.loadtxt(open("target/scala-2.11/train_sep_X.csv", "r"), delimiter=",", skiprows=1)
+    train_y = np.loadtxt(open("target/scala-2.11/train_sep_Y.csv", "r"), delimiter=",", skiprows=1)
+    train_x, train_y = zscore(train_x), zscore(train_y)
+    train_x = train_x[:, ~np.isnan(train_x[0])]
     agent = Agent({
-        'number_of_units': [64, 64, 1]
+        'features': train_x.shape[1],
+        'number_of_units': [64, 64, train_y.shape[1]],
+        'activations': ['relu', 'relu', 'linear'],
+        'number_of_layers': 3
     })
-    train_x = np.random.rand(100, 3)
-    train_y = train_x.sum(axis=1).reshape(100, 1)
+
     # ground_truth = tf.placeholder(tf.float32, (None, 1))
     ground_truth = tf.constant(train_y)
     loss = tf.losses.mean_squared_error(ground_truth, agent._model.output)
