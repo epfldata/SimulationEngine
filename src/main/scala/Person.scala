@@ -1,6 +1,7 @@
 package Simulation
 import GLOBAL.{print, println}
 import Securities._
+import bo.Main
 import code._
 
 class Person(
@@ -14,8 +15,7 @@ class Person(
   private val distr = shared.distributions(this)
   // between 1 and 10
   val education = math.max(1, math.min(10, distr("edu").sample.round.toInt))
-  val bonusSalary = distr("bonusSal").sample.round.toInt * education
-  private val (buyProbs, consumeProbs) = {
+  private val (buyProbs, consumeProbs: Map[Commodity, Double]) = {
     def softmax(list: List[Double]): List[Double] = {
       val exp = list.map(math.exp)
       val sum = exp.sum
@@ -31,8 +31,15 @@ class Person(
       filtered.zip(softmax(filtered.map(_._2))).map(t => (t._1._1, t._2))
     }
 
-    (mapValuesSoftmax("buy"), mapValuesSoftmax("consume"))
+    (mapValuesSoftmax("buy").toMap, mapValuesSoftmax("consume").toMap)
   }
+
+  private val expected_enjoyment: Map[Commodity, Int] = Securities.all_commodities
+    .filter(item => distr.contains("enjoy" + item.name.capitalize))
+    .map(item => (item, distr("enjoy" + item.name.capitalize).sample.round.toInt))
+    .toMap
+
+  var salary: Int = 0
 
   def mycopy(_shared: Simulation,
              _substitution: collection.mutable.Map[SimO, SimO]) = {
@@ -40,9 +47,6 @@ class Person(
     copy_state_to(p);
     p
   }
-
-  private def expected_enjoyment(item: Commodity): Int =
-    distr("enjoy" + item.name.capitalize).sample.round.toInt
 
   private def consume(consumable: Commodity, units: Int) {
     assert(available(consumable) >= units);
@@ -71,10 +75,10 @@ class Person(
     print("(Person@" + happiness + " " + capital/100 + ")  ");
   }
 
-  private def getNextCommodity(probs: List[(Commodity, Double)]): Commodity = {
+  private def getNextCommodity(probs: Map[Commodity, Double]): Commodity = {
     val prob = GLOBAL.rnd.nextDouble()
     var cumul = 0.0
-    for ((commodity, value) <- probs) {
+    for ((commodity, value) <- probs.toList) {
       if (prob < cumul + value) {
         return commodity
       }
@@ -82,6 +86,26 @@ class Person(
     }
     probs.last._1
   }
+
+  def getInputRow(): Map[String, Double] = {
+    var tuples: List[(String, Double)] = List("male" -> (if (male) 1 else 0), "education" -> education.toDouble,
+      "buyWheat" -> buyProbs(Securities.Wheat), "buyFlour" -> buyProbs(Securities.Flour),
+      "buyBread" -> buyProbs(Securities.Bread), "buyLand" -> buyProbs(Securities.Land),
+      "buyBeef" -> buyProbs(Securities.Beef), "buyOil" -> buyProbs(Securities.Oil), "buyFuel" -> buyProbs(Securities.Fuel),
+      "consumeWheat" -> consumeProbs(Securities.Wheat), "consumeFlour" -> consumeProbs(Securities.Flour),
+      "consumeBread" -> consumeProbs(Securities.Bread), "consumeBeef" -> consumeProbs(Securities.Beef),
+      "consumeOil" -> consumeProbs(Securities.Oil), "consumeFuel" -> consumeProbs(Securities.Fuel),
+      "enjoyWheat" -> expected_enjoyment(Securities.Wheat), "enjoyFlour" -> expected_enjoyment(Securities.Flour),
+      "enjoyBread" -> expected_enjoyment(Securities.Bread), "enjoyBeef" -> expected_enjoyment(Securities.Beef),
+      "enjoyOil" -> expected_enjoyment(Securities.Oil), "enjoyFuel" -> expected_enjoyment(Securities.Fuel))
+      .map(t => if (t._2.isInstanceOf[Int]) (t._1, t._2.asInstanceOf[Int].toDouble) else (t._1, t._2.asInstanceOf[Double]))
+    tuples ++= getOutputRow().toList
+    tuples ++= Main.outputNames.zip(Main.outputFromState(shared)).toMap.toList
+    tuples.toMap
+  }
+
+  def getOutputRow(): Map[String, Double] = Map("happiness" -> happiness, "capital" -> capital, "salary" -> salary)
+    .mapValues(v => if (v.isInstanceOf[Int]) v.toDouble else v)
 }
 
 

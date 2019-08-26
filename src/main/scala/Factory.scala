@@ -114,13 +114,19 @@ case class HR(private val shared: Simulation,
   protected def hire_one(): Option[(Person, Int)] = {
     if(shared.arbeitsmarkt.nonEmpty) {
       val employee = shared.arbeitsmarkt.pop.asInstanceOf[Person]
-      employees.push((employee, salary + employee.bonusSalary))
+      val bonusSalary = shared.distributions(employee)("bonusSal").sample.round.toInt * employee.education
+      employees.push((employee, salary + bonusSalary))
+      employee.salary = salary + bonusSalary
       Some(employees.top)
     } else {
       None
     }
   }
-  protected def fire_one() { shared.arbeitsmarkt.push(employees.pop._1); }
+  protected def fire_one() {
+    val employee = employees.pop._1
+    employee.salary = 0
+    shared.arbeitsmarkt.push(employee)
+  }
 
   def hire(n: Int): List[(Person, Int)] = {
     (for(_ <- 1 to n) yield hire_one()).flatten.toList
