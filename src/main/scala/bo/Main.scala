@@ -10,7 +10,7 @@ import breeze.stats.distributions.Gaussian
 import spray.json.{JsObject, JsonParser}
 
 object Main {
-  val numberPeople = 120
+  val numberPeople = 1200
   val bufferSize = math.pow(2, 27).toInt // 128 MB
   val initLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/initLog"), bufferSize)
   val runLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/runLog"), bufferSize)
