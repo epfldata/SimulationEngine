@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.layers import Dense
@@ -7,9 +6,11 @@ from tensorflow.python.keras.models import Sequential
 
 class Node:
 
-    def __init__(self, hyper_parameters=None):
+    def __init__(self, inputNames, outputNames, hyper_parameters=None):
         if hyper_parameters is None:
             hyper_parameters = {}
+        self._inputNames = inputNames
+        self._outputNames = outputNames
         self._model = Sequential()
         units = hyper_parameters.get('number_of_units') or [64] * 3
         activations = hyper_parameters.get('activations') or ['linear'] * 3
@@ -21,6 +22,12 @@ class Node:
         self._model.compile(loss=hyper_parameters.get('loss') or 'mae',
                             optimizer=hyper_parameters.get('optimizer') or 'sgd',
                             metrics=hyper_parameters.get('metrics') or ['mae'])
+
+    def inputNames(self):
+        return self._inputNames
+
+    def outputNames(self):
+        return self._outputNames
 
     def state_size(self):
         return self._model.output.shape[1]

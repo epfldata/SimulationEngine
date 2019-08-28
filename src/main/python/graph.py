@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 
@@ -40,17 +41,26 @@ class Graph:
             print(loss_val)
 
     def solo_train(self, node, train_x, train_agent_y):
-        node.train(self._prepare_node_input(train_x, node), train_agent_y)
+        train_agent_y.columns = node.outputNames()
+        node.train(self._prepare_node_input(train_x, node), train_agent_y.to_numpy())
 
     def _prepare_node_input(self, data, node):
-        result = np.empty((data[node].shape[0], 0))
+        result = data[node]["constants"]
         for in_node in self._edges[node]:
-            result = np.concatenate([result, data[in_node]], axis=1)
-        return result
+            result = pd.concat([result, data[in_node]["states"]], axis=1)
+        result = result.reindex(columns=node.inputNames())
+        # todo: remove nan columns
+        return result.to_numpy()
+
+    def outputToDF(self, node, nparray):
+        return pd.DataFrame(nparray, columns=node.outputNames())
 
     def predict(self, data, time=1):
         for _ in range(time):
-            data = {node: node.predict(self._prepare_node_input(data, node)) for node in data}
+            data = {node: {
+                "constants": data[node]["constants"],
+                "states": self.outputToDF(node, node.predict(self._prepare_node_input(data, node)))
+            } for node in data}
         return data
 
     def cor(self, p1, p2, data_vec, samples=1000):

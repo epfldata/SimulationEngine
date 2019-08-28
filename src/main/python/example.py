@@ -1,10 +1,9 @@
-from node import Node
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-
-from graph import Graph, Aggregator, Parameter
 from env import Environment, Agent
+from graph import Graph, Aggregator, Parameter
+from node import Node
 
 
 def agent_example():
@@ -76,16 +75,22 @@ def env_example():
 
 if __name__ == '__main__':
     env = Environment()
-    agent1 = Agent(['mamad', 'ali'], 'agent1')
-    agent2 = Agent(['reza', 'gholi', 'hessam'], 'agent2')
+    agent1 = Agent(["c1", "c2"], ['p1', 'p2'], 'agent1')
+    agent2 = Agent(["c1", "c2"], ['p1', 'p2', 'p3'], 'agent2')
     data = {
-        agent1: pd.DataFrame({'mamad': np.random.rand(100), 'ali': np.random.rand(100)}),
-        agent2: pd.DataFrame({'reza': np.random.rand(100), 'gholi': np.random.rand(100), 'hessam': np.random.rand(100)})
+        agent1: {
+            "states": pd.DataFrame({'p1': np.random.rand(100), 'p2': np.random.rand(100)}),
+            "constants": pd.DataFrame({"c1": np.random.rand(100), "c2": np.random.rand(100)})
+        },
+        agent2: {
+            "states": pd.DataFrame({'p1': np.random.rand(100), 'p2': np.random.rand(100), 'p3': np.random.rand(100)}),
+            "constants": pd.DataFrame({"c1": np.random.rand(100), "c2": np.random.rand(100)})
+        }
     }
 
     output = {
-        agent1: pd.DataFrame({'mamad': np.random.rand(100), 'ali': np.random.rand(100)}),
-        agent2: pd.DataFrame({'reza': np.random.rand(100), 'gholi': np.random.rand(100), 'hessam': np.random.rand(100)})
+        agent1: pd.DataFrame({'p1': np.random.rand(100), 'p2': np.random.rand(100)}),
+        agent2: pd.DataFrame({'p1': np.random.rand(100), 'p2': np.random.rand(100), 'p3': np.random.rand(100)})
     }
 
     env.register_agent(agent1)
@@ -94,4 +99,4 @@ if __name__ == '__main__':
     env.compile()
 
     env.solo_train(data, output)
-    print(env.predict(data)[agent2])
+    print(env.predict(data)[agent2]["states"])

@@ -1,19 +1,36 @@
+import pandas as pd
 from graph import Graph
 from node import Node
-import pandas as pd
 
 
 class Agent:
-    def __init__(self, state, name):
-        self.state = state
+    def __init__(self, constants, state, name):
+        self.constants = list(map(lambda n: name + "." + n, constants))
+        self.state = list(map(lambda n: name + "." + n, state))
         self.name = name
 
 
-def _normalize(data):
+def _normalizeInput(data):
+    scales = {agent: {
+        type: (data[agent][type].mean(), data[agent][type].std()) for type in ["states", "constants"]
+    } for agent in data}
+    scaled_data = {agent: {
+        type: (data[agent][type] - scales[agent][type][0]) / scales[agent][type][1] for type in ["states", "constants"]
+    } for agent in data}
+
+    return scaled_data, scales
+
+def _normalizeOutput(data):
     scales = {agent: (data[agent].mean(), data[agent].std()) for agent in data}
     scaled_data = {agent: (data[agent] - scales[agent][0]) / scales[agent][1] for agent in data}
 
     return scaled_data, scales
+
+def _prefixColumnNames(data, agent):
+    def prefixColumnNames(data, agent):
+        return pd.DataFrame(data.values, columns=list(map(lambda n: agent.name + "." + n, data.columns)))
+
+    return {type: prefixColumnNames(data[agent][type], agent) for type in ["states", "constants"]}
 
 
 class Environment:
@@ -35,8 +52,11 @@ class Environment:
         self._connections[to_agent].append(from_agent)
 
     def _node_generator(self, agent):
-        node = Node({
-            'features': sum(len(in_agent.state) for in_agent in self._connections[agent]),
+        inputNames = agent.constants
+        for in_agent in self._connections[agent]:
+            inputNames += in_agent.state
+        node = Node(inputNames, agent.state, {
+            'features': len(inputNames),
             'number_of_units': [64, 64, len(agent.state)]
         })
         return node
@@ -59,16 +79,16 @@ class Environment:
         if self._non_compiled_changes:
             raise Exception("Non Compiled Changes! Compile first!")
 
-        for agent in data:
-            data[agent].columns = sorted(data[agent].columns)
+        data = {agent: _prefixColumnNames(data, agent) for agent in data}
 
-        scaled_data, scales = _normalize(data)
-        node_indexed_np = {self._get_node(agent): scaled_data[agent].to_numpy() for agent in scaled_data}
-        new_node_indexed_np = self._graph.predict(node_indexed_np, time)
+        scaled_data, scales = _normalizeInput(data)
+        node_indexed_df = {self._get_node(agent): scaled_data[agent] for agent in scaled_data}
+        new_node_indexed_df = self._graph.predict(node_indexed_df, time)
 
-        new_data_np = {self._get_agent(node): new_node_indexed_np[node] for node in new_node_indexed_np}
-        new_data = {agent: pd.DataFrame(new_data_np[agent], columns=data[agent].columns) for agent in new_data_np}
-        rescaled_new_data = {agent: new_data[agent] * scales[agent][1] + scales[agent][0] for agent in new_data}
+        new_data = {self._get_agent(node): new_node_indexed_df[node] for node in new_node_indexed_df}
+        rescaled_new_data = {agent: {
+            type: new_data[agent][type] * scales[agent][type][1] + scales[agent][type][0] for type in ["states", "constants"]
+        } for agent in new_data}
 
         return rescaled_new_data
 
@@ -76,15 +96,17 @@ class Environment:
         if self._non_compiled_changes:
             raise Exception("None Compiled Changes! Compile first!")
 
-        scaled_input = _normalize(data_input)[0]
-        scaled_output = _normalize(data_output)[0]
+        data_input = {agent: _prefixColumnNames(data_input, agent) for agent in data_input}
 
-        node_input_np = {self._get_node(agent): scaled_input[agent].to_numpy() for agent in scaled_input}
-        agent_output_np = {agent: scaled_output[agent].to_numpy() for agent in scaled_output}
+        scaled_input = _normalizeInput(data_input)[0]
+        scaled_output = _normalizeOutput(data_output)[0]
+
+        node_input = {self._get_node(agent): scaled_input[agent] for agent in scaled_input}
+        agent_output = {agent: scaled_output[agent] for agent in scaled_output}
 
         for agent in scaled_input:
             print("Solo Training " + agent.name)
             self._graph.solo_train(self._get_node(agent),
-                                   node_input_np,
-                                   agent_output_np[agent])
+                                   node_input,
+                                   agent_output[agent])
             print()
