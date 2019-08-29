@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from graph import Graph
 from node import Node
@@ -110,3 +111,18 @@ class Environment:
                                    node_input,
                                    agent_output[agent])
             print()
+
+    def correlationMatrix(self, agent, iters=1000):
+        if self._non_compiled_changes:
+            raise Exception("Non Compiled Changes! Compile first!")
+        node = self._get_node(agent)
+        pattern = pd.DataFrame(np.repeat([np.random.normal(size=len(node._inputNames))], iters, axis=0),
+                            columns=node._inputNames)
+        corMatrix = pd.DataFrame(index=node._inputNames, columns=node._outputNames)
+        for param in node._inputNames:
+            data = pattern
+            data[param] = np.random.normal(size=iters)
+            targets = pd.DataFrame(node.predict(data), columns=node._outputNames)
+            corMatrix.loc[param] = [np.cov([data[param], targets[obs]])[0, 1]
+                            / np.sqrt(data[param].var(ddof=1) * targets[obs].var(ddof=1)) for obs in node._outputNames]
+        return corMatrix

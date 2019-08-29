@@ -41,19 +41,19 @@ class Graph:
             print(loss_val)
 
     def solo_train(self, node, train_x, train_agent_y):
-        train_agent_y.columns = node.outputNames()
+        train_agent_y.columns = node._outputNames
         node.train(self._prepare_node_input(train_x, node), train_agent_y.to_numpy())
 
     def _prepare_node_input(self, data, node):
         result = data[node]["constants"]
         for in_node in self._edges[node]:
             result = pd.concat([result, data[in_node]["states"]], axis=1)
-        result = result.reindex(columns=node.inputNames())
+        result = result.reindex(columns=node._inputNames)
         # todo: remove nan columns
         return result.to_numpy()
 
     def outputToDF(self, node, nparray):
-        return pd.DataFrame(nparray, columns=node.outputNames())
+        return pd.DataFrame(nparray, columns=node._outputNames)
 
     def predict(self, data, time=1):
         for _ in range(time):

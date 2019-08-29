@@ -23,11 +23,8 @@ class Node:
                             optimizer=hyper_parameters.get('optimizer') or 'sgd',
                             metrics=hyper_parameters.get('metrics') or ['mae'])
 
-    def inputNames(self):
-        return self._inputNames
-
-    def outputNames(self):
-        return self._outputNames
+    def input_size(self):
+        return self._model.input.shape[1]
 
     def state_size(self):
         return self._model.output.shape[1]

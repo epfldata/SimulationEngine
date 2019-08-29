@@ -99,4 +99,5 @@ if __name__ == '__main__':
     env.compile()
 
     env.solo_train(data, output)
+    print("correlation matrix agent2\n", env.correlationMatrix(agent2))
     print(env.predict(data)[agent2]["states"])
