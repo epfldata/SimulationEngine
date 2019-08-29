@@ -100,4 +100,5 @@ if __name__ == '__main__':
 
     env.solo_train(data, output)
     print("correlation matrix agent2\n", env.correlationMatrix(agent2))
+    print("derivative matrix agent2\n", env.derivativeMatrix(agent1, "c1", 100))
     print(env.predict(data)[agent2]["states"])

@@ -126,3 +126,17 @@ class Environment:
             corMatrix.loc[param] = [np.cov([data[param], targets[obs]])[0, 1]
                             / np.sqrt(data[param].var(ddof=1) * targets[obs].var(ddof=1)) for obs in node._outputNames]
         return corMatrix
+
+    def derivativeMatrix(self, agent, param, iters=1000):
+        if self._non_compiled_changes:
+            raise Exception("Non Compiled Changes! Compile first!")
+        param = agent.name + "." + param
+        node = self._get_node(agent)
+        data = pd.DataFrame(np.repeat([np.random.normal(size=len(node._inputNames))], iters, axis=0),
+                               columns=node._inputNames)
+        data[param] = np.sort(np.random.normal(size=iters))
+        data_np = data.to_numpy()
+        dMatrix = pd.DataFrame(index=data[param], columns=node._outputNames)
+        for row, index in enumerate(data[param]):
+            dMatrix.loc[index] = node.derivative(data_np[row].reshape(1, node.input_size()))[:, node._inputNames.index(param)]
+        return dMatrix
