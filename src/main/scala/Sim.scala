@@ -2,8 +2,6 @@ package Simulation
 import Owner._
 import code._
 
-import scala.util.Random
-
 
 trait Sim {
   type T = Int // time type
@@ -59,7 +57,7 @@ abstract class SimO(
   }
 
   def initializeVariables()  {
-    variables = scala.collection.mutable.Map(variables.mapValues(_ => new Random().nextInt(100).toDouble).toSeq: _*)
+    variables = Map(variables.mapValues(_ => (() => GLOBAL.rnd.nextInt(100).toDouble)).toSeq: _*)
   }
 
   def mycopy(_shared: Simulation,

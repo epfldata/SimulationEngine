@@ -22,21 +22,18 @@ case class ProductionLine(
   val pls: ProductionLineSpec,
   var o: Owner,
   val employees: List[(Person, Int)],
-  val start_time: Int,
-
-//  var log : List[(Int, Double)] = List(),
-      // (time production run was completed, efficiency of production run)
+  val start_time: Int
+) extends Sim {
 
   // state of the machine (this plus env)
-  var goodwill : Double = 0.0,
-  var lost_runs_cost : Double = 0.0,
-      // cost from zero-efficiency production runs
-  private var rpt : Int = 0,
-  private var frac : Double = 1.0,
-              // fraction of theoretical capacity currently achieved
-  private var costs_consumables : Double = 0.0 // of current production run
+  var goodwill = 0.0
+  var lost_runs_cost = 0.0 // cost from zero-efficiency production runs
+  var valueProduced = 0.0
+  private var rpt = 0
+  private var frac = 1.0
+  // fraction of theoretical capacity currently achieved
+  private var costs_consumables = 0.0 // of current production run
 
-) extends Sim {
   init(start_time);
 
   def salary_cost(): Int = employees.map(_._2).sum
@@ -82,7 +79,8 @@ case class ProductionLine(
       val unit_cost = total_cost / units_produced;
 
       if(units_produced > 0) {
-       o.make(pls.produced._1, units_produced, unit_cost);
+        o.make(pls.produced._1, units_produced, unit_cost)
+        valueProduced = units_produced * unit_cost
 
         if(! GLOBAL.silent)
         println(o + " produces " + units_produced + "x " +
@@ -116,7 +114,7 @@ case class HR(private val shared: Simulation,
       val employee = shared.arbeitsmarkt.pop.asInstanceOf[Person]
       val bonusSalary = shared.distributions(employee)("bonusSal").sample.round.toInt * employee.education
       employees.push((employee, salary + bonusSalary))
-      employee.variables("salary") = salary + bonusSalary
+      employee.salary = salary + bonusSalary
       Some(employees.top)
     } else {
       None
@@ -124,7 +122,7 @@ case class HR(private val shared: Simulation,
   }
   protected def fire_one() {
     val employee = employees.pop._1
-    employee.variables("salary") = 0
+    employee.salary = 0
     shared.arbeitsmarkt.push(employee)
   }
 
@@ -145,6 +143,10 @@ abstract class Factory(protected val pls: ProductionLineSpec,
   protected var hr : HR = HR(shared, this, math.abs(shared.distributions(this)("salary").sample.round.toInt))
   protected var goal_num_pl = 0;
   private var nestedSimIters = math.max(0, math.min(20, shared.distributions(this)("iters").sample.round.toInt))
+
+  variables += "employees" -> (() => numEmployees.toDouble)
+  variables += "totalGoodwill" -> (() => pl.map(_.goodwill).sum)
+  variables += "totalValueProduced" -> (() => pl.map(_.valueProduced).sum)
 
   // constructor
   {

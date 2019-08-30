@@ -23,8 +23,8 @@ object Main {
 
     val numberPeople = s.constants("Person")("number")
     List(
-      s.sims.map(_.variables("capital") / 100).sum / s.sims.size,
-      s.sims.map(_.variables("total_value_destroyed") / s.sims.size).sum,
+      s.sims.map(_.variables("capital")() / 100).sum / s.sims.size,
+      s.sims.map(_.variables("total_value_destroyed")() / s.sims.size).sum,
       (numberPeople - s.sims.map{case f: Factory => f.numEmployees; case _ => 0}.sum) / numberPeople,
       s.sims.map{case m: Mill => m.numEmployees; case _ => 0}.sum.toDouble / numberPeople,
       s.sims.map{case f: Farm => f.numEmployees; case _ => 0}.sum.toDouble / numberPeople,
@@ -126,7 +126,9 @@ object Main {
     ) ++ sims.toList, randomized)
 
     val capitals = Gaussian(s.constants("Person")("capitalMu"), s.constants("Person")("capitalSigma")).sample(s.sims.length)
-    s.sims.zip(capitals).foreach(t => t._1.variables("capital") = t._2.round.toInt)
+    s.sims.zip(capitals).foreach(t =>
+      t._1.capital = t._2.round.toInt
+    )
 
     Console.out.flush()
     Console.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)))
