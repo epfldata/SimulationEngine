@@ -76,19 +76,19 @@ case class Buyer(commodity: Commodity,
 
 
 class Farm(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List((Land, s.params("farmReq").toInt)), List(), (Wheat, s.params("farmProd").toInt), s.params("farmTime").toInt), s)
+  ProductionLineSpec(1, List((Land, s.constants("Farm")("farmReq").toInt)), List(), (Wheat, s.constants("Farm")("farmProd").toInt), s.constants("Farm")("farmTime").toInt), s)
 
 class Mill(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List(), List((Wheat, s.params("millCons").toInt)), (Flour, s.params("millProd").toInt), s.params("millTime").toInt), s)
+  ProductionLineSpec(1, List(), List((Wheat, s.constants("Mill")("millCons").toInt)), (Flour, s.constants("Mill")("millProd").toInt), s.constants("Mill")("millTime").toInt), s)
 
 class Bakery(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List(), List((Flour, s.params("bakeryCons").toInt)), (Bread, s.params("bakeryProd").toInt), s.params("bakeryTime").toInt), s)
+  ProductionLineSpec(1, List(), List((Flour, s.constants("Factory")("bakeryCons").toInt)), (Bread, s.constants("Factory")("bakeryProd").toInt), s.constants("Factory")("bakeryTime").toInt), s)
 
 class CattleFarm(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List((Land, s.params("cattleReq").toInt)), List(), (Beef, s.params("cattleProd").toInt), s.params("cattleTime").toInt), s)
+  ProductionLineSpec(1, List((Land, s.constants("Factory")("cattleReq").toInt)), List(), (Beef, s.constants("Factory")("cattleProd").toInt), s.constants("Factory")("cattleTime").toInt), s)
 
 class OilField(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List((Land, s.params("oilReq").toInt)), List(), (Oil, s.params("oilProd").toInt), s.params("oilTime").toInt), s)
+  ProductionLineSpec(1, List((Land, s.constants("Factory")("oilReq").toInt)), List(), (Oil, s.constants("Factory")("oilProd").toInt), s.constants("Factory")("oilTime").toInt), s)
 
 class Refinery(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List(), List((Oil, s.params("refineryCons").toInt)), (Fuel, s.params("refineryProd").toInt), s.params("refineryTime").toInt), s)
+  ProductionLineSpec(1, List(), List((Oil, s.constants("Factory")("refineryCons").toInt)), (Fuel, s.constants("Factory")("refineryProd").toInt), s.constants("Factory")("refineryTime").toInt), s)

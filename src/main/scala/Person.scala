@@ -1,16 +1,21 @@
 package Simulation
 import GLOBAL.{print, println}
+import Owner.Owner
 import Securities._
 import bo.Main
 import code._
+
 
 class Person(
   val shared: Simulation,
   val active: Boolean,
   val male: Boolean = GLOBAL.rnd.nextBoolean(),
-  var happiness : Int = 0, // pursuit of it
+  var _happiness : Int = 0, // pursuit of it
   var log : List[String] = List()
 ) extends SimO(shared) {
+
+  variables("happiness") = _happiness
+  variables("salary") = 0.0
 
   private val distr = shared.distributions(this)
   // between 1 and 10
@@ -24,7 +29,7 @@ class Person(
     def mapValuesSoftmax(containString: String): List[(Commodity, Double)] = {
       def getItemByParam(paramName: String) =
         Securities.all_commodities.find(c => paramName.toLowerCase().contains(c.name))
-      val filtered = shared.params
+      val filtered = shared.constants("Person")
         .filter(t => t._1.contains(containString) && getItemByParam(t._1).isDefined)
         .map{case (name, value) => (getItemByParam(name).get, value)}
         .toList
@@ -39,18 +44,21 @@ class Person(
     .map(item => (item, distr("enjoy" + item.name.capitalize).sample.round.toInt))
     .toMap
 
-  var salary: Int = 0
+  println("dist:")
+  println(distr)
+  println("ee:")
+  println(expected_enjoyment)
 
   def mycopy(_shared: Simulation,
              _substitution: collection.mutable.Map[SimO, SimO]) = {
-    val p = new Person(_shared, active, male, happiness, log);
+    val p = new Person(_shared, active, male, _happiness, log);
     copy_state_to(p);
     p
   }
 
   private def consume(consumable: Commodity, units: Int) {
     assert(available(consumable) >= units);
-    happiness += units * expected_enjoyment(consumable)
+    variables("happiness") += units * expected_enjoyment(consumable)
     destroy(consumable, units);
     log = (units + "*" + consumable + "@" + shared.timer) :: log;
   }
@@ -72,7 +80,7 @@ class Person(
   );
 
   override def stat {
-    print("(Person@" + happiness + " " + capital/100 + ")  ");
+    print("(Person@" + variables("happiness") + " " + variables("capital")/100 + ")  ");
   }
 
   private def getNextCommodity(probs: Map[Commodity, Double]): Commodity = {
@@ -104,8 +112,6 @@ class Person(
     tuples.toMap
   }
 
-  def getOutputRow(): Map[String, Double] = Map("happiness" -> happiness, "capital" -> capital, "salary" -> salary)
-    .mapValues(v => if (v.isInstanceOf[Int]) v.toDouble else v)
+  def getOutputRow(): Map[String, Double] = Map("happiness" -> variables("happiness"), "capital" -> variables("capital"),
+    "salary" -> variables("salary"))
 }
-
-

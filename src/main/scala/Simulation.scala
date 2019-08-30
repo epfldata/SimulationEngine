@@ -5,12 +5,15 @@ import Owner._
 import Securities._
 import Simulation.Factory.Factory
 import Simulation.SimLib.{Farm, Mill}
+import bo.DatasetCreator.Data
 import breeze.stats.distributions.{Gaussian, RandBasis, ThreadLocalRandomGenerator}
 import org.apache.commons.math3.random.MersenneTwister
 
+import scala.collection.mutable.{Map => MutableMap}
 
-class Simulation(val params: Map[String, Double]) {
-  def this() = this(Map())
+
+class Simulation(val constants: MutableMap[String, Map[String, Double]]) {
+  def this() = this(MutableMap.empty[String, Map[String, Double]])
 
   var timer = 0;
 
@@ -19,15 +22,16 @@ class Simulation(val params: Map[String, Double]) {
     case person: Person =>
       val gender = if (person.male) "male" else "female"
       var distr: Map[String, Gaussian] = Map(
-        ("edu", new Gaussian(params(gender + "EduMu"), params(gender + "EduSigma"))),
-        ("bonusSal", new Gaussian(params(gender + "BonusSalMu"), params(gender + "BonusSalSigma"))),
-        ("buy", new Gaussian(params("buyMu"), params("buySigma"))),
-        ("consume", new Gaussian(params("consumeMu"), params("consumeSigma")))
+        ("edu", new Gaussian(constants("Person")(gender + "EduMu"), constants("Person")(gender + "EduSigma"))),
+        ("bonusSal", new Gaussian(constants("Person")(gender + "BonusSalMu"), constants("Person")(gender + "BonusSalSigma"))),
+        ("buy", new Gaussian(constants("Person")("buyMu"), constants("Person")("buySigma"))),
+        ("consume", new Gaussian(constants("Person")("consumeMu"), constants("Person")("consumeSigma")))
       )
       for (com <- Securities.all_commodities) {
         val capName = com.name.capitalize
-        if (params.contains("enjoy" + capName + "Mu")) {
-          distr += "enjoy" + capName -> new Gaussian(params("enjoy" + capName + "Mu"), params("enjoy" + capName + "Sigma"))
+        if (constants("Person").contains("enjoy" + capName + "Mu")) {
+          distr += "enjoy" + capName -> new Gaussian(constants("Person")("enjoy" + capName + "Mu"),
+                                                     constants("Person")("enjoy" + capName + "Sigma"))
         }
       }
       distr
@@ -39,11 +43,28 @@ class Simulation(val params: Map[String, Double]) {
         case _ => "factory"
       }
       Map(
-        ("salary", new Gaussian(params(factoryType + "SalaryMu"), params(factoryType + "SalarySigma"))),
-        ("iters", new Gaussian(params(factoryType + "ItersMu"), params(factoryType + "ItersSigma")))
+        ("salary", new Gaussian(constants(factoryType.capitalize)(factoryType + "SalaryMu"),
+                                constants(factoryType.capitalize)(factoryType + "SalarySigma"))),
+        ("iters", new Gaussian(constants(factoryType.capitalize)(factoryType + "ItersMu"),
+                               constants(factoryType.capitalize)(factoryType + "ItersSigma")))
       )
 
     case _ => Map()
+  }
+
+  def getPopulationData(agents: Iterable[String]): Data = {
+    def getAgentPopulationData(agentType: String): Map[String, Double] = {
+      val individualVars: Map[String, List[Double]] = sims.filter { sim =>
+        sim.getClass.getName.equals(GLOBAL.agentClass(agentType))
+      }
+        .flatMap(_.variables.toSeq).groupBy(_._1).mapValues(_.map(_._2))
+      val populationVars: Map[String, Double] = individualVars.mapValues(vars => vars.map(_ / vars.size).sum)
+      val consts: Map[String, Double] = constants(agentType)
+
+      populationVars.map(t => ("var_" + t._1 + "Mu", t._2)) ++ consts.map(t => ("const_" + t._1, t._2))
+    }
+
+    agents.map(agentType => (agentType, getAgentPopulationData(agentType))).toMap
   }
 
   val market = collection.mutable.Map[Commodity, SellersMarket]();
@@ -65,10 +86,10 @@ class Simulation(val params: Map[String, Double]) {
       the sims to the Simulation (via init).
 
       init() accepts the list of sims `_sims`,
-      enters persons into the labor market,
+      enters Persons into the labor market,
       and output the status of each sim.
   */
-  def init(_sims: List[SimO]) {
+  def init(_sims: List[SimO], randomized: Boolean = false) {
     assert(timer == 0);
     println("INIT Simulation " + this);
     sims = _sims;
@@ -79,6 +100,9 @@ class Simulation(val params: Map[String, Double]) {
       println; println;
     }
 
+    if (randomized)
+      sims.foreach(_.initializeVariables())
+
     println("INIT Simulation complete " + this);
   }
 
@@ -87,7 +111,7 @@ class Simulation(val params: Map[String, Double]) {
       sellers.
   */
   def mycopy() = {
-    val s2 = new Simulation(params);
+    val s2 = new Simulation(constants);
     val old2new = collection.mutable.Map[SimO, SimO]();
 
     // this separation would not be needed if we had a central map from sim ids

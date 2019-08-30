@@ -69,7 +69,7 @@ case class ProductionLine(
       __wait(1),
       __do{
         //print("paying salaries. ");
-        // salaries are paid globally (by the factory)
+        // salaries are paid globally (by the Factory)
         goodwill += salary_cost()
         rpt += 1;
       }
@@ -77,8 +77,8 @@ case class ProductionLine(
     __do{
       //print("production complete! ");
       val units_produced = (pls.produced._2  * frac).toInt;
-      val personnel_costs = salary_cost() * pls.time_to_complete;
-      val total_cost : Double = costs_consumables + personnel_costs;
+      val Personnel_costs = salary_cost() * pls.time_to_complete;
+      val total_cost : Double = costs_consumables + Personnel_costs;
       val unit_cost = total_cost / units_produced;
 
       if(units_produced > 0) {
@@ -116,7 +116,7 @@ case class HR(private val shared: Simulation,
       val employee = shared.arbeitsmarkt.pop.asInstanceOf[Person]
       val bonusSalary = shared.distributions(employee)("bonusSal").sample.round.toInt * employee.education
       employees.push((employee, salary + bonusSalary))
-      employee.salary = salary + bonusSalary
+      employee.variables("salary") = salary + bonusSalary
       Some(employees.top)
     } else {
       None
@@ -124,7 +124,7 @@ case class HR(private val shared: Simulation,
   }
   protected def fire_one() {
     val employee = employees.pop._1
-    employee.salary = 0
+    employee.variables("salary") = 0
     shared.arbeitsmarkt.push(employee)
   }
 

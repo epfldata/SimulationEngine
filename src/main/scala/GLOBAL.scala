@@ -10,6 +10,14 @@ package object GLOBAL {
   var strongSilence = false
   val rnd = new Random(19)
 
+  def agentClass(agentType: String): String = {
+    agentType match {
+      case "Person" => "Simulation.Person"
+      case "Farm" => "Simulation.SimLib.Farm"
+      case "Mill" => "Simulation.SimLib.Mill"
+    }
+  }
+
   def mapopt[A,B](l: List[A], f: A => Option[B]) : List[B] =
     l.flatMap((a: A) => f(a) match {
       case Some(b) => List(b)

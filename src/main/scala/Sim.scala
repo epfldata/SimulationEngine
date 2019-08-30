@@ -2,6 +2,8 @@ package Simulation
 import Owner._
 import code._
 
+import scala.util.Random
+
 
 trait Sim {
   type T = Int // time type
@@ -54,6 +56,10 @@ abstract class SimO(
   protected def copy_state_to(_to: SimO) = {
     super[Seller].copy_state_to(_to);
     super[Sim].copy_state_to(_to);
+  }
+
+  def initializeVariables()  {
+    variables = scala.collection.mutable.Map(variables.mapValues(_ => new Random().nextInt(100).toDouble).toSeq: _*)
   }
 
   def mycopy(_shared: Simulation,

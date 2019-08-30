@@ -1,9 +1,12 @@
 package bo
 
+import scala.collection.mutable.{Map => MutableMap}
+
 import Simulation.Simulation
 
-case class ChaosTest(f: Simulation => Seq[Double], var params: Map[String, Double]) {
-  def lyapunovExponent(name: String,
+case class ChaosTest(f: Simulation => Seq[Double], var params: MutableMap[String, Map[String, Double]]) {
+  def lyapunovExponent(paramName: String,
+                       agentType: String,
                        iterations: Int = 1000,
                        step: Int = 1,
                        deltaFraction: Double = 20,
@@ -16,11 +19,11 @@ case class ChaosTest(f: Simulation => Seq[Double], var params: Map[String, Doubl
       }
     }
 
-    val paramValue = params(name)
+    val paramValue = params(agentType)(paramName)
     var s = new Simulation(params)
     val result0 = getTimeSeries(s)
 
-    params += name -> paramValue * (1 + deltaFraction)
+    params(agentType) += paramName -> paramValue * (1 + deltaFraction)
     s = new Simulation(params)
     val result1 = getTimeSeries(s)
 

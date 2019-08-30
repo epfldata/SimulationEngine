@@ -21,13 +21,15 @@ case class BalanceSheet(
 )
 
 
-/** A legal person who manages its own finances and owns capital and inventory.
+/** A legal Person who manages its own finances and owns capital and inventory.
 */
 class Owner {
   /** It is safe to directly modify this.
       Changes the balance, of course.
   */
-  var capital : Int = 0 // EUR cents
+  var constants = Map.empty[String, Double]
+  var variables = scala.collection.mutable.Map("capital" -> 0.0, "total_value_destroyed" -> 0.0)
+  var observables = Map.empty[String, Double]
 
 //  var accounts = List[Account]()
 
@@ -36,14 +38,14 @@ class Owner {
                                                 // name -> # units
   protected var inventory_avg_cost : collection.mutable.Map[ITEM_T, Double] =
                                      collection.mutable.Map[ITEM_T, Double]()
-  private var total_value_destroyed : Double = 0.0
+
 
   protected def copy_state_to(_to: Owner) {
     //println("Owner.copy_state_to: " + this);
-    _to.capital               = capital;
+    _to.variables("capital")  = variables("capital");
     _to.inventory             = inventory.clone();
     _to.inventory_avg_cost    = inventory_avg_cost.clone();
-    _to.total_value_destroyed = total_value_destroyed;
+    _to.variables("total_value_destroyed") = variables("total_value_destroyed");
   }
 
 //  override def toString = "(" + capital/100 + " " +
@@ -89,18 +91,18 @@ class Owner {
     (for((item, units) <- inventory if units < 0) yield
       units * inventory_avg_cost(item)).sum
 
-  protected def assets : Double = math.max(0, capital) + inventory_value
+  protected def assets : Double = math.max(0, variables("capital")) + inventory_value
 
   protected def liabilities : Double =
-    math.min(0, capital) + inventory_liabilities
+    math.min(0, variables("capital")) + inventory_liabilities
 
   def balance_sheet = BalanceSheet(
     (assets + liabilities).toInt/100,
-    math.max(0, capital/100),
+    math.max(0, variables("capital").toInt/100),
     inventory_value.toInt/100,
-    math.min(0, capital).toInt/100,
+    math.min(0, variables("capital")).toInt/100,
     inventory_liabilities.toInt/100,
-    (total_value_destroyed/100).toInt);
+    (variables("total_value_destroyed")/100).toInt);
 
   /** Prints status info (balance sheet and inventory). */
   def stat { println((balance_sheet.toString, inventory_to_string())) }
@@ -111,8 +113,8 @@ class Owner {
   }
 
   def transfer_money_to(to: Owner, amount: Int) {
-    to.capital += amount;
-       capital -= amount;
+    to.variables("capital") += amount;
+       variables("capital") -= amount;
   }
 
   /** Sell strictly number of units, short selling possible. */
@@ -174,7 +176,7 @@ class Owner {
   final def destroy(item: ITEM_T, units: Int) : Double = {
     if(! inventory.contains(item)) init_inv(item);
     val value_destroyed = inventory_avg_cost(item) * units;
-    total_value_destroyed += value_destroyed;
+    variables("total_value_destroyed") += value_destroyed;
     inventory(item) -= units;
 
     value_destroyed // returns cost of destroyed stuff

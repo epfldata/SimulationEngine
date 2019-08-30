@@ -1,18 +1,22 @@
 package bo
 
 import java.nio.file.{Files, Paths}
+import scala.collection.mutable.{Map => MutableMap}
 
 import Simulation.Simulation
 import breeze.linalg.{Axis, DenseMatrix, DenseVector, linspace, normalize}
 import breeze.plot.{Figure, plot}
 
-case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var params: Map[String, Double]) {
+case class Viz(f: Simulation => Seq[Double],
+               outputNames: Array[String],
+               var params: MutableMap[String, Map[String, Double]]) {
 
-  def plotSimOverParam(param: String,
+  def plotSimOverParam(paramName: String,
+                       agentType: String,
                        bounds: (Double, Double),
                        numberOfPoints: Int = 100,
                        runSimTill: Int = 1000): Unit = {
-    val csvFilePath = s"results/csv/plotsOver$param.csv"
+    val csvFilePath = s"results/csv/plotsOver$paramName.csv"
     val (x: DenseVector[Double], ys: DenseMatrix[Double]) =
       if (Files.exists(Paths.get(csvFilePath))) {
         val matrix = CsvManager.readCsvFile(csvFilePath, "x" +: outputNames)
@@ -22,7 +26,7 @@ case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var par
         val ys = DenseMatrix(
           x.map(value => {
             println(s"running sim for param $value")
-            params += param -> value
+            params(agentType) += paramName -> value
             val s = new Simulation(params)
             Main.initializeSimulation(s)
             Main.callSimulation(s, runSimTill)
@@ -39,13 +43,13 @@ case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var par
       val normalized = normalize(ys(::, i)).map(_ * 100)
       pSingle += plot(x, normalized, name = outputNames(i))
     }
-    pSingle.xlabel = s"$param"
+    pSingle.xlabel = s"$paramName"
     pSingle.ylabel = "f"
     pSingle.setXAxisDecimalTickUnits()
     pSingle.legend = true
     val dpi = 720
     try {
-      figureSingle.saveas(s"results/singlePlotsOver$param.png", dpi)
+      figureSingle.saveas(s"results/singlePlotsOver$paramName.png", dpi)
     } catch {
       case _: Exception => // ignore
     }
@@ -54,10 +58,10 @@ case class Viz(f: Simulation => Seq[Double], outputNames: Array[String], var par
     val pSum = figureSum.subplot(0)
     val normalized: Seq[DenseVector[Double]] = for (i <- 0 until ys.cols) yield normalize(ys(::, i)).map(_ * 100)
     pSum += plot(x, normalized.foldLeft(DenseVector.zeros[Double](normalized.head.size))(_ + _))
-    pSum.xlabel = s"$param"
+    pSum.xlabel = s"$paramName"
     pSum.ylabel = "f"
     pSum.setXAxisDecimalTickUnits()
-    figureSum.saveas(s"results/sumPlotOver$param.png", dpi)
+    figureSum.saveas(s"results/sumPlotOver$paramName.png", dpi)
   }
 
   def plotSimOverTime(bounds: (Int, Int),
