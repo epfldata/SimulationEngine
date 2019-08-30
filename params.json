@@ -68,22 +68,46 @@
     "millProd": 10,
     "millTime": 1
   },
+  "Bakery": {
+    "bakerySalaryMu": 2800000.0,
+    "bakerySalarySigma": 200.0,
+    "bakeryItersMu": 10.0,
+    "bakeryItersSigma": 1.0,
+    "bakeryCons": 5,
+    "bakeryProd": 10,
+    "bakeryTime": 1
+  },
+  "CattleFarm": {
+    "cattlefarmSalaryMu": 2800000.0,
+    "cattlefarmSalarySigma": 200.0,
+    "cattlefarmItersMu": 10.0,
+    "cattlefarmItersSigma": 1.0,
+    "cattleReq": 1,
+    "cattleProd": 5,
+    "cattleTime": 6
+  },
+  "OilField": {
+    "oilfieldSalaryMu": 2800000.0,
+    "oilfieldSalarySigma": 200.0,
+    "oilfieldItersMu": 10.0,
+    "oilfieldItersSigma": 1.0,
+    "oilReq": 1,
+    "oilProd": 10,
+    "oilTime": 1
+  },
+  "Refinery": {
+    "refinerySalaryMu": 2800000.0,
+    "refinerySalarySigma": 200.0,
+    "refineryItersMu": 10.0,
+    "refineryItersSigma": 1.0,
+    "refineryCons": 10,
+    "refineryProd": 9,
+    "refineryTime": 2
+  },
   "Factory": {
     "factorySalaryMu": 2800000.0,
     "factorySalarySigma": 200.0,
     "factoryItersMu": 10.0,
-    "factoryItersSigma": 1.0,
-    "bakeryCons": 5,
-    "bakeryProd": 10,
-    "bakeryTime": 1,
-    "cattleReq": 1,
-    "cattleProd": 5,
-    "cattleTime": 6,
-    "oilReq": 1,
-    "oilProd": 10,
-    "oilTime": 1,
-    "refineryCons": 10,
-    "refineryProd": 9,
-    "refineryTime": 2
+    "factoryItersSigma": 1.0
   }
 }

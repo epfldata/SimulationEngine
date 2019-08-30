@@ -57,7 +57,8 @@ object Main {
         val size = args(2).toInt
         val nSteps = args(3).toInt
         val step = if(args(4).forall(_.isDigit)) args(4).toInt else 10
-        val agents = if (args(4).forall(_.isDigit)) args.slice(5, args.length) else args.slice(4, args.length)
+        var agents = if (args(4).forall(_.isDigit)) args.slice(5, args.length) else args.slice(4, args.length)
+        agents = if (agents.length == 1 && agents.head.equals("all")) GLOBAL.allAgents else agents
         DatasetCreator.createDataset(size, agents, nSteps, step)
 
       case "generate" =>
@@ -101,10 +102,10 @@ object Main {
     GLOBAL.strongSilence = true
     val f = new Farm(s)
     val m = new Mill(s)
-//    val b = new Bakery(s)
-//    val cf = new CattleFarm(s)
-//    val o = new OilField(s)
-//    val r = new Refinery(s)
+    val b = new Bakery(s)
+    val cf = new CattleFarm(s)
+    val o = new OilField(s)
+    val r = new Refinery(s)
     val landlord = new Source(Land, 20, 100000 * 100, s)
 
     val genderDistr = Gaussian(s.constants("Person")("genderMu"), s.constants("Person")("genderSigma"))
@@ -115,9 +116,9 @@ object Main {
 
     s.init(List(
       landlord,
-      f, m//, b,
-      //cf,
-      //o, r
+      f, m, b,
+      cf,
+      o, r
     ) ++ people.toList, randomized)
 
     val capitals = Gaussian(s.constants("Person")("capitalMu"), s.constants("Person")("capitalSigma")).sample(s.sims.length)

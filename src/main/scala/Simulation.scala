@@ -37,16 +37,12 @@ class Simulation(val constants: MutableMap[String, Map[String, Double]]) {
       distr
 
     case factory: Factory =>
-      val factoryType = factory match {
-        case _: Farm => "farm"
-        case _: Mill => "mill"
-        case _ => "factory"
-      }
+      val factoryType = GLOBAL.getAgentTypeFromClass(factory.getClass.getName)
       Map(
-        ("salary", new Gaussian(constants(factoryType.capitalize)(factoryType + "SalaryMu"),
-                                constants(factoryType.capitalize)(factoryType + "SalarySigma"))),
-        ("iters", new Gaussian(constants(factoryType.capitalize)(factoryType + "ItersMu"),
-                               constants(factoryType.capitalize)(factoryType + "ItersSigma")))
+        ("salary", new Gaussian(constants(factoryType)(factoryType.toLowerCase + "SalaryMu"),
+                                constants(factoryType)(factoryType.toLowerCase + "SalarySigma"))),
+        ("iters", new Gaussian(constants(factoryType)(factoryType.toLowerCase + "ItersMu"),
+                               constants(factoryType)(factoryType.toLowerCase + "ItersSigma")))
       )
 
     case _ => Map()
@@ -55,7 +51,7 @@ class Simulation(val constants: MutableMap[String, Map[String, Double]]) {
   def getPopulationData(agents: Iterable[String]): Data = {
     def getAgentPopulationData(agentType: String): Map[String, Double] = {
       val individualVars: Map[String, List[Double]] = sims.filter { sim =>
-        sim.getClass.getName.equals(GLOBAL.agentClass(agentType))
+        agentType.equals(GLOBAL.getAgentTypeFromClass(sim.getClass.getName))
       }
         .flatMap(_.variables.toSeq).groupBy(_._1).mapValues(_.map(_._2))
       val populationVars: Map[String, Double] = individualVars.mapValues(vars => vars.map(_ / vars.size).sum)

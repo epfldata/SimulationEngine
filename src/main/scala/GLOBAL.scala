@@ -10,11 +10,12 @@ package object GLOBAL {
   var strongSilence = false
   val rnd = new Random(19)
 
-  def agentClass(agentType: String): String = {
-    agentType match {
-      case "Person" => "Simulation.Person"
-      case "Farm" => "Simulation.SimLib.Farm"
-      case "Mill" => "Simulation.SimLib.Mill"
+  val allAgents = Array("Person", "Farm", "Mill", "Bakery", "CattleFarm", "OilField", "Refinery")
+
+  def getAgentTypeFromClass(className: String): String = {
+    className match {
+      case "Simulation.Person" => "Person"
+      case name if name.startsWith("Simulation.SimLib.") => name.substring("Simulation.SimLib.".length)
     }
   }
 

@@ -135,7 +135,7 @@ case class HR(private val shared: Simulation,
 }
 
 
-class Factory(pls: ProductionLineSpec,
+abstract class Factory(protected val pls: ProductionLineSpec,
               shared: Simulation
 ) extends SimO(shared) {
 
@@ -168,13 +168,6 @@ class Factory(pls: ProductionLineSpec,
     _to.goal_num_pl = goal_num_pl;
     _to.nestedSimIters = nestedSimIters
   }
-  def mycopy(_shared: Simulation,
-             _substitution: collection.mutable.Map[SimO, SimO]) = {
-    val f = new Factory(pls, _shared);
-    copy_state_to(f, _shared, _substitution);
-    f
-  }
-
 
   /** Returns whether everything was sucessfully bought. */
   protected def bulk_buy_missing(_l: List[(Commodity, Int)],
