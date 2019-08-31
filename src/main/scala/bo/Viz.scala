@@ -1,15 +1,16 @@
 package bo
 
 import java.nio.file.{Files, Paths}
-import scala.collection.mutable.{Map => MutableMap}
 
+import scala.collection.mutable.{Map => MutableMap}
 import Simulation.Simulation
+import bo.DatasetCreator.Data
 import breeze.linalg.{Axis, DenseMatrix, DenseVector, linspace, normalize}
 import breeze.plot.{Figure, plot}
 
 case class Viz(f: Simulation => Seq[Double],
                outputNames: Array[String],
-               var params: MutableMap[String, Map[String, Double]]) {
+               var params: Data) {
 
   def plotSimOverParam(paramName: String,
                        agentType: String,
@@ -29,7 +30,7 @@ case class Viz(f: Simulation => Seq[Double],
             params(agentType) += paramName -> value
             val s = new Simulation(params)
             Main.initializeSimulation(s)
-            Main.callSimulation(s, runSimTill)
+            Main.runSimulation(s, runSimTill)
             f(s)
           }).toArray:_*
         )
@@ -72,7 +73,7 @@ case class Viz(f: Simulation => Seq[Double],
     val s = new Simulation(params)
     Main.initializeSimulation(s)
     val y = t.map(_ => {
-      Main.callSimulation(s, step)
+      Main.runSimulation(s, step)
       f(s).head
     }).toDenseVector
 

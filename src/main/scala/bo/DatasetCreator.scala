@@ -1,49 +1,18 @@
 package bo
 
-import scala.collection.mutable.{Map => MutableMap}
-import Simulation.{Person, Simulation}
+import Simulation.Simulation
 import breeze.linalg.DenseMatrix
 
-import scala.collection.mutable
+import scala.collection.mutable.{Map => MutableMap}
 
 object DatasetCreator {
 
-  type Data = Map[String, Map[String, Double]]
-
-//  def separateDatasets(trainsetSize: Int) = {
-//    val step = 100
-//    val paramsList = sampleConstants(trainsetSize / step)
-//    val results: List[(List[(String, Double)], List[(String, Double)])] =
-//      paramsList.flatMap(params => separateSimFunction(params, step))
-//    val xHeader: Array[String] = results.head._1.map(_._1).toArray
-//    val yHeader: Array[String] = results.head._2.map(_._1).toArray
-//    val x: DenseMatrix[Double] = DenseMatrix(results.map { case (xList, _) => xList.map(_._2) }: _*)
-//    val y: DenseMatrix[Double] = DenseMatrix(results.map { case (_, yList) => yList.map(_._2) }: _*)
-//    CsvManager.writeCsvFile(x, "target/scala-2.11/train_sep_X.csv", xHeader)
-//    CsvManager.writeCsvFile(y, "target/scala-2.11/train_sep_Y.csv", yHeader)
-//  }
-
-//  def simulationDatasets(trainsetSize: Int, step: Int) = {
-//    val paramsList = sampleConstants(trainsetSize)
-//    val results: List[(MutableMap[String, Map[String, Double]], Seq[(Int, Seq[Double])])] =
-//      paramsList.zip(paramsList.map(params => seqSimFunction(params, step)))
-//    val PersonsList: List[(Map[String, Double], Seq[(Int, Seq[Double])])] = results.map(t => (t._1("Person"), t._2))
-//    val paramNames: Array[String] = PersonsList.head._1.toArray.map(_._1)
-//    val x: DenseMatrix[Double] = DenseMatrix(PersonsList.map { case (map, _) =>
-//      val x: Array[Double] = PersonsList.map(name => map(name))
-//      x.toList
-//    }: _*)
-//    val y: DenseMatrix[Double] = DenseMatrix(results.flatMap { case (_, seqOutputs: Seq[(Int, Seq[Double])]) =>
-//      seqOutputs.map { case (iter, outputs) => outputs.toList }
-//    }: _*)
-//    CsvManager.writeCsvFile(x, "target/scala-2.11/Person_train_sim_X.csv", paramNames)
-//    CsvManager.writeCsvFile(y, "target/scala-2.11/Person_train_sim_Y.csv", "timestep" +: Main.outputNames)
-//  }
+  type Data = MutableMap[String, Map[String, Double]]
+  type Statistics = Map[String, Double]
 
   def createDataset(size: Int, agents: Iterable[String], nSteps: Int, step: Int = 10)  {
     val constantSamples = sampleConstants(size / nSteps)
-    val data: Seq[(Data, Data)] = constantSamples.flatMap(simFunction(_, nSteps, step, agents))
-    val out_data: Seq[Data] = data.map(_._2)
+    val data: Seq[(Data, Data, Statistics)] = constantSamples.flatMap(simFunction(_, nSteps, step, agents))
     agents.foreach(agent => {
       val in_data: Seq[Seq[(String, Double)]] = data.map(_._1).map(_(agent).toSeq.sortBy(_._1))
       val header: Array[String] = in_data.head.map(_._1).toArray
@@ -56,34 +25,37 @@ object DatasetCreator {
       CsvManager.writeCsvFile(x, s"target/scala-2.11/${agent}_x.csv", header)
       CsvManager.writeCsvFile(y, s"target/scala-2.11/${agent}_y.csv", header)
     })
+
+
+    val stat_data: Seq[Seq[(String, Double)]] = data.map(_._3.toSeq.sortBy(_._1))
+    val stat_header: Array[String] = stat_data.head.map(_._1).toArray
+    val stats: DenseMatrix[Double] = DenseMatrix(stat_data.map(_.map(_._2)): _*)
+    CsvManager.writeCsvFile(stats, "target/scala-2.11/global_stats.csv", stat_header)
   }
 
-//  private def seqSimFunction(params: MutableMap[String, Map[String, Double]], nIters: Int): Seq[(Int, Seq[Double])] = {
-//    val s = new Simulation(params)
-//    Main.initializeSimulation(s)
-//    for (i <- 1 to nIters) yield {
-//      Main.callSimulation(s, 1)
-//      (i, Main.outputFromState(s))
-//    }
-//  }
-
-  private def simFunction(constants: MutableMap[String, Map[String, Double]],
-                          nSteps: Int, step: Int, agents: Iterable[String]): Seq[(Data, Data)] = {
+  /**
+    *
+    * @return   a sequence of triples indexed over time, where the first element of the triple is input data,
+    *           the second in the output data and the third is the global statistics
+    */
+  private def simFunction(constants: Data,
+                          nSteps: Int, step: Int, agents: Iterable[String]): Seq[(Data, Data, Statistics)] = {
     val s = new Simulation(constants)
     Main.initializeSimulation(s, randomized = true)
     var data_out = s.getPopulationData(agents)
     for (_ <- 1 to nSteps) yield {
       val data_in = data_out
-      Main.callSimulation(s, step)
+      Main.runSimulation(s, step)
       data_out = s.getPopulationData(agents)
-      (data_in, data_out)
+      (data_in, s.getPopulationData(agents), s.getGlobalStat)
     }
   }
 
 
-  private def sampleConstants(trainsetSize: Int): List[MutableMap[String, Map[String, Double]]] = (for (_ <- 0 until trainsetSize) yield
+  private def sampleConstants(trainsetSize: Int): List[Data] = (for (_ <- 0 until trainsetSize) yield
     MutableMap("Person" ->
-      Map("genderMu" -> GLOBAL.rnd.nextDouble(),
+      Map("number" -> (GLOBAL.rnd.nextInt(20) + 100).toDouble,
+        "genderMu" -> GLOBAL.rnd.nextDouble(),
         "genderSigma" -> GLOBAL.rnd.nextDouble(),
         "capitalMu" -> GLOBAL.rnd.nextDouble() * 100000,
         "capitalSigma" -> GLOBAL.rnd.nextDouble() * 10000,
@@ -133,6 +105,7 @@ object DatasetCreator {
       ),
       "Farm" ->
         Map(
+          "number" -> 1.0,
           "farmSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "farmSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "farmItersMu" -> GLOBAL.rnd.nextDouble() * 20,
@@ -143,6 +116,7 @@ object DatasetCreator {
         ),
       "Mill" ->
         Map(
+          "number" -> 1.0,
           "millSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "millSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "millItersMu" -> GLOBAL.rnd.nextDouble() * 20,
@@ -152,7 +126,9 @@ object DatasetCreator {
           "millTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble
         ),
       "Bakery" ->
-        Map("bakerySalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+        Map(
+          "number" -> 1.0,
+          "bakerySalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "bakerySalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "bakeryItersMu" -> GLOBAL.rnd.nextDouble() * 20,
           "bakeryItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
@@ -162,16 +138,18 @@ object DatasetCreator {
         ),
       "CattleFarm" ->
         Map(
+          "number" -> 1.0,
           "cattlefarmSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "cattlefarmSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "cattlefarmItersMu" -> GLOBAL.rnd.nextDouble() * 20,
           "cattlefarmItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
-          "cattleReq" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "cattleProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "cattleTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble
+          "cattlefarmReq" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+          "cattlefarmProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
+          "cattlefarmTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble
         ),
       "OilField" ->
         Map(
+          "number" -> 1.0,
           "oilfieldSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "oilfieldSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "oilfieldItersMu" -> GLOBAL.rnd.nextDouble() * 20,
@@ -182,45 +160,11 @@ object DatasetCreator {
         ),
       "Refinery" ->
         Map(
+          "number" -> 1.0,
           "refinerySalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "refinerySalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "refineryItersMu" -> GLOBAL.rnd.nextDouble() * 20,
           "refineryItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
-          "refineryCons" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "refineryProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "refineryTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble
-        ),
-      "Factory" ->
-        Map(
-          "factorySalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "factorySalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "farmSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "farmSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "millSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "millSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-
-          "factoryItersMu" -> GLOBAL.rnd.nextDouble() * 20,
-          "factoryItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
-          "farmItersMu" -> GLOBAL.rnd.nextDouble() * 20,
-          "farmItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
-          "millItersMu" -> GLOBAL.rnd.nextDouble() * 20,
-          "millItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
-
-          "farmReq" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "farmProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "farmTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "millCons" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "millProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "millTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "bakeryCons" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "bakeryProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "bakeryTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "cattleReq" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "cattleProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "cattleTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "oilReq" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "oilProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "oilTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
           "refineryCons" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
           "refineryProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
           "refineryTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble

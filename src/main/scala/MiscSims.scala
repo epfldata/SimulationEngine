@@ -115,9 +115,9 @@ class Bakery(s: Simulation) extends Factory(
 }
 
 class CattleFarm(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List((Land, s.constants("CattleFarm")("cattleReq").toInt)), List(),
-    (Beef, s.constants("CattleFarm")("cattleProd").toInt),
-    s.constants("CattleFarm")("cattleTime").toInt), s) {
+  ProductionLineSpec(1, List((Land, s.constants("CattleFarm")("cattlefarmReq").toInt)), List(),
+    (Beef, s.constants("CattleFarm")("cattlefarmProd").toInt),
+    s.constants("CattleFarm")("cattlefarmTime").toInt), s) {
 
   override def mycopy(_shared: Simulation,
                       _substitution: collection.mutable.Map[SimO, SimO]): Factory = {

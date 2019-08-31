@@ -1,17 +1,17 @@
 package bo
 
 import java.io.{BufferedOutputStream, FileDescriptor, FileOutputStream, FileWriter, PrintStream}
-import scala.collection.mutable.{Map => MutableMap}
 
+import scala.collection.mutable.{Map => MutableMap}
 import Securities.{Commodity, Land}
 import Simulation.{Person, Simulation}
 import _root_.Simulation.Factory.Factory
 import _root_.Simulation.SimLib._
+import bo.DatasetCreator.Data
 import breeze.stats.distributions.Gaussian
 import spray.json.{JsObject, JsonParser}
 
 object Main {
-  val numberPeople = 1200
   val bufferSize = math.pow(2, 27).toInt // 128 MB
   val initLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/initLog"), bufferSize)
   val runLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/runLog"), bufferSize)
@@ -20,9 +20,11 @@ object Main {
     def avgPrice(commodity: Commodity) =
       s.market(commodity).sellers.map(s => s.price(commodity).getOrElse(0.0)).sum / s.market(commodity).sellers.size
 
+    val numberPeople = s.constants("Person")("number")
     List(
       s.sims.map(_.variables("capital") / 100).sum / s.sims.size,
-      (numberPeople - s.sims.map{case f: Factory => f.numEmployees; case _ => 0}.sum).toDouble / numberPeople,
+      s.sims.map(_.variables("total_value_destroyed") / s.sims.size).sum,
+      (numberPeople - s.sims.map{case f: Factory => f.numEmployees; case _ => 0}.sum) / numberPeople,
       s.sims.map{case m: Mill => m.numEmployees; case _ => 0}.sum.toDouble / numberPeople,
       s.sims.map{case f: Farm => f.numEmployees; case _ => 0}.sum.toDouble / numberPeople,
       avgPrice(Securities.Wheat),
@@ -33,13 +35,14 @@ object Main {
       avgPrice(Securities.Fuel)
     )
   }
+
   val outputNames = Array("CapitalAvg", "UnemploymentRate", "MillEmploymentRate", "FarmEmploymentRate",
     "WheatAvgPrice", "FlourAvgPrice", "BreadAvgPrice", "BeefAvgPrice", "OilAvgPrice", "FuelAvgPrice")
 
-  def simFunction(params: MutableMap[String, Map[String, Double]]): Seq[Double] = {
+  def simFunction(params: Data): Seq[Double] = {
     val s = new Simulation(params)
     initializeSimulation(s)
-    callSimulation(s, 300)
+    runSimulation(s, 300)
     outputFromState(s)
   }
 
@@ -100,26 +103,26 @@ object Main {
 
     GLOBAL.silent = true
     GLOBAL.strongSilence = true
-    val f = new Farm(s)
-    val m = new Mill(s)
-    val b = new Bakery(s)
-    val cf = new CattleFarm(s)
-    val o = new OilField(s)
-    val r = new Refinery(s)
     val landlord = new Source(Land, 20, 100000 * 100, s)
 
     val genderDistr = Gaussian(s.constants("Person")("genderMu"), s.constants("Person")("genderSigma"))
-    val people = for (x <- 1 to numberPeople) yield {
+    val people = for (_ <- 1 to s.constants("Person")("number").toInt) yield {
       val male = math.max(0, math.min(1, genderDistr.sample())) <= 0.5
       new Person(s, true, male)
     }
 
+    val farms = for (_ <- 1 to s.constants("Farm")("number").toInt) yield new Farm(s)
+    val mills = for (_ <- 1 to s.constants("Mill")("number").toInt) yield new Mill(s)
+    val bakeries = for (_ <- 1 to s.constants("Bakery")("number").toInt) yield new Bakery(s)
+    val cattleFarms = for (_ <- 1 to s.constants("CattleFarm")("number").toInt) yield new CattleFarm(s)
+    val oilFields = for (_ <- 1 to s.constants("OilField")("number").toInt) yield new OilField(s)
+    val refineries = for (_ <- 1 to s.constants("Refinery")("number").toInt) yield new Refinery(s)
+
+    val sims = farms ++ mills ++ bakeries ++ cattleFarms ++ oilFields ++ refineries ++ people
+
     s.init(List(
-      landlord,
-      f, m, b,
-      cf,
-      o, r
-    ) ++ people.toList, randomized)
+      landlord
+    ) ++ sims.toList, randomized)
 
     val capitals = Gaussian(s.constants("Person")("capitalMu"), s.constants("Person")("capitalSigma")).sample(s.sims.length)
     s.sims.zip(capitals).foreach(t => t._1.variables("capital") = t._2.round.toInt)
@@ -128,7 +131,7 @@ object Main {
     Console.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)))
   }
 
-  def callSimulation(s: Simulation, iterations: Int, mute: Boolean = true): Unit = {
+  def runSimulation(s: Simulation, iterations: Int, mute: Boolean = true): Unit = {
     if (mute)
       Console.setOut(runLog)
 

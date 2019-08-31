@@ -1,10 +1,10 @@
 package bo
 
 import scala.collection.mutable.{Map => MutableMap}
-
 import Simulation.Simulation
+import bo.DatasetCreator.Data
 
-case class ChaosTest(f: Simulation => Seq[Double], var params: MutableMap[String, Map[String, Double]]) {
+case class ChaosTest(f: Simulation => Seq[Double], var params: Data) {
   def lyapunovExponent(paramName: String,
                        agentType: String,
                        iterations: Int = 1000,
@@ -14,7 +14,7 @@ case class ChaosTest(f: Simulation => Seq[Double], var params: MutableMap[String
     def getTimeSeries(s: Simulation) = {
       Main.initializeSimulation(s)
       for (_ <- 1 to iterations) yield {
-        Main.callSimulation(s, step)
+        Main.runSimulation(s, step)
         f(s)
       }
     }

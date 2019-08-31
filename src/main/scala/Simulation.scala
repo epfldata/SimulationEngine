@@ -5,14 +5,14 @@ import Owner._
 import Securities._
 import Simulation.Factory.Factory
 import Simulation.SimLib.{Farm, Mill}
-import bo.DatasetCreator.Data
+import bo.DatasetCreator.{Data, Statistics}
 import breeze.stats.distributions.{Gaussian, RandBasis, ThreadLocalRandomGenerator}
 import org.apache.commons.math3.random.MersenneTwister
 
 import scala.collection.mutable.{Map => MutableMap}
 
 
-class Simulation(val constants: MutableMap[String, Map[String, Double]]) {
+class Simulation(val constants: Data) {
   def this() = this(MutableMap.empty[String, Map[String, Double]])
 
   var timer = 0;
@@ -57,10 +57,14 @@ class Simulation(val constants: MutableMap[String, Map[String, Double]]) {
       val populationVars: Map[String, Double] = individualVars.mapValues(vars => vars.map(_ / vars.size).sum)
       val consts: Map[String, Double] = constants(agentType)
 
-      populationVars.map(t => ("var_" + t._1 + "Mu", t._2)) ++ consts.map(t => ("const_" + t._1, t._2))
+      populationVars.map(t => ("var_" + t._1 + "mu", t._2)) ++ consts.map(t => ("const_" + t._1, t._2))
     }
 
-    agents.map(agentType => (agentType, getAgentPopulationData(agentType))).toMap
+    MutableMap(agents.map(agentType => (agentType, getAgentPopulationData(agentType))).toSeq: _*)
+  }
+
+  def getGlobalStat: Statistics = {
+    GLOBAL.globalVars.map(globalVar => (s"mu_gl_$globalVar", sims.map(_.variables(globalVar) / sims.size).sum)).toMap
   }
 
   val market = collection.mutable.Map[Commodity, SellersMarket]();

@@ -1,5 +1,6 @@
 {
   "Person": {
+    "number": 100,
     "genderMu": 0.5,
     "genderSigma": 0.1,
     "capitalMu": 1000,
@@ -43,6 +44,7 @@
     "femaleBonusSalSigma": 7.0
   },
   "Farm": {
+    "number": 1,
     "factorySalaryMu": 2800000.0,
     "factorySalarySigma": 200.0,
     "factoryItersMu": 10.0,
@@ -56,6 +58,7 @@
     "farmItersSigma": 0.8
   },
   "Mill": {
+    "number": 1,
     "factorySalaryMu": 2800000.0,
     "factorySalarySigma": 200.0,
     "factoryItersMu": 10.0,
@@ -69,6 +72,7 @@
     "millTime": 1
   },
   "Bakery": {
+    "number": 1,
     "bakerySalaryMu": 2800000.0,
     "bakerySalarySigma": 200.0,
     "bakeryItersMu": 10.0,
@@ -78,24 +82,27 @@
     "bakeryTime": 1
   },
   "CattleFarm": {
+    "number": 1,
     "cattlefarmSalaryMu": 2800000.0,
     "cattlefarmSalarySigma": 200.0,
     "cattlefarmItersMu": 10.0,
     "cattlefarmItersSigma": 1.0,
-    "cattleReq": 1,
-    "cattleProd": 5,
-    "cattleTime": 6
+    "cattlefarmReq": 1,
+    "cattlefarmProd": 5,
+    "cattlefarmTime": 6
   },
   "OilField": {
+    "number": 1,
     "oilfieldSalaryMu": 2800000.0,
     "oilfieldSalarySigma": 200.0,
     "oilfieldItersMu": 10.0,
     "oilfieldItersSigma": 1.0,
-    "oilReq": 1,
-    "oilProd": 10,
-    "oilTime": 1
+    "oilfieldReq": 1,
+    "oilfieldProd": 10,
+    "oilfieldTime": 1
   },
   "Refinery": {
+    "number": 1,
     "refinerySalaryMu": 2800000.0,
     "refinerySalarySigma": 200.0,
     "refineryItersMu": 10.0,
@@ -103,11 +110,5 @@
     "refineryCons": 10,
     "refineryProd": 9,
     "refineryTime": 2
-  },
-  "Factory": {
-    "factorySalaryMu": 2800000.0,
-    "factorySalarySigma": 200.0,
-    "factoryItersMu": 10.0,
-    "factoryItersSigma": 1.0
   }
 }
