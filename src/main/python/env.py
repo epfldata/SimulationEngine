@@ -27,6 +27,12 @@ def _normalizeOutput(data):
 
     return scaled_data, scales
 
+def _normalizeGlobalOutput(data):
+    scales = (data.mean(), data.std())
+    scales_data = data - scales[0] / scales[1]
+    return scales_data, scales
+
+
 def _prefixColumnNames(data, agent):
     def prefixColumnNames(data, agent):
         return pd.DataFrame(data.values, columns=list(map(lambda n: agent.name + "." + n, data.columns)))
@@ -92,6 +98,18 @@ class Environment:
         } for agent in new_data}
 
         return rescaled_new_data
+
+    def group_train(self, agent_input, global_output, aggregator, epochs=100):
+        if self._non_compiled_changes:
+            raise Exception("None Compiled Changes! Compile first!")
+
+        agent_input = {agent: _prefixColumnNames(agent_input, agent) for agent in agent_input}
+
+        agent_input = _normalizeInput(agent_input)[0]
+        global_output = _normalizeGlobalOutput(global_output)[0]
+
+        node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
+        self._graph.group_train(node_input, global_output, aggregator, epochs)
 
     def solo_train(self, data_input, data_output):
         if self._non_compiled_changes:

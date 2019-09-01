@@ -3,16 +3,28 @@ import pandas as pd
 import tensorflow as tf
 
 
+def _outputToDF(node, nparray):
+    return pd.DataFrame(nparray, columns=node._outputNames)
+
+
 class Aggregator:
-    def __init__(self, tensor_aggregate, numpy_aggregate):
-        self._tensor_aggregate = tensor_aggregate
-        self._numpy_aggregate = numpy_aggregate
+    def aggregate(self, outputTensors):
+        # s1, s2
+        result = tf.zeros(shape=(100, 2), dtype=tf.float32)
+        p3 = tf.zeros(100)
+        for key in outputTensors:
+            result += tf.slice(outputTensors[key], [0, 0], result.shape)
+            if (outputTensors[key].shape[1] == 3):
+                p3 += outputTensors[key][:, 2]
+        s1 = tf.reshape(result[:, 0], shape=(100, 1))
+        s2 = tf.reshape(tf.math.multiply(result[:, 1], p3), shape=(100, 1))
+        result = tf.concat([s1, s2], axis=1)
+        return result
 
-    def aggregate(self, output):
-        return self._tensor_aggregate(output)
+    def aggregate_pd(self, agentOutputs, outputNames):
+        outputTensors = {agent: tf.constant(agentOutputs[agent].to_numpy(), dtype=tf.float32) for agent in agentOutputs}
+        return pd.DataFrame(tf.keras.backend.eval(self.aggregate(outputTensors)), columns=outputNames)
 
-    def renew_data(self, output):
-        return self._numpy_aggregate(output)
 
 
 class Parameter:
@@ -26,19 +38,18 @@ class Graph:
     def __init__(self, nodes, edges):
         self._nodes = nodes.copy()
         self._edges = edges
-        self._globals = globals
         self._sess = tf.keras.backend.get_session()
 
-    def group_train(self, train_x, train_s, epochs=100):
-        predict_s = self._aggregator.aggregate({node: node.output_tensor() for node in self._nodes})
-        loss = tf.losses.mean_squared_error(tf.constant(train_s), predict_s)
+    def group_train(self, train_x, train_s, aggregator, epochs=100):
+        predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes})
+        loss = tf.losses.mean_squared_error(tf.constant(train_s.to_numpy()), predict_s)
         optimizer = tf.train.GradientDescentOptimizer(0.01)
         train = optimizer.minimize(loss)
-        for _ in range(epochs):
+        for i in range(epochs):
             train_val, loss_val = self._sess.run((train, loss), feed_dict={
-                node.input_tensor(): train_x[node] for node in self._nodes
+                node.input_tensor(): self._prepare_node_input(train_x, node) for node in self._nodes
             })
-            print(loss_val)
+            print("Epoch "  + str(i) + ", loss:", loss_val)
 
     def solo_train(self, node, train_x, train_agent_y):
         train_agent_y.columns = node._outputNames
@@ -52,14 +63,11 @@ class Graph:
         # todo: remove nan columns
         return result.to_numpy()
 
-    def outputToDF(self, node, nparray):
-        return pd.DataFrame(nparray, columns=node._outputNames)
-
     def predict(self, data, time=1):
         for _ in range(time):
             data = {node: {
                 "constants": data[node]["constants"],
-                "states": self.outputToDF(node, node.predict(self._prepare_node_input(data, node)))
+                "states": _outputToDF(node, node.predict(self._prepare_node_input(data, node)))
             } for node in data}
         return data
 
