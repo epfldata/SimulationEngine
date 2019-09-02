@@ -2,15 +2,14 @@ package bo
 
 import java.nio.file.{Files, Paths}
 
-import scala.collection.mutable.{Map => MutableMap}
 import Simulation.Simulation
 import bo.DatasetCreator.Data
 import breeze.linalg.{Axis, DenseMatrix, DenseVector, linspace, normalize}
 import breeze.plot.{Figure, plot}
 
-case class Viz(f: Simulation => Seq[Double],
-               outputNames: Array[String],
-               var params: Data) {
+case class Viz(var params: Data) {
+
+  val outputNames: Array[String] = new Simulation(params).getGlobalStat.keys.toArray
 
   def plotSimOverParam(paramName: String,
                        agentType: String,
@@ -20,7 +19,7 @@ case class Viz(f: Simulation => Seq[Double],
     val csvFilePath = s"results/csv/plotsOver$paramName.csv"
     val (x: DenseVector[Double], ys: DenseMatrix[Double]) =
       if (Files.exists(Paths.get(csvFilePath))) {
-        val matrix = CsvManager.readCsvFile(csvFilePath, "x" +: outputNames)
+        val matrix = CsvManager.readCsvFile(csvFilePath)._1
         (matrix(::, 0), matrix.delete(0, Axis._1))
       } else {
         val x = linspace(bounds._1, bounds._2, numberOfPoints)
@@ -31,7 +30,7 @@ case class Viz(f: Simulation => Seq[Double],
             val s = new Simulation(params)
             Main.initializeSimulation(s)
             Main.runSimulation(s, runSimTill)
-            f(s)
+            s.getGlobalStat.values.toSeq
           }).toArray:_*
         )
         CsvManager.writeCsvFile(DenseMatrix(x.data ++ ys.data), csvFilePath, "x" +: outputNames)
@@ -72,14 +71,17 @@ case class Viz(f: Simulation => Seq[Double],
     assert(step > 0, "step size must be a positive non-zero integer!")
     val s = new Simulation(params)
     Main.initializeSimulation(s)
-    val y = t.map(_ => {
+    val ys: DenseMatrix[Double] = DenseMatrix(
+      t.map(_ => {
       Main.runSimulation(s, step)
-      f(s).head
-    }).toDenseVector
+      s.getGlobalStat.values.toSeq
+      }).toArray:_*)
 
     val figure = Figure()
     val p = figure.subplot(0)
-    p += plot(t, y)
+    for (i <- 0 until ys.cols) {
+      p += plot(t, ys(::, i), name = outputNames(i))
+    }
     p.xlabel = "time"
     p.ylabel = "f"
     figure.saveas("results/plotOverTime.png")

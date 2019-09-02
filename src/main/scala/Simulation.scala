@@ -62,8 +62,19 @@ class Simulation(val constants: Data) {
     MutableMap(agents.map(agentType => (agentType, getAgentPopulationData(agentType))).toSeq: _*)
   }
 
-  def getGlobalStat: Statistics = {
-    GLOBAL.globalVars.map(globalVar => (s"mu_gl_$globalVar", sims.map(_.variables(globalVar)() / sims.size).sum)).toMap
+  def getGlobalStat: Statistics = Map(
+    getVariableMu("capital"),
+    getVariableMu("total_value_destroyed"),
+    "unemploymentRate" -> (1.0 -
+      sims.map{case f: Factory => f.numEmployees case _ => 0}.sum.toDouble / sims.count(_.isInstanceOf[Person])),
+    getVariableMu("happiness"),
+    getVariableMu("valueProduced"),
+    getVariableMu("goodwill")
+  )
+
+  private def getVariableMu(variableName: String): (String, Double) = {
+    val filtered = sims.filter(_.variables.contains(variableName))
+    (s"gl_$variableName" + "Mu", filtered.map(_.variables(variableName)() / filtered.size).sum)
   }
 
   val market = collection.mutable.Map[Commodity, SellersMarket]();

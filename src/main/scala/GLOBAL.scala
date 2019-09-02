@@ -12,8 +12,6 @@ package object GLOBAL {
 
   val allAgents = Array("Person", "Farm", "Mill", "Bakery", "CattleFarm", "OilField", "Refinery")
 
-  val globalVars = List("capital", "total_value_destroyed")
-
   def getAgentTypeFromClass(className: String): String = {
     className match {
       case "Simulation.Person" => "Person"

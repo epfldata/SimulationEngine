@@ -145,8 +145,8 @@ abstract class Factory(protected val pls: ProductionLineSpec,
   private var nestedSimIters = math.max(0, math.min(20, shared.distributions(this)("iters").sample.round.toInt))
 
   variables += "employees" -> (() => numEmployees.toDouble)
-  variables += "totalGoodwill" -> (() => pl.map(_.goodwill).sum)
-  variables += "totalValueProduced" -> (() => pl.map(_.valueProduced).sum)
+  variables += "goodwill" -> (() => pl.map(_.goodwill).sum)
+  variables += "valueProduced" -> (() => pl.map(_.valueProduced).sum)
 
   // constructor
   {

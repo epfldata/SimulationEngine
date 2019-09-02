@@ -2,11 +2,13 @@ package bo
 
 import java.nio.file.{Files, Paths}
 
-import breeze.linalg.{DenseMatrix, DenseVector}
+import breeze.linalg.DenseMatrix
 import org.apache.commons.csv.{CSVFormat, CSVParser, CSVPrinter}
 
+import scala.collection.JavaConverters._
+
 object CsvManager {
-  def readCsvFile(path: String, header: Array[String]): DenseMatrix[Double] = {
+  def readCsvFile(path: String): (DenseMatrix[Double], List[String]) = {
     var arrays: Array[Array[Double]] = Array()
     val reader = Files.newBufferedReader(Paths.get(path))
     val csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader.withIgnoreHeaderCase.withTrim)
@@ -15,8 +17,8 @@ object CsvManager {
       while (itererator.hasNext) {
         val csvRecord = itererator.next()
         var array = Array[Double]()
-        for (name <- header) {
-          array :+= csvRecord.get(name).toDouble
+        for (i <- 0 until csvRecord.size()) {
+          array :+= csvRecord.get(i).toDouble
         }
         arrays :+= array
       }
@@ -24,7 +26,7 @@ object CsvManager {
       if (reader != null) reader.close()
       if (csvParser != null) csvParser.close()
     }
-    DenseMatrix(arrays: _*)
+    (DenseMatrix(arrays: _*), csvParser.getHeaderNames.asScala.toList)
   }
 
   def writeCsvFile(matrix: DenseMatrix[Double], path: String, header: Array[String]) = {

@@ -1,12 +1,11 @@
 package bo
 
-import java.io.{BufferedOutputStream, FileDescriptor, FileOutputStream, FileWriter, PrintStream}
+import java.io.{BufferedOutputStream, FileDescriptor, FileOutputStream, PrintStream}
 
-import Securities.{Commodity, Land}
+import Securities.Land
 import Simulation.{Person, Simulation}
-import _root_.Simulation.Factory.Factory
 import _root_.Simulation.SimLib._
-import bo.DatasetCreator.Data
+import bo.DatasetCreator.{Data, Statistics}
 import breeze.stats.distributions.Gaussian
 import spray.json.JsonParser
 
@@ -17,34 +16,21 @@ object Main {
   val initLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/initLog"), bufferSize)
   val runLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/runLog"), bufferSize)
 
-  def outputFromState(s: Simulation): Seq[Double] = {
-    def avgPrice(commodity: Commodity) =
-      s.market(commodity).sellers.map(s => s.price(commodity).getOrElse(0.0)).sum / s.market(commodity).sellers.size
-
-    val numberPeople = s.constants("Person")("number")
-    List(
-      s.sims.map(_.variables("capital")() / 100).sum / s.sims.size,
-      s.sims.map(_.variables("total_value_destroyed")() / s.sims.size).sum,
-      (numberPeople - s.sims.map{case f: Factory => f.numEmployees; case _ => 0}.sum) / numberPeople,
-      s.sims.map{case m: Mill => m.numEmployees; case _ => 0}.sum.toDouble / numberPeople,
-      s.sims.map{case f: Farm => f.numEmployees; case _ => 0}.sum.toDouble / numberPeople,
-      avgPrice(Securities.Wheat),
-      avgPrice(Securities.Flour),
-      avgPrice(Securities.Bread),
-      avgPrice(Securities.Beef),
-      avgPrice(Securities.Oil),
-      avgPrice(Securities.Fuel)
-    )
-  }
-
-  val outputNames = Array("CapitalAvg", "UnemploymentRate", "MillEmploymentRate", "FarmEmploymentRate",
-    "WheatAvgPrice", "FlourAvgPrice", "BreadAvgPrice", "BeefAvgPrice", "OilAvgPrice", "FuelAvgPrice")
-
-  def simFunction(params: Data): Seq[Double] = {
-    val s = new Simulation(params)
-    initializeSimulation(s)
-    runSimulation(s, 300)
-    outputFromState(s)
+  /**
+   *
+   * @return   a sequence of triples indexed over time, where the first element of the triple is input data,
+   *           the second in the output data and the third is the global statistics
+   */
+  def simFunction(constants: Data, nSteps: Int, stepSize: Int, agents: Iterable[String]): Seq[(Data, Data, Statistics)] = {
+    val s = new Simulation(constants)
+    Main.initializeSimulation(s, randomized = true)
+    var data_out = s.getPopulationData(agents)
+    for (_ <- 1 to nSteps) yield {
+      val data_in = data_out
+      Main.runSimulation(s, stepSize)
+      data_out = s.getPopulationData(agents)
+      (data_in, s.getPopulationData(agents), s.getGlobalStat)
+    }
   }
 
   def main(args: Array[String]): Unit = {
@@ -54,40 +40,36 @@ object Main {
 
     val jsonAst = JsonParser(jsonString)
     val immutableParams = jsonAst.asJsObject.fields.mapValues(_.asJsObject.fields.mapValues(_.toString.toDouble))
-    val params = MutableMap(immutableParams.toSeq: _*)
+    val constants = MutableMap(immutableParams.toSeq: _*)
 
     args(0) match {
-      case "generate-csv" =>
-        val size = args(2).toInt
+      case "generate" =>
+        val nSamples = args(2).toInt
         val nSteps = args(3).toInt
-        val step = if(args(4).forall(_.isDigit)) args(4).toInt else 10
+        val stepSize = if(args(4).forall(_.isDigit)) args(4).toInt else 10
         var agents = if (args(4).forall(_.isDigit)) args.slice(5, args.length) else args.slice(4, args.length)
         agents = if (agents.length == 1 && agents.head.equals("all")) GLOBAL.allAgents else agents
-        DatasetCreator.createDataset(size, agents, nSteps, step)
-
-      case "generate" =>
-        val fileWriter = new FileWriter("target/scala-2.11/actuals")
-        simFunction(params).foreach(observable => fileWriter.write(observable + "\n"))
-        fileWriter.close()
+        DatasetCreator.createDataset(nSamples, agents, nSteps, stepSize)
 
       case "evaluate" =>
-        val file = scala.io.Source.fromFile("target/scala-2.11/actuals")
-        val actuals = file.getLines().toList.map(_.toDouble)
-        file.close()
-        println(Metrics.meanAbsoluteError(simFunction(params), actuals))
+        val stepSize = args(2).toInt
+        val entry = args(3).toInt
+        val (matrix, header) = CsvManager.readCsvFile("target/scala-2.11/global_stats.csv")
+        val actuals: Statistics = header.toArray.zip(matrix(entry, ::).inner.toArray).toMap
+        println(Metrics.meanAbsoluteError(simFunction(constants, 1, stepSize, GLOBAL.allAgents).map(_._3).last, actuals))
 
       case "lyapunov" =>
-        println(ChaosTest(outputFromState, params).lyapunovExponent(args(2), args(3)))
+        println(ChaosTest(constants).lyapunovExponent(args(2), args(3)))
 
       case "plot-time" =>
-        val visualizer = Viz(outputFromState, outputNames, params)
+        val visualizer = Viz(constants)
         val from = if (args.length > 2) args(2).toInt else 0
         val to = if (args.length > 3) args(3).toInt else 300
         val points = if (args.length > 4) args(4).toInt else 300
         visualizer.plotSimOverTime((from, to), points)
 
       case "plot-param" =>
-        val visualizer = Viz(outputFromState, outputNames, params)
+        val visualizer = Viz(constants)
         val from = if (args.length > 4) args(4).toDouble else 0
         val to = if (args.length > 5) args(5).toDouble else 100
         val simIters = if (args.length > 6) args(6).toInt else 300

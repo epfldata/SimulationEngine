@@ -1,6 +1,5 @@
 package bo
 
-import Simulation.Simulation
 import breeze.linalg.DenseMatrix
 
 import scala.collection.mutable.{Map => MutableMap}
@@ -10,9 +9,9 @@ object DatasetCreator {
   type Data = MutableMap[String, Map[String, Double]]
   type Statistics = Map[String, Double]
 
-  def createDataset(size: Int, agents: Iterable[String], nSteps: Int, step: Int = 10)  {
-    val constantSamples = sampleConstants(size / nSteps)
-    val data: Seq[(Data, Data, Statistics)] = constantSamples.flatMap(simFunction(_, nSteps, step, agents))
+  def createDataset(nSamples: Int, agents: Iterable[String], nSteps: Int, stepSize: Int = 10)  {
+    val constantSamples = sampleConstants(nSamples / nSteps)
+    val data: Seq[(Data, Data, Statistics)] = constantSamples.flatMap(Main.simFunction(_, nSteps, stepSize, agents))
     agents.foreach(agent => {
       val in_data: Seq[Seq[(String, Double)]] = data.map(_._1).map(_(agent).toSeq.sortBy(_._1))
       val header: Array[String] = in_data.head.map(_._1).toArray
@@ -33,26 +32,7 @@ object DatasetCreator {
     CsvManager.writeCsvFile(stats, "target/scala-2.11/global_stats.csv", stat_header)
   }
 
-  /**
-    *
-    * @return   a sequence of triples indexed over time, where the first element of the triple is input data,
-    *           the second in the output data and the third is the global statistics
-    */
-  private def simFunction(constants: Data,
-                          nSteps: Int, step: Int, agents: Iterable[String]): Seq[(Data, Data, Statistics)] = {
-    val s = new Simulation(constants)
-    Main.initializeSimulation(s, randomized = true)
-    var data_out = s.getPopulationData(agents)
-    for (_ <- 1 to nSteps) yield {
-      val data_in = data_out
-      Main.runSimulation(s, step)
-      data_out = s.getPopulationData(agents)
-      (data_in, s.getPopulationData(agents), s.getGlobalStat)
-    }
-  }
-
-
-  private def sampleConstants(trainsetSize: Int): List[Data] = (for (_ <- 0 until trainsetSize) yield
+  private def sampleConstants(nConstants: Int): List[Data] = (for (_ <- 0 until nConstants) yield
     MutableMap("Person" ->
       Map("number" -> (GLOBAL.rnd.nextInt(20) + 100).toDouble,
         "genderMu" -> GLOBAL.rnd.nextDouble(),
