@@ -4,7 +4,6 @@ import Markets._
 import Owner._
 import Securities._
 import Simulation.Factory.Factory
-import Simulation.SimLib.{Farm, Mill}
 import bo.DatasetCreator.{Data, Statistics}
 import breeze.stats.distributions.{Gaussian, RandBasis, ThreadLocalRandomGenerator}
 import org.apache.commons.math3.random.MersenneTwister

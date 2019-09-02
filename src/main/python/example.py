@@ -24,9 +24,9 @@ if __name__ == '__main__':
         agent2: pd.DataFrame({'p1': np.random.rand(100), 'p2': np.random.rand(100), 'p3': np.random.rand(100)})
     }
 
-    env.register_agent(agent1)
-    env.register_agent(agent2)
-    env.register_connection(agent1, agent2)
+    env.register_agents(agent1)
+    env.register_agents(agent2)
+    env.register_connections(agent1, agent2)
     env.compile()
 
     env.solo_train(data, output)

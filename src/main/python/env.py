@@ -21,11 +21,13 @@ def _normalizeInput(data):
 
     return scaled_data, scales
 
+
 def _normalizeOutput(data):
     scales = {agent: (data[agent].mean(), data[agent].std()) for agent in data}
     scaled_data = {agent: (data[agent] - scales[agent][0]) / scales[agent][1] for agent in data}
 
     return scaled_data, scales
+
 
 def _normalizeGlobalOutput(data):
     scales = (data.mean(), data.std())
@@ -49,14 +51,16 @@ class Environment:
         self._graph = None
         self._non_compiled_changes = True
 
-    def register_agent(self, agent):
-        self._non_compiled_changes = True
-        self._agents.append(agent)
-        self._connections[agent] = [agent]
+    def register_agents(self, *agents):
+        for agent in agents:
+            self._non_compiled_changes = True
+            self._agents.append(agent)
+            self._connections[agent] = [agent]
 
-    def register_connection(self, from_agent, to_agent):
+    def register_connections(self, from_agent, *to_agents):
         self._non_compiled_changes = True
-        self._connections[to_agent].append(from_agent)
+        for to_agent in to_agents:
+            self._connections[to_agent].append(from_agent)
 
     def _node_generator(self, agent):
         inputNames = agent.constants
@@ -94,7 +98,8 @@ class Environment:
 
         new_data = {self._get_agent(node): new_node_indexed_df[node] for node in new_node_indexed_df}
         rescaled_new_data = {agent: {
-            type: new_data[agent][type] * scales[agent][type][1] + scales[agent][type][0] for type in ["states", "constants"]
+            type: new_data[agent][type] * scales[agent][type][1] + scales[agent][type][0] for type in
+            ["states", "constants"]
         } for agent in new_data}
 
         return rescaled_new_data
@@ -111,9 +116,15 @@ class Environment:
         node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
         self._graph.group_train(node_input, global_output, aggregator, epochs)
 
-    def solo_train(self, data_input, data_output):
+    def solo_train(self, data_input, data_output, training_hyper_params=None):
         if self._non_compiled_changes:
             raise Exception("None Compiled Changes! Compile first!")
+
+        if training_hyper_params is None:
+            training_hyper_params = {agent: {
+                'epochs': 10,
+                'batch_size': 32
+            } for agent in data_input}
 
         data_input = {agent: _prefixColumnNames(data_input, agent) for agent in data_input}
 
@@ -121,28 +132,47 @@ class Environment:
         scaled_output = _normalizeOutput(data_output)[0]
 
         node_input = {self._get_node(agent): scaled_input[agent] for agent in scaled_input}
-        agent_output = {agent: scaled_output[agent] for agent in scaled_output}
 
         for agent in scaled_input:
             print("Solo Training " + agent.name)
+            batch_size = training_hyper_params[agent].get('batch_size') or 32
+            epochs = training_hyper_params[agent].get('epochs') or 32
             self._graph.solo_train(self._get_node(agent),
                                    node_input,
-                                   agent_output[agent])
+                                   scaled_output[agent],
+                                   batch_size,
+                                   epochs)
             print()
+
+    def solo_test(self, data_input, data_output):
+        if self._non_compiled_changes:
+            raise Exception("None Compiled Changes! Compile First")
+
+        data_input = {agent: _prefixColumnNames(data_input, agent) for agent in data_input}
+
+        scaled_input = _normalizeInput(data_input)[0]
+        scaled_output = _normalizeOutput(data_output)[0]
+
+        node_input = {self._get_node(agent): scaled_input[agent] for agent in scaled_input}
+
+        for agent in scaled_input:
+            print("Solo Testing " + agent.name)
+            self._graph.solo_test(self._get_node(agent), node_input, scaled_output[agent])
 
     def correlationMatrix(self, agent, iters=1000):
         if self._non_compiled_changes:
             raise Exception("Non Compiled Changes! Compile first!")
         node = self._get_node(agent)
         pattern = pd.DataFrame(np.repeat([np.random.normal(size=len(node._inputNames))], iters, axis=0),
-                            columns=node._inputNames)
-        corMatrix = pd.DataFrame(index=node._inputNames, columns=node._outputNames)
+                               columns=node._inputNames)
+        corMatrix = pd.DataFrame(index=node._inputNames, columns=node._outputNames, dtype=float)
         for param in node._inputNames:
             data = pattern
             data[param] = np.random.normal(size=iters)
             targets = pd.DataFrame(node.predict(data), columns=node._outputNames)
             corMatrix.loc[param] = [np.cov([data[param], targets[obs]])[0, 1]
-                            / np.sqrt(data[param].var(ddof=1) * targets[obs].var(ddof=1)) for obs in node._outputNames]
+                                    / np.sqrt(data[param].var(ddof=1) * targets[obs].var(ddof=1)) for obs in
+                                    node._outputNames]
         return corMatrix
 
     def derivativeMatrix(self, agent, param, iters=1000):
@@ -151,10 +181,11 @@ class Environment:
         param = agent.name + "." + param
         node = self._get_node(agent)
         data = pd.DataFrame(np.repeat([np.random.normal(size=len(node._inputNames))], iters, axis=0),
-                               columns=node._inputNames)
+                            columns=node._inputNames)
         data[param] = np.sort(np.random.normal(size=iters))
         data_np = data.to_numpy()
         dMatrix = pd.DataFrame(index=data[param], columns=node._outputNames)
         for row, index in enumerate(data[param]):
-            dMatrix.loc[index] = node.derivative(data_np[row].reshape(1, node.input_size()))[:, node._inputNames.index(param)]
+            dMatrix.loc[index] = node.derivative(data_np[row].reshape(1, node.input_size()))[:,
+                                 node._inputNames.index(param)]
         return dMatrix

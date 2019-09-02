@@ -41,7 +41,7 @@ class Node:
                         epochs=epochs)
 
     def test(self, predictors, targets):
-        self._model.evaluate(predictors, targets)
+        return self._model.evaluate(predictors, targets)
 
     def predict(self, predictors):
         return self._model.predict(predictors)

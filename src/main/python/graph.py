@@ -51,9 +51,13 @@ class Graph:
             })
             print("Epoch "  + str(i) + ", loss:", loss_val)
 
-    def solo_train(self, node, train_x, train_agent_y):
+    def solo_train(self, node, train_x, train_agent_y, batch_size=32, epochs=10):
         train_agent_y.columns = node._outputNames
-        node.train(self._prepare_node_input(train_x, node), train_agent_y.to_numpy())
+        node.train(self._prepare_node_input(train_x, node), train_agent_y.to_numpy(), batch_size, epochs)
+
+    def solo_test(self, node, test_x, test_agent_y):
+        test_agent_y.columns = node._outputNames
+        return node.test(self._prepare_node_input(test_x, node), test_agent_y.to_numpy())
 
     def _prepare_node_input(self, data, node):
         result = data[node]["constants"]
