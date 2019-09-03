@@ -16,7 +16,7 @@ class Node:
         activations = hyper_parameters.get('activations') or ['linear'] * 3
 
         self._model.add(Dense(units[0], input_dim=hyper_parameters.get('features') or 3, activation=activations[0]))
-        for i in range(1, hyper_parameters.get('number_of_layers') or 3):
+        for i in range(1, hyper_parameters.get('number_of_layers') or len(units)):
             self._model.add(Dense(units[i] or 64, activation=activations[i]))
 
         self._model.compile(loss=hyper_parameters.get('loss') or 'mae',

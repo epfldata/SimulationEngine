@@ -5,7 +5,8 @@ from node import Node
 
 
 class Agent:
-    def __init__(self, constants, state, name):
+    def __init__(self, constants, state, name, hyper_params=None):
+        self.hyper_parameters = {} if hyper_params is None else hyper_params
         self.constants = list(map(lambda n: name + "." + n, constants))
         self.state = list(map(lambda n: name + "." + n, state))
         self.name = name
@@ -63,12 +64,16 @@ class Environment:
             self._connections[to_agent].append(from_agent)
 
     def _node_generator(self, agent):
-        inputNames = agent.constants
+        input_names = agent.constants
         for in_agent in self._connections[agent]:
-            inputNames += in_agent.state
-        node = Node(inputNames, agent.state, {
-            'features': len(inputNames),
-            'number_of_units': [64, 64, len(agent.state)]
+            input_names += in_agent.state
+        node = Node(input_names, agent.state, {
+            'features': len(input_names),
+            'number_of_units': agent.hyper_parameters.get('number_of_units') or [64, 64, 64, len(agent.state)],
+            'activations': agent.hyper_parameters.get('activations') or ['relu', 'relu', 'relu', 'linear'],
+            'loss': agent.hyper_parameters.get('loss') or 'mae',
+            'optimizer': agent.hyper_parameters.get('optimizer') or 'sgd',
+            'metrics': agent.hyper_parameters.get('metrics') or ['mae']
         })
         return node
 
