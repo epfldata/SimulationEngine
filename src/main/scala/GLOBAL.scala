@@ -6,8 +6,8 @@ class Dummy;
 }
 
 package object GLOBAL {
-  var silent = false
-  var strongSilence = false
+  val silent = true
+  val strongSilence = true
   val rnd = new Random(19)
 
   val allAgents = Array("Person", "Farm", "Mill", "Bakery", "CattleFarm", "OilField", "Refinery")

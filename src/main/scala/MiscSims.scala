@@ -76,9 +76,9 @@ case class Buyer(commodity: Commodity,
 
 
 class Farm(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List((Land, s.constants("Farm")("farmReq").toInt)), List(),
-    (Wheat, s.constants("Farm")("farmProd").toInt),
-    s.constants("Farm")("farmTime").toInt), s) {
+  ProductionLineSpec(1, List((Land, s.constants("Farm")("required").toInt)), List(),
+    (Wheat, s.constants("Farm")("produced").toInt),
+    s.constants("Farm")("time").toInt), s) {
 
   override def mycopy(_shared: Simulation,
                       _substitution: collection.mutable.Map[SimO, SimO]): Factory = {
@@ -89,9 +89,9 @@ class Farm(s: Simulation) extends Factory(
 }
 
 class Mill(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List(), List((Wheat, s.constants("Mill")("millCons").toInt)),
-    (Flour, s.constants("Mill")("millProd").toInt),
-    s.constants("Mill")("millTime").toInt), s) {
+  ProductionLineSpec(1, List(), List((Wheat, s.constants("Mill")("consumed").toInt)),
+    (Flour, s.constants("Mill")("produced").toInt),
+    s.constants("Mill")("time").toInt), s) {
 
   override def mycopy(_shared: Simulation,
                       _substitution: collection.mutable.Map[SimO, SimO]): Factory = {
@@ -102,9 +102,9 @@ class Mill(s: Simulation) extends Factory(
 }
 
 class Bakery(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List(), List((Flour, s.constants("Bakery")("bakeryCons").toInt)),
-    (Bread, s.constants("Bakery")("bakeryProd").toInt),
-    s.constants("Bakery")("bakeryTime").toInt), s) {
+  ProductionLineSpec(1, List(), List((Flour, s.constants("Bakery")("consumed").toInt)),
+    (Bread, s.constants("Bakery")("produced").toInt),
+    s.constants("Bakery")("time").toInt), s) {
 
   override def mycopy(_shared: Simulation,
                       _substitution: collection.mutable.Map[SimO, SimO]): Factory = {
@@ -115,9 +115,9 @@ class Bakery(s: Simulation) extends Factory(
 }
 
 class CattleFarm(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List((Land, s.constants("CattleFarm")("cattlefarmReq").toInt)), List(),
-    (Beef, s.constants("CattleFarm")("cattlefarmProd").toInt),
-    s.constants("CattleFarm")("cattlefarmTime").toInt), s) {
+  ProductionLineSpec(1, List((Land, s.constants("CattleFarm")("required").toInt)), List(),
+    (Beef, s.constants("CattleFarm")("produced").toInt),
+    s.constants("CattleFarm")("time").toInt), s) {
 
   override def mycopy(_shared: Simulation,
                       _substitution: collection.mutable.Map[SimO, SimO]): Factory = {
@@ -128,9 +128,9 @@ class CattleFarm(s: Simulation) extends Factory(
 }
 
 class OilField(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List((Land, s.constants("OilField")("oilfieldReq").toInt)), List(),
-    (Oil, s.constants("OilField")("oilfieldProd").toInt),
-    s.constants("OilField")("oilfieldTime").toInt), s) {
+  ProductionLineSpec(1, List((Land, s.constants("OilField")("required").toInt)), List(),
+    (Oil, s.constants("OilField")("produced").toInt),
+    s.constants("OilField")("time").toInt), s) {
 
   override def mycopy(_shared: Simulation,
                       _substitution: collection.mutable.Map[SimO, SimO]): Factory = {
@@ -141,9 +141,9 @@ class OilField(s: Simulation) extends Factory(
 }
 
 class Refinery(s: Simulation) extends Factory(
-  ProductionLineSpec(1, List(), List((Oil, s.constants("Refinery")("refineryCons").toInt)),
-    (Fuel, s.constants("Refinery")("refineryProd").toInt),
-    s.constants("Refinery")("refineryTime").toInt), s) {
+  ProductionLineSpec(1, List(), List((Oil, s.constants("Refinery")("consumed").toInt)),
+    (Fuel, s.constants("Refinery")("produced").toInt),
+    s.constants("Refinery")("time").toInt), s) {
 
   override def mycopy(_shared: Simulation,
                       _substitution: collection.mutable.Map[SimO, SimO]): Factory = {

@@ -34,10 +34,10 @@ object DatasetCreator {
 
   private def sampleConstants(nConstants: Int): List[Data] = (for (_ <- 0 until nConstants) yield
     MutableMap("Person" ->
-      Map("number" -> (GLOBAL.rnd.nextInt(20) + 100).toDouble,
+      Map("number" -> (GLOBAL.rnd.nextInt(100) + 100).toDouble,
         "genderMu" -> GLOBAL.rnd.nextDouble(),
         "genderSigma" -> GLOBAL.rnd.nextDouble(),
-        "capitalMu" -> GLOBAL.rnd.nextDouble() * 100000,
+        "capitalMu" -> GLOBAL.rnd.nextDouble() * 10000,
         "capitalSigma" -> GLOBAL.rnd.nextDouble() * 10000,
 
         "buyWheat" -> GLOBAL.rnd.nextDouble(),
@@ -55,7 +55,7 @@ object DatasetCreator {
         "consumeOil" -> GLOBAL.rnd.nextDouble(),
         "consumeFuel" -> GLOBAL.rnd.nextDouble(),
 
-        "buyMu" -> (GLOBAL.rnd.nextDouble() * 10.0 + 1),
+        "buyMu" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
         "buySigma" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
         "consumeMu" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
         "consumeSigma" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
@@ -86,68 +86,68 @@ object DatasetCreator {
       "Farm" ->
         Map(
           "number" -> 1.0,
-          "farmSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "farmSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "farmItersMu" -> GLOBAL.rnd.nextDouble() * 20,
-          "farmItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
-          "farmReq" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "farmProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "farmTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble
+          "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+          "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+          "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
+          "itersSigma" -> GLOBAL.rnd.nextDouble() * 20,
+          "required" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "produced" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "time" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble
         ),
       "Mill" ->
         Map(
           "number" -> 1.0,
-          "millSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "millSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "millItersMu" -> GLOBAL.rnd.nextDouble() * 20,
-          "millItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
-          "millCons" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "millProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "millTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble
+          "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000),
+          "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000),
+          "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
+          "itersSigma" -> GLOBAL.rnd.nextDouble() * 20,
+          "consumed" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "produced" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "time" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble
         ),
       "Bakery" ->
         Map(
           "number" -> 1.0,
-          "bakerySalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "bakerySalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "bakeryItersMu" -> GLOBAL.rnd.nextDouble() * 20,
-          "bakeryItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
-          "bakeryCons" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "bakeryProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "bakeryTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble
+          "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+          "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+          "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
+          "itersSigma" -> GLOBAL.rnd.nextDouble() * 20,
+          "consumed" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "produced" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "time" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble
         ),
       "CattleFarm" ->
         Map(
           "number" -> 1.0,
-          "cattlefarmSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "cattlefarmSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "cattlefarmItersMu" -> GLOBAL.rnd.nextDouble() * 20,
-          "cattlefarmItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
-          "cattlefarmReq" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "cattlefarmProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "cattlefarmTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble
+          "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+          "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+          "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
+          "itersSigma" -> GLOBAL.rnd.nextDouble() * 20,
+          "required" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "produced" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "time" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble
         ),
       "OilField" ->
         Map(
           "number" -> 1.0,
-          "oilfieldSalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "oilfieldSalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "oilfieldItersMu" -> GLOBAL.rnd.nextDouble() * 20,
-          "oilfieldItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
-          "oilfieldReq" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "oilfieldProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "oilfieldTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble
+          "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+          "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+          "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
+          "itersSigma" -> GLOBAL.rnd.nextDouble() * 20,
+          "required" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "produced" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "time" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble
         ),
       "Refinery" ->
         Map(
           "number" -> 1.0,
-          "refinerySalaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "refinerySalarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
-          "refineryItersMu" -> GLOBAL.rnd.nextDouble() * 20,
-          "refineryItersSigma" -> GLOBAL.rnd.nextDouble() * 20,
-          "refineryCons" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "refineryProd" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble,
-          "refineryTime" -> (GLOBAL.rnd.nextInt(9) + 1).toDouble
+          "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+          "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+          "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
+          "itersSigma" -> GLOBAL.rnd.nextDouble() * 20,
+          "consumed" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "produced" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
+          "time" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble
         )
     )).toList
 

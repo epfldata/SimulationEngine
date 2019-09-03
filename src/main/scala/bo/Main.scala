@@ -84,8 +84,6 @@ object Main {
     if (mute)
       Console.setOut(initLog)
 
-    GLOBAL.silent = true
-    GLOBAL.strongSilence = true
     val landlord = new Source(Land, 20, 100000 * 100, s)
 
     val genderDistr = Gaussian(s.constants("Person")("genderMu"), s.constants("Person")("genderSigma"))

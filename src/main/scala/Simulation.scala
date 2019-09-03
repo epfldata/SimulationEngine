@@ -38,10 +38,10 @@ class Simulation(val constants: Data) {
     case factory: Factory =>
       val factoryType = GLOBAL.getAgentTypeFromClass(factory.getClass.getName)
       Map(
-        ("salary", new Gaussian(constants(factoryType)(factoryType.toLowerCase + "SalaryMu"),
-                                constants(factoryType)(factoryType.toLowerCase + "SalarySigma"))),
-        ("iters", new Gaussian(constants(factoryType)(factoryType.toLowerCase + "ItersMu"),
-                               constants(factoryType)(factoryType.toLowerCase + "ItersSigma")))
+        ("salary", new Gaussian(constants(factoryType)("salaryMu"),
+                                constants(factoryType)("salarySigma"))),
+        ("iters", new Gaussian(constants(factoryType)("itersMu"),
+                               constants(factoryType)("itersSigma")))
       )
 
     case _ => Map()
