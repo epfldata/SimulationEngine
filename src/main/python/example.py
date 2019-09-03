@@ -32,6 +32,6 @@ if __name__ == '__main__':
     env.solo_train(data, output)
     aggregator = Aggregator()
     env.group_train(data, aggregator.aggregate_pd(output, ["s1", "s2"]), aggregator)
-    print("correlation matrix agent2\n", env.correlationMatrix(agent2))
-    print("derivative matrix agent2\n", env.derivativeMatrix(agent1, "c1", 100))
+    print("correlation matrix agent2\n", env.correlation_matrix(agent2))
+    print("derivative matrix agent2\n", env.derivative_matrix(agent1, "c1", 100))
     print(env.predict(data)[agent2]["states"])

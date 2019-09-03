@@ -11,7 +11,7 @@ class Agent:
         self.name = name
 
 
-def _normalizeInput(data):
+def _normalize_input(data):
     scales = {agent: {
         type: (data[agent][type].mean(), data[agent][type].std()) for type in ["states", "constants"]
     } for agent in data}
@@ -22,24 +22,24 @@ def _normalizeInput(data):
     return scaled_data, scales
 
 
-def _normalizeOutput(data):
+def _normalize_output(data):
     scales = {agent: (data[agent].mean(), data[agent].std()) for agent in data}
     scaled_data = {agent: (data[agent] - scales[agent][0]) / scales[agent][1] for agent in data}
 
     return scaled_data, scales
 
 
-def _normalizeGlobalOutput(data):
+def _normalize_global_output(data):
     scales = (data.mean(), data.std())
     scales_data = data - scales[0] / scales[1]
     return scales_data, scales
 
 
-def _prefixColumnNames(data, agent):
-    def prefixColumnNames(data, agent):
+def _prefix_columns_names(data, agent):
+    def prefix_column_names(data, agent):
         return pd.DataFrame(data.values, columns=list(map(lambda n: agent.name + "." + n, data.columns)))
 
-    return {type: prefixColumnNames(data[agent][type], agent) for type in ["states", "constants"]}
+    return {type: prefix_column_names(data[agent][type], agent) for type in ["states", "constants"]}
 
 
 class Environment:
@@ -90,9 +90,9 @@ class Environment:
         if self._non_compiled_changes:
             raise Exception("Non Compiled Changes! Compile first!")
 
-        data = {agent: _prefixColumnNames(data, agent) for agent in data}
+        data = {agent: _prefix_columns_names(data, agent) for agent in data}
 
-        scaled_data, scales = _normalizeInput(data)
+        scaled_data, scales = _normalize_input(data)
         node_indexed_df = {self._get_node(agent): scaled_data[agent] for agent in scaled_data}
         new_node_indexed_df = self._graph.predict(node_indexed_df, time)
 
@@ -108,10 +108,10 @@ class Environment:
         if self._non_compiled_changes:
             raise Exception("None Compiled Changes! Compile first!")
 
-        agent_input = {agent: _prefixColumnNames(agent_input, agent) for agent in agent_input}
+        agent_input = {agent: _prefix_columns_names(agent_input, agent) for agent in agent_input}
 
-        agent_input = _normalizeInput(agent_input)[0]
-        global_output = _normalizeGlobalOutput(global_output)[0]
+        agent_input = _normalize_input(agent_input)[0]
+        global_output = _normalize_global_output(global_output)[0]
 
         node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
         self._graph.group_train(node_input, global_output, aggregator, epochs)
@@ -126,10 +126,10 @@ class Environment:
                 'batch_size': 32
             } for agent in data_input}
 
-        data_input = {agent: _prefixColumnNames(data_input, agent) for agent in data_input}
+        data_input = {agent: _prefix_columns_names(data_input, agent) for agent in data_input}
 
-        scaled_input = _normalizeInput(data_input)[0]
-        scaled_output = _normalizeOutput(data_output)[0]
+        scaled_input = _normalize_input(data_input)[0]
+        scaled_output = _normalize_output(data_output)[0]
 
         node_input = {self._get_node(agent): scaled_input[agent] for agent in scaled_input}
 
@@ -148,10 +148,10 @@ class Environment:
         if self._non_compiled_changes:
             raise Exception("None Compiled Changes! Compile First")
 
-        data_input = {agent: _prefixColumnNames(data_input, agent) for agent in data_input}
+        data_input = {agent: _prefix_columns_names(data_input, agent) for agent in data_input}
 
-        scaled_input = _normalizeInput(data_input)[0]
-        scaled_output = _normalizeOutput(data_output)[0]
+        scaled_input = _normalize_input(data_input)[0]
+        scaled_output = _normalize_output(data_output)[0]
 
         node_input = {self._get_node(agent): scaled_input[agent] for agent in scaled_input}
 
@@ -159,33 +159,33 @@ class Environment:
             print("Solo Testing " + agent.name)
             self._graph.solo_test(self._get_node(agent), node_input, scaled_output[agent])
 
-    def correlationMatrix(self, agent, iters=1000):
+    def correlation_matrix(self, agent, iters=1000):
         if self._non_compiled_changes:
             raise Exception("Non Compiled Changes! Compile first!")
         node = self._get_node(agent)
-        pattern = pd.DataFrame(np.repeat([np.random.normal(size=len(node._inputNames))], iters, axis=0),
-                               columns=node._inputNames)
-        corMatrix = pd.DataFrame(index=node._inputNames, columns=node._outputNames, dtype=float)
-        for param in node._inputNames:
+        pattern = pd.DataFrame(np.repeat([np.random.normal(size=len(node.input_names))], iters, axis=0),
+                               columns=node.input_names)
+        cor_matrix = pd.DataFrame(index=node.input_names, columns=node.output_names, dtype=float)
+        for param in node.input_names:
             data = pattern
             data[param] = np.random.normal(size=iters)
-            targets = pd.DataFrame(node.predict(data), columns=node._outputNames)
-            corMatrix.loc[param] = [np.cov([data[param], targets[obs]])[0, 1]
-                                    / np.sqrt(data[param].var(ddof=1) * targets[obs].var(ddof=1)) for obs in
-                                    node._outputNames]
-        return corMatrix
+            targets = pd.DataFrame(node.predict(data), columns=node.output_names)
+            cor_matrix.loc[param] = [np.cov([data[param], targets[obs]])[0, 1]
+                                     / np.sqrt(data[param].var(ddof=1) * targets[obs].var(ddof=1)) for obs in
+                                     node.output_names]
+        return cor_matrix
 
-    def derivativeMatrix(self, agent, param, iters=1000):
+    def derivative_matrix(self, agent, param, iters=1000):
         if self._non_compiled_changes:
             raise Exception("Non Compiled Changes! Compile first!")
         param = agent.name + "." + param
         node = self._get_node(agent)
-        data = pd.DataFrame(np.repeat([np.random.normal(size=len(node._inputNames))], iters, axis=0),
-                            columns=node._inputNames)
+        data = pd.DataFrame(np.repeat([np.random.normal(size=len(node.input_names))], iters, axis=0),
+                            columns=node.input_names)
         data[param] = np.sort(np.random.normal(size=iters))
         data_np = data.to_numpy()
-        dMatrix = pd.DataFrame(index=data[param], columns=node._outputNames)
+        dMatrix = pd.DataFrame(index=data[param], columns=node.output_names)
         for row, index in enumerate(data[param]):
             dMatrix.loc[index] = node.derivative(data_np[row].reshape(1, node.input_size()))[:,
-                                 node._inputNames.index(param)]
+                                 node.input_names.index(param)]
         return dMatrix

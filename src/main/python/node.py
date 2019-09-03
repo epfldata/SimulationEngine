@@ -6,11 +6,11 @@ from tensorflow.python.keras.models import Sequential
 
 class Node:
 
-    def __init__(self, inputNames, outputNames, hyper_parameters=None):
+    def __init__(self, input_names, output_names, hyper_parameters=None):
         if hyper_parameters is None:
             hyper_parameters = {}
-        self._inputNames = inputNames
-        self._outputNames = outputNames
+        self.input_names = input_names
+        self.output_names = output_names
         self._model = Sequential()
         units = hyper_parameters.get('number_of_units') or [64] * 3
         activations = hyper_parameters.get('activations') or ['linear'] * 3

@@ -44,7 +44,7 @@ def scenario_one():
 
     # print(env.derivativeMatrix(agent, 'x', 100))
 
-    print(env.correlationMatrix(agent))
+    print(env.correlation_matrix(agent))
 
 
 def scenario_two():
@@ -154,6 +154,8 @@ def scenario_two():
         a1: {'epochs': 100}, a2: {'epochs': 100}, a3: {'epochs': 50}})
 
     env.solo_test(data_input, data_output)
+
+    print(env.correlation_matrix(a1))
 
 
 if __name__ == '__main__':

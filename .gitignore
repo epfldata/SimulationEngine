@@ -2,6 +2,9 @@
 project/
 target/
 
+# python
+__pycache__/
+
 # conda env config file
 *.cfg
 
