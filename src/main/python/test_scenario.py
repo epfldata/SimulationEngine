@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 
 from env import Environment, Agent
-from node import Node
 
 """
 In this file we examine three simple environments in three different scenarios. T
@@ -128,7 +127,7 @@ def scenario_two():
 
     a1_outputs = {
         'x1': a2_states['y1'] * a2_states['y2'] / a1_constants['l1'] + np.exp(-3 * a1_states['x1']),
-        'x2': a1_constants['l2'] * np.log(np.abs(2 * a2_states['y2'])),
+        'x2': a1_constants['l2'] * np.log(np.abs(2 * a2_states['y4'])),
         'x3': a1_states['x1'] - a1_states['x2']
     }
 
