@@ -85,7 +85,7 @@ object DatasetCreator {
       ),
       "Farm" ->
         Map(
-          "number" -> 1.0,
+          "number" -> (1 + GLOBAL.rnd.nextInt(5)).toDouble,
           "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
@@ -96,7 +96,7 @@ object DatasetCreator {
         ),
       "Mill" ->
         Map(
-          "number" -> 1.0,
+          "number" -> (1 + GLOBAL.rnd.nextInt(5)).toDouble,
           "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000),
           "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000),
           "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
@@ -107,7 +107,7 @@ object DatasetCreator {
         ),
       "Bakery" ->
         Map(
-          "number" -> 1.0,
+          "number" -> (1 + GLOBAL.rnd.nextInt(5)).toDouble,
           "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
@@ -118,7 +118,7 @@ object DatasetCreator {
         ),
       "CattleFarm" ->
         Map(
-          "number" -> 1.0,
+          "number" -> (1 + GLOBAL.rnd.nextInt(5)).toDouble,
           "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
@@ -129,7 +129,7 @@ object DatasetCreator {
         ),
       "OilField" ->
         Map(
-          "number" -> 1.0,
+          "number" -> (1 + GLOBAL.rnd.nextInt(5)).toDouble,
           "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
@@ -140,7 +140,7 @@ object DatasetCreator {
         ),
       "Refinery" ->
         Map(
-          "number" -> 1.0,
+          "number" -> (1 + GLOBAL.rnd.nextInt(5)).toDouble,
           "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
           "itersMu" -> GLOBAL.rnd.nextDouble() * 20,
