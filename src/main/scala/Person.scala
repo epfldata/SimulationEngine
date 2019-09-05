@@ -17,6 +17,12 @@ class Person(
   variables += "happiness" -> (() => happiness.toDouble)
   variables += "salary" -> (() => salary)
 
+  override def initializeVariables(): Unit = {
+    super.initializeVariables()
+    happiness = GLOBAL.rnd.nextInt(100)
+    salary = GLOBAL.rnd.nextInt(100)
+  }
+
   private val distr = shared.distributions(this)
   // between 1 and 10
   val education = math.max(1, math.min(10, distr("edu").sample.round.toInt))

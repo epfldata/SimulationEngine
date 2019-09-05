@@ -28,7 +28,7 @@ class Owner {
       Changes the balance, of course.
   */
   var capital : Int = 0 // EUR cents
-  private var total_value_destroyed : Double = 0.0
+  protected var total_value_destroyed : Double = 0.0
 
   var variables: Map[String, () => Double] = Map("capital" -> (() => capital), "total_value_destroyed" -> (() => total_value_destroyed))
   var observables = Map.empty[String, Double]

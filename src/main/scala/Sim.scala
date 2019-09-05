@@ -57,7 +57,8 @@ abstract class SimO(
   }
 
   def initializeVariables()  {
-    variables = Map(variables.mapValues(_ => (() => GLOBAL.rnd.nextInt(100).toDouble)).toSeq: _*)
+    capital = GLOBAL.rnd.nextInt(100)
+    total_value_destroyed = GLOBAL.rnd.nextInt(100)
   }
 
   def mycopy(_shared: Simulation,
