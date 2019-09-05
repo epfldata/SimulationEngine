@@ -32,6 +32,10 @@ if __name__ == '__main__':
     env.solo_train(data, output)
     aggregator = Aggregator()
     env.group_train(data, aggregator.aggregate_pd(output, ["s1", "s2"]), aggregator)
+
+    global_output = pd.DataFrame(np.array([np.arange(0, 100), np.arange(0, 100)]).transpose())
+    env.learn_input(global_output, aggregator, epochs=10 ** 6)
+
     print("correlation matrix agent2\n", env.correlation_matrix(agent2))
     print("derivative matrix agent2\n", env.derivative_matrix(agent1, "c1", 100))
     print(env.predict(data)[agent2]["states"])

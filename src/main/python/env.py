@@ -32,6 +32,8 @@ def _normalize_output(data):
 
 def _normalize_global_output(data):
     scales = (data.mean(), data.std())
+    if data.shape[0] == 1:
+        return data, scales
     scales_data = data - scales[0] / scales[1]
     return scales_data, scales
 
@@ -67,7 +69,7 @@ class Environment:
         input_names = agent.constants
         for in_agent in self._connections[agent]:
             input_names += in_agent.state
-        node = Node(input_names, agent.state, {
+        node = Node(agent.name, input_names, agent.state, {
             'features': len(input_names),
             'number_of_units': agent.hyper_parameters.get('number_of_units') or [64, 64, 64, len(agent.state)],
             'activations': agent.hyper_parameters.get('activations') or ['relu', 'relu', 'relu', 'linear'],
@@ -120,6 +122,13 @@ class Environment:
 
         node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
         self._graph.group_train(node_input, global_output, aggregator, epochs)
+
+    def learn_input(self, global_output, aggregator, epochs=100):
+        if self._non_compiled_changes:
+            raise Exception("Non Compiled Changes! Compile first!")
+
+        global_output = _normalize_global_output(global_output)[0]
+        self._graph.learn_input(global_output, aggregator, epochs)
 
     def solo_train(self, data_input, data_output, training_hyper_params=None):
         if self._non_compiled_changes:

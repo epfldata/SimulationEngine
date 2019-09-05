@@ -1,27 +1,41 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.keras.layers import Dense
+from tensorflow.python.keras.layers import Dense, InputLayer
 from tensorflow.python.keras.models import Sequential
 
 
 class Node:
 
-    def __init__(self, input_names, output_names, hyper_parameters=None):
+    def __init__(self, agent_name, input_names, output_names, hyper_parameters=None):
         if hyper_parameters is None:
             hyper_parameters = {}
+        self._name = agent_name
         self.input_names = input_names
         self.output_names = output_names
         self._model = Sequential()
         units = hyper_parameters.get('number_of_units') or [64] * 3
         activations = hyper_parameters.get('activations') or ['linear'] * 3
 
-        self._model.add(Dense(units[0], input_dim=hyper_parameters.get('features') or 3, activation=activations[0]))
+        self._model.add(Dense(units[0], input_dim=hyper_parameters.get('features') or 3, activation=activations[0], name=self._name + "-0"))
         for i in range(1, hyper_parameters.get('number_of_layers') or len(units)):
-            self._model.add(Dense(units[i] or 64, activation=activations[i]))
+            self._model.add(Dense(units[i] or 64, activation=activations[i], name="{}-{}".format(self._name, i + 1)))
 
         self._model.compile(loss=hyper_parameters.get('loss') or 'mae',
                             optimizer=hyper_parameters.get('optimizer') or 'sgd',
                             metrics=hyper_parameters.get('metrics') or ['mae'])
+
+    def extended_model(self, n_samples):
+        input_variable = tf.Variable(initial_value=tf.ones((n_samples, self.input_size())), trainable=True, dtype=tf.float32, name=self._name + "-input")
+        model = Sequential()
+        model.add(InputLayer(input_tensor=input_variable, name=self._name + "-0"))
+        for layer in self._model.layers:
+            model.add(Dense(layer.units, layer.activation, trainable=False, name=layer.name + "a"))
+
+        model.compile(loss='mae', optimizer='sgd', metrics=['mae'])
+        for i in range(len(self._model.layers)):
+            model.layers[i].set_weights(self._model.layers[i].get_weights())
+
+        return model
 
     def input_size(self):
         return self._model.input.shape[1]

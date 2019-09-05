@@ -9,23 +9,25 @@ def _outputToDF(node, nparray):
 
 class Aggregator:
     @staticmethod
-    def aggregate(output_tensors):
+    def aggregate(output_tensors, n_samples):
         # s1, s2
-        result = tf.zeros(shape=(100, 2), dtype=tf.float32)
-        p3 = tf.zeros(100)
+        dtype = output_tensors[list(output_tensors.keys())[0]].dtype
+        result = tf.zeros(shape=(n_samples, 2), dtype=dtype)
+        p3 = tf.zeros(n_samples, dtype=dtype)
         for key in output_tensors:
             result += tf.slice(output_tensors[key], [0, 0], result.shape)
             if output_tensors[key].shape[1] == 3:
                 p3 += output_tensors[key][:, 2]
-        s1 = tf.reshape(result[:, 0], shape=(100, 1))
-        s2 = tf.reshape(tf.math.multiply(result[:, 1], p3), shape=(100, 1))
+        s1 = tf.reshape(result[:, 0], shape=(n_samples, 1))
+        s2 = tf.reshape(tf.math.multiply(result[:, 1], p3), shape=(n_samples, 1))
         result = tf.concat([s1, s2], axis=1)
         return result
 
     def aggregate_pd(self, agent_outputs, output_names):
-        output_tensors = {agent: tf.constant(agent_outputs[agent].to_numpy(), dtype=tf.float32) for agent in
+        output_tensors = {agent: tf.constant(agent_outputs[agent].to_numpy()) for agent in
                           agent_outputs}
-        return pd.DataFrame(tf.keras.backend.eval(self.aggregate(output_tensors)), columns=output_names)
+        return pd.DataFrame(tf.keras.backend.eval(
+            self.aggregate(output_tensors, agent_outputs[list(agent_outputs.keys())[0]].shape[0])), columns=output_names)
 
 
 class Parameter:
@@ -42,15 +44,53 @@ class Graph:
         self._sess = tf.keras.backend.get_session()
 
     def group_train(self, train_x, train_s, aggregator, epochs=100):
-        predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes})
+        predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, train_s.shape[0])
         loss = tf.losses.mean_squared_error(tf.constant(train_s.to_numpy()), predict_s)
         optimizer = tf.train.GradientDescentOptimizer(0.01)
         train = optimizer.minimize(loss)
+        last_percent = 0
         for i in range(epochs):
-            train_val, loss_val = self._sess.run((train, loss), feed_dict={
+            _, loss_val = self._sess.run((train, loss), feed_dict={
                 node.input_tensor(): self._prepare_node_input(train_x, node) for node in self._nodes
             })
-            print("Epoch " + str(i) + ", loss:", loss_val)
+            if int(i * 100.0 / epochs) > last_percent:
+                last_percent = int(i * 100.0 / epochs)
+                print("{} %, loss {}".format(last_percent, loss_val))
+
+    def learn_input(self, train_s, aggregator, epochs=100):
+        def equal_predictions(extended_model):
+            for node in extended_model:
+                for i in range(len(node._model.get_weights())):
+                    if not np.array_equal(node._model.get_weights()[i], extended_model[node].get_weights()[i]):
+                        return False
+                random_input = np.random.normal(size=(100, node.input_size()))
+                output1 = node._model.predict(random_input)
+                self._sess.run(tf.assign(extended_model[node].input, random_input, validate_shape=False))
+                output2 = self._sess.run(extended_model[node].output)
+                if not np.array_equal(np.round(output1, 5), np.round(output2, 5)):
+                    return False
+            return True
+
+        n_samples = train_s.shape[0]
+        extended_model = {node: node.extended_model(n_samples) for node in self._nodes}
+        input_vars = {node: extended_model[node].input for node in self._nodes}
+        assert equal_predictions(extended_model)
+
+        predict_s = aggregator.aggregate({node: extended_model[node].output for node in self._nodes}, n_samples)
+        loss = tf.losses.mean_squared_error(tf.constant(train_s.to_numpy()), predict_s)
+        train = tf.train.GradientDescentOptimizer(0.01).minimize(loss)
+
+        for node in self._nodes:
+            self._sess.run(tf.assign(input_vars[node], np.random.normal(size=(n_samples, node.input_size())), validate_shape=False))
+            # print(node, self._sess.run(input_vars[node]))
+        last_percent = 0
+        for i in range(epochs):
+            _, l = self._sess.run([train, loss])
+            if int(i * 100.0 / epochs) > last_percent:
+                last_percent = int(i * 100.0 / epochs)
+                print("{} %, loss {}".format(last_percent, l))
+        # for node in self._nodes:
+        #     print(node, self._sess.run(input_vars[node]))
 
     def solo_train(self, node, train_x, train_agent_y, batch_size=32, epochs=10):
         train_agent_y.columns = node.output_names
