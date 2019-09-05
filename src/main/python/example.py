@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
+from aggregator import DummyAggregator
 from env import Environment, Agent
-from graph import Aggregator
-
 
 if __name__ == '__main__':
     env = Environment()
@@ -30,8 +29,8 @@ if __name__ == '__main__':
     env.compile()
 
     env.solo_train(data, output)
-    aggregator = Aggregator()
-    env.group_train(data, aggregator.aggregate_pd(output, ["s1", "s2"]), aggregator)
+    aggregator = DummyAggregator()
+    env.group_train(data, output, ["s1", "s2"], aggregator)
 
     global_output = pd.DataFrame(np.array([np.arange(0, 100), np.arange(0, 100)]).transpose())
     env.learn_input(global_output, aggregator, epochs=10 ** 6)

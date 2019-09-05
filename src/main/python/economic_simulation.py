@@ -2,8 +2,9 @@ import json
 import os
 from math import floor
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+from aggregator import GlobalStateAggregator
 from env import Agent, Environment
 from tensorflow.python.keras.models import load_model
 
@@ -84,6 +85,11 @@ if __name__ == '__main__':
             agent: {'epochs': 200} for agent in agents
         })
         env.solo_test(test_input, test_output)
+
+        population = [train_input[agent]["constants"]["const_number"] for agent in data_input if agent.name == "Person"][0]
+        aggregator = GlobalStateAggregator(population)
+        env.group_train(train_input, train_output, ["capital", "total_value_destroyed",
+            "unemploymentRate", "happiness", "valueProduced", "goodwill"], aggregator)
 
         save = input('save model?(y/n):\n')
         if save == 'y':

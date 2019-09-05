@@ -7,29 +7,6 @@ def _outputToDF(node, nparray):
     return pd.DataFrame(nparray, columns=node.output_names)
 
 
-class Aggregator:
-    @staticmethod
-    def aggregate(output_tensors, n_samples):
-        # s1, s2
-        dtype = output_tensors[list(output_tensors.keys())[0]].dtype
-        result = tf.zeros(shape=(n_samples, 2), dtype=dtype)
-        p3 = tf.zeros(n_samples, dtype=dtype)
-        for key in output_tensors:
-            result += tf.slice(output_tensors[key], [0, 0], result.shape)
-            if output_tensors[key].shape[1] == 3:
-                p3 += output_tensors[key][:, 2]
-        s1 = tf.reshape(result[:, 0], shape=(n_samples, 1))
-        s2 = tf.reshape(tf.math.multiply(result[:, 1], p3), shape=(n_samples, 1))
-        result = tf.concat([s1, s2], axis=1)
-        return result
-
-    def aggregate_pd(self, agent_outputs, output_names):
-        output_tensors = {agent: tf.constant(agent_outputs[agent].to_numpy()) for agent in
-                          agent_outputs}
-        return pd.DataFrame(tf.keras.backend.eval(
-            self.aggregate(output_tensors, agent_outputs[list(agent_outputs.keys())[0]].shape[0])), columns=output_names)
-
-
 class Parameter:
     def __init__(self, node, input_index, output_index):
         self.node = node
@@ -44,7 +21,8 @@ class Graph:
         self._sess = tf.keras.backend.get_session()
 
     def group_train(self, train_x, train_s, aggregator, epochs=100):
-        predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, train_s.shape[0])
+        indices = {node: {name: i for i, name in enumerate(train_x[node]["states"].columns.values)} for node in train_x}
+        predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, train_s.shape[0], indices)
         loss = tf.losses.mean_squared_error(tf.constant(train_s.to_numpy()), predict_s)
         optimizer = tf.train.GradientDescentOptimizer(0.01)
         train = optimizer.minimize(loss)

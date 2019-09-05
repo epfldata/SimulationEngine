@@ -39,11 +39,14 @@ def _normalize_global_output(data):
     return scales_data, scales
 
 
-def _prefix_columns_names(data, agent):
+def _prefix_input_columns_names(data, agent):
     def prefix_column_names(data, agent):
         return pd.DataFrame(data.values, columns=list(map(lambda n: agent.name + "." + n, data.columns)))
 
     return {type: prefix_column_names(data[agent][type], agent) for type in ["states", "constants"]}
+
+def _prefix_output_columns_names(data, agent):
+    return pd.DataFrame(data[agent].values, columns=list(map(lambda n: agent.name + "." + n, data[agent].columns)))
 
 
 class Environment:
@@ -98,7 +101,7 @@ class Environment:
         if self._non_compiled_changes:
             raise Exception("Non Compiled Changes! Compile first!")
 
-        data = {agent: _prefix_columns_names(data, agent) for agent in data}
+        data = {agent: _prefix_input_columns_names(data, agent) for agent in data}
 
         scaled_data, scales = _normalize_input(data)
         node_indexed_df = {self._get_node(agent): scaled_data[agent] for agent in scaled_data}
@@ -112,22 +115,25 @@ class Environment:
 
         return rescaled_new_data
 
-    def group_train(self, agent_input, global_output, aggregator, epochs=100):
+    def group_train(self, agent_input, agent_output, output_names, aggregator, epochs=100):
         if self._non_compiled_changes:
             raise Exception("None Compiled Changes! Compile first!")
 
-        agent_input = {agent: _prefix_columns_names(agent_input, agent) for agent in agent_input}
+        agent_input = {agent: _prefix_input_columns_names(agent_input, agent) for agent in agent_input}
+        agent_output = {agent: _prefix_output_columns_names(agent_output, agent) for agent in agent_output}
 
         agent_input = _normalize_input(agent_input)[0]
-        global_output = _normalize_global_output(global_output)[0]
+        agent_output = _normalize_output(agent_output)[0]
 
         node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
+        global_output = aggregator.aggregate_pd(agent_output, output_names)
         self._graph.group_train(node_input, global_output, aggregator, epochs)
 
     def learn_input(self, global_output, aggregator, epochs=100):
         if self._non_compiled_changes:
             raise Exception("Non Compiled Changes! Compile first!")
 
+        # TODO: do we have to normalize the global output or denormalize the predictions
         global_output = _normalize_global_output(global_output)[0]
         self._graph.learn_input(global_output, aggregator, epochs)
 
@@ -141,7 +147,8 @@ class Environment:
                 'batch_size': 32
             } for agent in data_input}
 
-        data_input = {agent: _prefix_columns_names(data_input, agent) for agent in data_input}
+        data_input = {agent: _prefix_input_columns_names(data_input, agent) for agent in data_input}
+        data_output = {agent: _prefix_output_columns_names(data_output, agent) for agent in data_output}
 
         scaled_input = _normalize_input(data_input)[0]
         scaled_output = _normalize_output(data_output)[0]
@@ -163,7 +170,8 @@ class Environment:
         if self._non_compiled_changes:
             raise Exception("None Compiled Changes! Compile First")
 
-        data_input = {agent: _prefix_columns_names(data_input, agent) for agent in data_input}
+        data_input = {agent: _prefix_input_columns_names(data_input, agent) for agent in data_input}
+        data_output = {agent: _prefix_output_columns_names(data_output, agent) for agent in data_output}
 
         scaled_input = _normalize_input(data_input)[0]
         scaled_output = _normalize_output(data_output)[0]
