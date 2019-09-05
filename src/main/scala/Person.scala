@@ -8,22 +8,17 @@ class Person(
   val shared: Simulation,
   val active: Boolean,
   val male: Boolean = GLOBAL.rnd.nextBoolean(),
-  var happiness : Int = 0, // pursuit of it
   var log : List[String] = List()
 ) extends SimO(shared) {
 
-  var salary = 0.0
-
-  variables += "happiness" -> (() => happiness.toDouble)
-  variables += "salary" -> (() => salary)
-
-  override def initializeVariables(): Unit = {
-    super.initializeVariables()
-    happiness = GLOBAL.rnd.nextInt(100)
-    salary = GLOBAL.rnd.nextInt(100)
-  }
 
   private val distr = shared.distributions(this)
+
+  variables("capital") = distr("capital").sample
+  variables("total_value_destroyed") = distr("total_value_destroyed").sample
+  variables("happiness") = distr("happiness").sample
+  variables("salary") = distr("salary").sample
+
   // between 1 and 10
   val education = math.max(1, math.min(10, distr("edu").sample.round.toInt))
   private val (buyProbs, consumeProbs: Map[Commodity, Double]) = {
@@ -57,14 +52,16 @@ class Person(
 
   def mycopy(_shared: Simulation,
              _substitution: collection.mutable.Map[SimO, SimO]) = {
-    val p = new Person(_shared, active, male, happiness, log);
+    val p = new Person(_shared, active, male, log);
+    p.variables("salary") = variables("salary")
+    p.variables("happiness") = variables("happiness")
     copy_state_to(p);
     p
   }
 
   private def consume(consumable: Commodity, units: Int) {
     assert(available(consumable) >= units);
-    happiness += units * expected_enjoyment(consumable)
+    variables("happiness") += units * expected_enjoyment(consumable)
     destroy(consumable, units);
     log = (units + "*" + consumable + "@" + shared.timer) :: log;
   }
@@ -86,7 +83,7 @@ class Person(
   );
 
   override def stat {
-    print("(Person@" + variables("happiness")() + " " + variables("capital")() / 100 + ")  ");
+    print("(Person@" + variables("happiness") + " " + variables("capital") / 100 + ")  ");
   }
 
   private def getNextCommodity(probs: Map[Commodity, Double]): Commodity = {

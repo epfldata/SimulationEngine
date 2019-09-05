@@ -56,11 +56,6 @@ abstract class SimO(
     super[Sim].copy_state_to(_to);
   }
 
-  def initializeVariables()  {
-    capital = GLOBAL.rnd.nextInt(100)
-    total_value_destroyed = GLOBAL.rnd.nextInt(100)
-  }
-
   def mycopy(_shared: Simulation,
              _substitution: collection.mutable.Map[SimO, SimO]): SimO
 }

@@ -7,9 +7,9 @@ import bo.DatasetCreator.Data
 import breeze.linalg.{Axis, DenseMatrix, DenseVector, linspace, normalize}
 import breeze.plot.{Figure, plot}
 
-case class Viz(var params: Data) {
+case class Viz(var constants: Data, var variables: Data) {
 
-  val outputNames: Array[String] = new Simulation(params).getGlobalStat.keys.toArray
+  val outputNames: Array[String] = new Simulation(constants, variables).getGlobalStat.keys.toArray
 
   def plotSimOverParam(paramName: String,
                        agentType: String,
@@ -26,8 +26,8 @@ case class Viz(var params: Data) {
         val ys = DenseMatrix(
           x.map(value => {
             println(s"running sim for param $value")
-            params(agentType) += paramName -> value
-            val s = new Simulation(params)
+            constants(agentType) += paramName -> value
+            val s = new Simulation(constants, variables)
             Main.initializeSimulation(s)
             Main.runSimulation(s, runSimTill)
             s.getGlobalStat.values.toSeq
@@ -69,7 +69,7 @@ case class Viz(var params: Data) {
     val t = linspace(bounds._1, bounds._2, numberOfPoints)
     val step = (bounds._2 - bounds._1) / numberOfPoints
     assert(step > 0, "step size must be a positive non-zero integer!")
-    val s = new Simulation(params)
+    val s = new Simulation(constants, variables)
     Main.initializeSimulation(s)
     val ys: DenseMatrix[Double] = DenseMatrix(
       t.map(_ => {

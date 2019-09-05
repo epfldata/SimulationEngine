@@ -3,7 +3,7 @@ package bo
 import Simulation.Simulation
 import bo.DatasetCreator.{Data, Statistics}
 
-case class ChaosTest(var params: Data) {
+case class ChaosTest(var params: Data, var variables: Data) {
   def lyapunovExponent(paramName: String,
                        agentType: String,
                        iterations: Int = 1000,
@@ -19,11 +19,11 @@ case class ChaosTest(var params: Data) {
     }
 
     val paramValue = params(agentType)(paramName)
-    var s = new Simulation(params)
+    var s = new Simulation(params, variables)
     val result0: Seq[Statistics] = getTimeSeries(s)
 
     params(agentType) += paramName -> paramValue * (1 + deltaFraction)
-    s = new Simulation(params)
+    s = new Simulation(params, variables)
     val result1: Seq[Statistics] = getTimeSeries(s)
 
     val time = for (t <- 1 to iterations) yield t

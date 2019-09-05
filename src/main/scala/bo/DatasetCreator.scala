@@ -9,16 +9,18 @@ object DatasetCreator {
   type Data = MutableMap[String, Map[String, Double]]
   type Statistics = Map[String, Double]
 
-  def createDataset(nSamples: Int, agents: Iterable[String], nSteps: Int, stepSize: Int = 10)  {
-    val constantSamples = sampleConstants(nSamples / nSteps)
-    val data: Seq[(Data, Data, Statistics)] = constantSamples.flatMap(Main.simFunction(_, nSteps, stepSize, agents))
+  def createDataset(nSamples: Int, agents: Iterable[String], nSteps: Int, stepSize: Int = 10) {
+    val parameterSamples = sampleParams(nSamples / nSteps)
+    val data: Seq[(Data, Data, Statistics)] = parameterSamples.flatMap {
+      case (constants, variables) => Main.simFunction(constants, variables, nSteps, stepSize, agents)
+    }
     agents.foreach(agent => {
-      val in_data: Seq[Seq[(String, Double)]] = data.map(_._1).map(_(agent).toSeq.sortBy(_._1))
+      val in_data: Seq[Seq[(String, Double)]] = data.map(_._1).map(_ (agent).toSeq.sortBy(_._1))
       val header: Array[String] = in_data.head.map(_._1).toArray
 
       val x: DenseMatrix[Double] = DenseMatrix(in_data.map(_.map(_._2)): _*)
 
-      val out_data: Seq[Seq[(String, Double)]] = data.map(_._2).map(_(agent).toSeq.sortBy(_._1))
+      val out_data: Seq[Seq[(String, Double)]] = data.map(_._2).map(_ (agent).toSeq.sortBy(_._1))
       val y: DenseMatrix[Double] = DenseMatrix(out_data.map(_.map(_._2)): _*)
 
       CsvManager.writeCsvFile(x, s"target/scala-2.11/${agent}_x.csv", header)
@@ -32,57 +34,64 @@ object DatasetCreator {
     CsvManager.writeCsvFile(stats, "target/scala-2.11/global_stats.csv", stat_header)
   }
 
-  private def sampleConstants(nConstants: Int): List[Data] = (for (_ <- 0 until nConstants) yield
-    MutableMap("Person" ->
-      Map("number" -> (GLOBAL.rnd.nextInt(100) + 100).toDouble,
-        "genderMu" -> GLOBAL.rnd.nextDouble(),
-        "genderSigma" -> GLOBAL.rnd.nextDouble(),
-        "capitalMu" -> GLOBAL.rnd.nextDouble() * 10000,
-        "capitalSigma" -> GLOBAL.rnd.nextDouble() * 10000,
+  /**
+    *
+    * @param nParams number of samples to be generated
+    * @return a list of tuples, each tuple is one sample,
+    *         the first element is constants' data, the second element is variables' data
+    */
+  private def sampleParams(nParams: Int): List[(Data, Data)] = (for (_ <- 0 until nParams) yield
+    (MutableMap(
+      "Person" ->
+        Map("number" -> (GLOBAL.rnd.nextInt(100) + 100).toDouble,
+          "genderMu" -> GLOBAL.rnd.nextDouble(),
+          "genderSigma" -> GLOBAL.rnd.nextDouble(),
+          "capitalMu" -> GLOBAL.rnd.nextDouble() * 10000,
+          "capitalSigma" -> GLOBAL.rnd.nextDouble() * 10000,
 
-        "buyWheat" -> GLOBAL.rnd.nextDouble(),
-        "buyFlour" -> GLOBAL.rnd.nextDouble(),
-        "buyBread" -> GLOBAL.rnd.nextDouble(),
-        "buyLand" -> GLOBAL.rnd.nextDouble(),
-        "buyBeef" -> GLOBAL.rnd.nextDouble(),
-        "buyOil" -> GLOBAL.rnd.nextDouble(),
-        "buyFuel" -> GLOBAL.rnd.nextDouble(),
+          "buyWheat" -> GLOBAL.rnd.nextDouble(),
+          "buyFlour" -> GLOBAL.rnd.nextDouble(),
+          "buyBread" -> GLOBAL.rnd.nextDouble(),
+          "buyLand" -> GLOBAL.rnd.nextDouble(),
+          "buyBeef" -> GLOBAL.rnd.nextDouble(),
+          "buyOil" -> GLOBAL.rnd.nextDouble(),
+          "buyFuel" -> GLOBAL.rnd.nextDouble(),
 
-        "consumeWheat" -> GLOBAL.rnd.nextDouble(),
-        "consumeFlour" -> GLOBAL.rnd.nextDouble(),
-        "consumeBread" -> GLOBAL.rnd.nextDouble(),
-        "consumeBeef" -> GLOBAL.rnd.nextDouble(),
-        "consumeOil" -> GLOBAL.rnd.nextDouble(),
-        "consumeFuel" -> GLOBAL.rnd.nextDouble(),
+          "consumeWheat" -> GLOBAL.rnd.nextDouble(),
+          "consumeFlour" -> GLOBAL.rnd.nextDouble(),
+          "consumeBread" -> GLOBAL.rnd.nextDouble(),
+          "consumeBeef" -> GLOBAL.rnd.nextDouble(),
+          "consumeOil" -> GLOBAL.rnd.nextDouble(),
+          "consumeFuel" -> GLOBAL.rnd.nextDouble(),
 
-        "buyMu" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
-        "buySigma" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
-        "consumeMu" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
-        "consumeSigma" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
+          "buyMu" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
+          "buySigma" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
+          "consumeMu" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
+          "consumeSigma" -> (GLOBAL.rnd.nextDouble() * 10 + 1),
 
-        "enjoyWheatMu" -> GLOBAL.rnd.nextDouble() * 1000,
-        "enjoyWheatSigma" -> GLOBAL.rnd.nextDouble() * 1000,
-        "enjoyFlourMu" -> GLOBAL.rnd.nextDouble() * 1000,
-        "enjoyFlourSigma" -> GLOBAL.rnd.nextDouble() * 1000,
-        "enjoyBreadMu" -> GLOBAL.rnd.nextDouble() * 1000,
-        "enjoyBreadSigma" -> GLOBAL.rnd.nextDouble() * 1000,
-        "enjoyBeefMu" -> GLOBAL.rnd.nextDouble() * 1000,
-        "enjoyBeefSigma" -> GLOBAL.rnd.nextDouble() * 1000,
-        "enjoyOilMu" -> GLOBAL.rnd.nextDouble() * 1000,
-        "enjoyOilSigma" -> GLOBAL.rnd.nextDouble() * 1000,
-        "enjoyFuelMu" -> GLOBAL.rnd.nextDouble() * 1000,
-        "enjoyFuelSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyWheatMu" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyWheatSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyFlourMu" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyFlourSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyBreadMu" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyBreadSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyBeefMu" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyBeefSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyOilMu" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyOilSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyFuelMu" -> GLOBAL.rnd.nextDouble() * 1000,
+          "enjoyFuelSigma" -> GLOBAL.rnd.nextDouble() * 1000,
 
-        "maleEduMu" -> GLOBAL.rnd.nextDouble() * 10,
-        "maleEduSigma" -> GLOBAL.rnd.nextDouble() * 10,
-        "femaleEduMu" -> GLOBAL.rnd.nextDouble() * 10,
-        "femaleEduSigma" -> GLOBAL.rnd.nextDouble() * 10,
+          "maleEduMu" -> GLOBAL.rnd.nextDouble() * 10,
+          "maleEduSigma" -> GLOBAL.rnd.nextDouble() * 10,
+          "femaleEduMu" -> GLOBAL.rnd.nextDouble() * 10,
+          "femaleEduSigma" -> GLOBAL.rnd.nextDouble() * 10,
 
-        "maleBonusSalMu" -> GLOBAL.rnd.nextDouble() * 1000,
-        "maleBonusSalSigma" -> GLOBAL.rnd.nextDouble() * 1000,
-        "femaleBonusSalMu" -> GLOBAL.rnd.nextDouble() * 1000,
-        "femaleBonusSalSigma" -> GLOBAL.rnd.nextDouble() * 1000
-      ),
+          "maleBonusSalMu" -> GLOBAL.rnd.nextDouble() * 1000,
+          "maleBonusSalSigma" -> GLOBAL.rnd.nextDouble() * 1000,
+          "femaleBonusSalMu" -> GLOBAL.rnd.nextDouble() * 1000,
+          "femaleBonusSalSigma" -> GLOBAL.rnd.nextDouble() * 1000
+        ),
       "Farm" ->
         Map(
           "number" -> (1 + GLOBAL.rnd.nextInt(5)).toDouble,
@@ -149,6 +158,62 @@ object DatasetCreator {
           "produced" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble,
           "time" -> (GLOBAL.rnd.nextInt(19) + 1).toDouble
         )
+    ),
+      MutableMap(
+        "Person" ->
+          Map(
+            "capitalMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "happinessMu" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "happinessSigma" -> GLOBAL.rnd.nextInt(10).toDouble,
+            "salaryMu" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "salarySigma" -> GLOBAL.rnd.nextInt(10).toDouble
+          ),
+        "Farm" ->
+          Map(
+            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
+          ),
+        "Mill" ->
+          Map(
+            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
+          ),
+        "Bakery" ->
+          Map(
+            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
+          ),
+        "CattleFarm" ->
+          Map(
+            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
+          ),
+        "OilField" ->
+          Map(
+            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
+          ),
+        "Refinery" ->
+          Map(
+            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
+          )
+      )
     )).toList
 
 }

@@ -17,13 +17,14 @@ object Main {
   val runLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/runLog"), bufferSize)
 
   /**
-   *
-   * @return   a sequence of triples indexed over time, where the first element of the triple is input data,
-   *           the second in the output data and the third is the global statistics
-   */
-  def simFunction(constants: Data, nSteps: Int, stepSize: Int, agents: Iterable[String]): Seq[(Data, Data, Statistics)] = {
-    val s = new Simulation(constants)
-    Main.initializeSimulation(s, randomized = true)
+    *
+    * @return a sequence of triples indexed over time, where the first element of the triple is input data,
+    *         the second in the output data and the third is the global statistics
+    */
+  def simFunction(constants: Data, variables: Data,
+                  nSteps: Int, stepSize: Int, agents: Iterable[String]): Seq[(Data, Data, Statistics)] = {
+    val s = new Simulation(constants, variables)
+    Main.initializeSimulation(s)
     var data_out = s.getPopulationData(agents)
     for (_ <- 1 to nSteps) yield {
       val data_in = data_out
@@ -39,14 +40,19 @@ object Main {
     source.close()
 
     val jsonAst = JsonParser(jsonString)
-    val immutableParams = jsonAst.asJsObject.fields.mapValues(_.asJsObject.fields.mapValues(_.toString.toDouble))
-    val constants = MutableMap(immutableParams.toSeq: _*)
+    val rawConstants = jsonAst.asJsObject.fields("constants")
+    val rawVariables = jsonAst.asJsObject.fields("variables")
+    val constants = scala.collection.mutable.Map(
+      rawConstants.asJsObject.fields.mapValues(_.asJsObject.fields.mapValues(_.toString.toDouble)).toSeq: _*)
+    val variables = scala.collection.mutable.Map(
+      rawVariables.asJsObject.fields.mapValues(_.asJsObject.fields.mapValues(_.toString.toDouble)).toSeq: _*)
+
 
     args(0) match {
       case "generate" =>
         val nSamples = args(2).toInt
         val nSteps = args(3).toInt
-        val stepSize = if(args(4).forall(_.isDigit)) args(4).toInt else 10
+        val stepSize = if (args(4).forall(_.isDigit)) args(4).toInt else 10
         var agents = if (args(4).forall(_.isDigit)) args.slice(5, args.length) else args.slice(4, args.length)
         agents = if (agents.length == 1 && agents.head.equals("all")) GLOBAL.allAgents else agents
         DatasetCreator.createDataset(nSamples, agents, nSteps, stepSize)
@@ -56,20 +62,21 @@ object Main {
         val entry = args(3).toInt
         val (matrix, header) = CsvManager.readCsvFile("target/scala-2.11/global_stats.csv")
         val actuals: Statistics = header.toArray.zip(matrix(entry, ::).inner.toArray).toMap
-        println(Metrics.meanAbsoluteError(simFunction(constants, 1, stepSize, GLOBAL.allAgents).map(_._3).last, actuals))
+        println(Metrics.meanAbsoluteError(simFunction(
+          constants, variables, 1, stepSize, GLOBAL.allAgents).map(_._3).last, actuals))
 
       case "lyapunov" =>
-        println(ChaosTest(constants).lyapunovExponent(args(2), args(3)))
+        println(ChaosTest(constants, variables).lyapunovExponent(args(2), args(3)))
 
       case "plot-time" =>
-        val visualizer = Viz(constants)
+        val visualizer = Viz(constants, variables)
         val from = if (args.length > 2) args(2).toInt else 0
         val to = if (args.length > 3) args(3).toInt else 300
         val points = if (args.length > 4) args(4).toInt else 300
         visualizer.plotSimOverTime((from, to), points)
 
       case "plot-param" =>
-        val visualizer = Viz(constants)
+        val visualizer = Viz(constants, variables)
         val from = if (args.length > 4) args(4).toDouble else 0
         val to = if (args.length > 5) args(5).toDouble else 100
         val simIters = if (args.length > 6) args(6).toInt else 300
@@ -80,7 +87,7 @@ object Main {
     runLog.flush()
   }
 
-  def initializeSimulation(s: Simulation, mute: Boolean = true, randomized: Boolean = false): Unit = {
+  def initializeSimulation(s: Simulation, mute: Boolean = true): Unit = {
     if (mute)
       Console.setOut(initLog)
 
@@ -103,12 +110,7 @@ object Main {
 
     s.init(List(
       landlord
-    ) ++ sims.toList, randomized)
-
-    val capitals = Gaussian(s.constants("Person")("capitalMu"), s.constants("Person")("capitalSigma")).sample(s.sims.length)
-    s.sims.zip(capitals).foreach(t =>
-      t._1.capital = t._2.round.toInt
-    )
+    ) ++ sims.toList)
 
     Console.out.flush()
     Console.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)))

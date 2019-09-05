@@ -114,7 +114,7 @@ case class HR(private val shared: Simulation,
       val employee = shared.arbeitsmarkt.pop.asInstanceOf[Person]
       val bonusSalary = shared.distributions(employee)("bonusSal").sample.round.toInt * employee.education
       employees.push((employee, salary + bonusSalary))
-      employee.salary = salary + bonusSalary
+      employee.variables("salary") = salary + bonusSalary
       Some(employees.top)
     } else {
       None
@@ -122,7 +122,7 @@ case class HR(private val shared: Simulation,
   }
   protected def fire_one() {
     val employee = employees.pop._1
-    employee.salary = 0
+    employee.variables("salary") = 0
     shared.arbeitsmarkt.push(employee)
   }
 
@@ -136,17 +136,23 @@ case class HR(private val shared: Simulation,
 abstract class Factory(protected val pls: ProductionLineSpec,
               shared: Simulation
 ) extends SimO(shared) {
+  private val distr = shared.distributions(this)
+
+  variables("capital") = distr("capital").sample
+  variables("total_value_destroyed") = distr("total_value_destroyed").sample
+
+  observables += "employees" -> (() => numEmployees.toDouble)
+  observables += "goodwill" -> (() => pl.map(_.goodwill).sum)
+  observables += "valueProduced" -> (() => pl.map(_.valueProduced).sum)
 
   var pl : List[ProductionLine] = List()
   private var zombie_cost2 : Double = 0.0 // cost from canceled prod. runs
   var prev_mgmt_action : Int = 0
-  protected var hr : HR = HR(shared, this, math.abs(shared.distributions(this)("salary").sample.round.toInt))
+  protected var hr : HR = HR(shared, this, math.abs(distr("salary").sample.round.toInt))
   protected var goal_num_pl = 0;
-  private var nestedSimIters = math.max(0, math.min(20, shared.distributions(this)("iters").sample.round.toInt))
 
-  variables += "employees" -> (() => numEmployees.toDouble)
-  variables += "goodwill" -> (() => pl.map(_.goodwill).sum)
-  variables += "valueProduced" -> (() => pl.map(_.valueProduced).sum)
+  private var nestedSimIters = math.max(0, math.min(20, distr("iters").sample.round.toInt))
+
 
   // constructor
   {
