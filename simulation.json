@@ -1,0 +1,203 @@
+{
+  "Person": {
+    "constants": [
+      "const_buyBeef",
+      "const_buyBread",
+      "const_buyFlour",
+      "const_buyFuel",
+      "const_buyLand",
+      "const_buyMu",
+      "const_buyOil",
+      "const_buySigma",
+      "const_buyWheat",
+      "const_capitalMu",
+      "const_capitalSigma",
+      "const_consumeBeef",
+      "const_consumeBread",
+      "const_consumeFlour",
+      "const_consumeFuel",
+      "const_consumeMu",
+      "const_consumeOil",
+      "const_consumeSigma",
+      "const_consumeWheat",
+      "const_enjoyBeefMu",
+      "const_enjoyBeefSigma",
+      "const_enjoyBreadMu",
+      "const_enjoyBreadSigma",
+      "const_enjoyFlourMu",
+      "const_enjoyFlourSigma",
+      "const_enjoyFuelMu",
+      "const_enjoyFuelSigma",
+      "const_enjoyOilMu",
+      "const_enjoyOilSigma",
+      "const_enjoyWheatMu",
+      "const_enjoyWheatSigma",
+      "const_femaleBonusSalMu",
+      "const_femaleBonusSalSigma",
+      "const_femaleEduMu",
+      "const_femaleEduSigma",
+      "const_genderMu",
+      "const_genderSigma",
+      "const_maleBonusSalMu",
+      "const_maleBonusSalSigma",
+      "const_maleEduMu",
+      "const_maleEduSigma",
+      "const_number"
+    ],
+    "states": [
+      "var_capitalMu",
+      "var_happinessMu",
+      "var_salaryMu",
+      "var_total_value_destroyedMu"
+    ],
+    "to_agents": [
+      "Farm",
+      "Mill",
+      "Bakery",
+      "CattleFarm",
+      "OilField",
+      "Refinery"
+    ],
+    "hyper_parameters": {}
+  },
+  "Farm": {
+    "constants": [
+      "const_itersMu",
+      "const_itersSigma",
+      "const_number",
+      "const_produced",
+      "const_required",
+      "const_salaryMu",
+      "const_salarySigma",
+      "const_time"
+    ],
+    "states": [
+      "var_capitalMu",
+      "var_employeesMu",
+      "var_goodwillMu",
+      "var_total_value_destroyedMu",
+      "var_valueProducedMu"
+    ],
+    "to_agents": [
+      "Person"
+    ],
+    "hyper_parameters": {}
+  },
+  "Mill": {
+    "constants": [
+      "const_consumed",
+      "const_itersMu",
+      "const_itersSigma",
+      "const_number",
+      "const_produced",
+      "const_salaryMu",
+      "const_salarySigma",
+      "const_time"
+    ],
+    "states": [
+      "var_capitalMu",
+      "var_employeesMu",
+      "var_goodwillMu",
+      "var_total_value_destroyedMu",
+      "var_valueProducedMu"
+    ],
+    "to_agents": [
+      "Person",
+      "Bakery"
+    ],
+    "hyper_parameters": {}
+  },
+  "Bakery": {
+    "constants": [
+      "const_consumed",
+      "const_itersMu",
+      "const_itersSigma",
+      "const_number",
+      "const_produced",
+      "const_salaryMu",
+      "const_salarySigma",
+      "const_time"
+    ],
+    "states": [
+      "var_capitalMu",
+      "var_employeesMu",
+      "var_goodwillMu",
+      "var_total_value_destroyedMu",
+      "var_valueProducedMu"
+    ],
+    "to_agents": [
+      "Person"
+    ],
+    "hyper_parameters": {}
+  },
+  "CattleFarm": {
+    "constants": [
+      "const_itersMu",
+      "const_itersSigma",
+      "const_number",
+      "const_produced",
+      "const_required",
+      "const_salaryMu",
+      "const_salarySigma",
+      "const_time"
+    ],
+    "states": [
+      "var_capitalMu",
+      "var_employeesMu",
+      "var_goodwillMu",
+      "var_total_value_destroyedMu",
+      "var_valueProducedMu"
+    ],
+    "to_agents": [
+      "Person"
+    ],
+    "hyper_parameters": {}
+  },
+  "OilField": {
+    "constants": [
+      "const_itersMu",
+      "const_itersSigma",
+      "const_number",
+      "const_produced",
+      "const_required",
+      "const_salaryMu",
+      "const_salarySigma",
+      "const_time"
+    ],
+    "states": [
+      "var_capitalMu",
+      "var_employeesMu",
+      "var_goodwillMu",
+      "var_total_value_destroyedMu",
+      "var_valueProducedMu"
+    ],
+    "to_agents": [
+      "Person",
+      "Refinery"
+    ],
+    "hyper_parameters": {}
+  },
+  "Refinery": {
+    "constants": [
+      "const_consumed",
+      "const_itersMu",
+      "const_itersSigma",
+      "const_number",
+      "const_produced",
+      "const_salaryMu",
+      "const_salarySigma",
+      "const_time"
+    ],
+    "states": [
+      "var_capitalMu",
+      "var_employeesMu",
+      "var_goodwillMu",
+      "var_total_value_destroyedMu",
+      "var_valueProducedMu"
+    ],
+    "to_agents": [
+      "Person"
+    ],
+    "hyper_parameters": {}
+  }
+}

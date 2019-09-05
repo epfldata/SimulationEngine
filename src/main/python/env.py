@@ -5,7 +5,8 @@ from node import Node
 
 
 class Agent:
-    def __init__(self, constants, state, name, hyper_params=None):
+    def __init__(self, constants, state, name, hyper_params=None, model=None):
+        self.model = model
         self.hyper_parameters = {} if hyper_params is None else hyper_params
         self.constants = list(map(lambda n: name + "." + n, constants))
         self.state = list(map(lambda n: name + "." + n, state))
@@ -76,7 +77,7 @@ class Environment:
             'loss': agent.hyper_parameters.get('loss') or 'mae',
             'optimizer': agent.hyper_parameters.get('optimizer') or 'sgd',
             'metrics': agent.hyper_parameters.get('metrics') or ['mae']
-        })
+        }, agent.model)
         return node
 
     def _get_node(self, agent):
@@ -203,3 +204,7 @@ class Environment:
             dMatrix.loc[index] = node.derivative(data_np[row].reshape(1, node.input_size()))[:,
                                  node.input_names.index(param)]
         return dMatrix
+
+    def save_models(self, address):
+        for node in self._nodes:
+            node.save_model(address)

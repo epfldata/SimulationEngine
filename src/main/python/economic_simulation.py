@@ -1,19 +1,23 @@
 import json
+import os
 from math import floor
 
 import pandas as pd
 import numpy as np
 from env import Agent, Environment
+from tensorflow.python.keras.models import load_model
 
 
-def prepare_environment(config_address):
-    with open(config_address, "r") as sim_file:
+def prepare_environment(config_address, model_from_file=None):
+    with open(config_address, 'r') as sim_file:
         jstring = sim_file.read()
     config = json.loads(jstring)
-    agents_dict = {
-        agent_name: Agent(config[agent_name]['constants'], config[agent_name]['states'], agent_name,
-                          config[agent_name]['hyper_parameters']) for agent_name in config
-    }
+
+    def _agent_generator(name):
+        model = load_model(model_from_file + name + '.h5') if model_from_file is not None else None
+        return Agent(config[name]['constants'], config[name]['states'], name, config[name]['hyper_parameters'], model)
+
+    agents_dict = {agent_name: _agent_generator(agent_name) for agent_name in config}
 
     env = Environment()
     env.register_agents(*(agents_dict.values()))
@@ -57,18 +61,34 @@ def train_test_split(data_input, data_output, train_ratio):
     return train_input, train_output, test_input, test_output
 
 
-if __name__ == '__main__':
-    env, agent_dict = prepare_environment("simulation.json")
+def setup(config_address, model_from_file=None):
+    env, agent_dict = prepare_environment(config_address, model_from_file)
     agents = agent_dict.values()
-
-    input_address = {agent: f'data/{agent.name}_x.csv' for agent in agents}
-    output_address = {agent: f'data/{agent.name}_y.csv' for agent in agents}
-
+    input_address = {agent: f'target/data/{agent.name}_x.csv' for agent in agents}
+    output_address = {agent: f'target/data/{agent.name}_y.csv' for agent in agents}
     data_input = prepare_data(input_address, True)
     data_output = prepare_data(output_address, False)
+    return env, agent_dict, data_input, data_output
 
-    train_input, train_output, test_input, test_output = train_test_split(data_input, data_output, 0.75)
-    env.solo_train(train_input, train_output, training_hyper_params={
-        agent: {'epochs': 200} for agent in agents
-    })
-    env.solo_test(test_input, test_output)
+
+if __name__ == '__main__':
+    os.chdir('../../..')  # going to the root of the project
+
+    action = input('you want to?(train/evaluate/predict):\n')
+
+    if action == 'train':
+        env, agent_dict, data_input, data_output = setup('simulation.json')
+        agents = agent_dict.values()
+        train_input, train_output, test_input, test_output = train_test_split(data_input, data_output, 0.75)
+        env.solo_train(train_input, train_output, training_hyper_params={
+            agent: {'epochs': 200} for agent in agents
+        })
+        env.solo_test(test_input, test_output)
+
+        save = input('save model?(y/n):\n')
+        if save == 'y':
+            env.save_models("target/models/")
+
+    elif action == 'evaluate':
+        env, agent_dict, data_input, data_output = setup('simulation.json', 'target/models/')
+        env.solo_test(data_input, data_output)
