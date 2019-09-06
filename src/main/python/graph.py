@@ -47,7 +47,7 @@ class Graph:
                 output1 = node._model.predict(random_input)
                 self._sess.run(tf.assign(extended_model[node].input, random_input, validate_shape=False))
                 output2 = self._sess.run(extended_model[node].output)
-                if not np.array_equal(np.round(output1, 5), np.round(output2, 5)):
+                if not np.array_equal(np.round(output1, 4), np.round(output2, 4)):
                     return False
             return True
 
@@ -56,7 +56,8 @@ class Graph:
         input_vars = {node: extended_model[node].input for node in self._nodes}
         assert equal_predictions(extended_model)
 
-        predict_s = aggregator.aggregate({node: extended_model[node].output for node in self._nodes}, n_samples)
+        indices = {node: {name: i for i, name in enumerate(node.output_names)} for node in self._nodes}
+        predict_s = aggregator.aggregate({node: extended_model[node].output for node in self._nodes}, n_samples, indices)
         loss = tf.losses.mean_squared_error(tf.constant(train_s.to_numpy()), predict_s)
         train = tf.train.GradientDescentOptimizer(0.01).minimize(loss)
 
@@ -69,8 +70,7 @@ class Graph:
             if int(i * 100.0 / epochs) > last_percent:
                 last_percent = int(i * 100.0 / epochs)
                 print("{} %, loss {}".format(last_percent, l))
-        # for node in self._nodes:
-        #     print(node, self._sess.run(input_vars[node]))
+        return {node: pd.DataFrame(self._sess.run(input_vars[node]), columns=node.input_names) for node in self._nodes}
 
     def solo_train(self, node, train_x, train_agent_y, batch_size=32, epochs=10):
         train_agent_y.columns = node.output_names

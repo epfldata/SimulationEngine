@@ -77,6 +77,13 @@ def get_aggregator(input_data):
     return GlobalStateAggregator(population, ["capital", "total_value_destroyed", "unemploymentRate",
                                                                        "happiness", "valueProduced", "goodwill"])
 
+def learn_input(data_input, data_output):
+    input_scales = {agent: {type: (data_input[agent][type].mean(), data_input[agent][type].std())
+                            for type in data_input[agent]}
+                    for agent in data_input}
+    return env.learn_input(data_output, get_aggregator(data_input), input_scales, epochs=10 ** 3)
+
+
 
 if __name__ == '__main__':
     os.chdir('../../..')  # going to the root of the project
@@ -96,6 +103,7 @@ if __name__ == '__main__':
 
         env.group_train(train_input, train_output, get_aggregator(train_input))
         print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
+        print("learn input:", learn_input(data_input, data_output))
 
         if len(sys.argv) >= 3 and sys.argv[2] == "--save":
             env.save_models("target/models/")
@@ -105,3 +113,4 @@ if __name__ == '__main__':
         env.solo_test(data_input, data_output)
 
         print("group test:", env.group_test(data_input, data_output, get_aggregator(data_input)))
+        print("learn input:", learn_input(data_input, data_output))

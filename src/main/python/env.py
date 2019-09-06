@@ -5,11 +5,11 @@ from node import Node
 
 
 class Agent:
-    def __init__(self, constants, state, name, hyper_params=None, model=None):
+    def __init__(self, constants, states, name, hyper_params=None, model=None):
         self.model = model
         self.hyper_parameters = {} if hyper_params is None else hyper_params
         self.constants = list(map(lambda n: name + "." + n, constants))
-        self.state = list(map(lambda n: name + "." + n, state))
+        self.states = list(map(lambda n: name + "." + n, states))
         self.name = name
 
 
@@ -31,16 +31,10 @@ def _normalize_output(data):
     return scaled_data, scales
 
 
-def _normalize_global_output(data):
-    scales = (data.mean(), data.std())
-    if data.shape[0] == 1:
-        return data, scales
-    scales_data = data - scales[0] / scales[1]
-    return scales_data, scales
-
-
 def _prefix_input_columns_names(data, agent):
     def prefix_column_names(data, agent):
+        if type(data) == tuple and type(data[0]) == pd.Series:
+            return tuple(pd.Series(data[i].values, index=list(map(lambda n: agent.name + "." + n, data[i].index.values))) for i in range(len(data)))
         return pd.DataFrame(data.values, columns=list(map(lambda n: agent.name + "." + n, data.columns)))
 
     return {type: prefix_column_names(data[agent][type], agent) for type in ["states", "constants"]}
@@ -79,10 +73,10 @@ class Environment:
     def _node_generator(self, agent):
         input_names = agent.constants
         for in_agent in self._connections[agent]:
-            input_names += in_agent.state
-        node = Node(agent.name, input_names, agent.state, {
+            input_names += in_agent.states
+        node = Node(agent.name, input_names, agent.states, {
             'features': len(input_names),
-            'number_of_units': agent.hyper_parameters.get('number_of_units') or [64, 64, 64, len(agent.state)],
+            'number_of_units': agent.hyper_parameters.get('number_of_units') or [64, 64, 64, len(agent.states)],
             'activations': agent.hyper_parameters.get('activations') or ['relu', 'relu', 'relu', 'linear'],
             'loss': agent.hyper_parameters.get('loss') or 'mae',
             'optimizer': agent.hyper_parameters.get('optimizer') or 'sgd',
@@ -145,13 +139,27 @@ class Environment:
         global_output = aggregator.aggregate_pd(agent_output)
         return self._graph.group_test(node_input, global_output, aggregator)
 
-    def learn_input(self, global_output, aggregator, epochs=100):
+    def learn_input(self, agent_output, aggregator, input_scales, epochs=100):
+        def get_input_scaled(node_input, agent, type, get_names):
+            scales = input_scales[agent][type]
+            return node_input[get_names(agent)] * scales[1] + scales[0]
+
         if self._non_compiled_changes:
             raise Exception("Non Compiled Changes! Compile first!")
 
-        # TODO: do we have to normalize the global output or denormalize the predictions
-        global_output = _normalize_global_output(global_output)[0]
-        self._graph.learn_input(global_output, aggregator, epochs)
+        input_scales = {agent: _prefix_input_columns_names(input_scales, agent) for agent in input_scales}
+        agent_output = {agent: _prefix_output_columns_names(agent_output, agent) for agent in agent_output}
+        scaled_output = _normalize_output(agent_output)[0]
+        global_output = aggregator.aggregate_pd(scaled_output)
+
+        node_input = self._graph.learn_input(global_output, aggregator, epochs)
+        agent_input = {
+            self._get_agent(node): {
+                "states": get_input_scaled(node_input[node], self._get_agent(node), "states", lambda a: a.states),
+                "constants": get_input_scaled(node_input[node], self._get_agent(node), "constants", lambda a: a.constants)
+            } for node in node_input
+        }
+        return agent_input
 
     def solo_train(self, data_input, data_output, training_hyper_params=None):
         if self._non_compiled_changes:
