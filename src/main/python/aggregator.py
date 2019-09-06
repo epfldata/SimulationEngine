@@ -5,21 +5,25 @@ import tensorflow as tf
 
 
 class Aggregator(ABC):
+    def __init__(self, output_names):
+        super().__init__()
+        self._output_names = output_names
+
     @abstractmethod
     def aggregate(self, output_tensors, n_samples, indices):
         pass
 
-    def aggregate_pd(self, agent_outputs, output_names):
+    def aggregate_pd(self, agent_outputs):
         output_tensors = {agent: tf.constant(agent_outputs[agent].to_numpy()) for agent in
                           agent_outputs}
         n_samples = agent_outputs[list(agent_outputs.keys())[0]].shape[0]
         indices = {agent: {name: i for i, name in enumerate(agent_outputs[agent].columns.values)} for agent in agent_outputs}
-        return pd.DataFrame(tf.keras.backend.eval(self.aggregate(output_tensors, n_samples, indices)), columns=output_names)
+        return pd.DataFrame(tf.keras.backend.eval(self.aggregate(output_tensors, n_samples, indices)), columns=self._output_names)
 
 
 class GlobalStateAggregator(Aggregator):
-    def __init__(self, np_population):
-        super().__init__()
+    def __init__(self, np_population, output_names):
+        super().__init__(output_names)
         self._np_population = np_population
 
     """
@@ -44,8 +48,8 @@ class GlobalStateAggregator(Aggregator):
 
 
 class DummyAggregator(Aggregator):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, output_names):
+        super().__init__(output_names)
 
     def aggregate(self, output_tensors, n_samples, indices):
         dtype = output_tensors[list(output_tensors.keys())[0]].dtype

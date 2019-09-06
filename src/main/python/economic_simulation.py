@@ -1,11 +1,12 @@
 import json
 import os
-from math import floor
 
 import numpy as np
 import pandas as pd
+import sys
 from aggregator import GlobalStateAggregator
 from env import Agent, Environment
+from math import floor
 from tensorflow.python.keras.models import load_model
 
 
@@ -71,12 +72,19 @@ def setup(config_address, model_from_file=None):
     data_output = prepare_data(output_address, False)
     return env, agent_dict, data_input, data_output
 
+def get_aggregator(input_data):
+    population = [input_data[agent]["constants"]["const_number"] for agent in input_data if agent.name == "Person"][0]
+    return GlobalStateAggregator(population, ["capital", "total_value_destroyed", "unemploymentRate",
+                                                                       "happiness", "valueProduced", "goodwill"])
+
 
 if __name__ == '__main__':
     os.chdir('../../..')  # going to the root of the project
 
-    action = input('you want to?(train/evaluate/predict):\n')
+    if len(sys.argv) < 2:
+        raise Exception("action required")
 
+    action = sys.argv[1]
     if action == 'train':
         env, agent_dict, data_input, data_output = setup('simulation.json')
         agents = agent_dict.values()
@@ -86,15 +94,14 @@ if __name__ == '__main__':
         })
         env.solo_test(test_input, test_output)
 
-        population = [train_input[agent]["constants"]["const_number"] for agent in data_input if agent.name == "Person"][0]
-        aggregator = GlobalStateAggregator(population)
-        env.group_train(train_input, train_output, ["capital", "total_value_destroyed",
-            "unemploymentRate", "happiness", "valueProduced", "goodwill"], aggregator)
+        env.group_train(train_input, train_output, get_aggregator(train_input))
+        print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
 
-        save = input('save model?(y/n):\n')
-        if save == 'y':
+        if len(sys.argv) >= 3 and sys.argv[2] == "--save":
             env.save_models("target/models/")
 
     elif action == 'evaluate':
         env, agent_dict, data_input, data_output = setup('simulation.json', 'target/models/')
         env.solo_test(data_input, data_output)
+
+        print("group test:", env.group_test(data_input, data_output, get_aggregator(data_input)))

@@ -84,4 +84,4 @@ class Node:
             predictors[:, i].var(ddof=1) * targets[:, j].var(ddof=1))
 
     def save_model(self, address):
-        self._model.save(address + self._name + ".h5")
+        self._model.save(address + self.name + ".h5")

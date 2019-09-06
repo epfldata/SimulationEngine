@@ -48,6 +48,13 @@ def _prefix_input_columns_names(data, agent):
 def _prefix_output_columns_names(data, agent):
     return pd.DataFrame(data[agent].values, columns=list(map(lambda n: agent.name + "." + n, data[agent].columns)))
 
+def _prefix_and_normalize(agent_input, agent_output):
+    prefixed_input = {agent: _prefix_input_columns_names(agent_input, agent) for agent in agent_input}
+    prefixed_output = {agent: _prefix_output_columns_names(agent_output, agent) for agent in agent_output}
+    scaled_input = _normalize_input(prefixed_input)[0]
+    scaled_output = _normalize_output(prefixed_output)[0]
+    return scaled_input, scaled_output
+
 
 class Environment:
     def __init__(self):
@@ -115,7 +122,7 @@ class Environment:
 
         return rescaled_new_data
 
-    def group_train(self, agent_input, agent_output, output_names, aggregator, epochs=100):
+    def group_train(self, agent_input, agent_output, aggregator, epochs=100):
         if self._non_compiled_changes:
             raise Exception("None Compiled Changes! Compile first!")
 
@@ -126,8 +133,17 @@ class Environment:
         agent_output = _normalize_output(agent_output)[0]
 
         node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
-        global_output = aggregator.aggregate_pd(agent_output, output_names)
+        global_output = aggregator.aggregate_pd(agent_output)
         self._graph.group_train(node_input, global_output, aggregator, epochs)
+
+    def group_test(self, data_input, data_output, aggregator):
+        if self._non_compiled_changes:
+            raise Exception("None Compiled Changes! Compile first!")
+
+        agent_input, agent_output = _prefix_and_normalize(data_input, data_output)
+        node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
+        global_output = aggregator.aggregate_pd(agent_output)
+        return self._graph.group_test(node_input, global_output, aggregator)
 
     def learn_input(self, global_output, aggregator, epochs=100):
         if self._non_compiled_changes:

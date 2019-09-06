@@ -7,13 +7,6 @@ def _outputToDF(node, nparray):
     return pd.DataFrame(nparray, columns=node.output_names)
 
 
-class Parameter:
-    def __init__(self, node, input_index, output_index):
-        self.node = node
-        self.input_index = input_index
-        self.output_index = output_index
-
-
 class Graph:
     def __init__(self, nodes, edges):
         self._nodes = nodes.copy()
@@ -34,6 +27,15 @@ class Graph:
             if int(i * 100.0 / epochs) > last_percent:
                 last_percent = int(i * 100.0 / epochs)
                 print("{} %, loss {}".format(last_percent, loss_val))
+
+    def group_test(self, test_x, test_s, aggregator):
+        indices = {node: {name: i for i, name in enumerate(test_x[node]["states"].columns.values)} for node in test_x}
+        predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, test_s.shape[0], indices)
+        loss = tf.losses.mean_squared_error(tf.constant(test_s.to_numpy()), predict_s)
+        loss_val = self._sess.run(loss, feed_dict={
+            node.input_tensor(): self._prepare_node_input(test_x, node) for node in self._nodes
+        })
+        return loss_val
 
     def learn_input(self, train_s, aggregator, epochs=100):
         def equal_predictions(extended_model):
