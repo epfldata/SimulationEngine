@@ -8,10 +8,8 @@ tax company profits
 
 manage money supply:
 - print money to cover costs
-- steer inflation to 
+- steer inflation to
 
 
 
-*/
-
-
+ */

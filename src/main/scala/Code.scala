@@ -14,8 +14,10 @@ case class __wait[T](ticks: T) extends SimpleInstruction {
 }
 
 class __goto(_cond: => Boolean, _next_pos: Int) extends SimpleInstruction {
-  def cond = _cond
   val next_pos = _next_pos
+
+  def cond = _cond
+
   def exec(pos: Int) : Int = if(_cond) _next_pos else pos + 1
   override def toString = "__goto(?, " + _next_pos + ")"
 }
@@ -49,8 +51,10 @@ case class __forever(block: Instruction*) extends SugarInstruction
     copying a simulation.
 */
 class __repeat(_k: => Int, _block: Instruction*) extends SugarInstruction {
-  def k = _k
   val block = _block
+
+  def k = _k
+
   override def toString = "__repeat(?, " + block + ")"
 }
 object __repeat {
@@ -61,8 +65,10 @@ object __repeat {
 
 class __dowhile(_cond: => Boolean,
                 _block: Instruction*) extends SugarInstruction {
-  def cond = _cond
   val block = _block
+
+  def cond = _cond
+
   override def toString = "__dowhile(" + block + ")(?)"
 }
 object __dowhile {
@@ -73,8 +79,10 @@ object __dowhile {
 }
 
 class __if(_cond: => Boolean, _block: Instruction*) extends SugarInstruction {
-  def cond = _cond
   val block = _block
+
+  def cond = _cond
+
   override def toString = "__if(?) {" + block + "}"
 }
 object __if {
