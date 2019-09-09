@@ -50,7 +50,8 @@ def f[T : Numeric](a: T, b: T) = implicitly[Numeric[T]].plus(a, b)
     p
   }
 
-  def argmin[T <% Ordered[T]](_from: Int, _to: Int, f: Int => T): Int = {
+  def argmin[T](_from: Int, _to: Int, f: Int => T)(
+      implicit ev$1: T => Ordered[T]): Int = {
     assert(_to >= _from)
 
     var best_i = _from

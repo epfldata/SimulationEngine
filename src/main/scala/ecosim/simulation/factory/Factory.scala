@@ -331,7 +331,7 @@ class Factory(pls: ProductionLineSpec, shared: Simulation)
       goal_num_pl = suitable_num_pl
       val old2new1 = shared.run_sim(10)
       val future_self1 = old2new1(this).asInstanceOf[Factory]
-      future_self1.stat
+      future_self1.stat()
       println(this + ": First nested simulation ends.")
 
       println(this + ": Second nested simulation starts.")
@@ -339,7 +339,7 @@ class Factory(pls: ProductionLineSpec, shared: Simulation)
       goal_num_pl -= 1
       val old2new2 = shared.run_sim(10)
       val future_self2 = old2new2(this).asInstanceOf[Factory]
-      future_self2.stat
+      future_self2.stat()
       goal_num_pl += 1
       println(this + ": Second nested simulation ends.")
 

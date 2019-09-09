@@ -52,8 +52,10 @@ class ParallelExecutor[T: Numeric, S <: Executable[T]](
         val l2 = global.mapopt(l, (_: S).run_until(t))
         l = l2.map(_._1).asInstanceOf[List[S]]
 
-        if (this.isInstanceOf[Effects[S]]) {
-          l = global.mapopt(l, (s: S) => this.asInstanceOf[Effects[S]](s))
+        this match {
+          case value: Effects[S] =>
+            l = global.mapopt(l, (s: S) => value(s))
+          case _ =>
         }
 
         if (l2.nonEmpty) t = l2.map(_._2).min
