@@ -89,12 +89,12 @@ class Simulation(val constants: Data, val variables: Data) {
   )
 
   private def getVariableMu(variableName: String): (String, Double) = {
-    val filtered = sims.filter(_.variables.contains(variableName))
+    val filtered = sims.filter(sim => GLOBAL.isAgent(sim) && sim.variables.contains(variableName))
     (s"gl_$variableName" + "Mu", filtered.map(_.variables(variableName) / filtered.size).sum)
   }
 
   private def getObservableMu(observableName: String): (String, Double) = {
-    val filtered = sims.filter(_.observables.contains(observableName))
+    val filtered = sims.filter(sim => GLOBAL.isAgent(sim) && sim.observables.contains(observableName))
     (s"gl_$observableName" + "Mu", filtered.map(_.observables(observableName)() / filtered.size).sum)
   }
 

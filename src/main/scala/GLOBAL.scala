@@ -1,3 +1,5 @@
+import Simulation.SimO
+
 import scala.util.Random
 package GLOBAL {
 
@@ -11,6 +13,8 @@ package object GLOBAL {
   val rnd = new Random(19)
 
   val allAgents = Array("Person", "Farm", "Mill", "Bakery", "CattleFarm", "OilField", "Refinery")
+
+  def isAgent(sim: SimO): Boolean = allAgents.contains(getAgentTypeFromClass(sim.getClass.getName))
 
   def getAgentTypeFromClass(className: String): String = {
     className match {

@@ -117,10 +117,13 @@ if __name__ == '__main__':
         })
         env.solo_test(test_input, test_output)
 
-        env.group_train(train_input, train_output, get_aggregator(train_input))
+        if '--group' in sys.argv:
+            print("group training:")
+            env.group_train(train_input, train_output, get_aggregator(train_input))
+            print()
+            
         print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
-
-        if len(sys.argv) >= 3 and sys.argv[2] == "--save":
+        if '--save' in sys.argv:
             env.save_models("target/models/", data_input)
 
     elif action == 'input-learning':
