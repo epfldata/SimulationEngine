@@ -1,3 +1,5 @@
+package ecosim
+
 package code {
 
   abstract class Instruction

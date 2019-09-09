@@ -1,10 +1,10 @@
 import org.scalatest._
-import Simulation._
-import Simulation.SimLib._
-import Simulation.Factory._
-import Owner._
-import Securities._
-import commodities.Commodities._
+import ecosim.Simulation._
+import ecosim.Simulation.SimLib._
+import ecosim.Simulation.Factory._
+import ecosim.Owner._
+import ecosim.Securities._
+import ecosim.commodities.Commodities._
 
 class MainSpec extends FlatSpec {
 
@@ -27,8 +27,8 @@ class MainSpec extends FlatSpec {
   }
 
   "Copying a simulation" should "work" in {
-    import Simulation.MainExample._
-    GLOBAL.silent = true
+    import ecosim.Simulation.MainExample._
+    ecosim.GLOBAL.silent = true
     s.run(1)
     val (s2, _) = s.mycopy()
     val f2 = s2.sims(2).asInstanceOf[Factory]

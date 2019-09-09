@@ -1,3 +1,5 @@
+package ecosim
+
 package Owner {
 
   object TheBank { // Could be a Factory[Debit => Credit]

@@ -1,3 +1,4 @@
+package ecosim
 package Simulation
 import code._
 import commodities.Commodities._

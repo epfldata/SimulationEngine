@@ -1,3 +1,4 @@
+package ecosim
 package Timeseries
 
 case class LogList[T](

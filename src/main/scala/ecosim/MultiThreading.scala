@@ -1,3 +1,4 @@
+package ecosim
 package code.multithreading
 
 trait Precursor[T, A] {

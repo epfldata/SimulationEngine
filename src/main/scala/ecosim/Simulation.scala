@@ -1,3 +1,5 @@
+package ecosim
+
 package Simulation
 import Markets._
 import Owner._

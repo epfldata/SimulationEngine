@@ -1,3 +1,5 @@
+package ecosim
+
 package object Owner {
   import Securities._
 

@@ -1,3 +1,4 @@
+package ecosim
 package code
 
 package object twospecies {

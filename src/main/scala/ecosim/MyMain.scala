@@ -1,3 +1,4 @@
+package ecosim
 package Simulation
 import Simulation.SimLib._
 import commodities.Commodities._

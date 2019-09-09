@@ -1,3 +1,5 @@
+package ecosim
+
 package Simulation
 import Owner._
 import code._

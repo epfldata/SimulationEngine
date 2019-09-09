@@ -1,3 +1,5 @@
+package ecosim
+
 package Simulation.Factory
 import Owner._
 import Simulation._

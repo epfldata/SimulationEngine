@@ -1,3 +1,5 @@
+package ecosim
+
 package Timeseries {
 
   class Timeseries[T](_from: Int, _to: Int, _fn: Int => T) {

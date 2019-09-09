@@ -1,10 +1,10 @@
 import org.scalatest._
 
 class OrderBookSpec extends FlatSpec {
-  import Markets._
-  import Owner._
-  import Securities._
-  import commodities.Commodities._
+  import ecosim.Markets._
+  import ecosim.Owner._
+  import ecosim.Securities._
+  import ecosim.commodities.Commodities._
 
   "Time ordering" should "be respected for asks" in {
     val s = new Owner()

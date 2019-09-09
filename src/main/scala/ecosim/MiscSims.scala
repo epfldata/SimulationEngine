@@ -1,6 +1,7 @@
+package ecosim
 package Simulation.SimLib
 import Simulation._
-import _root_.Simulation.Factory._
+import Simulation.Factory._
 import code._
 import commodities.Commodities._
 

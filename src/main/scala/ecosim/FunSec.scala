@@ -1,3 +1,5 @@
+package ecosim
+
 package Securities
 
 object Glob {

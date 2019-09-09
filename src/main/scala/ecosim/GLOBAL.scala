@@ -1,3 +1,5 @@
+package ecosim
+
 import scala.util.Random
 package GLOBAL {
 

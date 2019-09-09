@@ -1,3 +1,5 @@
+package ecosim
+
 package object Securities {
 
   def expectation(sample: () => Double, n: Int): Double = {
