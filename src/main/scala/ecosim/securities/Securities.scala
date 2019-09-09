@@ -522,4 +522,4 @@ val S0     = 100.0;
   val now    = 0.1;
   val s = VanillaSecurity(r, stddev);
   s.plot_chart(S0, 1.0, 2.0, 100)
- */ // end package Securities
+ */

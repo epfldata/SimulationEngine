@@ -44,8 +44,8 @@ abstract class MyDistribution {
 }
 case class TrivialDistribution(v: Double) extends MyDistribution {
   def expectation: Double = v
-} // package Timeseries
+}
 
 class ListDistribution(l: List[Double]) extends MyDistribution {
   def expectation: Double = l.sum / l.length
-} // package object Timeseries
+}

@@ -57,7 +57,7 @@ package owner {
     }
   }
 
-} // package Owner
+}
 
 /*
 class OwnerOnMarket extends Owner {

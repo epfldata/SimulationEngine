@@ -1,8 +1,7 @@
 package ecosim.code
 
-import ecosim.global
-
 package object twospecies {
+  import ecosim.global
   import multithreading._
   import multithreading.mutable._
 

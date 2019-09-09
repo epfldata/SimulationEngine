@@ -1,8 +1,8 @@
 package ecosim
 
-import scala.util.Random
-
 package object global {
+  import scala.util.Random
+
   val rnd: Random.type = util.Random
   var silent = false
 

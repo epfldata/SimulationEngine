@@ -216,4 +216,4 @@ class CashVirtualization {
 
   def capital = accounts.map(_.value)
 }
- */ // end package Owner
+ */
