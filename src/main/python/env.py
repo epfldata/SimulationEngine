@@ -255,7 +255,7 @@ class Environment:
                                      node.output_names]
         return cor_matrix
 
-    def derivative_matrix(self, agent, param, iters=1000):
+    def derivative_matrix(self, agent, param, iters=100):
         if self._non_compiled_changes:
             raise Exception('Non-Compiled Changes! Compile first!')
         param = agent.name + "." + param

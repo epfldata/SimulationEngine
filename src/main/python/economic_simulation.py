@@ -110,18 +110,21 @@ if __name__ == '__main__':
     action = sys.argv[1]
     if action == 'train':
         env, agent_dict, data_input, data_output = setup_train_test('simulation.json', 'target/data/')
+
         agents = agent_dict.values()
         train_input, train_output, test_input, test_output = train_test_split(data_input, data_output, 0.75)
         env.solo_train(train_input, train_output, training_hyper_params={
-            agent: {'epochs': 200} for agent in agents
+            agent: {'epochs': 50} for agent in agents
         })
         env.solo_test(test_input, test_output)
+        print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
 
         if '--group' in sys.argv:
             print("group training:")
             env.group_train(train_input, train_output, get_aggregator(train_input))
             print()
-            
+
+        env.solo_test(test_input, test_output)
         print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
         if '--save' in sys.argv:
             env.save_models("target/models/", data_input)
@@ -146,3 +149,17 @@ if __name__ == '__main__':
         for agent in data:
             total_data = data[agent]['constants'].join(data[agent]['states'])
             total_data.to_csv(f'target/results/{agent.name}.csv')
+
+    elif action == 'correlation':
+        env, agent_dict = prepare_environment('simulation.json', 'target/models/')
+
+        for agent_name in agent_dict:
+            env.correlation_matrix(agent_dict[agent_name]).to_csv(f'target/results/correlation/{agent_name}.csv')
+
+    elif action == 'derivative':
+        if len(sys.argv) < 4:
+            raise Exception("both agent and parameter name required")
+        env, agent_dict = prepare_environment('simulation.json', 'target/models/')
+
+        env.derivative_matrix(agent_dict[sys.argv[2]], sys.argv[3], 100).to_csv(
+            f'target/results/derivative/{sys.argv[2]}_{sys.argv[3]}.csv')
