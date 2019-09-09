@@ -1,10 +1,12 @@
-package ecosim
+package ecosim.simulation
 
-package Simulation
-import Markets._
-import Owner._
-import Securities.Security
-import commodities.Commodities._
+import ecosim.global
+import ecosim.markets.SellersMarket
+import ecosim.owner.Seller
+import ecosim.commodities.Commodities.{Commodity, all_commodities}
+import ecosim.markets.OrderBook
+import ecosim.securities.Security
+import ecosim.simulation.factory.Factory
 
 import scala.collection.mutable
 
@@ -41,7 +43,7 @@ class Simulation {
     sims = _sims
     for (s <- sims) if (s.isInstanceOf[Person]) arbeitsmarkt.push(s)
 
-    if (!GLOBAL.silent) {
+    if (!global.silent) {
       for (s <- sims) { s.stat; }
       println; println
     }
@@ -60,8 +62,8 @@ class Simulation {
     // prevent recursive simulation. This is only safe it the simulation
     // runs for fewer than 1000 iterations!
     for (s <- new_sim.sims)
-      if (s.isInstanceOf[Factory.Factory])
-        s.asInstanceOf[Factory.Factory].prev_mgmt_action += 1000
+      if (s.isInstanceOf[Factory])
+        s.asInstanceOf[Factory].prev_mgmt_action += 1000
 
     new_sim.run(it)
     old2new
@@ -118,9 +120,9 @@ class Simulation {
   def run_until(until: Int) {
     println("RESUME Simulation " + this)
     while (timer <= until) {
-      if (!GLOBAL.silent) println("timer = " + timer)
+      if (!global.silent) println("timer = " + timer)
       for (s <- sims) s.run_until(timer)
-      if (!GLOBAL.silent) {
+      if (!global.silent) {
         for (s <- sims) s.stat
         println(); println()
       }

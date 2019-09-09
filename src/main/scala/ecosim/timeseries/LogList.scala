@@ -1,5 +1,4 @@
-package ecosim
-package Timeseries
+package ecosim.timeseries
 
 case class LogList[T](
     var l: List[(Int, T)] = List[(Int, T)](),

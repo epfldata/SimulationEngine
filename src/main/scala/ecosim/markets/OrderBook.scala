@@ -1,8 +1,7 @@
-package ecosim
-package Markets
+package ecosim.markets
 
-import Owner._
-import Securities._
+import ecosim.owner.Owner
+import ecosim.securities.Security
 
 /** An order; an entry line in an order book. Does not specify whether it's
   * a buy or sell order, but `OB_Line` can be used for either.

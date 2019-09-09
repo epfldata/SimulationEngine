@@ -1,6 +1,6 @@
 import org.scalatest._
-import ecosim.Simulation._
 import ecosim.code._
+import ecosim.simulation.Sim
 
 class XFactory extends Sim {
   init(0)

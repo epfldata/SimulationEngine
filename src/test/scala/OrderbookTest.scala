@@ -1,9 +1,11 @@
+import ecosim.markets.{OB_Line, OrderBook}
+import ecosim.owner.Owner
 import org.scalatest._
 
 class OrderBookSpec extends FlatSpec {
-  import ecosim.Markets._
-  import ecosim.Owner._
-  import ecosim.Securities._
+  import ecosim.markets._
+  import ecosim.owner._
+  import ecosim.securities._
   import ecosim.commodities.Commodities._
 
   "Time ordering" should "be respected for asks" in {

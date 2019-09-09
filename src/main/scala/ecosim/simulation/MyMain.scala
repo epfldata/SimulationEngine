@@ -1,7 +1,7 @@
-package ecosim
-package Simulation
-import Simulation.SimLib._
-import commodities.Commodities._
+package ecosim.simulation
+
+import ecosim.commodities.Commodities.{Flour, Land, Wheat}
+import ecosim.simulation.simlib._
 
 import scala.collection.immutable
 
@@ -48,7 +48,7 @@ object TradingExample {
 
   val s = new Source(Wheat, 4, 1000 * 100, simu)
   val t = Trader(Wheat, 1, simu)
-  val b = Buyer(Wheat, () => 1, simu)
+  val b = simlib.Buyer(Wheat, () => 1, simu)
 
   simu.init(List(s, t, b))
   simu.run(4)

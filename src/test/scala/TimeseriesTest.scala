@@ -1,5 +1,6 @@
 import org.scalatest._
-import ecosim.Timeseries._
+import ecosim.timeseries._
+import ecosim.timeseries.Timeseries
 
 class TimeseriesSpec extends FlatSpec {
 

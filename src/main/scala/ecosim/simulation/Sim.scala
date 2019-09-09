@@ -1,8 +1,8 @@
-package ecosim
+package ecosim.simulation
 
-package Simulation
-import Owner._
-import code._
+import ecosim.owner.Seller
+import ecosim.code
+import ecosim.code._
 
 trait Sim {
   type T = Int // time type

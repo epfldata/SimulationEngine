@@ -1,10 +1,13 @@
-package ecosim
-package Simulation.SimLib.OB_Sims
-import Markets._
-import Securities._
-import Simulation._
-import code._
-import commodities.Commodities._
+package ecosim.simulation.simlib.ob_sims
+
+import ecosim.global
+import ecosim.securities.EuropeanCallOption
+import ecosim.code.__do
+import ecosim.markets.{OB_Line, OrderBook}
+import ecosim.owner.Owner
+import ecosim.securities.{EuropeanCallOption, Security, EuropeanPutOption}
+import ecosim.simulation.{SimO, SimpleSim, Simulation}
+import ecosim.commodities.Commodities._
 
 class MarketMaker(security: Security, shared: Simulation)
     extends SimO(shared)
@@ -97,7 +100,7 @@ class RandomTrader(security: Security, shared: Simulation)
 
     val ob = shared.chicago(security)
 
-    if (GLOBAL.rnd.nextInt(2) == 0) {
+    if (global.rnd.nextInt(2) == 0) {
       val p0 = ob.bid_price
       val a = new Gaussian(p0, math.sqrt(p0)).sample(1)(0)
       val p = math.max(0, a)
@@ -295,9 +298,6 @@ class Arbitrageur(
 }
 
 class OBExample {
-  import Markets._
-  import Owner._
-  import Simulation._
 
   val b = new Owner
   val s = new Owner

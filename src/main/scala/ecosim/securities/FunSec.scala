@@ -1,11 +1,9 @@
-package ecosim
-
-package Securities
+package ecosim.securities
 
 object Glob {
   val rnd: scala.util.Random.type = scala.util.Random
 }
-import Securities.Glob._
+import ecosim.securities.Glob._
 
 /** an investor currently "belongs" to just one security.
   */

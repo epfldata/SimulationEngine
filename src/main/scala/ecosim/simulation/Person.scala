@@ -1,7 +1,8 @@
-package ecosim
-package Simulation
-import code._
-import commodities.Commodities._
+package ecosim.simulation
+
+import ecosim.global
+import ecosim.code.{__do, __forever, __wait}
+import ecosim.commodities.Commodities.{Burger, Commodity, Flour, MovieTicket}
 
 class Person(
     val shared: Simulation,
@@ -29,7 +30,7 @@ class Person(
     __do {
       if (active) {
         val food =
-          if (GLOBAL.rnd.nextInt(2) == 0) Flour
+          if (global.rnd.nextInt(2) == 0) Flour
           else Burger
 
         happiness -= 100; // hunger

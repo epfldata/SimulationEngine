@@ -1,9 +1,9 @@
-package ecosim
-package Simulation.SimLib
-import Simulation._
-import Simulation.Factory._
-import code._
-import commodities.Commodities._
+package ecosim.simulation.simlib
+
+import ecosim.simulation.factory.{Factory, ProductionLineSpec}
+import ecosim.code.__do
+import ecosim.commodities.Commodities._
+import ecosim.simulation.{SimO, SimpleSim, Simulation}
 
 class Source(commodity: Commodity, units: Int, p: Int, shared: Simulation)
     extends SimO(shared)

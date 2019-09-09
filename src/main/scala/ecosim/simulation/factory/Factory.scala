@@ -1,10 +1,9 @@
-package ecosim
+package ecosim.simulation.factory
 
-package Simulation.Factory
-import Owner._
-import Simulation._
-import code._
-import commodities.Commodities._
+import ecosim.code.{__do, __dowhile, __forever, __wait}
+import ecosim.commodities.Commodities.Commodity
+import ecosim.owner.{Owner, SalesRecord}
+import ecosim.simulation._
 
 case class ProductionLineSpec(employees_needed: Int,
                               required: List[(Commodity, Int)],
@@ -55,7 +54,7 @@ case class ProductionLine(
         frac = math.min(frac, n.toDouble / x._2)
       }
       goodwill = costs_consumables
-      if ((frac < 1.0) && (!GLOBAL.silent))
+      if ((frac < 1.0) && (!ecosim.global.silent))
         println(o + " " + " starts low-efficiency run.")
 
       rpt = 0
@@ -80,7 +79,7 @@ case class ProductionLine(
       if (units_produced > 0) {
         o.make(pls.produced._1, units_produced, unit_cost)
 
-        if (!GLOBAL.silent)
+        if (!ecosim.global.silent)
           println(
             o + " produces " + units_produced + "x " +
               pls.produced._1 + " at efficiency " + frac +
@@ -88,7 +87,7 @@ case class ProductionLine(
       } else {
         lost_runs_cost += total_cost
 
-        if (!GLOBAL.silent)
+        if (!ecosim.global.silent)
           println(o + " had a production line with zero efficiency.")
       }
 //      log = (get_time, frac) :: log;
@@ -122,7 +121,7 @@ class Factory(pls: ProductionLineSpec, shared: Simulation)
 
   var pl: List[ProductionLine] = List()
   var prev_mgmt_action: Int = 0
-  protected var hr: HR = HR(shared, this)
+  protected var hr: HR = factory.HR(shared, this)
   protected var goal_num_pl = 0
   private var zombie_cost2: Double = 0.0 // cost from canceled prod. runs
 
@@ -149,10 +148,10 @@ class Factory(pls: ProductionLineSpec, shared: Simulation)
     _to.pl = pl.map(_.mycopy(_to))
     _to.zombie_cost2 = zombie_cost2
     _to.prev_mgmt_action = prev_mgmt_action
-    _to.hr = HR(_shared,
-                _to,
-                hr.salary,
-                hr.employees.map(old2new(_).asInstanceOf[Person]))
+    _to.hr = factory.HR(_shared,
+                        _to,
+                        hr.salary,
+                        hr.employees.map(old2new(_).asInstanceOf[Person]))
     _to.goal_num_pl = goal_num_pl
   }
 
@@ -210,7 +209,7 @@ class Factory(pls: ProductionLineSpec, shared: Simulation)
       success = bulk_buy_missing(pls.required, pl.length + 1)
       if (success) {
         hr.hire(pls.employees_needed)
-        pl = ProductionLine(pls, this, hr.salary, shared.timer) :: pl
+        pl = factory.ProductionLine(pls, this, hr.salary, shared.timer) :: pl
         //pl.head.init(shared.timer);
       }
     } else success = false
@@ -246,8 +245,7 @@ class Factory(pls: ProductionLineSpec, shared: Simulation)
   }
 
   protected def tactics(): Unit = {
-    import Timeseries._
-
+    import ecosim.timeseries._
     /* cost and price concerns disregarded -- everyone makes market orders.
        supply of consumables disregarded because we want some stability
        in the simulation.
@@ -323,7 +321,7 @@ class Factory(pls: ProductionLineSpec, shared: Simulation)
     val suitable_num_pl =
       math.ceil(demand_fc / pls.theoretical_max_productivity).toInt
 
-    if (!GLOBAL.silent)
+    if (!ecosim.global.silent)
       println(
         this + " demand_fc = " + demand_fc + ", best_pl = " +
           suitable_num_pl + ", currently = " + pl.length)

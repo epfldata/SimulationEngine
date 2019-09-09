@@ -1,5 +1,6 @@
-package ecosim
-package code
+package ecosim.code
+
+import ecosim.global
 
 package object twospecies {
   import multithreading._
@@ -79,10 +80,10 @@ package object twospecies {
     class MovementTP extends ThreadPrecursor[Int] {
 
       val prog: Vector[SimpleInstruction] = compile(__forever(__wait(1), __do {
-        x += GLOBAL.rnd.nextInt(3) - 1
+        x += global.rnd.nextInt(3) - 1
         x = math.max(x, -5)
         x = math.min(x, 5)
-        y += GLOBAL.rnd.nextInt(3) - 1
+        y += global.rnd.nextInt(3) - 1
         y = math.max(y, -5)
         y = math.min(y, 5)
       }))
@@ -152,4 +153,4 @@ package object twospecies {
   code.twospecies.experiment(7, 11, 6, 10);
  */
 
-} // end package object twospecies
+}

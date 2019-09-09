@@ -1,7 +1,6 @@
-package ecosim
-package Markets
+package ecosim.markets
 
-import Owner._
+import ecosim.owner.Owner
 
 trait MarketMatchingUtilities[L] {
   type mm_match_t = (Int, L)
