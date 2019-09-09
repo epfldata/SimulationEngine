@@ -164,6 +164,11 @@ class Owner {
   private def inventory_total_cost(item: ITEM_T): Double =
     inventory(item) * inventory_avg_cost(item)
 
+  final protected def init_inv(item: ITEM_T) {
+    inventory += (item -> 0)
+    inventory_avg_cost += (item -> 0)
+  }
+
   /** Consumes items, which get removed from the inventory and their
       cost gets added to total_value_destroyed.
     */
@@ -174,11 +179,6 @@ class Owner {
     inventory(item) -= units
 
     value_destroyed // returns cost of destroyed stuff
-  }
-
-  final protected def init_inv(item: ITEM_T) {
-    inventory += (item -> 0)
-    inventory_avg_cost += (item -> 0)
   }
 
   protected def copy_state_to(_to: Owner) {

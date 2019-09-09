@@ -143,7 +143,7 @@ class TrendFollower(security: Security, shared: Simulation)
       val to_watch = l.map((t: (Double, Double)) => (t._2 + t._1) / 2.0)
       val tw2 = to_watch.take(5).reverse
 
-      val x: Array[Double] = (1 to (tw2.size)).toArray.map(_.toDouble)
+      val x: Array[Double] = (1 to tw2.size).toArray.map(_.toDouble)
       val y = tw2.toArray
 
       val features: DenseMatrix[Double] = DenseMatrix.horzcat(

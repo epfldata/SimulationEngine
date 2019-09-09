@@ -27,7 +27,7 @@ abstract class Security {
       resolution: Int = 1
   ): Double = {
     assert(current_time <= goal_time)
-    (compute_time_series(S0, current_time, goal_time, resolution))(resolution)
+    compute_time_series(S0, current_time, goal_time, resolution)(resolution)
   }
 
   /** volatility */

@@ -31,7 +31,7 @@ package owner {
       */
     def sell_to(time: Int, buyer: Owner, item: Commodity, units: Int): Int = {
       price(item) match {
-        case (Some(p)) => {
+        case Some(p) => {
           val units_sold = partial_sell_to(buyer, item, units, p)
           order_history.add(time,
                             SalesRecord(buyer,

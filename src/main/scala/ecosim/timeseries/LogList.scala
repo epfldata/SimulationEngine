@@ -14,6 +14,6 @@ case class LogList[T](
 
   def toTimeseries: Timeseries[List[T]] = {
     val grps = l.groupBy(_._1).mapValues(_.map(_._2))
-    new Timeseries(0, latest, ((t: Int) => grps.getOrElse(t, List())))
+    new Timeseries(0, latest, (t: Int) => grps.getOrElse(t, List()))
   }
 }

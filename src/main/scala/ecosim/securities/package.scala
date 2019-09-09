@@ -34,7 +34,7 @@ package object securities {
   }
 
   def Nsample(mu: Double, sigma: Double): Double =
-    (breeze.stats.distributions.Gaussian(mu, sigma).sample(1))(0)
+    breeze.stats.distributions.Gaussian(mu, sigma).sample(1)(0)
 
   /** given the risk free rate, and a value S, get compounded value after
       time delta_t.

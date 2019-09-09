@@ -8,7 +8,7 @@ object Commodities {
   val Beef = Commodity("beef")
   val Burger = Commodity("burger")
 
-  val all_commodities = List(Wheat, Flour, Land, MovieTicket, Beef, Burger);
+  val all_commodities = List(Wheat, Flour, Land, MovieTicket, Beef, Burger)
 
   // TODO: Just made source code compiling again, may not work correctly
   /**

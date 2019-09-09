@@ -7,10 +7,10 @@ package object code {
   def compile(p: Instruction): Vector[SimpleInstruction] = {
     /* Shifts all mentioned absolute code positions by offset. */
     def shift(v: Vector[SimpleInstruction], offset: Int) =
-      v.map(_ match {
+      v.map {
         case __goto(c, new_pos) => __goto(c(), new_pos + offset)
         case other @ _          => other
-      })
+      }
 
     /* Compiles a vector of instructions.
      Recursively maintains instruction offsets and makes sure absolute

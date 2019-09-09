@@ -20,7 +20,7 @@ object MainExample {
   //val billa         = new Trader(Flour, 50, s);
   val mehlbuyer = Buyer(Flour, () => 40, s)
 
-  val people: immutable.IndexedSeq[Person] = for (x <- 1 to 12)
+  val people: immutable.IndexedSeq[Person] = for (_ <- 1 to 12)
     yield new Person(s, false)
 
   s.init(

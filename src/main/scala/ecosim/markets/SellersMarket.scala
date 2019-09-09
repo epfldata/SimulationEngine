@@ -60,7 +60,7 @@ class SellersMarket(commodity: Commodity)
       .sorted(Ordering.by[Seller, Double]((s: Seller) =>
         s.price(commodity).get))
 
-    greedy_match(asks, ((s: Seller) => s.available(commodity)), units)
+    greedy_match(asks, (s: Seller) => s.available(commodity), units)
   }
 
   private def compute_price(l: List[(Int, Seller)]) =

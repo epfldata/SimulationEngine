@@ -65,13 +65,12 @@ class OrderBook(
       t.trader.atomic_sell_to(o.trader, security, n, t.limit.get)
     }
 
-    val (left_over, aob) = greedy_match_execute(
-      ask_orderbook,
-      (_: OB_Line).units,
-      ((_: OB_Line).limit.get <= price),
-      action,
-      modf,
-      o.units)
+    val (left_over, aob) = greedy_match_execute(ask_orderbook,
+                                                (_: OB_Line).units,
+                                                (_: OB_Line).limit.get <= price,
+                                                action,
+                                                modf,
+                                                o.units)
 
     ask_orderbook = aob
 
@@ -106,13 +105,12 @@ class OrderBook(
       o.trader.atomic_sell_to(t.trader, security, n, t.limit.get)
     }
 
-    val (left_over, bob) = greedy_match_execute(
-      bid_orderbook,
-      (_: OB_Line).units,
-      ((_: OB_Line).limit.get >= price),
-      action,
-      modf,
-      o.units)
+    val (left_over, bob) = greedy_match_execute(bid_orderbook,
+                                                (_: OB_Line).units,
+                                                (_: OB_Line).limit.get >= price,
+                                                action,
+                                                modf,
+                                                o.units)
 
     bid_orderbook = bob
 
@@ -130,8 +128,8 @@ class OrderBook(
   /** Deletes expired orders. */
   def purge(time: Int) {
     bid_orderbook = bid_orderbook.filter(_.expires match {
-      case Some(exp_time) if (exp_time < time) => false
-      case _                                   => true
+      case Some(exp_time) if exp_time < time => false
+      case _                                 => true
     })
   }
 

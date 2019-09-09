@@ -27,7 +27,7 @@ class Thread[T: Numeric](
     }
   }
 
-  private def lte(a: T, b: T) = (!implicitly[Numeric[T]].lt(b, a))
+  private def lte(a: T, b: T) = !implicitly[Numeric[T]].lt(b, a)
 }
 
 /** @param time  current global time.
@@ -52,8 +52,9 @@ class ParallelExecutor[T: Numeric, S <: Executable[T]](
         val l2 = global.mapopt(l, (_: S).run_until(t))
         l = l2.map(_._1).asInstanceOf[List[S]]
 
-        if (this.isInstanceOf[Effects[S]])
+        if (this.isInstanceOf[Effects[S]]) {
           l = global.mapopt(l, (s: S) => this.asInstanceOf[Effects[S]](s))
+        }
 
         if (l2.nonEmpty) t = l2.map(_._2).min
       }
@@ -70,7 +71,7 @@ class ParallelExecutor[T: Numeric, S <: Executable[T]](
     }
   }
 
-  private def lte(a: T, b: T) = (!lt(b, a))
+  private def lte(a: T, b: T) = !lt(b, a)
 
   private def lt(a: T, b: T) = implicitly[Numeric[T]].lt(a, b)
 }

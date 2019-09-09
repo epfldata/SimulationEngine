@@ -121,7 +121,7 @@ class CodeSpec extends FlatSpec {
           s = s + i + ";"
           i += 1
         },
-        __goto((i < 3), 1),
+        __goto(i < 3, 1),
         __wait(2.3),
         __goto(cond = true, 0)
       )
@@ -136,7 +136,7 @@ class CodeSpec extends FlatSpec {
   it should "pass test 2" in {
     var a = 0
     val prog2 = {
-      var i = 0;
+      var i = 0
       compile(
         __repeat(1,
                  __do { i = 0 },

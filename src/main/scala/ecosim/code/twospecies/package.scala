@@ -131,7 +131,7 @@ package object twospecies {
           __do {
 
             val close_prey = animals().filter((s2: Species) =>
-              (s2.isInstanceOf[Prey] && (s.distance(s2) < 4)))
+              s2.isInstanceOf[Prey] && (s.distance(s2) < 4))
 
             if (close_prey.isEmpty) {
               println(s + " dies of starvation.")

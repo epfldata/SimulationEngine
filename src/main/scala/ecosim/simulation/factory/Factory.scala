@@ -104,14 +104,14 @@ case class HR(private val shared: Simulation,
   def pay_workers() { for (a <- employees) o.transfer_money_to(a, salary); }
   def salary_cost(): Int = salary * employees.length
 
-  def hire(n: Int) { for (i <- 1 to n) hire_one(); }
+  def hire(n: Int) { for (_ <- 1 to n) hire_one(); }
 
   protected def hire_one() {
     if (shared.arbeitsmarkt.nonEmpty)
       employees.push(shared.arbeitsmarkt.pop.asInstanceOf[Person])
   }
 
-  def fire(n: Int) { for (i <- 1 to n) fire_one(); }
+  def fire(n: Int) { for (_ <- 1 to n) fire_one(); }
 
   protected def fire_one() { shared.arbeitsmarkt.push(employees.pop); }
 }
@@ -184,9 +184,9 @@ class Factory(pls: ProductionLineSpec, shared: Simulation)
           tactics(); // changes goal_num_pl
         }
 
-      for (i <- (pl.length + 1) to goal_num_pl)
+      for (_ <- (pl.length + 1) to goal_num_pl)
         add_production_line()
-      for (i <- (goal_num_pl + 1) to pl.length)
+      for (_ <- (goal_num_pl + 1) to pl.length)
         remove_production_line()
 
       // TODO: buy more to get better prices?
@@ -227,9 +227,9 @@ class Factory(pls: ProductionLineSpec, shared: Simulation)
     })
 
     def successfully_bought(line: (Commodity, Int)) =
-      (shared
+      shared
         .market(line._1)
-        .market_buy_order_now(shared.timer, this, line._2) == 0)
+        .market_buy_order_now(shared.timer, this, line._2) == 0
     // nothing missing
 
     l.forall(successfully_bought)
@@ -353,7 +353,7 @@ class Factory(pls: ProductionLineSpec, shared: Simulation)
     goal_num_pl = suitable_num_pl
   }
 
-  override def stat {
+  override def stat() {
     val zombie_cost = pl.map(_.lost_runs_cost).sum.toInt
 
     println(

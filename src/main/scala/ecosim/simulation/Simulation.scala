@@ -43,7 +43,7 @@ class Simulation {
     for (s <- sims) if (s.isInstanceOf[Person]) arbeitsmarkt.push(s)
 
     if (!global.silent) {
-      for (s <- sims) { s.stat; }
+      for (s <- sims) { s.stat(); }
       println; println
     }
 
@@ -61,8 +61,10 @@ class Simulation {
     // prevent recursive simulation. This is only safe it the simulation
     // runs for fewer than 1000 iterations!
     for (s <- new_sim.sims)
-      if (s.isInstanceOf[Factory])
-        s.asInstanceOf[Factory].prev_mgmt_action += 1000
+      s match {
+        case factory: Factory => factory.prev_mgmt_action += 1000
+        case _                =>
+      }
 
     new_sim.run(it)
     old2new
@@ -80,21 +82,20 @@ class Simulation {
     // to sims.
     for (s <- sims) {
       if (s.isInstanceOf[Person]) {
-        val cp = s.mycopy(s2, old2new).asInstanceOf[SimO]
+        val cp = s.mycopy(s2, old2new)
         old2new += (s -> cp)
       }
     }
 
     s2.sims = sims.map((s: SimO) => {
       old2new.getOrElse(s, {
-        val cp = s.mycopy(s2, old2new).asInstanceOf[SimO]
+        val cp = s.mycopy(s2, old2new)
         old2new += (s -> cp)
         cp
       })
     })
 
-    s2.arbeitsmarkt =
-      arbeitsmarkt.map((x: SimO) => old2new(x.asInstanceOf[SimO]))
+    s2.arbeitsmarkt = arbeitsmarkt.map((x: SimO) => old2new(x))
 
     for ((commodity, ma) <- market) {
       ma.copy_state_to(s2.market(commodity),
@@ -122,7 +123,7 @@ class Simulation {
       if (!global.silent) println("timer = " + timer)
       for (s <- sims) s.run_until(timer)
       if (!global.silent) {
-        for (s <- sims) s.stat
+        for (s <- sims) s.stat()
         println(); println()
       }
       timer += 1

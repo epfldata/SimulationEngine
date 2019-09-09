@@ -12,7 +12,7 @@ class Person(
 ) extends SimO(shared) {
 
   private val properties: Map[Commodity, Map[String, Int]] =
-    Map((Flour -> Map("calories" -> 100)), (Burger -> Map("calories" -> 500)))
+    Map(Flour -> Map("calories" -> 100), Burger -> Map("calories" -> 500))
   private val foodstuffs = List(Flour, Burger)
 
   def mycopy(_shared: Simulation,
@@ -22,7 +22,7 @@ class Person(
     p
   }
 
-  override def stat {
+  override def stat() {
     print("(Person@" + happiness + " " + capital / 100 + ")  ")
   }
 

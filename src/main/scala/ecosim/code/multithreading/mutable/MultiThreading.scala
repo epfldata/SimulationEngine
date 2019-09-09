@@ -65,14 +65,17 @@ class ParallelExecutor[T: Numeric, S <: Executable[T]](
     */
   def run_until(until: T): Option[(ParallelExecutor[T, S], T)] = {
 
-    def lte(a: T, b: T) = (!implicitly[Numeric[T]].lt(b, a))
+    def lte(a: T, b: T) = !implicitly[Numeric[T]].lt(b, a)
 
     while (lte(time, until) && l.nonEmpty) {
       val l2 = ecosim.global.mapopt(l, (_: S).run_until(time))
       l = l2.map(_._1).asInstanceOf[List[S]]
 
-      if (this.isInstanceOf[Effects[S]])
-        l = ecosim.global.mapopt(l, (s: S) => this.asInstanceOf[Effects[S]](s))
+      this match {
+        case value: Effects[S] =>
+          l = ecosim.global.mapopt(l, (s: S) => value(s))
+        case _ =>
+      }
 
       if (l2.nonEmpty) time = l2.map(_._2).min
     }
@@ -88,9 +91,10 @@ class ParallelExecutor[T: Numeric, S <: Executable[T]](
   }
 
   protected def get_executables(): List[S] =
-    if (this.isInstanceOf[Effects[S]])
-      ecosim.global.mapopt(l, (s: S) => this.asInstanceOf[Effects[S]](s))
-    else l
+    this match {
+      case value: Effects[S] => ecosim.global.mapopt(l, (s: S) => value(s))
+      case _                 => l
+    }
 }
 
 abstract class ParallelExecutorPrecursor[T: Numeric, S <: Executable[T]]
