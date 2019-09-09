@@ -10,8 +10,6 @@
       "const_buyOil",
       "const_buySigma",
       "const_buyWheat",
-      "const_capitalMu",
-      "const_capitalSigma",
       "const_consumeBeef",
       "const_consumeBread",
       "const_consumeFlour",

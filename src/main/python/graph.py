@@ -96,6 +96,19 @@ class Graph:
             } for node in data}
         return data
 
+    def predict_over_time(self, data_vec, time):
+        data = {node: {
+            "constants": pd.DataFrame(columns=data_vec[node]["constants"].columns, dtype=np.float32),
+            "states": pd.DataFrame(columns=data_vec[node]["states"].columns, dtype=np.float32)
+        } for node in data_vec}
+        for _ in range(time):
+            data_vec = self.predict(data_vec)
+            data = {node: {
+                "constants": data[node]["constants"].append(data_vec[node]["constants"], ignore_index=True),
+                "states": data[node]["states"].append(data_vec[node]["states"], ignore_index=True)
+            } for node in data}
+        return data
+
     def cor(self, p1, p2, data_vec, samples=1000):
         data = {node: data_vec[node].repeat(samples).reshape(samples, len(data_vec[node])) for node in self._nodes}
         data[p1.node] = np.random.normal(size=samples)

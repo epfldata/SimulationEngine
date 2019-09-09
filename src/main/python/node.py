@@ -1,34 +1,33 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.layers import Dense, InputLayer
-from tensorflow.python.keras.models import Sequential
+from tensorflow.python.keras.models import Sequential, load_model
 
 
 class Node:
 
-    def __init__(self, agent_name, input_names, output_names, hyper_parameters=None, model=None):
+    def __init__(self, agent_name, input_names, output_names, hyper_parameters=None):
         if hyper_parameters is None:
             hyper_parameters = {}
         self.name = agent_name
         self.input_names = input_names
         self.output_names = output_names
-        if model is None:
-            self._model = Sequential()
-            units = hyper_parameters.get('number_of_units') or [64] * 3
-            activations = hyper_parameters.get('activations') or ['linear'] * 3
+        self._model = Sequential()
+        units = hyper_parameters.get('number_of_units') or [64] * 3
+        activations = hyper_parameters.get('activations') or ['linear'] * 3
 
-            self._model.add(Dense(units[0], input_dim=hyper_parameters.get('features') or 3, activation=activations[0], name=self.name + "-0"))
-            for i in range(1, hyper_parameters.get('number_of_layers') or len(units)):
-                self._model.add(Dense(units[i] or 64, activation=activations[i], name="{}-{}".format(self.name, i + 1)))
+        self._model.add(Dense(units[0], input_dim=hyper_parameters.get('features') or 3, activation=activations[0],
+                              name=self.name + "-0"))
+        for i in range(1, hyper_parameters.get('number_of_layers') or len(units)):
+            self._model.add(Dense(units[i] or 64, activation=activations[i], name="{}-{}".format(self.name, i + 1)))
 
-            self._model.compile(loss=hyper_parameters.get('loss') or 'mae',
-                                optimizer=hyper_parameters.get('optimizer') or 'sgd',
-                                metrics=hyper_parameters.get('metrics') or ['mae'])
-        else:
-            self._model = model
+        self._model.compile(loss=hyper_parameters.get('loss') or 'mae',
+                            optimizer=hyper_parameters.get('optimizer') or 'sgd',
+                            metrics=hyper_parameters.get('metrics') or ['mae'])
 
     def extended_model(self, n_samples):
-        input_variable = tf.Variable(initial_value=tf.ones((n_samples, self.input_size())), trainable=True, dtype=tf.float32, name=self.name + "-input")
+        input_variable = tf.Variable(initial_value=tf.ones((n_samples, self.input_size())), trainable=True,
+                                     dtype=tf.float32, name=self.name + "-input")
         model = Sequential()
         model.add(InputLayer(input_tensor=input_variable, name=self.name + "-0"))
         for layer in self._model.layers:
@@ -84,4 +83,7 @@ class Node:
             predictors[:, i].var(ddof=1) * targets[:, j].var(ddof=1))
 
     def save_model(self, address):
-        self._model.save(address + self.name + ".h5")
+        self._model.save(address + self.name + '.h5')
+
+    def load_model(self, address):
+        self._model = load_model(address + self.name + '.h5')

@@ -11,7 +11,7 @@ object DatasetCreator {
 
   def createDataset(nSamples: Int, agents: Iterable[String], nSteps: Int, stepSize: Int = 10) {
     val parameterSamples = sampleParams(nSamples / nSteps)
-    val data: Seq[(Data, Data, Statistics)] = parameterSamples.flatMap {
+    val data: Seq[(Data, Data, Statistics, Statistics)] = parameterSamples.flatMap {
       case (constants, variables) => Main.simFunction(constants, variables, nSteps, stepSize, agents)
     }
     agents.foreach(agent => {
@@ -28,10 +28,15 @@ object DatasetCreator {
     })
 
 
-    val stat_data: Seq[Seq[(String, Double)]] = data.map(_._3.toSeq.sortBy(_._1))
-    val stat_header: Array[String] = stat_data.head.map(_._1).toArray
-    val stats: DenseMatrix[Double] = DenseMatrix(stat_data.map(_.map(_._2)): _*)
-    CsvManager.writeCsvFile(stats, "target/scala-2.11/global_stats.csv", stat_header)
+    val inStat: Seq[Seq[(String, Double)]] = data.map(_._3.toSeq.sortBy(_._1))
+    val inStatMatrix: DenseMatrix[Double] = DenseMatrix(inStat.map(_.map(_._2)): _*)
+
+    val outStat: Seq[Seq[(String, Double)]] = data.map(_._4.toSeq.sortBy(_._1))
+    val outStatMatrix: DenseMatrix[Double] = DenseMatrix(outStat.map(_.map(_._2)): _*)
+
+    val stat_header: Array[String] = inStat.head.map(_._1).toArray
+    CsvManager.writeCsvFile(inStatMatrix, "target/scala-2.11/global_stat_input.csv", stat_header)
+    CsvManager.writeCsvFile(outStatMatrix, "target/scala-2.11/global_stat_output.csv", stat_header)
   }
 
   /**
@@ -46,8 +51,6 @@ object DatasetCreator {
         Map("number" -> (GLOBAL.rnd.nextInt(100) + 100).toDouble,
           "genderMu" -> GLOBAL.rnd.nextDouble(),
           "genderSigma" -> GLOBAL.rnd.nextDouble(),
-          "capitalMu" -> GLOBAL.rnd.nextDouble() * 10000,
-          "capitalSigma" -> GLOBAL.rnd.nextDouble() * 10000,
 
           "buyWheat" -> GLOBAL.rnd.nextDouble(),
           "buyFlour" -> GLOBAL.rnd.nextDouble(),

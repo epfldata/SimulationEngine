@@ -1,23 +1,22 @@
 import json
 import os
+import sys
+from math import floor
 
 import numpy as np
 import pandas as pd
-import sys
+
 from aggregator import GlobalStateAggregator
 from env import Agent, Environment
-from math import floor
-from tensorflow.python.keras.models import load_model
 
 
-def prepare_environment(config_address, model_from_file=None):
+def prepare_environment(config_address, models_address=None):
     with open(config_address, 'r') as sim_file:
         jstring = sim_file.read()
     config = json.loads(jstring)
 
     def _agent_generator(name):
-        model = load_model(model_from_file + name + '.h5') if model_from_file is not None else None
-        return Agent(config[name]['constants'], config[name]['states'], name, config[name]['hyper_parameters'], model)
+        return Agent(config[name]['constants'], config[name]['states'], name, config[name]['hyper_parameters'])
 
     agents_dict = {agent_name: _agent_generator(agent_name) for agent_name in config}
 
@@ -28,6 +27,8 @@ def prepare_environment(config_address, model_from_file=None):
         env.register_connections(agents_dict[name], *to_agents)
 
     env.compile()
+    if models_address is not None:
+        env.load_models(models_address)
     return env, agents_dict
 
 
@@ -63,26 +64,41 @@ def train_test_split(data_input, data_output, train_ratio):
     return train_input, train_output, test_input, test_output
 
 
-def setup(config_address, model_from_file=None):
+def setup_train_test(config_address, data_address, model_from_file=None):
     env, agent_dict = prepare_environment(config_address, model_from_file)
     agents = agent_dict.values()
-    input_address = {agent: f'target/data/{agent.name}_x.csv' for agent in agents}
-    output_address = {agent: f'target/data/{agent.name}_y.csv' for agent in agents}
+    input_address = {agent: data_address + agent.name + '_x.csv' for agent in agents}
+    output_address = {agent: data_address + agent.name + '_y.csv' for agent in agents}
     data_input = prepare_data(input_address, True)
     data_output = prepare_data(output_address, False)
     return env, agent_dict, data_input, data_output
 
+
+def setup_prediction(config_address, models_address, data_address):
+    env, agent_dict = prepare_environment(config_address, models_address)
+
+    with open(data_address, "r") as f:
+        jstring = f.read()
+    data_vec_raw = json.loads(jstring)
+
+    def vec_to_df(vec):
+        return {key: [vec[key]] for key in vec}
+
+    data_vec = {agent_dict[name]: {
+        type: pd.DataFrame(vec_to_df(data_vec_raw[name][type]), dtype=np.float64) for type in ["constants", "states"]
+    } for name in data_vec_raw}
+
+    return env, agent_dict, data_vec
+
+
 def get_aggregator(input_data):
     population = [input_data[agent]["constants"]["const_number"] for agent in input_data if agent.name == "Person"][0]
     return GlobalStateAggregator(population, ["capital", "total_value_destroyed", "unemploymentRate",
-                                                                       "happiness", "valueProduced", "goodwill"])
+                                              "happiness", "valueProduced", "goodwill"])
+
 
 def learn_input(data_input, data_output):
-    input_scales = {agent: {type: (data_input[agent][type].mean(), data_input[agent][type].std())
-                            for type in data_input[agent]}
-                    for agent in data_input}
-    return env.learn_input(data_output, get_aggregator(data_input), input_scales, epochs=10 ** 3)
-
+    return env.learn_input(data_output, get_aggregator(data_input), epochs=10 ** 3)
 
 
 if __name__ == '__main__':
@@ -93,7 +109,7 @@ if __name__ == '__main__':
 
     action = sys.argv[1]
     if action == 'train':
-        env, agent_dict, data_input, data_output = setup('simulation.json')
+        env, agent_dict, data_input, data_output = setup_train_test('simulation.json', 'target/data/')
         agents = agent_dict.values()
         train_input, train_output, test_input, test_output = train_test_split(data_input, data_output, 0.75)
         env.solo_train(train_input, train_output, training_hyper_params={
@@ -103,14 +119,27 @@ if __name__ == '__main__':
 
         env.group_train(train_input, train_output, get_aggregator(train_input))
         print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
-        print("learn input:", learn_input(data_input, data_output))
 
         if len(sys.argv) >= 3 and sys.argv[2] == "--save":
-            env.save_models("target/models/")
+            env.save_models("target/models/", data_input)
+
+    elif action == 'input-learning':
+        env, agent_dict, data_input, data_output = setup_train_test('simulation.json', 'target/data/', 'target/models/')
+        print("learn input:", learn_input(data_input, data_output))
 
     elif action == 'evaluate':
-        env, agent_dict, data_input, data_output = setup('simulation.json', 'target/models/')
+        env, agent_dict, data_input, data_output = setup_train_test('simulation.json', 'target/data/', 'target/models/')
         env.solo_test(data_input, data_output)
 
         print("group test:", env.group_test(data_input, data_output, get_aggregator(data_input)))
         print("learn input:", learn_input(data_input, data_output))
+
+    elif action == 'predict':
+        if len(sys.argv) < 3:
+            raise Exception("time required!")
+        env, agent_dict, data_vec = setup_prediction('simulation.json', 'target/models/', 'target/data/data_vec.json')
+        data = env.predict_over_time(data_vec, int(sys.argv[2]))
+
+        for agent in data:
+            total_data = data[agent]['constants'].join(data[agent]['states'])
+            total_data.to_csv(f'target/results/{agent.name}.csv')

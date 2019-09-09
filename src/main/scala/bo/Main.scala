@@ -18,19 +18,20 @@ object Main {
 
   /**
     *
-    * @return a sequence of triples indexed over time, where the first element of the triple is input data,
-    *         the second in the output data and the third is the global statistics
+    * @return a sequence of quadruples indexed over time, where the first, second, third and fourth elements of the
+    *         quadruple are input data, output data, input global statistics and output global statistics respectively
     */
   def simFunction(constants: Data, variables: Data,
-                  nSteps: Int, stepSize: Int, agents: Iterable[String]): Seq[(Data, Data, Statistics)] = {
+                  nSteps: Int, stepSize: Int, agents: Iterable[String]): Seq[(Data, Data, Statistics, Statistics)] = {
     val s = new Simulation(constants, variables)
     Main.initializeSimulation(s)
     var data_out = s.getPopulationData(agents)
     for (_ <- 1 to nSteps) yield {
       val data_in = data_out
+      val stat_in = s.getGlobalStat
       Main.runSimulation(s, stepSize)
       data_out = s.getPopulationData(agents)
-      (data_in, s.getPopulationData(agents), s.getGlobalStat)
+      (data_in, s.getPopulationData(agents), stat_in, s.getGlobalStat)
     }
   }
 

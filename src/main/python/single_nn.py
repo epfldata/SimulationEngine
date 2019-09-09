@@ -1,29 +1,54 @@
 import pandas as pd
+import os
+import sys
+
 from keras import Sequential
 from keras.layers import Dense
+from keras.models import load_model
 from sklearn.model_selection import train_test_split
 
 if __name__ == '__main__':
-    x = pd.read_csv("global_stats_inputs.csv")
-    y = pd.read_csv("global_stats_outputs.csv")
+    os.chdir('../../..')  # going to the root of the project
 
-    x = (x - x.mean()) / x.std()
-    y = (y - y.mean()) / y.std()
+    if len(sys.argv) < 2:
+        raise Exception("action required!")
 
-    x_train, x_test, y_train, y_test  = train_test_split(x, y, train_size=0.75)
+    action = sys.argv[1]
+    if action == 'train':
+        x = pd.read_csv("target/data/global_stat_input.csv")
+        y = pd.read_csv("target/data/global_stat_output.csv")
 
-    number_of_features = x_train.columns.size
-    number_of_outputs = y_train.columns.size
-    number_of_layers = 5
-    number_of_units = [64, 64, 64, 64, number_of_outputs]
-    activations = ['relu', 'relu', 'relu', 'relu', 'linear']
+        x = (x - x.mean()) / x.std()
+        y = (y - y.mean()) / y.std()
 
-    model = Sequential()
-    for i in range(number_of_layers):
-        model.add(Dense(number_of_units[i], activation=activations[i]))
+        x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=0.75)
 
-    model.compile(optimizer='sgd', loss='mae', metrics=['mae'])
+        number_of_features = x_train.columns.size
+        number_of_outputs = y_train.columns.size
+        number_of_layers = 5
+        number_of_units = [64, 64, 64, 64, number_of_outputs]
+        activations = ['relu', 'relu', 'relu', 'relu', 'linear']
 
-    model.fit(x_train.to_numpy(), y_train.to_numpy(), epochs=500)
+        model = Sequential()
+        for i in range(number_of_layers):
+            model.add(Dense(number_of_units[i], activation=activations[i]))
 
-    print(model.evaluate(x_test.to_numpy(), y_test.to_numpy()))
+        model.compile(optimizer='sgd', loss='mae', metrics=['mae'])
+
+        model.fit(x_train.to_numpy(), y_train.to_numpy(), epochs=200)
+
+        print(model.evaluate(x_test.to_numpy(), y_test.to_numpy()))
+
+        if len(sys.argv) > 2 and sys.argv[2] == '--save':
+            model.save('target/models/single/single_nn.h5')
+
+    elif action == 'evaluate':
+        model = load_model('target/models/single/single_nn.h5')
+
+        x = pd.read_csv("target/data/global_stat_input.csv")
+        y = pd.read_csv("target/data/global_stat_output.csv")
+
+        x = (x - x.mean()) / x.std()
+        y = (y - y.mean()) / y.std()
+
+        print(model.evaluate(x.to_numpy(), y.to_numpy()))
