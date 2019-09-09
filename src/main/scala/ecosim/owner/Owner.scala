@@ -134,6 +134,17 @@ class Owner {
     capital -= amount
   }
 
+  /** Doesn't touch capital:
+      assumes cost is already accounted for (paid for earlier).
+    */
+  final def make(item: ITEM_T, units: Int, unit_cost: Double) {
+    assert(units > 0)
+    if (!inventory.contains(item)) init_inv(item)
+    recalculate_inv_avg_cost(item, units, unit_cost)
+
+    inventory(item) += units
+  }
+
   /** This method is to be called *before* the inventory is updated. */
   private def recalculate_inv_avg_cost(item: ITEM_T,
                                        units_added: Int,
@@ -153,22 +164,6 @@ class Owner {
   private def inventory_total_cost(item: ITEM_T): Double =
     inventory(item) * inventory_avg_cost(item)
 
-  final protected def init_inv(item: ITEM_T) {
-    inventory += (item -> 0)
-    inventory_avg_cost += (item -> 0)
-  }
-
-  /** Doesn't touch capital:
-      assumes cost is already accounted for (paid for earlier).
-    */
-  final def make(item: ITEM_T, units: Int, unit_cost: Double) {
-    assert(units > 0)
-    if (!inventory.contains(item)) init_inv(item)
-    recalculate_inv_avg_cost(item, units, unit_cost)
-
-    inventory(item) += units
-  }
-
   /** Consumes items, which get removed from the inventory and their
       cost gets added to total_value_destroyed.
     */
@@ -179,6 +174,11 @@ class Owner {
     inventory(item) -= units
 
     value_destroyed // returns cost of destroyed stuff
+  }
+
+  final protected def init_inv(item: ITEM_T) {
+    inventory += (item -> 0)
+    inventory_avg_cost += (item -> 0)
   }
 
   protected def copy_state_to(_to: Owner) {

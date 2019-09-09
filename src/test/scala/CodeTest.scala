@@ -1,6 +1,6 @@
-import org.scalatest._
-import ecosim.code._
 import ecosim.code
+import ecosim.code._
+import org.scalatest._
 
 case class ExecSim(prog: Vector[SimpleInstruction]) {
   var pos = 0

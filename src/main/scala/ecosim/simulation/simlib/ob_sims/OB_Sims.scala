@@ -1,13 +1,12 @@
 package ecosim.simulation.simlib.ob_sims
 
-import ecosim.global
-import ecosim.securities.EuropeanCallOption
 import ecosim.code.__do
+import ecosim.global
 import ecosim.markets.{OB_Line, OrderBook}
 import ecosim.owner.Owner
-import ecosim.securities.{EuropeanCallOption, Security, EuropeanPutOption}
-import ecosim.simulation.{SimO, SimpleSim, Simulation}
 import ecosim.securities.Commodities._
+import ecosim.securities.{EuropeanCallOption, EuropeanPutOption, Security}
+import ecosim.simulation.{SimO, SimpleSim, Simulation}
 
 class MarketMaker(security: Security, shared: Simulation)
     extends SimO(shared)

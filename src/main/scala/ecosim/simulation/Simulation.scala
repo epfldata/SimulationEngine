@@ -1,10 +1,9 @@
 package ecosim.simulation
 
 import ecosim.global
-import ecosim.markets.SellersMarket
+import ecosim.markets.{OrderBook, SellersMarket}
 import ecosim.owner.Seller
 import ecosim.securities.Commodities.{Commodity, all_commodities}
-import ecosim.markets.OrderBook
 import ecosim.securities.Security
 import ecosim.simulation.factory.Factory
 

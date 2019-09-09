@@ -1,6 +1,6 @@
-import org.scalatest._
-import ecosim.securities.Commodities._
 import ecosim.owner.Owner
+import ecosim.securities.Commodities._
+import org.scalatest._
 
 class OwnerSpec extends FlatSpec {
 

@@ -1,8 +1,8 @@
 package ecosim.simulation.factory
 
 import ecosim.code.{__do, __dowhile, __forever, __wait}
-import ecosim.securities.Commodities.Commodity
 import ecosim.owner.{Owner, SalesRecord}
+import ecosim.securities.Commodities.Commodity
 import ecosim.simulation._
 
 case class ProductionLineSpec(employees_needed: Int,

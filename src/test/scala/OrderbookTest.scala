@@ -1,5 +1,3 @@
-import ecosim.markets.{OB_Line, OrderBook}
-import ecosim.owner.Owner
 import org.scalatest._
 
 class OrderBookSpec extends FlatSpec {

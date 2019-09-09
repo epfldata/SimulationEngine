@@ -1,8 +1,8 @@
 package ecosim.simulation.simlib
 
-import ecosim.simulation.factory.{Factory, ProductionLineSpec}
 import ecosim.code.__do
 import ecosim.securities.Commodities._
+import ecosim.simulation.factory.{Factory, ProductionLineSpec}
 import ecosim.simulation.{SimO, SimpleSim, Simulation}
 
 class Source(commodity: Commodity, units: Int, p: Int, shared: Simulation)

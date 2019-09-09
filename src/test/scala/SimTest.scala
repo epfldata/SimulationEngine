@@ -1,26 +1,26 @@
-import org.scalatest._
 import ecosim.code._
 import ecosim.simulation.Sim
+import org.scalatest._
 
 class XFactory extends Sim {
   init(0)
+  val time_needed = 4
   // BEGIN state addition
   var capital = 0
-  var i = 0
   // END state addition
+  var i = 0
 
-  protected def copy_state_to(to: XFactory): Unit = {
-    super.copy_state_to(to)
-    to.capital = capital
-    to.i = i
-  }
   def mycopy: XFactory = {
     val s = new XFactory
     this.copy_state_to(s)
     s
   }
 
-  val time_needed = 4
+  protected def copy_state_to(to: XFactory): Unit = {
+    super.copy_state_to(to)
+    to.capital = capital
+    to.i = i
+  }
 
   def algo =
     __forever(

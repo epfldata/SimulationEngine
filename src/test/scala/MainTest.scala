@@ -1,9 +1,9 @@
-import org.scalatest._
-import ecosim.securities.Commodities._
 import ecosim.owner.BalanceSheet
+import ecosim.securities.Commodities._
 import ecosim.simulation.Simulation
 import ecosim.simulation.factory.Factory
 import ecosim.simulation.simlib.{Buyer, Source, Trader}
+import org.scalatest._
 
 class MainSpec extends FlatSpec {
 
