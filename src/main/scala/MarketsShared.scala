@@ -1,8 +1,9 @@
-package Markets;
-import Owner._;
+package Markets
+
+import Owner._
 
 trait MarketMatchingUtilities[L] {
-  type mm_match_t = (Int, L);
+  type mm_match_t = (Int, L)
   // record:     (#units, seller)
 
   /** Returns (#units unmatched, price of matching). */
@@ -11,8 +12,8 @@ trait MarketMatchingUtilities[L] {
       get_units: L => Int,
       get_price: L => Double,
       units: Int
-  ) = {
-    val (left_over, matching) = greedy_match(lines, get_units, units);
+  ): (Int, Double) = {
+    val (left_over, matching) = greedy_match(lines, get_units, units)
 
     (left_over, matching.map((t: mm_match_t) => t._1 * get_price(t._2)).sum)
   }
@@ -26,10 +27,10 @@ trait MarketMatchingUtilities[L] {
       get_units: L => Int,
       units: Int
   ): (Int, List[mm_match_t]) = {
-    type state = (Int, List[mm_match_t]);
-    val start_state = (units, List[mm_match_t]());
+    type state = (Int, List[mm_match_t])
+    val start_state = (units, List[mm_match_t]())
     lines.foldLeft(start_state)((acc: state, line: L) => {
-      val n = math.min(acc._1, get_units(line));
+      val n = math.min(acc._1, get_units(line))
       if (n > 0) (acc._1 - n, (n, line) :: acc._2)
       else acc
     })
@@ -53,11 +54,11 @@ trait MarketMatchingUtilities[L] {
   ): (Int, List[L]) = {
     lines match {
       case line :: l if cond(line) => {
-        val n = math.min(units, get_units(line));
-        action(line, n);
+        val n = math.min(units, get_units(line))
+        action(line, n)
 
         if (get_units(line) > n) (0, modf(line, n) :: l) // we are done
-        else greedy_match_execute(l, get_units, cond, action, modf, units - n);
+        else greedy_match_execute(l, get_units, cond, action, modf, units - n)
       }
       case l => (units, l)
     }
@@ -66,12 +67,14 @@ trait MarketMatchingUtilities[L] {
 
 trait MarketSelling {
   // returns (price for k items, k) where k <= units and k is available
-  def ask_price(units: Int): (Double, Int);
-  def ask_price(): Option[Double];
+  def ask_price(units: Int): (Double, Int)
+
+  def ask_price(): Option[Double]
 
   // #units currently offered on the market
   //def offered(): Int;
 
-  def market_buy_order_now(time: Int, buyer: Owner, units: Int): Int;
-  def limit_buy_order_now(time: Int, buyer: Owner, units: Int): Int;
+  def market_buy_order_now(time: Int, buyer: Owner, units: Int): Int
+
+  def limit_buy_order_now(time: Int, buyer: Owner, units: Int): Int
 }

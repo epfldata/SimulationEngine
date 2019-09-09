@@ -2,19 +2,20 @@ package Simulation.SimLib
 import Simulation._
 import _root_.Simulation.Factory._
 import code._
+import commodities.Commodities._
 
 class Source(commodity: Commodity, units: Int, p: Int, shared: Simulation)
     extends SimO(shared)
     with SimpleSim {
   {
-    shared.market(commodity).add_seller(this);
+    shared.market(commodity).add_seller(this)
     make(commodity, units, 0); // at no cost
   }
 
   def mycopy(_shared: Simulation,
-             _substitution: collection.mutable.Map[SimO, SimO]) = {
-    val n = new Source(commodity, units, p, _shared);
-    copy_state_to(n);
+             _substitution: collection.mutable.Map[SimO, SimO]): Source = {
+    val n = new Source(commodity, units, p, _shared)
+    copy_state_to(n)
     n
   }
 
@@ -28,17 +29,17 @@ case class Trader(commodity: Commodity,
     extends SimO(shared)
     with SimpleSim {
   {
-    shared.market(commodity).add_seller(this);
+    shared.market(commodity).add_seller(this)
   }
 
   def mycopy(_shared: Simulation,
-             _substitution: collection.mutable.Map[SimO, SimO]) = {
-    val n = Trader(commodity, desired_inventory, _shared);
-    copy_state_to(n);
+             _substitution: collection.mutable.Map[SimO, SimO]): Trader = {
+    val n = Trader(commodity, desired_inventory, _shared)
+    copy_state_to(n)
     n
   }
 
-  override def price(dummy: Commodity) = {
+  override def price(dummy: Commodity): Option[Double] = {
     if (available(commodity) > 0)
       Some(1.05 * inventory_avg_cost.getOrElse(commodity, 0.0))
     else None
@@ -47,7 +48,7 @@ case class Trader(commodity: Commodity,
   def action = __do {
     if (available(commodity) < desired_inventory) {
       val missing =
-        shared.market(commodity).market_buy_order_now(shared.timer, this, 1);
+        shared.market(commodity).market_buy_order_now(shared.timer, this, 1)
     }
   }
 }
@@ -60,16 +61,16 @@ case class Buyer(commodity: Commodity,
     with SimpleSim {
 
   def mycopy(_shared: Simulation,
-             _substitution: collection.mutable.Map[SimO, SimO]) = {
+             _substitution: collection.mutable.Map[SimO, SimO]): Buyer = {
     val n = Buyer(commodity, units_per_tick, _shared)
-    copy_state_to(n);
+    copy_state_to(n)
     n
   }
 
   def action = __do {
     shared
       .market(commodity)
-      .market_buy_order_now(shared.timer, this, units_per_tick());
+      .market_buy_order_now(shared.timer, this, units_per_tick())
   }
 }
 

@@ -1,5 +1,6 @@
 package Owner {
   import Timeseries._
+  import commodities.Commodities._
 
   case class SalesRecord(
       buyer: Owner,
@@ -29,13 +30,13 @@ package Owner {
     def sell_to(time: Int, buyer: Owner, item: Commodity, units: Int): Int = {
       price(item) match {
         case (Some(p)) => {
-          val units_sold = partial_sell_to(buyer, item, units, p);
+          val units_sold = partial_sell_to(buyer, item, units, p)
           order_history.add(time,
                             SalesRecord(buyer,
                                         List(),
                                         units,
                                         units_sold,
-                                        (units_sold * p).toInt));
+                                        (units_sold * p).toInt))
           // create entry even if nothing is sold
           units_sold // TODO: also return price (unit or total?)
         }
@@ -49,7 +50,7 @@ package Owner {
 
     protected def copy_state_to(_to: Seller) {
       //println("Seller.copy_state_to: " + this);
-      super.copy_state_to(_to);
+      super.copy_state_to(_to)
       _to.order_history = order_history.copy()
     }
   }
@@ -59,6 +60,7 @@ package Owner {
 package Markets {
   import Owner._
   import Timeseries._
+  import commodities.Commodities._
 
   /**
    Not all sellers registered here may be selling at a time.
@@ -72,36 +74,36 @@ package Markets {
   class SellersMarket(commodity: Commodity)
       extends MarketSelling
       with MarketMatchingUtilities[Seller] {
-    var sellers = List[Seller]()
+    var sellers: List[Seller] = List[Seller]()
     var order_history = new LogList[SalesRecord]
 
     def copy_state_to(other: SellersMarket, old2new: Seller => Seller) {
-      other.order_history = order_history.copy();
-      other.sellers = sellers.map(old2new(_));
+      other.order_history = order_history.copy()
+      other.sellers = sellers.map(old2new(_))
     }
 
     def add_seller(s: Seller) { sellers = s :: sellers; }
 
     def ask_price(): Option[Double] = {
-      val (p, l) = ask_price(1);
+      val (p, l) = ask_price(1)
       if (l == 0) None else Some(p)
     }
 
     def ask_price(units: Int): (Double, Int) = {
-      val (left_over, l) = best_match(units, null);
+      val (left_over, l) = best_match(units, null)
       (compute_price(l), units - left_over)
     }
 
     /** execute immediately, partial fulfillment possible. */
     def market_buy_order_now(time: Int, buyer: Owner, units: Int): Int = {
       //println("SellersMarket.market_buy_order_now " + this);
-      val (left_over, l) = best_match(units, buyer);
+      val (left_over, l) = best_match(units, buyer)
       //println("Buying " + units + " on market: " + l + " " + left_over);
       val p = compute_price(l); // can't reorder this line and the next
-      for ((u, s) <- l) { s.sell_to(time, buyer, commodity, u) };
-      val sold = units - left_over;
+      for ((u, s) <- l) { s.sell_to(time, buyer, commodity, u) }
+      val sold = units - left_over
 
-      order_history.add(time, SalesRecord(buyer, List(), units, sold, p.toInt));
+      order_history.add(time, SalesRecord(buyer, List(), units, sold, p.toInt))
       left_over
     }
 
@@ -112,9 +114,9 @@ package Markets {
 
       // lowest price first
       val asks = sellers
-        .filter((s: Seller) => (s.price(commodity) != None) && (s != exclude))
+        .filter((s: Seller) => s.price(commodity).isDefined && (s != exclude))
         .sorted(Ordering.by[Seller, Double]((s: Seller) =>
-          s.price(commodity).get));
+          s.price(commodity).get))
 
       greedy_match(asks, ((s: Seller) => s.available(commodity)), units)
     }
@@ -126,7 +128,7 @@ package Markets {
 
     /** not implemented */
     def limit_buy_order_now(time: Int, buyer: Owner, units: Int): Int = {
-      assert(false);
+      assert(false)
       0
     }
   }

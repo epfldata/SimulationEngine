@@ -15,8 +15,9 @@ trait StackedEffects[A] extends Effects[A] {
 
   def register_effect(eff: Effect) { effects = eff :: effects }
 
-  def apply(a: A) = a0(a, effects)
+  def apply(a: A): Option[A] = a0(a, effects)
 
+  @scala.annotation.tailrec
   private def a0(a: A, l: List[Effect]): Option[A] = l match {
     case f :: l2 =>
       f(a) match {
@@ -33,9 +34,9 @@ protected[multithreading] trait Accumulator[A] {
   def add(a: A) { acc = a :: acc }
 
   protected[multithreading] def collect(): List[A] = {
-    println(this + ": collecting " + acc);
-    val l = acc;
-    acc = List();
+    println(this + ": collecting " + acc)
+    val l = acc
+    acc = List()
     l
   }
 }
@@ -65,7 +66,7 @@ package immutable {
     def run_until(until: T): Option[(Thread[T], T)] = {
       val tp2 = tp; // TODO tp.mycopy()
 
-      val (p, t, n) = code.exec[T](tp2.prog, pos, time, until);
+      val (p, t, n) = code.exec[T](tp2.prog, pos, time, until)
 
       n match {
         case Some(nt) => Some((new Thread(tp2, t, p), nt))
@@ -73,7 +74,7 @@ package immutable {
       }
     }
 
-    private def lte(a: T, b: T) = (!implicitly[Numeric[T]].lt(b, a));
+    private def lte(a: T, b: T) = (!implicitly[Numeric[T]].lt(b, a))
   }
 
   /** @param time  current global time.
@@ -91,34 +92,34 @@ package immutable {
       if (lt(until, time)) Some(this, time)
       // this is an optimization, not necessary for correctness.
       else {
-        var t = time;
-        var l = executables;
+        var t = time
+        var l = executables
 
-        while (lte(t, until) && (!l.isEmpty)) {
-          val l2 = GLOBAL.mapopt(l, (_: S).run_until(t));
-          l = l2.map(_._1).asInstanceOf[List[S]];
+        while (lte(t, until) && l.nonEmpty) {
+          val l2 = GLOBAL.mapopt(l, (_: S).run_until(t))
+          l = l2.map(_._1).asInstanceOf[List[S]]
 
           if (this.isInstanceOf[Effects[S]])
             l = GLOBAL.mapopt(l, (s: S) => this.asInstanceOf[Effects[S]](s))
 
-          if (!l2.isEmpty) t = l2.map(_._2).min;
+          if (l2.nonEmpty) t = l2.map(_._2).min
         }
 
         if (this.isInstanceOf[Accumulator[_]]) {
           val precursors =
-            this.asInstanceOf[Accumulator[Precursor[T, S]]].collect();
-          l = l ++ precursors.map(_.start(time));
+            this.asInstanceOf[Accumulator[Precursor[T, S]]].collect()
+          l = l ++ precursors.map(_.start(time))
         }
 
-        if (!l.isEmpty)
+        if (l.nonEmpty)
           Some((new ParallelExecutor[T, S](l, t), t))
         else None
       }
     }
 
-    private def lt(a: T, b: T) = implicitly[Numeric[T]].lt(a, b);
+    private def lte(a: T, b: T) = (!lt(b, a))
 
-    private def lte(a: T, b: T) = (!lt(b, a));
+    private def lt(a: T, b: T) = implicitly[Numeric[T]].lt(a, b)
   }
 
 } // end package immutable
@@ -150,8 +151,8 @@ package mutable {
 
     /** Runs until at most time `until`. */
     def run_until(until: T): Option[(Thread[T], T)] = {
-      val (p, t, n) = code.exec[T](tp.prog, pos, time, until);
-      pos = p; time = t;
+      val (p, t, n) = code.exec[T](tp.prog, pos, time, until)
+      pos = p; time = t
 
       n match {
         case Some(nt) => Some((this, nt))
@@ -161,7 +162,7 @@ package mutable {
 
     protected def copy_state_to(_to: Thread[T]) {
       _to.pos = pos
-      _to.time = time;
+      _to.time = time
       // TODO: copy tp
     }
   }
@@ -186,29 +187,29 @@ package mutable {
       */
     def run_until(until: T): Option[(ParallelExecutor[T, S], T)] = {
 
-      def lte(a: T, b: T) = (!implicitly[Numeric[T]].lt(b, a));
+      def lte(a: T, b: T) = (!implicitly[Numeric[T]].lt(b, a))
 
-      while (lte(time, until) && (!l.isEmpty)) {
-        val l2 = GLOBAL.mapopt(l, (_: S).run_until(time));
-        l = l2.map(_._1).asInstanceOf[List[S]];
+      while (lte(time, until) && l.nonEmpty) {
+        val l2 = GLOBAL.mapopt(l, (_: S).run_until(time))
+        l = l2.map(_._1).asInstanceOf[List[S]]
 
         if (this.isInstanceOf[Effects[S]])
           l = GLOBAL.mapopt(l, (s: S) => this.asInstanceOf[Effects[S]](s))
 
-        if (!l2.isEmpty) time = l2.map(_._2).min;
+        if (l2.nonEmpty) time = l2.map(_._2).min
       }
 
       if (this.isInstanceOf[Accumulator[_]]) {
         val precursors =
-          this.asInstanceOf[Accumulator[Precursor[T, S]]].collect();
-        l = l ++ precursors.map(_.start(time));
+          this.asInstanceOf[Accumulator[Precursor[T, S]]].collect()
+        l = l ++ precursors.map(_.start(time))
       }
 
-      if (!l.isEmpty) Some((this, time))
+      if (l.nonEmpty) Some((this, time))
       else None
     }
 
-    protected def get_executables() =
+    protected def get_executables(): List[S] =
       if (this.isInstanceOf[Effects[S]])
         GLOBAL.mapopt(l, (s: S) => this.asInstanceOf[Effects[S]](s))
       else l
@@ -234,7 +235,7 @@ package mutable {
       )
       with Accumulator[ParallelExecutorPrecursor[T, Thread[T]]] {
 
-    def get_sims: List[ParallelExecutor[T, Thread[T]]] = get_executables
+    def get_sims: List[ParallelExecutor[T, Thread[T]]] = get_executables()
   }
 
 } // end package mutable

@@ -1,11 +1,12 @@
+import scala.util.Random
 package GLOBAL {
 
-  class Dummy;
+  class Dummy
 
 }
 
 package object GLOBAL {
-  val rnd = util.Random
+  val rnd: Random.type = util.Random
   var silent = false
 
   def mapopt[A, B](l: List[A], f: A => Option[B]): List[B] =
