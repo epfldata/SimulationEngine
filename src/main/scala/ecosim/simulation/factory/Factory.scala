@@ -1,7 +1,7 @@
 package ecosim.simulation.factory
 
 import ecosim.code.{__do, __dowhile, __forever, __wait}
-import ecosim.commodities.Commodities.Commodity
+import ecosim.securities.Commodities.Commodity
 import ecosim.owner.{Owner, SalesRecord}
 import ecosim.simulation._
 

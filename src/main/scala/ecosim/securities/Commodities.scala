@@ -1,6 +1,4 @@
-package ecosim.commodities
-
-import ecosim.securities.Security
+package ecosim.securities
 
 object Commodities {
   val Wheat = Commodity("wheat")

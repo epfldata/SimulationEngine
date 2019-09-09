@@ -1,6 +1,6 @@
 package ecosim.markets
 
-import ecosim.commodities.Commodities._
+import ecosim.securities.Commodities._
 import ecosim.owner.{Owner, _}
 import ecosim.timeseries.LogList
 

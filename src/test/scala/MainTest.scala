@@ -1,5 +1,5 @@
 import org.scalatest._
-import ecosim.commodities.Commodities._
+import ecosim.securities.Commodities._
 import ecosim.owner.BalanceSheet
 import ecosim.simulation.Simulation
 import ecosim.simulation.factory.Factory

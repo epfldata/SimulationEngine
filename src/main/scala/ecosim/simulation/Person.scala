@@ -2,7 +2,7 @@ package ecosim.simulation
 
 import ecosim.global
 import ecosim.code.{__do, __forever, __wait}
-import ecosim.commodities.Commodities.{Burger, Commodity, Flour, MovieTicket}
+import ecosim.securities.Commodities.{Burger, Commodity, Flour, MovieTicket}
 
 class Person(
     val shared: Simulation,

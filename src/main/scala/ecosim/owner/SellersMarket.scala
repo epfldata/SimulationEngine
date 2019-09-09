@@ -1,7 +1,7 @@
 package ecosim
 
 package owner {
-  import ecosim.commodities.Commodities._
+  import ecosim.securities.Commodities._
   import ecosim.timeseries.LogList
 
   case class SalesRecord(

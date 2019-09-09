@@ -6,7 +6,7 @@ class OrderBookSpec extends FlatSpec {
   import ecosim.markets._
   import ecosim.owner._
   import ecosim.securities._
-  import ecosim.commodities.Commodities._
+  import Commodities._
 
   "Time ordering" should "be respected for asks" in {
     val s = new Owner()

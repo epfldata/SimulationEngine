@@ -1,6 +1,6 @@
 package ecosim.simulation
 
-import ecosim.commodities.Commodities.{Flour, Land, Wheat}
+import ecosim.securities.Commodities.{Flour, Land, Wheat}
 import ecosim.simulation.simlib._
 
 import scala.collection.immutable
