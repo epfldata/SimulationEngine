@@ -13,6 +13,7 @@ import scala.collection.mutable.{Map => MutableMap}
 
 
 class Simulation(val constants: Data, val variables: Data) {
+  var recursionDepth: Int = 0
   def this() = this(MutableMap.empty[String, Map[String, Double]], MutableMap.empty[String, Map[String, Double]])
 
   var timer = 0;
@@ -60,14 +61,9 @@ class Simulation(val constants: Data, val variables: Data) {
 
   def getPopulationData(agents: Iterable[String]): Data = {
     def getAgentPopulationData(agentType: String): Map[String, Double] = {
-      val individualVars: Map[String, List[Double]] = sims.filter { sim =>
-        agentType.equals(GLOBAL.getAgentTypeFromClass(sim.getClass.getName))
-      }
-        .flatMap(_.variables.toSeq).groupBy(_._1).mapValues(_.map(_._2))
-      val individualObs: Map[String, List[Double]] = sims.filter { sim =>
-        agentType.equals(GLOBAL.getAgentTypeFromClass(sim.getClass.getName))
-      }
-        .flatMap(_.observables.toSeq).groupBy(_._1).mapValues(_.map(_._2()))
+      val filtered: List[SimO] = sims.filter(sim => agentType.equals(GLOBAL.getAgentTypeFromClass(sim.getClass.getName)))
+      val individualVars: Map[String, List[Double]] = filtered.flatMap(_.variables.toSeq).groupBy(_._1).mapValues(_.map(_._2))
+      val individualObs: Map[String, List[Double]] = filtered.flatMap(_.observables.toSeq).groupBy(_._1).mapValues(_.map(_._2()))
       val individualStates = individualVars ++ individualObs
       val populationStates: Map[String, Double] = individualStates.mapValues(vars => vars.map(_ / vars.size).sum)
       val consts: Map[String, Double] = constants(agentType)
@@ -143,6 +139,8 @@ class Simulation(val constants: Data, val variables: Data) {
     */
   def mycopy() = {
     val s2 = new Simulation(constants, variables);
+    s2.recursionDepth = recursionDepth + 1
+
     val old2new = collection.mutable.Map[SimO, SimO]();
 
     // this separation would not be needed if we had a central map from sim ids

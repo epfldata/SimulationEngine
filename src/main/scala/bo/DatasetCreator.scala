@@ -23,8 +23,8 @@ object DatasetCreator {
       val out_data: Seq[Seq[(String, Double)]] = data.map(_._2).map(_ (agent).toSeq.sortBy(_._1))
       val y: DenseMatrix[Double] = DenseMatrix(out_data.map(_.map(_._2)): _*)
 
-      CsvManager.writeCsvFile(x, s"target/scala-2.11/${agent}_x.csv", header)
-      CsvManager.writeCsvFile(y, s"target/scala-2.11/${agent}_y.csv", header)
+      CsvManager.writeCsvFile(x, s"target/data/${agent}_x.csv", header)
+      CsvManager.writeCsvFile(y, s"target/data/${agent}_y.csv", header)
     })
 
 
@@ -35,8 +35,8 @@ object DatasetCreator {
     val outStatMatrix: DenseMatrix[Double] = DenseMatrix(outStat.map(_.map(_._2)): _*)
 
     val stat_header: Array[String] = inStat.head.map(_._1).toArray
-    CsvManager.writeCsvFile(inStatMatrix, "target/scala-2.11/global_stat_input.csv", stat_header)
-    CsvManager.writeCsvFile(outStatMatrix, "target/scala-2.11/global_stat_output.csv", stat_header)
+    CsvManager.writeCsvFile(inStatMatrix, "target/data/global_stat_input.csv", stat_header)
+    CsvManager.writeCsvFile(outStatMatrix, "target/data/global_stat_output.csv", stat_header)
   }
 
   /**

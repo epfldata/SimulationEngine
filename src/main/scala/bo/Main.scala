@@ -9,8 +9,6 @@ import bo.DatasetCreator.{Data, Statistics}
 import breeze.stats.distributions.Gaussian
 import spray.json.JsonParser
 
-import scala.collection.mutable.{Map => MutableMap}
-
 object Main {
   val bufferSize = math.pow(2, 27).toInt // 128 MB
   val initLog = new BufferedOutputStream(new FileOutputStream("target/scala-2.11/initLog"), bufferSize)
@@ -61,7 +59,7 @@ object Main {
       case "evaluate" =>
         val stepSize = args(2).toInt
         val entry = args(3).toInt
-        val (matrix, header) = CsvManager.readCsvFile("target/scala-2.11/global_stats.csv")
+        val (matrix, header) = CsvManager.readCsvFile("target/data/global_stats.csv")
         val actuals: Statistics = header.toArray.zip(matrix(entry, ::).inner.toArray).toMap
         println(Metrics.meanAbsoluteError(simFunction(
           constants, variables, 1, stepSize, GLOBAL.allAgents).map(_._3).last, actuals))

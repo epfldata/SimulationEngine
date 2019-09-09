@@ -20,7 +20,7 @@ case class ProductionLineSpec(employees_needed: Int,
 // does not do its own buying
 case class ProductionLine(
   val pls: ProductionLineSpec,
-  var o: Owner,
+  var o: Factory,
   val employees: List[(Person, Int)],
   val start_time: Int
 ) extends Sim {
@@ -38,7 +38,7 @@ case class ProductionLine(
 
   def salary_cost(): Int = employees.map(_._2).sum
 
-  def mycopy(_o: Owner) = {
+  def mycopy(_o: Factory) = {
     val p = this.copy();
     p.o = _o;
     this.copy_state_to(p);
@@ -134,7 +134,7 @@ case class HR(private val shared: Simulation,
 
 
 abstract class Factory(protected val pls: ProductionLineSpec,
-              shared: Simulation
+                       val shared: Simulation
 ) extends SimO(shared) {
   private val distr = shared.distributions(this)
 
