@@ -139,7 +139,15 @@ class SSO extends StateMachineElement() {
           .filter(edge2 => edge2.methodId1 == methodId)
           .map(edge2 => edge2.myCopy())
         val oldPos = methodToCopyGraph.head.from.asInstanceOf[CodeNodePos].pos
-        var newFreePos = element.freePosition
+        var freePos =
+          element.graph
+            .flatMap(edge => edge.from :: edge.to :: Nil)
+            .maxBy(node =>
+              node match {
+                case c: CodeNodeMtd => -1
+                case c: CodeNodePos => c.pos
+            })
+            .getNativeId + 1
         //moving the tos and froms to fit this graph,
         // fixing the method id,
         // fixing the reference from another actor to self,
@@ -176,18 +184,15 @@ class SSO extends StateMachineElement() {
           })
           edge1.from match {
             case c: CodeNodePos =>
-              edge1.from = CodeNodePos(c.pos - oldPos + element.freePosition)
-              newFreePos = edge1.from.asInstanceOf[CodeNodePos].pos + 1
+              edge1.from = CodeNodePos(c.pos - oldPos + freePos)
             case _ =>
           }
           edge1.to match {
             case c: CodeNodePos =>
-              edge1.to = CodeNodePos(c.pos - oldPos + element.freePosition)
-              newFreePos = edge1.to.asInstanceOf[CodeNodePos].pos + 1
+              edge1.to = CodeNodePos(c.pos - oldPos + freePos)
             case _ =>
           }
         })
-        element.freePosition = newFreePos
         //add the new method to the graph
         element.graph = element.graph ++ methodToCopyGraph
         //remember that the method was added. do it here, so in case of recursion it will not get copied again, just called
@@ -308,7 +313,6 @@ class SSO extends StateMachineElement() {
     }
 
     def moveGraphPositions(moveAmmount: Int, moveThreshold: Int): Unit = {
-      element.freePosition += moveAmmount
       element.graph.foreach(edge2 => {
         edge2.from match {
           case c: CodeNodePos =>

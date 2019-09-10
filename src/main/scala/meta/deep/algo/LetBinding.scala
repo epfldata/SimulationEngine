@@ -34,7 +34,6 @@ case class LetBinding[V, A: CodeType, T: CodeType](
         val x = bound.get.asInstanceOf[Variable[MutVar[T]]]
         val met2 =
           code"""$x := ((${AlgoInfo.returnValue}!).asInstanceOf[T]); ()"""
-        println(met2)
         AlgoInfo.variables = VarWrapper(null, x) :: AlgoInfo.variables
         AlgoInfo.stateGraph.append(
           AlgoInfo.EdgeInfo("LetBinding met2",

@@ -131,7 +131,6 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
       List[ActorType[_]](actorType),
       List[Variable[ListBuffer[List[((Int, Int), Int)]]]](
         AlgoInfo.positionStack),
-      AlgoInfo.posCounter,
       List(AlgoInfo.returnValue),
       List(AlgoInfo.responseMessage)
     )
