@@ -59,7 +59,7 @@ object Main {
       case "evaluate" =>
         val stepSize = args(2).toInt
         val entry = args(3).toInt
-        val (matrix, header) = CsvManager.readCsvFile("target/data/global_stats.csv")
+        val (matrix, header) = CsvManager.readCsvFile("target/data/global_stat_output.csv")
         val actuals: Statistics = header.toArray.zip(matrix(entry, ::).inner.toArray).toMap
         println(Metrics.meanAbsoluteError(simFunction(
           constants, variables, 1, stepSize, GLOBAL.allAgents).map(_._3).last, actuals))

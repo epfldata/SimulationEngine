@@ -1,5 +1,6 @@
 package bo
 
+import java.io.File
 import java.nio.file.{Files, Paths}
 
 import breeze.linalg.DenseMatrix
@@ -29,8 +30,12 @@ object CsvManager {
     (DenseMatrix(arrays: _*), csvParser.getHeaderNames.asScala.toList)
   }
 
-  def writeCsvFile(matrix: DenseMatrix[Double], path: String, header: Array[String]) = {
-    val writer = Files.newBufferedWriter(Paths.get(path))
+  def writeCsvFile(matrix: DenseMatrix[Double], filename: String, header: Array[String]) = {
+    val path = Paths.get(filename)
+    if (Files.notExists(path.getParent)) {
+      new File(path.getParent.toUri).mkdirs()
+    }
+    val writer = Files.newBufferedWriter(path)
     val csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header: _*))
     try {
       for (i <- 0 until matrix.rows) {

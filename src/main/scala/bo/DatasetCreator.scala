@@ -48,7 +48,7 @@ object DatasetCreator {
   private def sampleParams(nParams: Int): List[(Data, Data)] = (for (_ <- 0 until nParams) yield
     (MutableMap(
       "Person" ->
-        Map("number" -> (GLOBAL.rnd.nextInt(100) + 100).toDouble,
+        Map("number" -> (GLOBAL.rnd.nextInt(900) + 100).toDouble,
           "genderMu" -> GLOBAL.rnd.nextDouble(),
           "genderSigma" -> GLOBAL.rnd.nextDouble(),
 
@@ -165,55 +165,55 @@ object DatasetCreator {
       MutableMap(
         "Person" ->
           Map(
-            "capitalMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
-            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "capitalMu" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(10000).toDouble,
             "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(100).toDouble,
             "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
             "happinessMu" -> GLOBAL.rnd.nextInt(100).toDouble,
-            "happinessSigma" -> GLOBAL.rnd.nextInt(10).toDouble,
-            "salaryMu" -> GLOBAL.rnd.nextInt(100).toDouble,
-            "salarySigma" -> GLOBAL.rnd.nextInt(10).toDouble
+            "happinessSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
+            "salaryMu" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0),
+            "salarySigma" -> (GLOBAL.rnd.nextDouble() * 999000 + 10000.0)
           ),
         "Farm" ->
           Map(
-            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
-            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
-            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "capitalMu" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(100).toDouble,
             "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
           ),
         "Mill" ->
           Map(
-            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
-            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
-            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "capitalMu" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(100).toDouble,
             "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
           ),
         "Bakery" ->
           Map(
-            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
-            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
-            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "capitalMu" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(100).toDouble,
             "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
           ),
         "CattleFarm" ->
           Map(
-            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
-            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
-            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "capitalMu" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(100).toDouble,
             "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
           ),
         "OilField" ->
           Map(
-            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
-            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
-            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "capitalMu" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(100).toDouble,
             "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
           ),
         "Refinery" ->
           Map(
-            "capitalMu" -> (10000 + GLOBAL.rnd.nextInt(10000)).toDouble,
-            "capitalSigma" -> GLOBAL.rnd.nextInt(100).toDouble,
-            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(1000).toDouble,
+            "capitalMu" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "capitalSigma" -> GLOBAL.rnd.nextInt(10000).toDouble,
+            "total_value_destroyedMu" -> GLOBAL.rnd.nextInt(100).toDouble,
             "total_value_destroyedSigma" -> GLOBAL.rnd.nextInt(100).toDouble
           )
       )
