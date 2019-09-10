@@ -360,9 +360,9 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     }
 
   /**
-  * This generates the init code of the simulation
-   * @param code init code of the simulation
-   */
+    * This generates the init code of the simulation
+    * @param code init code of the simulation
+    */
   def createInit(code: String): Unit = {
     val classString =
       s"""

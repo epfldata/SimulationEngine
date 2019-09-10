@@ -199,15 +199,15 @@ class ActorMerge() extends StateMachineElement() {
   }
 
   /**
-  * This functions combines two graphs together.
-   * Therefore it goes along the edges of the first graph until a wait edge is reached and continues then with the second
-   * graph until a wait edge is reached. This is done for all start positions in the merged graph.
-   * At the end the end of a sub-graph is combined with the start of the next-subgraph.
-   * @param mergedGraph the merged state machine
-   * @param graph1 the graph of actor1
-   * @param graph2 the graph of actor2
-   * @return a combined graph between actor1 and actor2
-   */
+    * This functions combines two graphs together.
+    * Therefore it goes along the edges of the first graph until a wait edge is reached and continues then with the second
+    * graph until a wait edge is reached. This is done for all start positions in the merged graph.
+    * At the end the end of a sub-graph is combined with the start of the next-subgraph.
+    * @param mergedGraph the merged state machine
+    * @param graph1 the graph of actor1
+    * @param graph2 the graph of actor2
+    * @return a combined graph between actor1 and actor2
+    */
   def combineActors(mergedGraph: ArrayBuffer[MergeInfo],
                     graph1: ArrayBuffer[EdgeInfo],
                     graph2: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
@@ -440,14 +440,13 @@ class ActorMerge() extends StateMachineElement() {
 
 }
 
-
 /**
- * this class, stores only meta data needed for merging
- * @param from position of startnode
- * @param to position of endnode
- * @param graph1 actual position of start and end node of graph1
- * @param graph2 actual position of start and end node of graph2
- */
+  * this class, stores only meta data needed for merging
+  * @param from position of startnode
+  * @param to position of endnode
+  * @param graph1 actual position of start and end node of graph1
+  * @param graph2 actual position of start and end node of graph2
+  */
 case class MergeInfo(from: CodeNodePos,
                      to: CodeNodePos,
                      graph1: (CodeNodePos, CodeNodePos),

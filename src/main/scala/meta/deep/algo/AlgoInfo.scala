@@ -204,10 +204,10 @@ object AlgoInfo {
     }
 
     /**
-    * This method converts method nodes to position nodes
-     * @param methodLookupTable contains a mapping between the method id and the start position of the method
-     * @param methodLookupTableEnd contains a mapping between the method id and end position of the method
-     */
+      * This method converts method nodes to position nodes
+      * @param methodLookupTable contains a mapping between the method id and the start position of the method
+      * @param methodLookupTableEnd contains a mapping between the method id and end position of the method
+      */
     def convertToPosOnly(methodLookupTable: Map[Int, Int],
                          methodLookupTableEnd: Map[Int, Int]): Unit = {
       from match {
