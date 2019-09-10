@@ -24,7 +24,7 @@ In the underlying node of each agent, the inputs to the node (which are inputs t
 
 The outputs of the node (which are the outputs of the node's neural network), are only the corresponing agent's state parameters.
 
-## The general 'Data' Structure
+## The general Data Structure
 In the python docstrings and in the rest of this page, you may encounter a common pattern for how to pass data to the methods. The general 'data' structure is a dictionary. The keys of this dictionary are the agents, and the values are data of the agents. The data of a specific agent is also another dictionary, where it's keys must be 'states' and 'constants', and the values are pandas dataframes. Each column of these dataframes stores values of a parameter (either a 'state' parameter or a 'constant' parameter) across different samples(rows).
 
 The above general 'data' structure however, is mostly used for inputs. For outputs, since the only available parameters are 'state' parameters, things are a bit easier. Generally the data structure for outputs is a dictionary from agents to pandas dataframes. Each column of these dataframes stores values of a 'state' parameter acros different samples(rows).
@@ -51,7 +51,7 @@ You can use this simple method to run the solo training
 ```python
 env.solo_training(train_input, train_output, training_hyper_parameters=None)
 ```
-Both `train_input` and `train_output` have to follow [the general 'data' structure](##the-general-'data'-structure) for inputs and outputs. If you want to manually set hyper parameters for training, the `training_hyper_parameters` should be a dictionary, where its keys are agents and the values are dictionaries containing the values for hyper parameters. The possible hyper parameters to be passed are `batch_size` and `epochs`.
+Both `train_input` and `train_output` have to follow [the general data structure](##the-general-data-structure) for inputs and outputs. If you want to manually set hyper parameters for training, the `training_hyper_parameters` should be a dictionary, where its keys are agents and the values are dictionaries containing the values for hyper parameters. The possible hyper parameters to be passed are `batch_size` and `epochs`.
 
 #### Group Training
 In the second approach (group training) all agents are trained together. This means that we try to update all weights of different networks simultaneously according to the loss function computed from the aggregated outputs.
@@ -95,7 +95,7 @@ In this method we give a batch of different initial conditions (input values) to
 ```python
 env.predict(data, time=1)
 ```
-The data is a dictionary from agents to each agent's data. The data for each agent is another dictionary where its keys are 'states' and 'constants', and its values are pandas dataframes for the state or constant parameters. Each row in the data indicates a different initial condition. 
+`data` has to follow [the general data structure](##the-general-data-structure). Each row in the data indicates a different initial condition. 
 
 This method returns a new data with the same structure, where each row in the returned data is the result of the prediction using the corresponding row in `data` as input, `time` steps into the future.
 
@@ -111,7 +111,7 @@ The input learning mechanism uses data gathered from different agents, aggregate
 ```python
 env.learn_input(agent_output, aggregator, epochs=100, learning_rate=100)
 ```
-The `agent_output` should be a dictionary from agents to their output data as pandas dataframes. This output data is simply just the `state` parameters of the agents. The `aggregator` is the same as the aggregator used for group training, and will aggregate individual states to produce global states. 
+The `agent_output` should follow [the general data structure for outputs](##the-general-data-structure), in other words be a dictionary from agents to their output data as pandas dataframes. The `aggregator` is the same as the aggregator used for group training, and will aggregate individual states to produce global states. 
 This method will return a dictionary from agents to their data. The data of each agent is another dictionary with 'states' and 'constants' as keys and pandas dataframes as values. Each row in these dataframes shows the learned values for the corresponding row in the `agent_output`.
 
 ### Correlation Matrix
