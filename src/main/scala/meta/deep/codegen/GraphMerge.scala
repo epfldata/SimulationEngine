@@ -20,6 +20,8 @@ class GraphMerge() extends StateMachineElement() {
   /**
     * This function removes unnecessary edges
     * and rewrites state graph to contain new ones
+    * @param graph which should be optimized
+    * @return new graph with optimized code
     */
   def optimizeCode(graph: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
     val nodeCount: Int =

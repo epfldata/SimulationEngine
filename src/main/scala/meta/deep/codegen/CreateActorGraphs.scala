@@ -1,8 +1,8 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
-import meta.deep.algo.{Algo, AlgoInfo, NoOp, ScalaCode}
+import meta.deep.algo.AlgoInfo.CodeNodePos
+import meta.deep.algo.{Algo, AlgoInfo, NoOp}
 import meta.deep.member.ActorType
 import squid.lib.MutVar
 
@@ -26,10 +26,21 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
 
   import CreateActorGraphs._
 
+  /**
+    * Contains the mapping between method id and start position of the method in graph
+    */
   private val methodLookupTable: collection.mutable.Map[Int, Int] =
     collection.mutable.Map[Int, Int]()
+
+  /**
+    * Contains the mapping between method id and the end position of the method in graph
+    */
   private val methodLookupTableEnd: collection.mutable.Map[Int, Int] =
     collection.mutable.Map[Int, Int]()
+
+  /**
+    * Is used to save variables, which need to be gloablly initialized
+    */
   private var variables: List[VarValue[_]] = List()
 
   override def run(): List[CompiledActorGraph] = {
@@ -141,7 +152,9 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     )
   }
 
-  // expand with a loop at the end, so that we wait at the end until finished (no dead end)
+  /**
+    * expand a graph with a loop at the end, so that we wait at the end until simulation is finished (no dead end)
+    */
   def expandEndNodes(): Unit = {
     val graphEnd = AlgoInfo.stateGraph.groupBy(_.to.getNativeId)
     val graphStart = AlgoInfo.stateGraph.groupBy(_.from.getNativeId)

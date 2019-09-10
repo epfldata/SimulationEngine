@@ -7,6 +7,11 @@ import squid.lib.MutVar
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
+/**
+  * This is a class which contains the generation pipeline
+  * @param convertElement a code fragment which converts the deep representation to the graph representation
+  * @param stateMachineElements elements, which are applied on the deep representation.
+  */
 case class Pipeline(convertElement: ConvertElement,
                     stateMachineElements: List[StateMachineElement]) {
   def run(): Unit = {
@@ -17,14 +22,35 @@ case class Pipeline(convertElement: ConvertElement,
   }
 }
 
+/**
+  * One element in the pipeline
+  */
 abstract class PipelineElement() {}
 
+/**
+  * A subtype, which handles the conversion between the deep and the graph representation
+  * @param actorTypes a list of actortypes, which should be handled
+  */
 abstract class ConvertElement(actorTypes: List[ActorType[_]])
     extends PipelineElement() {
+
+  /**
+    * This function runs the conversion step
+    * @return a graph representation of the code
+    */
   def run(): List[CompiledActorGraph]
 }
 
+/**
+  * A subtype, which handles a graph representation conversion from one graph to another
+  */
 abstract class StateMachineElement() extends PipelineElement() {
+
+  /**
+    * This runs the conversion step
+    * @param compiledActorGraphs a list of graphs from the previous step
+    * @return modified graph
+    */
   def run(
       compiledActorGraphs: List[CompiledActorGraph]): List[CompiledActorGraph]
 }
