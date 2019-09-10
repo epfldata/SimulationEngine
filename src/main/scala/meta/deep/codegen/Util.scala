@@ -62,7 +62,6 @@ case class CompiledActorGraph(
     var variables2: List[VarValue[_]],
     var actorTypes: List[ActorType[_]],
     var positionStack: List[Variable[ListBuffer[List[((Int, Int), Int)]]]], //required to generate poping from stack statements at create code
-    var freePosition: Int = 0,
     returnValue: List[Variable[MutVar[Any]]],
     responseMessage: List[Variable[MutVar[ResponseMessage]]],
 )
