@@ -5,7 +5,21 @@ from node import Node
 
 
 class Agent:
+    """An agent, indicating an agent type in the high-level environment"""
+
     def __init__(self, constants, states, name, hyper_params=None):
+        """
+
+        :param constants: Constant parameters of the agent
+        :type constants: list[str]
+        :param states: State-defining (variable) parameters of the agent
+        :type states: list[str]
+        :param name: Name of the agent
+        :type name: str
+        :param hyper_params: A dictionary from hyper parameter name to value, Hyper Parameters of the underlying neural
+                             network
+        :type hyper_params: dict[str, optional]
+        """
         self.hyper_parameters = {} if hyper_params is None else hyper_params
         self.constants = list(map(lambda n: name + "." + n, constants))
         self.states = list(map(lambda n: name + "." + n, states))
@@ -13,6 +27,15 @@ class Agent:
 
 
 def _prefix_input_columns_names(data, agent):
+    """
+
+    :param data: The general 'data' structure, refer to README.md
+    :param agent: The agent to prefix its data
+    :type agent: Agent
+    :return: The agent specific data where columns in DataFrames are prefixed by the agent's name
+    :rtype: dict[str, pd.DataFrame]
+    """
+
     def prefix_column_names(data, agent):
         if type(data) == tuple and type(data[0]) == pd.Series:
             return tuple(
@@ -24,10 +47,21 @@ def _prefix_input_columns_names(data, agent):
 
 
 def _prefix_output_columns_names(data, agent):
+    """
+
+    :param data: A dictionary from agents to their state data
+    :type data: dict[Agent, pd.DataFrame]
+    :param agent: The agent to prefix its data
+    :type agent: Agent
+    :return: A new DataFrame where the columns are prefixed by the agent's name
+    :rtype: pd.DataFrame
+    """
     return pd.DataFrame(data[agent].values, columns=list(map(lambda n: agent.name + "." + n, data[agent].columns)))
 
 
 class Environment:
+    """The high-level Environment"""
+
     def __init__(self):
         self._agents = []
         self._connections = {}
@@ -38,6 +72,14 @@ class Environment:
         self._non_compiled_changes = True
 
     def _normalize_input(self, data, from_previous_scale):
+        """Returns the standardized (z-score) data
+
+        :param data: The general 'data' structure, refer to README.md
+        :param from_previous_scale: If true, self._scales' mean and sd are used, otherwise they are extracted from data
+        :type from_previous_scale: bool
+        :return: standardized (z-score) data, the data has the same 'data' structure of the project, along with the
+                 scales
+        """
         if from_previous_scale:
             scales = {agent: {
                 type: (self._scales[agent][type]['mean'], self._scales[agent][type]['sd'])
@@ -55,6 +97,15 @@ class Environment:
         return scaled_data, scales
 
     def _normalize_output(self, data, from_previous_scale):
+        """Returns the standardized (z-score) data
+
+        :param data: A dictionary from agents to their state data
+        :type data: dict of (Agent, pd.DataFrame)
+        :param from_previous_scale: If true, self._scales' mean and sd are used, otherwise they are extracted from data
+        :type from_previous_scale: bool
+        :return: Standardized (z-score) data, along with the scales
+        :rtype: (dict[Agent, pd.DataFrame], dict[Agent, (pd.Series, pd.Series)])
+        """
         if from_previous_scale:
             scales = {
                 agent: (self._scales[agent]['states']['mean'], self._scales[agent]['states']['sd'])
@@ -68,6 +119,15 @@ class Environment:
         return scaled_data, scales
 
     def _prefix_and_normalize(self, agent_input, agent_output, from_previous_scale):
+        """
+
+        :param agent_input: The general 'data' structure, refer to README.md
+        :param agent_output: A dictionary from agents to their output (state) data
+        :type agent_output: dict of (Agent, pd.DataFrame)
+        :param from_previous_scale: If true, self._scales' mean and sd are used, otherwise they are extracted from data
+        :type from_previous_scale: bool
+        :return: prefixed input and output with their respective structures
+        """
         scaled_input = self._normalize_input(agent_input, from_previous_scale)[0]
         scaled_output = self._normalize_output(agent_output, from_previous_scale)[0]
         prefixed_input = {agent: _prefix_input_columns_names(scaled_input, agent) for agent in scaled_input}
@@ -75,17 +135,35 @@ class Environment:
         return prefixed_input, prefixed_output
 
     def register_agents(self, *agents):
+        """
+
+        :param agents: a list of agents to register in the environment
+        :type agents: varargs of Agent
+        """
         for agent in agents:
             self._non_compiled_changes = True
             self._agents.append(agent)
             self._connections[agent] = [agent]
 
     def register_connections(self, from_agent, *to_agents):
+        """
+
+        :param from_agent: sender of the information
+        :type from_agent: Agent
+        :param to_agents: all receivers of the information
+        :type to_agents: varargs of Agent
+        """
         self._non_compiled_changes = True
         for to_agent in to_agents:
             self._connections[to_agent].append(from_agent)
 
     def _node_generator(self, agent):
+        """
+
+        :type agent: Agent
+        :return: Creates and returns the low-level node corresponding to the high-level agent
+        :rtype: Node
+        """
         input_names = agent.constants
         for in_agent in self._connections[agent]:
             input_names += in_agent.states
@@ -100,12 +178,26 @@ class Environment:
         return node
 
     def _get_node(self, agent):
+        """
+
+        :type agent: Agent
+        :return: Finds and returns the Node Corresponding to the agent
+        :rtype: Node
+        """
         return self._nodes[self._agents.index(agent)]
 
     def _get_agent(self, node):
+        """
+
+        :type node: Node
+        :return: Finds and returns the agent corresponding to the node
+        :rtype: Agent
+        """
         return self._agents[self._nodes.index(node)]
 
     def compile(self):
+        """Compiles the high-level environment and creates the low-level graph and its nodes"""
+
         self._nodes = [self._node_generator(agent) for agent in self._agents]
         self._edges = {
             self._get_node(to_agent): [self._get_node(from_agent) for from_agent in self._connections[to_agent]] for
@@ -114,6 +206,12 @@ class Environment:
         self._non_compiled_changes = False
 
     def predict(self, data, time=1):
+        """Predicts the future using the given data
+
+        :param data: The general 'data' structure, refer to README.md
+        :param time: Predict `time` steps into the future
+        :return: The data after `time` steps into the future
+        """
         if self._non_compiled_changes:
             raise Exception('Non-Compiled Changes! Compile first!')
 
@@ -132,6 +230,12 @@ class Environment:
         return rescaled_new_data
 
     def predict_over_time(self, data_vec, time):
+        """Predicts the future as a time series data
+
+        :param data_vec: The general 'data' structure with only a single row, indicating the initial condition
+        :param time: Predict `time` steps into the future
+        :return: The general 'data' structure, where the ith row indicates data after time i
+        """
         if self._non_compiled_changes:
             raise Exception('None Compiled Changes! Compile first!')
 
@@ -150,6 +254,15 @@ class Environment:
         return rescaled_new_data
 
     def group_train(self, agent_input, agent_output, aggregator, epochs=100):
+        """Trains all agents together using aggregated outputs (global statistics)
+
+        :param agent_input: The general 'data' structure, refer to README.md
+        :param agent_output: A dictionary from agents to their output states
+        :type agent_output: dict[Agent, pd.DataFrame]
+        :param aggregator: The aggregator used for producing global statistics to train from
+        :type aggregator: Aggregator
+        :param epochs: Number of epochs to train
+        """
         if self._non_compiled_changes:
             raise Exception('None Compiled Changes! Compile first!')
 
@@ -164,6 +277,14 @@ class Environment:
         self._graph.group_train(node_input, global_output, aggregator, epochs)
 
     def group_test(self, data_input, data_output, aggregator):
+        """Tests the aggregated output produced by the model against ground truth
+
+        :param data_input: The general 'data' structure, refer to README.md
+        :param data_output: A dictionary from agents to the ground truth value of their states
+        :param aggregator: The aggregator used for producing the global statistics from agent states
+        :return: Loss value
+        :rtype: float
+        """
         if self._non_compiled_changes:
             raise Exception('None Compiled Changes! Compile first!')
 
@@ -173,6 +294,15 @@ class Environment:
         return self._graph.group_test(node_input, global_output, aggregator)
 
     def solo_train(self, data_input, data_output, training_hyper_params=None):
+        """Trains each agent individually using the loss function from its own state
+
+        :param data_input: The general 'data' structure, refer to README.md
+        :param data_output: A dictionary from agents to their output states
+        :type data_output: dict[Agent, pd.DataFrame]
+        :param training_hyper_params: A dictionary from agents to another dictionary, the second one sets the two
+                                      training hyper parameters of the agent. These two hyper parameters are number of
+                                      epochs and batch size
+        """
         if self._non_compiled_changes:
             raise Exception('Non-Compiled Changes! Compile first!')
 
@@ -202,6 +332,15 @@ class Environment:
             print()
 
     def learn_input(self, agent_output, aggregator, epochs=100):
+        """Learns back the inputs that produce the given output
+        todo: Complete this doc!
+
+        :param agent_output:
+        :param aggregator:
+        :param epochs:
+        :return:
+        """
+
         def get_input_scaled(node_input, agent, type, get_names):
             scales = (self._scales[agent][type]['mean'], self._scales[agent][type]['sd'])
             return node_input[get_names(agent)] * scales[1] + scales[0]
@@ -224,6 +363,12 @@ class Environment:
         return agent_input
 
     def solo_test(self, data_input, data_output):
+        """
+
+        :param data_input: The general 'data' structure, refer to README.md
+        :param data_output: A dictionary from agents to the ground truth value of their states
+        :return:
+        """
         if self._non_compiled_changes:
             raise Exception("Non-Compiled Changes! Compile First")
 
@@ -240,6 +385,13 @@ class Environment:
             self._graph.solo_test(self._get_node(agent), node_input, scaled_output[agent])
 
     def correlation_matrix(self, agent, iters=1000):
+        """Returns the correlation matrix between the agent inputs and outputs
+
+        :type agent: Agent
+        :param iters: Number of samples to estimate the correlation from
+        :return: The correlation matrix, the columns represent outputs and the rows represent inputs
+        :rtype: pd.DataFrame
+        """
         if self._non_compiled_changes:
             raise Exception('Non-Compiled Changes! Compile first!')
         node = self._get_node(agent)
@@ -256,6 +408,14 @@ class Environment:
         return cor_matrix
 
     def derivative_matrix(self, agent, param, iters=100):
+        """Returns the derivative matrix for the `param` parameter of the agent
+
+        :type agent: Agent
+        :type param: str
+        :param iters: Number of sample points to evaluate the derivative at
+        :return: The derivative matrix, where each columns represents an input of the agent and each row is one sample
+                 point
+        """
         if self._non_compiled_changes:
             raise Exception('Non-Compiled Changes! Compile first!')
         param = agent.name + "." + param
@@ -271,18 +431,30 @@ class Environment:
         return dMatrix
 
     def save_models(self, address, data):
+        """Saves the neural network models and standardization scales in the given address
+
+        :param address: The address of the directory where the models and scales for standardizing data are stored
+        :type address: str
+        :param data: The entire data to compute scales (mean and sd) from
+        """
         if self._non_compiled_changes:
             raise Exception('Non-Compiled Changes! Compile First!')
         for node in self._nodes:
             node.save_model(address)
         for agent in data:
             prefixed_data = _prefix_input_columns_names(data, agent)
-            constants = pd.DataFrame({'mean': prefixed_data['constants'].mean(), 'sd': prefixed_data['constants'].std()})
+            constants = pd.DataFrame(
+                {'mean': prefixed_data['constants'].mean(), 'sd': prefixed_data['constants'].std()})
             states = pd.DataFrame({'mean': prefixed_data['states'].mean(), 'sd': prefixed_data['states'].std()})
             constants.to_csv(address + agent.name + '_scale_constants.csv')
             states.to_csv(address + agent.name + '_scale_states.csv')
 
     def load_models(self, address):
+        """Loads the neural network models and standardization scales from the given address
+
+        :param address: The address of the directory where the models and scales are stored
+        :type address: str
+        """
         if self._non_compiled_changes:
             raise Exception('Non-Compiled Changes! Compile First!')
         for node in self._nodes:

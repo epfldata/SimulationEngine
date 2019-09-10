@@ -7,6 +7,35 @@ from tensorflow.python.keras.models import Sequential, load_model
 class Node:
 
     def __init__(self, agent_name, input_names, output_names, hyper_parameters=None):
+        """
+
+        :type agent_name: str
+        :type input_names: list[str]
+        :type output_names: list[str]
+        :param hyper_parameters: The neural network's hyper parameters, it can contain:
+                    number_of_units:
+                            list[int] - the ith element indicates the number of units to use in the ith layer
+                            default: [64, 64, 64]
+                    activations:
+                            list[str] - the ith element indicates the activation function to use in the ith layer
+                            default: ['linear', 'linear', 'linear']
+                    features:
+                            int - the number of features the neural network has, must be the same len(input_names)
+                            default: 3
+                    number_of_layers:
+                            int - number of layers (excluding input, including output) to use
+                            default: if number_of_units provided its length, otherwise 3
+                    loss:
+                            str - loss function used for training
+                            default: mean absolute error
+                    optimizer:
+                            str - optimizer used for training
+                            default: stochastic gradient decent
+                    metrics:
+                            list[str] - the list of metrics to use for evaluation
+                            default: ['mae']
+        :type hyper_parameters: dict[str, optional]
+        """
         if hyper_parameters is None:
             hyper_parameters = {}
         self.name = agent_name
@@ -26,6 +55,11 @@ class Node:
                             metrics=hyper_parameters.get('metrics') or ['mae'])
 
     def extended_model(self, n_samples):
+        """
+        todo: Complete this doc!
+        :param n_samples:
+        :return:
+        """
         input_variable = tf.Variable(initial_value=tf.ones((n_samples, self.input_size())), trainable=True,
                                      dtype=tf.float32, name=self.name + "-input")
         model = Sequential()
@@ -52,17 +86,44 @@ class Node:
         return self._model.input
 
     def train(self, predictors, targets, batch_size=32, epochs=10):
+        """
+
+        :type predictors: np.array
+        :type targets: np.array
+        :param batch_size: Batch size used for training
+        :param epochs: Number of epochs used for training
+        """
         self._model.fit(predictors, targets,
                         batch_size=batch_size,
                         epochs=epochs)
 
     def test(self, predictors, targets):
+        """
+
+        :type predictors: np.array
+        :type targets: np.array
+        :return: The list of metrics used for evaluation
+        :rtype: float
+        """
         return self._model.evaluate(predictors, targets)
 
     def predict(self, predictors):
+        """
+
+        :type predictors: np.array
+        :rtype: np.array
+        """
         return self._model.predict(predictors)
 
     def derivative(self, predictors):
+        """Returns the derivative matrix of the node outputs with respect to the node inputs
+
+        :param predictors: The input point we want to evaluate, must be a numpy matrix with one row
+        :type predictors: np.array
+        :return: The Jacobian matrix of the node, each columns represents and output, each row represents an input
+                 and the values are the respective partial derivatives
+        :rtype: np.array
+        """
         grads = []
         outputs = self._model.output.shape[1]
         features = self._model.input.shape[1]
@@ -72,15 +133,6 @@ class Node:
             grads.append(tf.reshape(gradient, (1, features)))
 
         return tf.keras.backend.get_session().run(tf.concat(grads, axis=0), feed_dict={self._model.input: predictors})
-
-    def cor(self, i, j, predictors_vec, samples=1000):
-        predictors = predictors_vec.repeat(samples).reshape(samples, len(predictors_vec))
-        predictors[:, i] = np.random.uniform(-1, 1, samples)
-
-        targets = self.predict(predictors)
-
-        return np.cov([predictors[:, i], targets[:, j]])[0, 1] / np.sqrt(
-            predictors[:, i].var(ddof=1) * targets[:, j].var(ddof=1))
 
     def save_model(self, address):
         self._model.save(address + self.name + '.h5')

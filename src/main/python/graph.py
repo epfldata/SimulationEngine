@@ -4,18 +4,37 @@ import tensorflow as tf
 
 
 def _outputToDF(node, nparray):
+    """Converts the `nparray` to a DataFrame specific for node"""
     return pd.DataFrame(nparray, columns=node.output_names)
 
 
 class Graph:
+    """The low-level graph compiled from the environment"""
+
     def __init__(self, nodes, edges):
+        """
+
+        :type nodes: list[Node]
+        :param edges: an edge from node A to node B means a connection from agent A to agent B in the environment
+        :type edges: dict[Node, Node]
+        """
         self._nodes = nodes.copy()
         self._edges = edges
         self._sess = tf.keras.backend.get_session()
 
     def group_train(self, train_x, train_s, aggregator, epochs=100):
+        """Trains all nodes together using aggregated outputs (global statistics)
+
+        :param train_x: The general node indexed and standardized 'data', refer to README.md
+        :param train_s: A DataFrame of the global statistics (aggregated states), must be standardized
+        :type train_s: pd.DataFrame
+        :param aggregator: The aggregator used for aggregating individual states and making global statistics
+        :type aggregator: Aggregator
+        :param epochs: Number of epochs to train
+        """
         indices = {node: {name: i for i, name in enumerate(train_x[node]["states"].columns.values)} for node in train_x}
-        predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, train_s.shape[0], indices)
+        predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, train_s.shape[0],
+                                         indices)
         loss = tf.losses.mean_squared_error(tf.constant(train_s.to_numpy()), predict_s)
         optimizer = tf.train.GradientDescentOptimizer(0.01)
         train = optimizer.minimize(loss)
@@ -26,9 +45,17 @@ class Graph:
             })
             if int(i * 100.0 / epochs) > last_percent:
                 last_percent = int(i * 100.0 / epochs)
-                print("{} %, loss {}".format(last_percent, loss_val))
+                print(f"{last_percent} %, loss {loss_val}")
 
     def group_test(self, test_x, test_s, aggregator):
+        """Tests the aggregated output produced by the model against ground truth
+
+        :param test_x: The general node indexed and standardized 'data', refer to README.sd
+        :param test_s: A DataFrame containing the ground truth for
+        :param aggregator: The aggregator used for aggregating individual states and making global statistics
+        :return: Loss value
+        :rtype: float
+        """
         indices = {node: {name: i for i, name in enumerate(test_x[node]["states"].columns.values)} for node in test_x}
         predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, test_s.shape[0], indices)
         loss = tf.losses.mean_squared_error(tf.constant(test_s.to_numpy()), predict_s)
@@ -38,6 +65,15 @@ class Graph:
         return loss_val
 
     def learn_input(self, train_s, aggregator, epochs=100):
+        """Learns back the input parameters
+        todo: Complete this doc!
+
+        :param train_s:
+        :param aggregator:
+        :param epochs:
+        :return:
+        """
+
         def equal_predictions(extended_model):
             for node in extended_model:
                 for i in range(len(node._model.get_weights())):
@@ -57,12 +93,14 @@ class Graph:
         assert equal_predictions(extended_model)
 
         indices = {node: {name: i for i, name in enumerate(node.output_names)} for node in self._nodes}
-        predict_s = aggregator.aggregate({node: extended_model[node].output for node in self._nodes}, n_samples, indices)
+        predict_s = aggregator.aggregate({node: extended_model[node].output for node in self._nodes}, n_samples,
+                                         indices)
         loss = tf.losses.mean_squared_error(tf.constant(train_s.to_numpy()), predict_s)
         train = tf.train.GradientDescentOptimizer(0.01).minimize(loss)
 
         for node in self._nodes:
-            self._sess.run(tf.assign(input_vars[node], np.random.normal(size=(n_samples, node.input_size())), validate_shape=False))
+            self._sess.run(tf.assign(input_vars[node], np.random.normal(size=(n_samples, node.input_size())),
+                                     validate_shape=False))
             # print(node, self._sess.run(input_vars[node]))
         last_percent = 0
         for i in range(epochs):
@@ -81,6 +119,14 @@ class Graph:
         return node.test(self._prepare_node_input(test_x, node), test_agent_y.to_numpy())
 
     def _prepare_node_input(self, data, node):
+        """Extracts and returns the input data of the `node` from the general `data`, based on the input connections
+           the `node` has
+
+        :param data: The general node indexed and standardized 'data' structure, refer to READEME.md
+        :type node: Node
+        :return: The `node`'s input as a numpy matrix
+        :rtype: np.array
+        """
         result = data[node]["constants"]
         for in_node in self._edges[node]:
             result = pd.concat([result, data[in_node]["states"]], axis=1)
@@ -89,6 +135,12 @@ class Graph:
         return result.to_numpy()
 
     def predict(self, data, time=1):
+        """Predicts the future using the given data
+
+        :param data: The general node indexed and standardized 'data' structure, refer to README.md
+        :param time: Predict `time` steps into the future
+        :return: The data after `time` steps into the future
+        """
         for _ in range(time):
             data = {node: {
                 "constants": data[node]["constants"],
@@ -97,6 +149,13 @@ class Graph:
         return data
 
     def predict_over_time(self, data_vec, time):
+        """Predicts the future as a time series data
+
+        :param data_vec: The general node indexed and standardized 'data' structure with only a single row,
+                         indicating the initial condition
+        :param time: Predict `time` steps into the future
+        :return: The general 'data' structure, where the ith row indicates data after time i
+        """
         data = {node: {
             "constants": pd.DataFrame(columns=data_vec[node]["constants"].columns, dtype=np.float32),
             "states": pd.DataFrame(columns=data_vec[node]["states"].columns, dtype=np.float32)
@@ -108,19 +167,3 @@ class Graph:
                 "states": data[node]["states"].append(data_vec[node]["states"], ignore_index=True)
             } for node in data}
         return data
-
-    def cor(self, p1, p2, data_vec, samples=1000):
-        data = {node: data_vec[node].repeat(samples).reshape(samples, len(data_vec[node])) for node in self._nodes}
-        data[p1.node] = np.random.normal(size=samples)
-
-        new_data = self.predict(data)
-
-        vec1, vec2 = data[:, p1.input_index], new_data[:, p2.output_index]
-        return np.cov([vec1, vec2])[0, 1] / np.sqrt(vec1.var(ddof=1) * vec2.var(ddof=1))
-
-    def inter_node_derivative(self, p1, p2, ds_dy1, globals_position, data):
-        dy1_dp1 = p1.node.derivative(data[p1.node])[:, p1.input_index].reshape(-1, 1)
-        new_data = self.predict(data)
-        ind = globals_position[p2.node]
-        dp2_ds = p2.node.derivative(new_data[p2.node])[p2.output_index, ind:].reshape(1, -1)
-        return dp2_ds.dot(ds_dy1).dot(dy1_dp1)
