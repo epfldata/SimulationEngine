@@ -234,7 +234,7 @@ class Lifter {
         //method is local - method recipient is this(self)
         val recipientActorVariable =
           ma.args.head.head.asInstanceOf[OpenCode[Actor]]
-        if (actorSelfVariable == recipientActorVariable) {
+        if (actorSelfVariable.toCode == recipientActorVariable) {
           val f = CallMethod(methodsIdMap(ma.symbol), argss)
           f.asInstanceOf[Algo[T]]
         }
