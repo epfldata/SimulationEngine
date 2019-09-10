@@ -2,7 +2,8 @@ package meta.deep.codegen
 
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{EdgeInfo, VarWrapper}
-import meta.deep.member.{ActorType, ResponseMessage}
+import meta.deep.member.ActorType
+import meta.deep.runtime.ResponseMessage
 import squid.lib.MutVar
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}

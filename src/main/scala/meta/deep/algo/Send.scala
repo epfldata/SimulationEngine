@@ -1,7 +1,7 @@
 package meta.deep.algo
 
 import meta.deep.IR.Predef._
-import meta.deep.member.Actor
+import meta.deep.runtime.Actor
 
 case class Send[R](actorFrom: OpenCode[Actor],
                    actorRef: OpenCode[Actor],
@@ -32,10 +32,10 @@ case class Send[R](actorFrom: OpenCode[Actor],
         code"""
                     val sender = $actorFrom;
                     val receiver = $actorRef;
-                    val requestMessage = meta.deep.member.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
+                    val requestMessage = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
                     sender.sendMessage(requestMessage);
-                    sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.deep.member.Message) => {
-                      ${AlgoInfo.responseMessage} := response.asInstanceOf[meta.deep.member.ResponseMessage]
+                    sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.deep.runtime.Message) => {
+                      ${AlgoInfo.responseMessage} := response.asInstanceOf[meta.deep.runtime.ResponseMessage]
                     })
                     ${AlgoInfo.returnValue} := null
                     ()
@@ -94,7 +94,7 @@ case class Send[R](actorFrom: OpenCode[Actor],
         code"""
                     val sender = $actorFrom;
                     val receiver = $actorRef;
-                    val requestMessage = meta.deep.member.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
+                    val requestMessage = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
                     sender.sendMessage(requestMessage);
                     ${AlgoInfo.returnValue} := null
                     ()

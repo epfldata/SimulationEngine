@@ -1,8 +1,8 @@
-package meta.deep.member
+package meta.deep.runtime
 
 import java.util.UUID
 
-import meta.deep.member.Actor.AgentId
+import meta.deep.runtime.Actor.AgentId
 
 /**
   * This object handles the unique id generation of an actor

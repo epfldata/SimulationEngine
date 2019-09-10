@@ -1,7 +1,7 @@
 package meta.deep.algo
 
 import meta.deep.IR.Predef._
-import meta.deep.member.ResponseMessage
+import meta.deep.runtime.ResponseMessage
 import squid.lib.MutVar
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}

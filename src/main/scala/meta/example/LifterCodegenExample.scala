@@ -4,7 +4,7 @@ import meta.classLifting.Lifter
 import meta.deep.IR
 import meta.deep.IR.TopLevel._
 import meta.deep.codegen.{CreateActorGraphs, CreateCode, GraphMerge, Pipeline}
-import meta.deep.member.Actor
+import meta.deep.runtime.Actor
 
 object LifterCodegenExample extends App {
   val cls1: ClassWithObject[Market] = Market.reflect(IR)

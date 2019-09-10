@@ -6,7 +6,7 @@ import meta.deep.IR
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
 import meta.deep.algo.AlgoInfo.EdgeInfo
-import meta.deep.member.Actor
+import meta.deep.runtime.Actor
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -79,7 +79,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     val run_until = "override def run_until" + parts(1)
       .trim()
       .substring(1)
-      .replaceFirst("=>", ": meta.deep.member.Actor = ")
+      .replaceFirst("=>", ": meta.deep.runtime.Actor = ")
       .dropRight(1)
       .trim
       .dropRight(1)
@@ -289,7 +289,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
       s"""
           package generated
 
-          class $className extends meta.deep.member.Actor {
+          class $className extends meta.deep.runtime.Actor {
             $initParams
               $initVars
               $run_until
@@ -369,7 +369,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
           package generated
 
           object InitData  {
-            def initActors: List[meta.deep.member.Actor] = {${changeTypes(code)}}
+            def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(code)}}
           }
         """
     val file = new File(storagePath + "/generated/InitData.scala")

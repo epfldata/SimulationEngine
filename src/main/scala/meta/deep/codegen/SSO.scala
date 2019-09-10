@@ -4,7 +4,8 @@ import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{CodeNodeMtd, CodeNodePos, EdgeInfo}
 import meta.deep.algo.{AlgoInfo, CallMethod, Send}
 import meta.deep.codegen.CreateActorGraphs._
-import meta.deep.member.{Actor, Method}
+import meta.deep.member.Method
+import meta.deep.runtime.Actor
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 

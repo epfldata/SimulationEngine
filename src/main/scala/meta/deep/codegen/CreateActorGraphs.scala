@@ -1,8 +1,8 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.CodeNodePos
-import meta.deep.algo.{Algo, AlgoInfo, NoOp}
+import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
+import meta.deep.algo.{Algo, AlgoInfo, NoOp, ScalaCode}
 import meta.deep.member.ActorType
 import squid.lib.MutVar
 
@@ -136,7 +136,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
       AlgoInfo.positionStack,
       code"ListBuffer[List[((Int,Int),Int)]]()") :: VarValue(
       AlgoInfo.responseMessage,
-      code"MutVar[meta.deep.member.ResponseMessage](null)") :: variables
+      code"MutVar[meta.deep.runtime.ResponseMessage](null)") :: variables
 
     CompiledActorGraph(
       actorType.name,
