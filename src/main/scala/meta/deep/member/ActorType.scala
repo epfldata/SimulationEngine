@@ -13,7 +13,7 @@ import meta.deep.algo.Algo
   * @param self      (variable referencing to itself)
   * @param X         containg type of Actor
   * @param stateless is the actor type a stateless server, in order for it to be true, actors name has to end with 'stateless'
-  * @tparam X        actor type
+  * @tparam X actor type
   */
 case class ActorType[X <: Actor](
     name: String,

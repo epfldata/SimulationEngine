@@ -5,14 +5,7 @@ import meta.deep.IR.Predef._
 import meta.deep.IR.Predef.base.MethodApplication
 import meta.deep.IR.TopLevel._
 import meta.deep.algo._
-import meta.deep.member.{
-  Actor,
-  ActorType,
-  LiftedMethod,
-  Method,
-  RequestMessage,
-  State
-}
+import meta.deep.member._
 
 /** Code lifter
   *
@@ -40,7 +33,7 @@ class Lifter {
   def apply(startClasses: List[Clasz[_ <: Actor]],
             initializationClass: Clasz[_])
     : (List[ActorType[_]], OpenCode[List[Actor]]) = {
-    var actorsInit: OpenCode[List[Actor]] = liftInitCode(initializationClass)
+    val actorsInit: OpenCode[List[Actor]] = liftInitCode(initializationClass)
     //Collecting method symbols and info to generate methodsIdMap and methodsMap
     var counter = 0
     startClasses
@@ -94,32 +87,30 @@ class Lifter {
     //lifting states - class attributes
     var endStates: List[State[_]] = List()
     endStates = clasz.fields.map {
-      case field => {
+      case field =>
         State(field.symbol, field.A, field.init)
-      }
     }
     var endMethods: List[LiftedMethod[_]] = List()
     var mainAlgo: Algo[_] = DoWhile(code"true", Wait())
     //lifting methods - with main method as special case
     clasz.methods.foreach({
-      case method: clasz.Method[a, b] => {
+      case method: clasz.Method[a, b] =>
         import method.A
         val cde: OpenCode[method.A] = method.body.asOpenCode
         val mtdBody = liftCode[method.A](cde, actorSelfVariable, clasz)
 
-        endMethods = (new LiftedMethod[method.A](
+        endMethods = new LiftedMethod[method.A](
           clasz,
           mtdBody,
           methodsMap(method.symbol).blocking,
           methodsIdMap(method.symbol)) {
           override val mtd: cls.Method[method.A, cls.Scp] =
             method.asInstanceOf[this.cls.Method[method.A, cls.Scp]]
-        }) :: endMethods
+        } :: endMethods
 
-        if (method.symbol.asMethodSymbol.name.toString() == "main") {
+        if (method.symbol.asMethodSymbol.name.toString == "main") {
           mainAlgo = CallMethod[Unit](methodsIdMap(method.symbol), List(List()))
         }
-      }
     })
     val stateless = clasz.name.endsWith("stateless")
     ActorType[T](clasz.name,
@@ -144,7 +135,6 @@ class Lifter {
       initCode.asInstanceOf[OpenCode[List[Actor]]]
     else {
       throw new Exception("The main method does not return a list of actors")
-      code"List[Actor]()"
     }
   }
 
@@ -160,29 +150,29 @@ class Lifter {
                                     actorSelfVariable: Variable[_ <: Actor],
                                     clasz: Clasz[_ <: Actor]): Algo[T] = {
     cde match {
-      case code"val $x: squid.lib.MutVar[$xt] = squid.lib.MutVar.apply[xt]($v); $rest: T " =>
+      case code"val $x: squid.lib.MutVar[$xt] = squid.lib.MutVar.apply[xt]($v); $rest: T  " =>
         val f = LetBinding(
           Some(x.asInstanceOf[Variable[Any]]),
           liftCode(v.asInstanceOf[OpenCode[Any]], actorSelfVariable, clasz),
           liftCode(rest, actorSelfVariable, clasz),
-          true,
+          mutVar = true,
           xt
         )
         f.asInstanceOf[Algo[T]]
-      case code"val $x: $xt = $v; $rest: T " =>
+      case code"val $x: $xt = $v; $rest: T  " =>
         val f = LetBinding(Some(x),
                            liftCode(v, actorSelfVariable, clasz),
                            liftCode(rest, actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
-      case code"$e; $rest: T " =>
+      case code"$e; $rest: T  " =>
         val f = LetBinding(None,
                            liftCode(e, actorSelfVariable, clasz),
                            liftCode(rest, actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
-      case code"() " =>
+      case code"()  " =>
         val f = NoOp()
         f.asInstanceOf[Algo[T]]
-      case code"($x: List[$tb]).foreach[$ta](($y: tb) => $foreachbody) " =>
+      case code"($x: List[$tb]).foreach[$ta](($y: tb) => $foreachbody)  " =>
         val f: Foreach[tb.Typ, Unit] = Foreach(
           x,
           y,
@@ -191,15 +181,15 @@ class Lifter {
       case code"while($cond) $body " =>
         val f = DoWhile(cond, liftCode(body, actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
-      case code"if($cond: Boolean) $ifBody:T else $elseBody: T " =>
+      case code"if($cond: Boolean) $ifBody:T else $elseBody: T  " =>
         val f = IfThenElse(cond,
                            liftCode(ifBody, actorSelfVariable, clasz),
                            liftCode(elseBody, actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
-      case code"SpecialInstructions.waitTurns(${Const(turns: Int)})" =>
+      case code"SpecialInstructions.waitTurns(${Const(turns: Int)}) " =>
         val f = liftWait(turns)
         f.asInstanceOf[Algo[T]]
-      case code"SpecialInstructions.handleMessages() " =>
+      case code"SpecialInstructions.handleMessages()  " =>
         //generates an IfThenElse for each of this class' methods, which checks if the called method id is the same
         //as any of this class' methods, and calls the method if it is
         val resultMessageCall = Variable[Any]
@@ -236,7 +226,7 @@ class Lifter {
           callCode
         )
         handleMessage.asInstanceOf[Algo[T]]
-      case code"${MethodApplication(ma)}:Any "
+      case code"${MethodApplication(ma)}:Any  "
           if methodsIdMap.get(ma.symbol).isDefined =>
         //extracting arguments and formatting them
         val argss =
@@ -300,15 +290,15 @@ class Lifter {
     }
   }
 
-//    @tailrec
-//    def liftWaitInner(turns: Int, runningAlgo: Algo[_ <: Unit]): Algo[_ <: Unit] = {
-//      if (turns < 0) throw new Exception("waitTurns takes a positive integer as a parameter")
-//      if (turns == 0)
-//        runningAlgo
-//      else
-//        liftWaitInner(turns - 1, LetBinding(None, Wait(), runningAlgo))
-//    }
-//    liftWaitInner(turns - 1, Wait())
-//  }
+  //    @tailrec
+  //    def liftWaitInner(turns: Int, runningAlgo: Algo[_ <: Unit]): Algo[_ <: Unit] = {
+  //      if (turns < 0) throw new Exception("waitTurns takes a positive integer as a parameter")
+  //      if (turns == 0)
+  //        runningAlgo
+  //      else
+  //        liftWaitInner(turns - 1, LetBinding(None, Wait(), runningAlgo))
+  //    }
+  //    liftWaitInner(turns - 1, Wait())
+  //  }
 
 }

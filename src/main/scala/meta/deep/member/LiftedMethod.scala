@@ -36,6 +36,7 @@ abstract class LiftedMethod[R](val cls: IR.TopLevel.Clasz[_],
 
 object Method {
   var lastMethodId = 0
+
   def getNextMethodId: Int = {
     val tmp = lastMethodId
     lastMethodId = lastMethodId + 1

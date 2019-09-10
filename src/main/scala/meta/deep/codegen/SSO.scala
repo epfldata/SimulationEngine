@@ -1,10 +1,10 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.{AlgoInfo, CallMethod, Send}
 import meta.deep.algo.AlgoInfo.{CodeNodeMtd, CodeNodePos, EdgeInfo}
-import meta.deep.member.{Actor, Method}
+import meta.deep.algo.{AlgoInfo, CallMethod, Send}
 import meta.deep.codegen.CreateActorGraphs._
+import meta.deep.member.{Actor, Method}
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
@@ -33,11 +33,11 @@ class SSO extends StateMachineElement() {
     graphs.foreach(g =>
       g.graph.foreach(edge => edge.positionStack = g.positionStack.head))
     graphs.foreach(g => mtdToPosNodes(g.graph))
-//    graphs.foreach(g => GraphDrawing.drawGraph(g.graph, g.name+" SSOmerged"))
+    //    graphs.foreach(g => GraphDrawing.drawGraph(g.graph, g.name+" SSOmerged"))
     graphs
   }
 
-  def mtdToPosNodes(graph: ArrayBuffer[EdgeInfo]) = {
+  def mtdToPosNodes(graph: ArrayBuffer[EdgeInfo]): Unit = {
     graph.foreach(edge => {
       edge.from match {
         case c: CodeNodeMtd =>
@@ -78,24 +78,21 @@ class SSO extends StateMachineElement() {
       edges.foreach(edge => {
         edge.code = edge.code.rewrite({
           case code"meta.deep.algo.Instructions.setMethodParam(${Const(a)}, ${Const(
-                b)}, $c)" => {
+                b)}, $c) " =>
             val variable: MutVarType[_] = methodVariableTable(a)(b)
 
             variable match {
-              case v: MutVarType[a] => {
+              case v: MutVarType[a] =>
                 code"${v.variable} := $c.asInstanceOf[${v.codeType}]"
-              }
               case _ => throw new RuntimeException("Illegal state")
             }
-          }
           case code"meta.deep.algo.Instructions.saveMethodParam(${Const(a)}, ${Const(
-                b)}, $c)" => {
+                b)}, $c) " =>
             val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
               methodVariableTableStack(a)
             val varstack: Variable[ListBuffer[Any]] = stack(b)
             code"$varstack.prepend($c);"
-          }
-          case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)})" => {
+          case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)}) " =>
             val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
               methodVariableTableStack(a)
             val initCode: OpenCode[Unit] = code"()"
@@ -103,13 +100,11 @@ class SSO extends StateMachineElement() {
               val variable: MutVarType[_] = methodVariableTable(a)(c._2)
               val ab = c._1
               variable match {
-                case v: MutVarType[a] => {
+                case v: MutVarType[a] =>
                   code"$ab.remove(0); if(!$ab.isEmpty) {${v.variable} := $ab(0).asInstanceOf[${v.codeType}]}; $b; ()"
-                }
                 case _ => throw new RuntimeException("Illegal state")
               }
             })
-          }
         })
 
       })
@@ -248,12 +243,13 @@ class SSO extends StateMachineElement() {
       }
     }
 
-    /*** given a list of call method edges, it will set them the right storePosRef
-      *  called after copying a callMethod from another graph
+    /** * given a list of call method edges, it will set them the right storePosRef
+      * called after copying a callMethod from another graph
       *
       * @param callMethodEdges - list of call method edges, where each call method will have exactly 3 edges
       *                        (otherwise it will not work). the second of the three edges has to be the pos ref
       */
+    @scala.annotation.tailrec
     def setPosRef(callMethodEdges: ArrayBuffer[EdgeInfo]): Unit = {
       val (currentMethodEdges, restMethodEdges) = callMethodEdges.splitAt(3)
       currentMethodEdges.head.storePosRef = List(
@@ -263,11 +259,12 @@ class SSO extends StateMachineElement() {
       }
     }
 
+    @scala.annotation.tailrec
     def setMtdRef(callMethodEdges: ArrayBuffer[AlgoInfo.EdgeInfo]): Unit = {
       val (currentMethodEdges, restMethodEdges) = callMethodEdges.splitAt(3)
       val methodId = currentMethodEdges.head.methodCallInfo._1.methodId
-      currentMethodEdges.head.to = CodeNodeMtd(methodId, false)
-      currentMethodEdges.tail.head.from = CodeNodeMtd(methodId, true)
+      currentMethodEdges.head.to = CodeNodeMtd(methodId)
+      currentMethodEdges.tail.head.from = CodeNodeMtd(methodId, end = true)
       if (restMethodEdges.nonEmpty) {
         setMtdRef(restMethodEdges)
       }
@@ -279,7 +276,7 @@ class SSO extends StateMachineElement() {
                               send: Send[_]): ArrayBuffer[EdgeInfo] = {
 
       AlgoInfo.resetData()
-      CallMethod[Any](newMethodId, send.argss).codegen
+      CallMethod[Any](newMethodId, send.argss).codegen()
       val newEdges = AlgoInfo.stateGraph.map(edge1 => {
         //since its replacing the sendEdge, these edges have to belong to the same method as that sendEdge
         edge1.methodId1 = sendEdge.methodId1
@@ -349,7 +346,7 @@ class SSO extends StateMachineElement() {
           if (send.blocking && !edge.sendInfo._2) {
             changes = changes + (edge -> List())
           } else {
-            var newEdges =
+            val newEdges =
               createCallMethodNodes(newMethodId, methodId, edge, send)
             if (send.blocking) {
               if (edge.sendInfo._2) {
