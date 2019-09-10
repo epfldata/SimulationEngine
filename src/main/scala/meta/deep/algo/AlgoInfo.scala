@@ -27,6 +27,11 @@ object AlgoInfo {
   val positionVar: Variable[MutVar[Int]] = Variable[MutVar[Int]]
 
   /**
+    * Stores the edges to build up a state transition graph
+    */
+  val stateGraph: ArrayBuffer[EdgeInfo] = ArrayBuffer[EdgeInfo]()
+
+  /**
     * This stack is used to save a position into it, so that it can be used to jump
     * to it in a later part. For example, to jump back after a method call
     */
@@ -64,12 +69,7 @@ object AlgoInfo {
     * IF inside method, set to true, so that graph knows about that (just for displaying in a different color atm)
     */
   var isMethod = false
-  var methodId = -1
-
-  /**
-    * Stores the edges to build up a state transition graph
-    */
-  val stateGraph: ArrayBuffer[EdgeInfo] = ArrayBuffer[EdgeInfo]()
+  var methodId: Int = -1
 
   //This resets the variables which have to be unique per actorType
   def resetData(): Unit = {
@@ -156,15 +156,15 @@ object AlgoInfo {
   /**
     * Models an edge between to nodes
     *
-    * @param label    a random name, which is displayed when drawing the graph
-    * @param from     start node
-    * @param to       end node
-    * @param code     actual code, which is executed when
-    * @param waitEdge an information, that this edge is increasing the timer
-    * @param isMethod is filled out automatically by using the isMethod vaiable of this class
-    * @param sendInfo if this edge is a send, keeps a reference to [[Send]] for relevant info, and also a
-    *                 boolean which is true if this is the first in sequence of edges representing the send
-    * @param methodId1 if the edge is part of method, keeps its id
+    * @param label          a random name, which is displayed when drawing the graph
+    * @param from           start node
+    * @param to             end node
+    * @param code           actual code, which is executed when
+    * @param waitEdge       an information, that this edge is increasing the timer
+    * @param isMethod       is filled out automatically by using the isMethod vaiable of this class
+    * @param sendInfo       if this edge is a send, keeps a reference to [[Send]] for relevant info, and also a
+    *                       boolean which is true if this is the first in sequence of edges representing the send
+    * @param methodId1      if the edge is part of method, keeps its id
     * @param methodCallInfo if the edge is a part of call method, keep the reference to [[CallMethod]] and also the
     *                       ordinal number of this edge (first, second or third)
     */
@@ -202,6 +202,7 @@ object AlgoInfo {
                methodId1,
                methodCallInfo)
     }
+
     def convertToPosOnly(methodLookupTable: Map[Int, Int],
                          methodLookupTableEnd: Map[Int, Int]): Unit = {
       from match {
@@ -230,4 +231,5 @@ object AlgoInfo {
                        to: CodeNodePos,
                        graph1: (CodeNodePos, CodeNodePos),
                        graph2: (CodeNodePos, CodeNodePos))
+
 }

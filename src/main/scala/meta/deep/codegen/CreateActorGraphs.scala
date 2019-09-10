@@ -18,10 +18,12 @@ object CreateActorGraphs {
     collection.mutable.Map[Int, ArrayBuffer[Variable[ListBuffer[Any]]]]()
 
   case class MutVarType[A](variable: Variable[MutVar[A]], codeType: CodeType[A])
+
 }
 
 class CreateActorGraphs(actorTypes: List[ActorType[_]])
     extends ConvertElement(actorTypes) {
+
   import CreateActorGraphs._
 
   private val methodLookupTable: collection.mutable.Map[Int, Int] =
@@ -52,7 +54,9 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     // Generate code for methods
     val methodData = actorType.methods.map({ method =>
       methodLookupTable(method.methodId) = AlgoInfo.posCounter
-      createCode(method.body.asInstanceOf[Algo[Any]], true, method.methodId)
+      createCode(method.body.asInstanceOf[Algo[Any]],
+                 isMethod = true,
+                 method.methodId)
       methodLookupTableEnd(method.methodId) = AlgoInfo.posCounter - 1
 
       val varList = ListBuffer[MutVarType[_]]()
@@ -86,7 +90,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     AlgoInfo.stateGraph.foreach(edge => {
       edge.code = edge.code.rewrite({
         case code"meta.deep.algo.Instructions.setMethodParam(${Const(a)}, ${Const(
-              b)}, $c) " =>
+              b)}, $c)  " =>
           val variable: MutVarType[_] = methodVariableTable(a)(b)
           variable match {
             case v: MutVarType[a] =>
@@ -94,12 +98,12 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
             case _ => throw new RuntimeException("Illegal state")
           }
         case code"meta.deep.algo.Instructions.saveMethodParam(${Const(a)}, ${Const(
-              b)}, $c) " =>
+              b)}, $c)  " =>
           val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
             methodVariableTableStack(a)
           val varstack: Variable[ListBuffer[Any]] = stack(b)
           code"$varstack.prepend($c);"
-        case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)}) " =>
+        case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)})  " =>
           val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
             methodVariableTableStack(a)
           val initCode: OpenCode[Unit] = code"()"
