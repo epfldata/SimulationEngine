@@ -164,7 +164,7 @@ class Environment:
         :return: Creates and returns the low-level node corresponding to the high-level agent
         :rtype: Node
         """
-        input_names = agent.constants
+        input_names = agent.constants.copy()
         for in_agent in self._connections[agent]:
             input_names += in_agent.states
         node = Node(agent.name, input_names, agent.states, {

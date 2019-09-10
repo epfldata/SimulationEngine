@@ -111,11 +111,11 @@ class Graph:
         return {node: pd.DataFrame(self._sess.run(input_vars[node]), columns=node.input_names) for node in self._nodes}
 
     def solo_train(self, node, train_x, train_agent_y, batch_size=32, epochs=10):
-        train_agent_y.columns = node.output_names
+        train_agent_y = train_agent_y.reindex(columns=node.output_names)
         node.train(self._prepare_node_input(train_x, node), train_agent_y.to_numpy(), batch_size, epochs)
 
     def solo_test(self, node, test_x, test_agent_y):
-        test_agent_y.columns = node.output_names
+        test_agent_y = test_agent_y.reindex(columns=node.output_names)
         return node.test(self._prepare_node_input(test_x, node), test_agent_y.to_numpy())
 
     def _prepare_node_input(self, data, node):
