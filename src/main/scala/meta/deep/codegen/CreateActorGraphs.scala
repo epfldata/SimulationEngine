@@ -9,19 +9,25 @@ import squid.lib.MutVar
 import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
+object CreateActorGraphs {
+  val methodVariableTable
+    : collection.mutable.Map[Int, ArrayBuffer[MutVarType[_]]] =
+    collection.mutable.Map[Int, ArrayBuffer[MutVarType[_]]]()
+  val methodVariableTableStack
+    : collection.mutable.Map[Int, ArrayBuffer[Variable[ListBuffer[Any]]]] =
+    collection.mutable.Map[Int, ArrayBuffer[Variable[ListBuffer[Any]]]]()
+
+  case class MutVarType[A](variable: Variable[MutVar[A]], codeType: CodeType[A])
+}
+
 class CreateActorGraphs(actorTypes: List[ActorType[_]])
     extends ConvertElement(actorTypes) {
+  import CreateActorGraphs._
 
   private val methodLookupTable: collection.mutable.Map[Int, Int] =
     collection.mutable.Map[Int, Int]()
   private val methodLookupTableEnd: collection.mutable.Map[Int, Int] =
     collection.mutable.Map[Int, Int]()
-  private val methodVariableTable
-    : collection.mutable.Map[Int, ArrayBuffer[MutVarType[_]]] =
-    collection.mutable.Map[Int, ArrayBuffer[MutVarType[_]]]()
-  private val methodVariableTableStack
-    : collection.mutable.Map[Int, ArrayBuffer[Variable[ListBuffer[Any]]]] =
-    collection.mutable.Map[Int, ArrayBuffer[Variable[ListBuffer[Any]]]]()
   private var variables: List[VarValue[_]] = List()
 
   override def run(): List[CompiledActorGraph] = {
@@ -46,7 +52,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     // Generate code for methods
     val methodData = actorType.methods.map({ method =>
       methodLookupTable(method.methodId) = AlgoInfo.posCounter
-      createCode(method.body.asInstanceOf[Algo[Any]], isMethod = true)
+      createCode(method.body.asInstanceOf[Algo[Any]], true, method.methodId)
       methodLookupTableEnd(method.methodId) = AlgoInfo.posCounter - 1
 
       val varList = ListBuffer[MutVarType[_]]()
@@ -124,7 +130,10 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
       variables,
       List[ActorType[_]](actorType),
       List[Variable[ListBuffer[List[((Int, Int), Int)]]]](
-        AlgoInfo.positionStack)
+        AlgoInfo.positionStack),
+      AlgoInfo.posCounter,
+      List(AlgoInfo.returnValue),
+      List(AlgoInfo.responseMessage)
     )
   }
 
@@ -132,7 +141,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
   def expandEndNodes(): Unit = {
     val graphEnd = AlgoInfo.stateGraph.groupBy(_.to.getNativeId)
     val graphStart = AlgoInfo.stateGraph.groupBy(_.from.getNativeId)
-
+    AlgoInfo.methodId = -1
     graphEnd.foreach(x => {
       if (!graphStart.contains(x._1)) {
         AlgoInfo.stateGraph.append(
@@ -192,8 +201,11 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     * @param isMethod if true, then a restore position is added at the end
     * @return a list of code steps
     */
-  private def createCode(algo: Algo[_], isMethod: Boolean): Unit = {
+  private def createCode(algo: Algo[_],
+                         isMethod: Boolean,
+                         methodId: Int = -1): Unit = {
     AlgoInfo.isMethod = isMethod
+    AlgoInfo.methodId = methodId
 
     //Method body is empty
     if (algo.isInstanceOf[NoOp[_]]) {
@@ -203,7 +215,5 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     }
     AlgoInfo.nextPos()
   }
-
-  case class MutVarType[A](variable: Variable[MutVar[A]], codeType: CodeType[A])
 
 }

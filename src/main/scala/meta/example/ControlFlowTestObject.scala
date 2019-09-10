@@ -13,13 +13,13 @@ class ControlFlowTestObject extends Actor {
   def main(): Unit = {
     while (true) {
       if (x < 0) {
-        waitTurns()
+        waitTurns(1)
       } else {
         if (x < 0) {
-          waitTurns()
+          waitTurns(1)
         }
       }
-      waitTurns()
+      waitTurns(1)
     }
   }
 

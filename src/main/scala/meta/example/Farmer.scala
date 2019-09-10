@@ -24,7 +24,7 @@ class Farmer() extends Actor {
     while (true) {
       val testResult = market.sell2(500)
       println("TEST_VAR", testResult)
-      waitTurns()
+      waitTurns(1)
     }
   }
 

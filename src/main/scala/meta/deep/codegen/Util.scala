@@ -2,7 +2,8 @@ package meta.deep.codegen
 
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{EdgeInfo, VarWrapper}
-import meta.deep.member.ActorType
+import meta.deep.member.{ActorType, ResponseMessage}
+import squid.lib.MutVar
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
@@ -34,7 +35,10 @@ case class CompiledActorGraph(
     var variables: List[VarWrapper[_]],
     var variables2: List[VarValue[_]],
     var actorTypes: List[ActorType[_]],
-    var positionStack: List[Variable[ListBuffer[List[((Int, Int), Int)]]]] //required to generate poping from stack statements at create code
+    var positionStack: List[Variable[ListBuffer[List[((Int, Int), Int)]]]], //required to generate poping from stack statements at create code
+    var freePosition: Int = 0,
+    returnValue: List[Variable[MutVar[Any]]],
+    responseMessage: List[Variable[MutVar[ResponseMessage]]],
 )
 
 /**

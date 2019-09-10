@@ -64,6 +64,7 @@ object AlgoInfo {
     * IF inside method, set to true, so that graph knows about that (just for displaying in a different color atm)
     */
   var isMethod = false
+  var methodId = -1
 
   /**
     * Stores the edges to build up a state transition graph
@@ -161,22 +162,46 @@ object AlgoInfo {
     * @param code     actual code, which is executed when
     * @param waitEdge an information, that this edge is increasing the timer
     * @param isMethod is filled out automatically by using the isMethod vaiable of this class
+    * @param sendInfo if this edge is a send, keeps a reference to [[Send]] for relevant info, and also a
+    *                 boolean which is true if this is the first in sequence of edges representing the send
+    * @param methodId1 if the edge is part of method, keeps its id
+    * @param methodCallInfo if the edge is a part of call method, keep the reference to [[CallMethod]] and also the
+    *                       ordinal number of this edge (first, second or third)
     */
   case class EdgeInfo(
-      label: String,
+      var label: String,
       var from: CodeNode,
       var to: CodeNode,
       var code: OpenCode[Unit],
       waitEdge: Boolean = false,
       isMethod: Boolean = isMethod,
-      cond: OpenCode[Boolean] = null,
+      var cond: OpenCode[Boolean] = null,
       var storePosRef: List[List[EdgeInfo]] = Nil, //Refers to callback reference in state
       var edgeState: (Int, Int) = (-1, -1), //Default state in (int, int), modified when merging
       var graphId: Int = -1,
-      positionStack: Variable[ListBuffer[List[((Int, Int), Int)]]] =
+      var positionStack: Variable[ListBuffer[List[((Int, Int), Int)]]] =
         AlgoInfo.positionStack,
+      var sendInfo: (Send[_], Boolean) = null,
+      var methodId1: Int = methodId,
+      var methodCallInfo: (CallMethod[_], Int) = (null, -1),
   ) {
 
+    def myCopy(): EdgeInfo = {
+      EdgeInfo(label,
+               from,
+               to,
+               code,
+               waitEdge,
+               isMethod,
+               cond,
+               storePosRef,
+               edgeState,
+               graphId,
+               positionStack,
+               sendInfo,
+               methodId1,
+               methodCallInfo)
+    }
     def convertToPosOnly(methodLookupTable: Map[Int, Int],
                          methodLookupTableEnd: Map[Int, Int]): Unit = {
       from match {

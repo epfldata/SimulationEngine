@@ -37,7 +37,7 @@ class Market extends Actor {
       //println("Binding test:", x)
       sell(10)
       recursiveTest(List(10, 20, 30))
-      waitTurns()
+      waitTurns(1)
     }
   }
 
