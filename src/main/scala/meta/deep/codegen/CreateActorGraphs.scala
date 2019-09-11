@@ -10,13 +10,25 @@ import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object CreateActorGraphs {
+
+  /** for each method, maps its id to an array buffer of [[MutVarType]] that it uses
+    *
+    */
   val methodVariableTable
     : collection.mutable.Map[Int, ArrayBuffer[MutVarType[_]]] =
     collection.mutable.Map[Int, ArrayBuffer[MutVarType[_]]]()
+
+  /** for each method, maps its id to a stack of the parameters that it uses
+    *
+    */
   val methodVariableTableStack
     : collection.mutable.Map[Int, ArrayBuffer[Variable[ListBuffer[Any]]]] =
     collection.mutable.Map[Int, ArrayBuffer[Variable[ListBuffer[Any]]]]()
 
+  /** a wrapper that holds the type of the inner MutVar
+    *
+    * @tparam A type of variable
+    */
   case class MutVarType[A](variable: Variable[MutVar[A]], codeType: CodeType[A])
 
 }

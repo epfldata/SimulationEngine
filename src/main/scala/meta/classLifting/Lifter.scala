@@ -23,7 +23,6 @@ class Lifter {
     */
   var methodsMap: Map[IR.MtdSymbol, MethodInfo[_]] = Map()
 
-  //TODO add dowhile to codeLift
   /** Lifts the classes and object initialization
     *
     * @param startClasses        - classes that need to be lifted, in form of [[Clasz]]
@@ -42,6 +41,7 @@ class Lifter {
       .foreach(method => {
         import method.A
         methodsIdMap = methodsIdMap + (method.symbol -> counter)
+        //the method is only blocking if its return type is a subtype of NBUnit
         var blocking = true
         if (method.A <:< codeTypeOf[NBUnit]) blocking = false
         methodsMap = methodsMap + (method.symbol -> new MethodInfo[method.A](
@@ -58,20 +58,6 @@ class Lifter {
     })
 
     (endTypes, actorsInit)
-  }
-
-  /** Used for operations that were not covered in [[liftCode]]. Lifts an [[OpenCode]](expression) into its deep representation [[Algo]]
-    *
-    * @param cde               - an [[OpenCode]] that will be lifted
-    * @param actorSelfVariable - a self [[Variable]] of this actor, used to create messages
-    * @param clasz             - representatation of the [[Actor]] type, used to create a message handler for his methods
-    * @tparam T - return type of the expression
-    * @return [[Algo]] - deep representation of the expression
-    */
-  def liftCodeOther[T: CodeType](cde: OpenCode[T],
-                                 actorSelfVariable: Variable[_ <: Actor],
-                                 clasz: Clasz[_ <: Actor]): Option[Algo[T]] = {
-    None
   }
 
   /** Lifts a specific [[Actor]] class into an ActorType
@@ -112,6 +98,7 @@ class Lifter {
           mainAlgo = CallMethod[Unit](methodsIdMap(method.symbol), List(List()))
         }
     })
+    //a class is stateless if its name ends with 'stateless'
     val stateless = clasz.name.endsWith("stateless")
     ActorType[T](clasz.name,
                  endStates,
@@ -272,6 +259,25 @@ class Lifter {
     }
   }
 
+  /** Used for operations that were not covered in [[liftCode]]. Lifts an [[OpenCode]](expression) into its deep representation [[Algo]]
+    *
+    * @param cde               - an [[OpenCode]] that will be lifted
+    * @param actorSelfVariable - a self [[Variable]] of this actor, used to create messages
+    * @param clasz             - representatation of the [[Actor]] type, used to create a message handler for his methods
+    * @tparam T - return type of the expression
+    * @return [[Algo]] - deep representation of the expression
+    */
+  def liftCodeOther[T: CodeType](cde: OpenCode[T],
+                                 actorSelfVariable: Variable[_ <: Actor],
+                                 clasz: Clasz[_ <: Actor]): Option[Algo[T]] = {
+    None
+  }
+
+  /** Lifts instruction [[meta.classLifting.SpecialInstructions.waitTurns]] into a [[DoWhile]] where in each iteration there's one [[Wait]]
+    *
+    * @param turns
+    * @return
+    */
   private def liftWait(turns: Int) = {
     if (turns <= 0)
       throw new Exception("waitTurns takes a positive integer as a parameter")
@@ -289,16 +295,4 @@ class Lifter {
       )
     }
   }
-
-  //    @tailrec
-  //    def liftWaitInner(turns: Int, runningAlgo: Algo[_ <: Unit]): Algo[_ <: Unit] = {
-  //      if (turns < 0) throw new Exception("waitTurns takes a positive integer as a parameter")
-  //      if (turns == 0)
-  //        runningAlgo
-  //      else
-  //        liftWaitInner(turns - 1, LetBinding(None, Wait(), runningAlgo))
-  //    }
-  //    liftWaitInner(turns - 1, Wait())
-  //  }
-
 }
