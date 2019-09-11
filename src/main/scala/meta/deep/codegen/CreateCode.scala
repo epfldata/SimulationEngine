@@ -199,7 +199,8 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
             code"${code(currentCodePos)}; ${AlgoInfo.timeVar} := (${AlgoInfo.timeVar}!) + 1"
         }
 
-        //code(currentCodePos) = code"println(${Const(currentCodePos)}); ${code(currentCodePos)}"
+//        code(currentCodePos) =
+//          code"println(${Const(currentCodePos)}); ${code(currentCodePos)}"
 
       })
     }

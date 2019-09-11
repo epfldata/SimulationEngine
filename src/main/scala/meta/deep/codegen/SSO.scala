@@ -10,14 +10,21 @@ import meta.deep.runtime.Actor
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 //TODO when copying a method copy it into my ActorType to stay consistent
-//FIXME this part relies on methodVariableTable and methodVariableTableStack which are global, and might not be valid at this point
 class SSO extends StateMachineElement() {
 
-  //TODO change the structure to something more clear. e.g. its hard to see here what the usage of these structurs will be
-  //map of all the changes made
+  /** map of all the changes that need to be executed. each [[EdgeInfo]] key in this map will be substituted
+    *  by the list of [[EdgeInfo]]s in the value
+    */
   var changes: Map[EdgeInfo, List[EdgeInfo]] = Map()
-  //for each copied method, saves the originalId -> newId, as to not copy the same method twice
+
+  /** for each copied method, saves the originalId -> newId, as to not copy the same method twice
+    *
+    */
   var oldToNewMtdIds: Map[String, Map[Int, Int]] = Map()
+
+  /** a flag which
+    *
+    */
   var optimizationDone = false
 
   override def run(compiledActorGraphs: List[CompiledActorGraph])
@@ -38,6 +45,11 @@ class SSO extends StateMachineElement() {
     graphs
   }
 
+  /** for each edge checks if it has a [[CodeNodeMtd]] as its to or from value,
+    *  and substitutes it for the right [[CodeNodePos]]
+    *
+    * @param graph buffer of edges to change
+    */
   def mtdToPosNodes(graph: ArrayBuffer[EdgeInfo]): Unit = {
     graph.foreach(edge => {
       edge.from match {
@@ -72,8 +84,20 @@ class SSO extends StateMachineElement() {
     })
   }
 
+  /** checks if this element sends messages to a stateless server, and if it does,
+    *  it copies the methods used and changes the sends to local method calls
+    * @param element - element whose graph is being optimized
+    * @param rest - the rest of the elements, used to find the methods used by send edges
+    */
   def optimizeElement(element: CompiledActorGraph,
                       rest: List[CompiledActorGraph]): CompiledActorGraph = {
+
+    //FIXME this part relies on methodVariableTable and methodVariableTableStack which are global, and might not be valid at this point
+    /** for a new method call edges, rewrites the compile only instructions to runtime instructions
+      * warning - relies on one global variables [[methodVariableTable]] and [[methodVariableTableStack]] which are
+      * defined in some of the earlier steps
+      * @param edges - edges which may need to be rewritten
+      */
     def rewriteCallMethod(
         edges: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
       edges.foreach(edge => {
@@ -112,6 +136,12 @@ class SSO extends StateMachineElement() {
       edges
     }
 
+    /** copies the method from neededElement to element and returns the new methodId
+      *
+      * @param element element to copy the method to
+      * @param neededElement element whose method is being copied
+      * @param methodId id of the needed method
+      */
     def copyMethod(element: CompiledActorGraph,
                    neededElement: CompiledActorGraph,
                    methodId: Int): Int = {
@@ -122,6 +152,7 @@ class SSO extends StateMachineElement() {
             .isDefined) {
         oldToNewMtdIds(element.name)(methodId)
       } else {
+        //get the next available method id, and copy the states and variables of the other elements
         val newMethodId = Method.getNextMethodId
         element.variables =
           (element.variables ::: neededElement.variables).distinct
@@ -131,6 +162,7 @@ class SSO extends StateMachineElement() {
           element.actorTypes.head.states =
             (element.actorTypes.head.states ::: at.states).distinct
         })
+        //find the part of the graph that needs to be copied
         val methodToCopyGraph = neededElement.graph
           .filter(edge2 => edge2.methodId1 == methodId)
           .map(edge2 => edge2.myCopy())
@@ -178,6 +210,7 @@ class SSO extends StateMachineElement() {
                 .~>(selfResponseMessage.toCode)
             }
           })
+          //fitting the tos and froms to this graphs, puts them at the end
           edge1.from match {
             case c: CodeNodePos =>
               edge1.from = CodeNodePos(c.pos - oldPos + freePos)
@@ -265,6 +298,11 @@ class SSO extends StateMachineElement() {
       }
     }
 
+    /** given a list of call method edges, it will set them the right tos and froms, to the right [[CodeNodeMtd]]
+      *
+      * @param callMethodEdges - list of call method edges, where each call method will have exactly 3 edges
+      *                        (otherwise it will not work)
+      */
     @scala.annotation.tailrec
     def setMtdRef(callMethodEdges: ArrayBuffer[AlgoInfo.EdgeInfo]): Unit = {
       val (currentMethodEdges, restMethodEdges) = callMethodEdges.splitAt(3)
@@ -276,13 +314,22 @@ class SSO extends StateMachineElement() {
       }
     }
 
-    def createCallMethodNodes(newMethodId: Int,
+    /** creates 3 call method edges for the newMethodId
+      *
+      * @param newMethodId -
+      * @param oldMethodId -
+      * @param sendEdge
+      * @param send
+      * @return
+      */
+    def createCallMethodEdges(newMethodId: Int,
                               oldMethodId: Int,
                               sendEdge: EdgeInfo,
                               send: Send[_]): ArrayBuffer[EdgeInfo] = {
 
       AlgoInfo.resetData()
       CallMethod[Any](newMethodId, send.argss).codegen()
+      //for each of the new edges, set the correct methodId and tos and froms
       val newEdges = AlgoInfo.stateGraph.map(edge1 => {
         //since its replacing the sendEdge, these edges have to belong to the same method as that sendEdge
         edge1.methodId1 = sendEdge.methodId1
@@ -310,6 +357,12 @@ class SSO extends StateMachineElement() {
       rewriteCallMethod(newEdges)
     }
 
+    /** used to translate the graph by a moveAmmount, after the moveThreshold
+      * for each edge that has a from or to above the moveThreshold, add moveAmmount to it
+      *
+      * @param moveAmmount how much to move the graph
+      * @param moveThreshold after which position to start moving
+      */
     def moveGraphPositions(moveAmmount: Int, moveThreshold: Int): Unit = {
       element.graph.foreach(edge2 => {
         edge2.from match {
@@ -332,11 +385,10 @@ class SSO extends StateMachineElement() {
         //steps:
         //1. find the actorType which has this method
         //2. in his graph find the part of it that is this method
-        //3. append that part to this graph
-        //3.1 translate all froms and tos so they fit this graph
-        //4. do variables
-        //5. prepare the callmethod part of the graph
-        //5.1 set the from and to to this send
+        //3. copy the method to this elements graph
+        //4. create the call method edges which will replace the send edges
+        // (and translate the graph by a certain amount, since the might be more or less edges after replacing)
+        //5. replace the send edges with call method edges
         val send = edge.sendInfo._1
         val methodId = send.methodId
         val neededElement = (element :: rest).find(element =>
@@ -344,18 +396,19 @@ class SSO extends StateMachineElement() {
         if (neededElement.isEmpty)
           throw new Exception(
             "Theres a message requesting a non existent method")
+        //check if the element containing this graph is a stateless server
         if (neededElement.get.actorTypes.forall(at => at.stateless)) {
-          optimizationDone = false //there will be some copying or changing done, so this might not be the last iteration
+          optimizationDone = false //there will be some copying or changing done in this iteration, so there needs to be more iterations
           val newMethodId = copyMethod(element, neededElement.get, methodId)
           //special case - this send has already been replaced, these edges are left overs that need to be removed
           if (send.blocking && !edge.sendInfo._2) {
             changes = changes + (edge -> List())
           } else {
             val newEdges =
-              createCallMethodNodes(newMethodId, methodId, edge, send)
+              createCallMethodEdges(newMethodId, methodId, edge, send)
             if (send.blocking) {
               if (edge.sendInfo._2) {
-                //add 2 wait edges
+                //add 2 wait edges to simulate the waiting for the answer to the message
                 surroundWithWaitEdges(newEdges, edge.methodId1)
                 val moveThreshold =
                   newEdges.head.from.asInstanceOf[CodeNodePos].pos
@@ -381,6 +434,12 @@ class SSO extends StateMachineElement() {
     element
   }
 
+  /** creates 2 new wait edges and puts them before and after the edges given by the edges parameter
+    *  the new edges will belong to the method methodId
+    * @param edges edges that need to be surrounded by waits
+    * @param methodId method id to be given to the new wait edges
+    * @return
+    */
   def surroundWithWaitEdges(edges: ArrayBuffer[EdgeInfo],
                             methodId: Int): ArrayBuffer[EdgeInfo] = {
     val firstFrom = edges.head.from
