@@ -253,7 +253,7 @@ class Environment:
 
         return rescaled_new_data
 
-    def group_train(self, agent_input, agent_output, aggregator, epochs=100):
+    def group_train(self, agent_input, agent_output, aggregator, epochs=100, learning_rate=0.1):
         """Trains all agents together using aggregated outputs (global statistics)
 
         :param agent_input: The general 'data' structure, refer to README.md
@@ -274,7 +274,7 @@ class Environment:
 
         node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
         global_output = aggregator.aggregate_pd(agent_output)
-        self._graph.group_train(node_input, global_output, aggregator, epochs)
+        self._graph.group_train(node_input, global_output, aggregator, epochs, learning_rate)
 
     def group_test(self, data_input, data_output, aggregator):
         """Tests the aggregated output produced by the model against ground truth
@@ -331,7 +331,7 @@ class Environment:
                                    epochs)
             print()
 
-    def learn_input(self, agent_output, aggregator, epochs=100):
+    def learn_input(self, agent_output, aggregator, epochs=100, learning_rate=100):
         """Learns back the inputs that produce the given output
         todo: Complete this doc!
 
@@ -352,7 +352,7 @@ class Environment:
         scaled_output = self._normalize_output(agent_output, from_previous_scale=True)[0]
         global_output = aggregator.aggregate_pd(scaled_output)
 
-        node_input = self._graph.learn_input(global_output, aggregator, epochs)
+        node_input = self._graph.learn_input(global_output, aggregator, epochs, learning_rate)
         agent_input = {
             self._get_agent(node): {
                 'states': get_input_scaled(node_input[node], self._get_agent(node), 'states', lambda a: a.states),

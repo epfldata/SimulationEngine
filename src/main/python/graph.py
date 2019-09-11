@@ -22,7 +22,7 @@ class Graph:
         self._edges = edges
         self._sess = tf.keras.backend.get_session()
 
-    def group_train(self, train_x, train_s, aggregator, epochs=100):
+    def group_train(self, train_x, train_s, aggregator, epochs=100, learning_rate=0.1):
         """Trains all nodes together using aggregated outputs (global statistics)
 
         :param train_x: The general node indexed and standardized 'data', refer to README.md
@@ -36,7 +36,7 @@ class Graph:
         predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, train_s.shape[0],
                                          indices)
         loss = tf.losses.mean_squared_error(tf.constant(train_s.to_numpy()), predict_s)
-        optimizer = tf.train.GradientDescentOptimizer(0.01)
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate)
         train = optimizer.minimize(loss)
         last_percent = 0
         for i in range(epochs):
@@ -64,7 +64,7 @@ class Graph:
         })
         return loss_val
 
-    def learn_input(self, train_s, aggregator, epochs=100):
+    def learn_input(self, train_s, aggregator, epochs=100, learning_rate=100):
         """Learns back the input parameters
         todo: Complete this doc!
 
@@ -96,7 +96,7 @@ class Graph:
         predict_s = aggregator.aggregate({node: extended_model[node].output for node in self._nodes}, n_samples,
                                          indices)
         loss = tf.losses.mean_squared_error(tf.constant(train_s.to_numpy()), predict_s)
-        train = tf.train.GradientDescentOptimizer(0.01).minimize(loss)
+        train = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
 
         for node in self._nodes:
             self._sess.run(tf.assign(input_vars[node], np.random.normal(size=(n_samples, node.input_size())),
