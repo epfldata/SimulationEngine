@@ -113,6 +113,6 @@ if __name__ == '__main__':
             all_params.update(toJson(optimizer.max['params']))
             params_result["stepSize-{}".format(stepSize)]["entry-{}".format(entry)].update(all_params)
 
-    f = open(json_result, "w")
-    f.write(json.dumps(params_result))
-    f.close()
+            f = open(json_result, "w")
+            f.write(json.dumps(params_result))
+            f.close()
