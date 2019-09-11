@@ -135,39 +135,39 @@ is an example of how to prepare the simulation data and pass it to the environme
 ```bash 
 python3 economic_simulation.py train --group --save
 ```
-For the following command training, data must already be prepared in the `resources/data` directory. Add `--group` if you want to run the group training as well. Add `--save` if you want to save the models. The models will be saved in the `target/models/` folder. Be sure to create this directory before using `--save`.
+For the following command training, data must already be prepared in the `supplementary/data` directory. Add `--group` if you want to run the group training as well. Add `--save` if you want to save the models. The models will be saved in the `supplementary/models/` folder. Be sure to create this directory before using `--save`.
 
 ### Evaluation
 ```bash
 python3 economic_simulation.py evaluate
 ```
-For the following command, the evaluation data must already be prepared in the `resources/data` directory. The models will be loaded from `resources/models/` directory so make sure it exists and contains all the files. All the required files must be inside it if you have run training beforehand. 
+For the following command, the evaluation data must already be prepared in the `supplementary/data` directory. The models will be loaded from `supplementary/models/` directory so make sure it exists and contains all the files. All the required files must be inside it if you have run training beforehand.
 
 ### Prediction
 ```bash
 python3 economic_simulation batch-predict
 ```
-For batch prediction data and models must have the same structure as evaluation. The prediction results will be written in the `results/batch-prediction` directory. Make sure this directory exists before running the command.
+For batch prediction data and models must have the same structure as evaluation. The prediction results will be written in the `supplementary/results/batch-prediction` directory. Make sure this directory exists before running the command.
 
 ```bash
 python3 economic_simulation predict-over-time
 ```
-The models must have the same structure as evaluation. The data must be a JSON, you can see the data_vec.json as an example of the structure of its data. This JSON file must be present in the `resources/data` directory. The results will be written in the `results/prediction-over-time` directory. Make sure this directory exists before running the command.
+The models must have the same structure as evaluation. The data must be a JSON, you can see the data_vec.json as an example of the structure of its data. This JSON file must be present in the `supplementary/data` directory. The results will be written in the `supplementary/results/prediction-over-time` directory. Make sure this directory exists before running the command.
 
 ### Input Learning
 ```bash
 python3 economoic_simulation input-learning
 ```
-The models and data must have the same structure as evaluation. The learned inputs will be written to the `results/` directory.
+The models and data must have the same structure as evaluation. The learned inputs will be written to the `supplementary/results/` directory.
 
 ### Correlation Matrix
 ```bash
 python3 economic_simulation correlation
 ```
-The models must have the same structure as the evaluation. Correlation matrices for all agents will be written in the `results/correlation` directory. Make sure this directory exists before running the command.
+The models must have the same structure as the evaluation. Correlation matrices for all agents will be written in the `supplementary/results/correlation` directory. Make sure this directory exists before running the command.
 
 ### Derivative Matrix
 ```bash
 python3 economoic_simulation derivative agent-name param-name
 ```
-The models must have the same structure as evaluation. The result would be the derivative matrix for `param-name` state parameter of `agent-name` agent and will be written to the `results/derivative` directory so make sure this directory exists before running the command.
+The models must have the same structure as evaluation. The result would be the derivative matrix for `param-name` state parameter of `agent-name` agent and will be written to the `supplementary/results/derivative` directory so make sure this directory exists before running the command.

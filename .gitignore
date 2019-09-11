@@ -8,13 +8,11 @@ __pycache__/
 # conda env config file
 *.cfg
 
-# plots, figures and ...
-results/
-
 # models and parameters
 *.json
 !params.json
 !simulation.json
+!data_vec.json
 
 # debug
 debug/
