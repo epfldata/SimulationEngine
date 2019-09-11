@@ -1,0 +1,154 @@
+{
+  "constants": {
+    "Person": {
+      "number": 100,
+      "genderMu": 0.5,
+      "genderSigma": 0.1,
+      "buyMu": 1,
+      "buySigma": 2,
+      "consumeMu": 1,
+      "consumeSigma": 2,
+      "buyWheat": 0.5,
+      "buyFlour": 0.5,
+      "buyBread": 0.5,
+      "buyLand": 0.5,
+      "buyBeef": 0.5,
+      "buyOil": 0.5,
+      "buyFuel": 0.5,
+      "consumeWheat": 0.5,
+      "consumeFlour": 0.5,
+      "consumeBread": 0.5,
+      "consumeBeef": 0.5,
+      "consumeOil": 0.5,
+      "consumeFuel": 0.5,
+      "enjoyWheatMu": 10,
+      "enjoyWheatSigma": 10,
+      "enjoyFlourMu": 10,
+      "enjoyFlourSigma": 10,
+      "enjoyBreadMu": 10,
+      "enjoyBreadSigma": 10,
+      "enjoyBeefMu": 10,
+      "enjoyBeefSigma": 10,
+      "enjoyOilMu": 10,
+      "enjoyOilSigma": 10,
+      "enjoyFuelMu": 10,
+      "enjoyFuelSigma": 10,
+      "maleEduMu": 6.0,
+      "maleEduSigma": 1.0,
+      "femaleEduMu": 5.0,
+      "femaleEduSigma": 1.0,
+      "maleBonusSalMu": 100.0,
+      "maleBonusSalSigma": 10.0,
+      "femaleBonusSalMu": 80.0,
+      "femaleBonusSalSigma": 7.0
+    },
+    "Farm": {
+      "number": 1,
+      "salaryMu": 2800000.0,
+      "salarySigma": 200.0,
+      "itersMu": 10.0,
+      "itersSigma": 1.0,
+      "required": 1,
+      "produced": 10,
+      "time": 4
+    },
+    "Mill": {
+      "number": 1,
+      "salaryMu": 2500000.0,
+      "salarySigma": 150.0,
+      "itersMu": 9.0,
+      "itersSigma": 1.0,
+      "consumed": 10,
+      "produced": 10,
+      "time": 1
+    },
+    "Bakery": {
+      "number": 1,
+      "salaryMu": 2800000.0,
+      "salarySigma": 200.0,
+      "itersMu": 10.0,
+      "itersSigma": 1.0,
+      "consumed": 5,
+      "produced": 10,
+      "time": 1
+    },
+    "CattleFarm": {
+      "number": 1,
+      "salaryMu": 2800000.0,
+      "salarySigma": 200.0,
+      "itersMu": 10.0,
+      "itersSigma": 1.0,
+      "required": 1,
+      "produced": 5,
+      "time": 6
+    },
+    "OilField": {
+      "number": 1,
+      "salaryMu": 2800000.0,
+      "salarySigma": 200.0,
+      "itersMu": 10.0,
+      "itersSigma": 1.0,
+      "required": 1,
+      "produced": 10,
+      "time": 1
+    },
+    "Refinery": {
+      "number": 1,
+      "salaryMu": 2800000.0,
+      "salarySigma": 200.0,
+      "itersMu": 10.0,
+      "itersSigma": 1.0,
+      "consumed": 10,
+      "produced": 9,
+      "time": 2
+    }
+  },
+  "variables": {
+    "Person": {
+      "capitalMu": 1000,
+      "capitalSigma": 100,
+      "total_value_destroyedMu": 100,
+      "total_value_destroyedSigma": 10,
+      "happinessMu": 100,
+      "happinessSigma": 10,
+      "salaryMu": 100,
+      "salarySigma": 10
+    },
+    "Farm": {
+      "capitalMu": 10000,
+      "capitalSigma": 1000,
+      "total_value_destroyedMu": 1000,
+      "total_value_destroyedSigma": 100
+    },
+    "Mill": {
+      "capitalMu": 10000,
+      "capitalSigma": 1000,
+      "total_value_destroyedMu": 1000,
+      "total_value_destroyedSigma": 100
+    },
+    "Bakery": {
+      "capitalMu": 10000,
+      "capitalSigma": 1000,
+      "total_value_destroyedMu": 1000,
+      "total_value_destroyedSigma": 100
+    },
+    "CattleFarm": {
+      "capitalMu": 10000,
+      "capitalSigma": 1000,
+      "total_value_destroyedMu": 1000,
+      "total_value_destroyedSigma": 100
+    },
+    "OilField": {
+      "capitalMu": 10000,
+      "capitalSigma": 1000,
+      "total_value_destroyedMu": 1000,
+      "total_value_destroyedSigma": 100
+    },
+    "Refinery": {
+      "capitalMu": 10000,
+      "capitalSigma": 1000,
+      "total_value_destroyedMu": 1000,
+      "total_value_destroyedSigma": 100
+    }
+  }
+}
