@@ -29,7 +29,7 @@ def black_box_function(stepSize, entry, **params):
     f.write(json.dumps(all_params))
     f.close()
 
-    result = runCmd('sbt --warn "run evaluate {} {} {}'.format(json_temp, stepSize, entry))
+    result = runCmd('sbt --warn "run evaluate {} {} {}"'.format(json_temp, stepSize, entry))
     print(result)
     return -float(result.decode("utf-8")[:-1])
 
