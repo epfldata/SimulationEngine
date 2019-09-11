@@ -6,7 +6,7 @@ object Simulation extends App {
   var actors: List[Actor] = List()
   var messages: List[Message] = List()
   var timer = 0
-  var until = 1000
+  var until = 10
 
   def init(): Unit = {
     actors = generated.InitData.initActors

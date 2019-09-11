@@ -37,6 +37,10 @@ abstract class LiftedMethod[R](val cls: IR.TopLevel.Clasz[_],
 object Method {
   var lastMethodId = 0
 
+  /** Gets the next available id for methods
+    *
+    * @return next available id for a method
+    */
   def getNextMethodId: Int = {
     val tmp = lastMethodId
     lastMethodId = lastMethodId + 1
