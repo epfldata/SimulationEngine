@@ -166,8 +166,11 @@ class Lifter {
           y,
           liftCode(code"$foreachbody; ()", actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
-      case code"while($cond) $body " =>
-        val f = DoWhile(cond, liftCode(body, actorSelfVariable, clasz))
+      case code"while($cond) $body" =>
+        val f = IfThenElse(
+          cond,
+          DoWhile(cond, liftCode(body, actorSelfVariable, clasz)),
+          NoOp[Unit]())
         f.asInstanceOf[Algo[T]]
       case code"if($cond: Boolean) $ifBody:T else $elseBody: T  " =>
         val f = IfThenElse(cond,
