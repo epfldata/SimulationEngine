@@ -30,8 +30,9 @@ def black_box_function(stepSize, entry, **params):
     f.close()
 
     result = runCmd('sbt --warn "run evaluate {} {} {}"'.format(json_temp, stepSize, entry))
-    print(result)
-    return -float(result.decode("utf-8")[:-1])
+    target = -float(result.decode("utf-8")[:-1])
+    print(target)
+    return target
 
 
 def runCmd(cmd):
@@ -108,10 +109,9 @@ if __name__ == '__main__':
                 optimizer.register(params=next_point, target=target)
                 print()
 
-            print(optimizer.max)
-
             all_params.update(toJson(optimizer.max['params']))
             params_result["stepSize-{}".format(stepSize)]["entry-{}".format(entry)].update(all_params)
+            params_result["stepSize-{}".format(stepSize)]["entry-{}".format(entry)]["target"] = optimizer.max["target"]
 
             f = open(json_result, "w")
             f.write(json.dumps(params_result))
