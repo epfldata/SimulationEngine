@@ -5,7 +5,7 @@ import java.io.File
 import guru.nidi.graphviz.attribute.{Color, Label, RankDir}
 import guru.nidi.graphviz.engine.{Format, Graphviz}
 import guru.nidi.graphviz.model.{Factory, Graph}
-import meta.deep.algo.AlgoInfo.{EdgeInfo, MergeInfo}
+import meta.deep.algo.AlgoInfo.EdgeInfo
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -59,6 +59,12 @@ object GraphDrawing {
     gviz.render(Format.PNG).toFile(new File("debug/graph_" + name + ".png"))
   }
 
+  /**
+    * This draws a graph for the mergeInfo node introduced in actorMerge.
+    *
+    * @param graph graph which should be drawen
+    * @param name  some name to make file name unique
+    */
   def drawMergeGraph(graph: ArrayBuffer[MergeInfo], name: String = ""): Unit = {
     var g: Graph = Factory
       .graph("ExecutionGraph")

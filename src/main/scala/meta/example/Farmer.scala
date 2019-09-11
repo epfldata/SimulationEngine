@@ -1,7 +1,7 @@
 package meta.example
 
 import meta.classLifting.SpecialInstructions._
-import meta.deep.member.Actor
+import meta.deep.runtime.Actor
 import squid.quasi.lift
 
 @lift

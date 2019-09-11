@@ -1,7 +1,7 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo, MergeInfo}
+import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -43,8 +43,12 @@ class ActorMerge() extends StateMachineElement() {
   }
 
   /**
-    * This functions generates an abstract graph with only wait edges
+    * This functions generates an abstract graph with only wait edges.
+    * This means, that from a startnode all paths are followed, until a wait edge is reached and the two positions are put
+    * as a node into the waitgraph
     * This is required to generate a merged state machine, where only the wait edges generate a new state
+    * @param graph the input graph, which should be anaylzed
+    * @return a wait graph
     */
   def waitGraph(graph: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
     val graphStart = graph.groupBy(_.from.getNativeId)
@@ -115,6 +119,12 @@ class ActorMerge() extends StateMachineElement() {
     newGraph
   }
 
+  /**
+    * This functions generates a product graph based on the transitions on wait graphs
+    * @param graph1 a waitgraph of one graph
+    * @param graph2 a waitgraph of a second graph
+    * @return a merged graph containing the combined transations between the two graphs
+    */
   def generateMergedStateMachine(
       graph1: ArrayBuffer[EdgeInfo],
       graph2: ArrayBuffer[EdgeInfo]): ArrayBuffer[MergeInfo] = {
@@ -188,6 +198,16 @@ class ActorMerge() extends StateMachineElement() {
     mergedGraphReachable
   }
 
+  /**
+    * This functions combines two graphs together.
+    * Therefore it goes along the edges of the first graph until a wait edge is reached and continues then with the second
+    * graph until a wait edge is reached. This is done for all start positions in the merged graph.
+    * At the end the end of a sub-graph is combined with the start of the next-subgraph.
+    * @param mergedGraph the merged state machine
+    * @param graph1 the graph of actor1
+    * @param graph2 the graph of actor2
+    * @return a combined graph between actor1 and actor2
+    */
   def combineActors(mergedGraph: ArrayBuffer[MergeInfo],
                     graph1: ArrayBuffer[EdgeInfo],
                     graph2: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
@@ -287,13 +307,12 @@ class ActorMerge() extends StateMachineElement() {
         start1Edges.foreach(edge => {
           val edgeTargetId: Int = edge.to.getNativeId
 
-          //TODO: check if logic is correct or if graph1Reachable is wrong for end nodes :)
           if (graphStart2 != null && !reachableStates.exists(
                 x =>
                   graph1Reachable
                     .getOrElse(edgeTargetId, List())
                     .contains(x._1))) {
-            println("DBEUG 1: State not possible", graphPos, edgeTargetId)
+            /*println("DBEUG 1: State not possible", graphPos, edgeTargetId)*/
             return
           }
           if (graphStart2 == null && !reachableStates
@@ -302,15 +321,12 @@ class ActorMerge() extends StateMachineElement() {
                   graph2Reachable
                     .getOrElse(edgeTargetId, List())
                     .contains(x._2))) {
-            println("DEBUG 2: State not possible",
+            /*println("DEBUG 2: State not possible",
                     graphPos,
                     edgeTargetId,
-                    reachedStateTmp)
+                    reachedStateTmp)*/
             return
           }
-          /*if (graph1Reachable(edgeTarget)) {
-            return
-          }*/
 
           val nextPos = posMappingI.getOrElse(edgeTargetId, posCounter + 1)
           var newPos = false
@@ -423,3 +439,15 @@ class ActorMerge() extends StateMachineElement() {
   }
 
 }
+
+/**
+  * this class, stores only meta data needed for merging
+  * @param from position of startnode
+  * @param to position of endnode
+  * @param graph1 actual position of start and end node of graph1
+  * @param graph2 actual position of start and end node of graph2
+  */
+case class MergeInfo(from: CodeNodePos,
+                     to: CodeNodePos,
+                     graph1: (CodeNodePos, CodeNodePos),
+                     graph2: (CodeNodePos, CodeNodePos))

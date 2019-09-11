@@ -1,6 +1,6 @@
 package meta.example
 
-import meta.deep.member.Actor
+import meta.deep.runtime.Actor
 import squid.quasi.lift
 
 @lift

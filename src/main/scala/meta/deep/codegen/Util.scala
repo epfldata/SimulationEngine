@@ -2,11 +2,17 @@ package meta.deep.codegen
 
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{EdgeInfo, VarWrapper}
-import meta.deep.member.{ActorType, ResponseMessage}
+import meta.deep.member.ActorType
+import meta.deep.runtime.ResponseMessage
 import squid.lib.MutVar
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
+/**
+  * This is a class which contains the generation pipeline
+  * @param convertElement a code fragment which converts the deep representation to the graph representation
+  * @param stateMachineElements elements, which are applied on the deep representation.
+  */
 case class Pipeline(convertElement: ConvertElement,
                     stateMachineElements: List[StateMachineElement]) {
   def run(): Unit = {
@@ -17,18 +23,50 @@ case class Pipeline(convertElement: ConvertElement,
   }
 }
 
+/**
+  * One element in the pipeline
+  */
 abstract class PipelineElement() {}
 
+/**
+  * A subtype, which handles the conversion between the deep and the graph representation
+  * @param actorTypes a list of actortypes, which should be handled
+  */
 abstract class ConvertElement(actorTypes: List[ActorType[_]])
     extends PipelineElement() {
+
+  /**
+    * This function runs the conversion step
+    * @return a graph representation of the code
+    */
   def run(): List[CompiledActorGraph]
 }
 
+/**
+  * A subtype, which handles a graph representation conversion from one graph to another
+  */
 abstract class StateMachineElement() extends PipelineElement() {
+
+  /**
+    * This runs the conversion step
+    * @param compiledActorGraphs a list of graphs from the previous step
+    * @return modified graph
+    */
   def run(
       compiledActorGraphs: List[CompiledActorGraph]): List[CompiledActorGraph]
 }
 
+/**
+  * This class represents the graph representation used for working in StateMachineElement
+  * @param name the name of the actortype
+  * @param graph the graph of EdgeInfos containing the actual code
+  * @param variables a list of variables which have been used in code and needs a conversion to MutVar
+  * @param variables2 a list of variables which have been additionally added, where no conversion was necessary
+  * @param actorTypes a list of actorTypes represented in this graph represented actortype
+  * @param positionStack a list of positionStack, one for each original actortype
+  * @param returnValue a list of returnValue, one for each original actortype
+  * @param responseMessage a list of responseMessage, one for each original actortype
+  */
 case class CompiledActorGraph(
     var name: String,
     var graph: ArrayBuffer[EdgeInfo],

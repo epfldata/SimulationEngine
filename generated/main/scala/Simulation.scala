@@ -1,4 +1,5 @@
-import meta.deep.member.{Actor, Message}
+import meta.deep.runtime.Message
+import meta.deep.runtime.{Actor, Message}
 
 object Simulation extends App {
 

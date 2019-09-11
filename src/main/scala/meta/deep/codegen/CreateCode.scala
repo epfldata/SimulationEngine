@@ -6,7 +6,7 @@ import meta.deep.IR
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
 import meta.deep.algo.AlgoInfo.EdgeInfo
-import meta.deep.member.Actor
+import meta.deep.runtime.Actor
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -35,6 +35,10 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     null
   }
 
+  /**
+    * This code generated the class data and passes it for the class generation
+    * @param compiledActorGraph the graph data required for generating the class
+    */
   def prepareClass(compiledActorGraph: CompiledActorGraph): Unit = {
     val selfs = compiledActorGraph.actorTypes.map(actorType =>
       actorType.self.toCode.toString().substring(5).dropRight(1))
@@ -75,7 +79,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     val run_until = "override def run_until" + parts(1)
       .trim()
       .substring(1)
-      .replaceFirst("=>", ": meta.deep.member.Actor = ")
+      .replaceFirst("=>", ": meta.deep.runtime.Actor = ")
       .dropRight(1)
       .trim
       .dropRight(1)
@@ -92,6 +96,11 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     createClass(compiledActorGraph.name, initParams, initVars, run_until)
   }
 
+  /**
+    * This generates the code of the state machine
+    * @param compiledActorGraph the graph data for generating the code of an actor
+    * @return a list of commands/code fragments, which can be called
+    */
   def generateCode(
       compiledActorGraph: CompiledActorGraph): List[OpenCode[Unit]] = {
     val graph: ArrayBuffer[EdgeInfo] = compiledActorGraph.graph
@@ -280,7 +289,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
       s"""
           package generated
 
-          class $className extends meta.deep.member.Actor {
+          class $className extends meta.deep.runtime.Actor {
             $initParams
               $initVars
               $run_until
@@ -291,6 +300,11 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     bw.close()
   }
 
+  /**
+    * This changes the type of the variables to reference to the generated classes.
+    * @param code which should be changed
+    * @return code with replaced variable types
+    */
   def changeTypes(code: String): String = {
     var result = code
     for (cAG <- this.compiledActorGraphs) {
@@ -345,13 +359,17 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
         initVar2(x, generateVarInit(xs, after))
     }
 
+  /**
+    * This generates the init code of the simulation
+    * @param code init code of the simulation
+    */
   def createInit(code: String): Unit = {
     val classString =
       s"""
           package generated
 
           object InitData  {
-            def initActors: List[meta.deep.member.Actor] = {${changeTypes(code)}}
+            def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(code)}}
           }
         """
     val file = new File(storagePath + "/generated/InitData.scala")

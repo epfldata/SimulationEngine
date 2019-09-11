@@ -5,7 +5,8 @@ import meta.deep.IR.Predef._
 import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.codegen._
-import meta.deep.member.{ActorType, LiftedMethod, RequestMessage, State}
+import meta.deep.member.{ActorType, LiftedMethod, State}
+import meta.deep.runtime.RequestMessage
 
 object CodegenExample extends App {
 

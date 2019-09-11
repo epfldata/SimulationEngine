@@ -2,6 +2,7 @@ package meta.deep.member
 
 import meta.deep.IR.Predef._
 import meta.deep.algo.Algo
+import meta.deep.runtime.Actor
 
 /**
   * Class representation of an actor containing the data needed for code generation

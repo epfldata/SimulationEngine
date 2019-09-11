@@ -38,10 +38,21 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
 
   import CreateActorGraphs._
 
+  /**
+    * Contains the mapping between method id and start position of the method in graph
+    */
   private val methodLookupTable: collection.mutable.Map[Int, Int] =
     collection.mutable.Map[Int, Int]()
+
+  /**
+    * Contains the mapping between method id and the end position of the method in graph
+    */
   private val methodLookupTableEnd: collection.mutable.Map[Int, Int] =
     collection.mutable.Map[Int, Int]()
+
+  /**
+    * Is used to save variables, which need to be gloablly initialized
+    */
   private var variables: List[VarValue[_]] = List()
 
   override def run(): List[CompiledActorGraph] = {
@@ -137,7 +148,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
       AlgoInfo.positionStack,
       code"ListBuffer[List[((Int,Int),Int)]]()") :: VarValue(
       AlgoInfo.responseMessage,
-      code"MutVar[meta.deep.member.ResponseMessage](null)") :: variables
+      code"MutVar[meta.deep.runtime.ResponseMessage](null)") :: variables
 
     CompiledActorGraph(
       actorType.name,
@@ -152,7 +163,9 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     )
   }
 
-  // expand with a loop at the end, so that we wait at the end until finished (no dead end)
+  /**
+    * expand a graph with a loop at the end, so that we wait at the end until simulation is finished (no dead end)
+    */
   def expandEndNodes(): Unit = {
     val graphEnd = AlgoInfo.stateGraph.groupBy(_.to.getNativeId)
     val graphStart = AlgoInfo.stateGraph.groupBy(_.from.getNativeId)
