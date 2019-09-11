@@ -49,10 +49,10 @@ def runCmd(cmd):
 
 if __name__ == '__main__':
     os.chdir('../../..')  # going to the root of the project
-    json_original = 'params.json'
-    json_optimize = "optimize.json"
-    json_temp = 'temp.json'
-    json_result = 'result.json'
+    json_original = 'supplementary/params/params.json'
+    json_optimize = "supplementary/params/optimize.json"
+    json_temp = 'supplementary/params/.json'
+    json_result = 'supplementary/params/bo-result.json'
 
     f = open(json_original, "r")
     all_params = json.loads(f.read())

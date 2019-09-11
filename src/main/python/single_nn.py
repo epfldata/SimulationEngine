@@ -1,7 +1,7 @@
-import pandas as pd
 import os
-import sys
 
+import pandas as pd
+import sys
 from keras import Sequential
 from keras.layers import Dense
 from keras.models import load_model
@@ -15,8 +15,8 @@ if __name__ == '__main__':
 
     action = sys.argv[1]
     if action == 'train':
-        x = pd.read_csv("target/data/global_stat_input.csv")
-        y = pd.read_csv("target/data/global_stat_output.csv")
+        x = pd.read_csv("supplementary/data/global_stat_input.csv")
+        y = pd.read_csv("supplementary/data/global_stat_output.csv")
 
         x = (x - x.mean()) / x.std()
         y = (y - y.mean()) / y.std()
@@ -40,13 +40,13 @@ if __name__ == '__main__':
         print(model.evaluate(x_test.to_numpy(), y_test.to_numpy()))
 
         if len(sys.argv) > 2 and sys.argv[2] == '--save':
-            model.save('target/models/single/single_nn.h5')
+            model.save('supplementary/models/single/single_nn.h5')
 
     elif action == 'evaluate':
-        model = load_model('target/models/single/single_nn.h5')
+        model = load_model('supplementary/models/single/single_nn.h5')
 
-        x = pd.read_csv("target/data/global_stat_input.csv")
-        y = pd.read_csv("target/data/global_stat_output.csv")
+        x = pd.read_csv("supplementary/data/global_stat_input.csv")
+        y = pd.read_csv("supplementary/data/global_stat_output.csv")
 
         x = (x - x.mean()) / x.std()
         y = (y - y.mean()) / y.std()

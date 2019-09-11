@@ -1,13 +1,12 @@
 import json
 import os
-import sys
-from math import floor
 
 import numpy as np
 import pandas as pd
-
+import sys
 from aggregator import GlobalStateAggregator
 from env import Agent, Environment
+from math import floor
 
 
 def prepare_environment(config_address, models_address=None):
@@ -97,8 +96,8 @@ def get_aggregator(input_data):
                                               "happiness", "valueProduced", "goodwill"])
 
 
-def learn_input(data_input, data_output):
-    return env.learn_input(data_output, get_aggregator(data_input), epochs=10 ** 3)
+def learn_input(data_input, data_output, epochs=10 ** 5):
+    return env.learn_input(data_output, get_aggregator(data_input), epochs)
 
 
 if __name__ == '__main__':
@@ -109,32 +108,39 @@ if __name__ == '__main__':
 
     action = sys.argv[1]
     if action == 'train':
-        env, agent_dict, data_input, data_output = setup_train_test('simulation.json', 'target/data/')
+        env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'supplementary/data/')
 
         agents = agent_dict.values()
         train_input, train_output, test_input, test_output = train_test_split(data_input, data_output, 0.75)
         env.solo_train(train_input, train_output, training_hyper_params={
-            agent: {'epochs': 50} for agent in agents
+            agent: {'epochs': 500} for agent in agents
         })
         env.solo_test(test_input, test_output)
         print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
 
         if '--group' in sys.argv:
             print("group training:")
-            env.group_train(train_input, train_output, get_aggregator(train_input))
+            env.group_train(train_input, train_output, get_aggregator(train_input), epochs=500)
             print()
 
         env.solo_test(test_input, test_output)
         print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
         if '--save' in sys.argv:
-            env.save_models("target/models/", data_input)
+            env.save_models("supplementary/models/", data_input)
 
     elif action == 'input-learning':
-        env, agent_dict, data_input, data_output = setup_train_test('simulation.json', 'target/data/', 'target/models/')
-        print("learn input:", learn_input(data_input, data_output))
+        env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'supplementary/data/', 'supplementary/models/')
+        learned_input = learn_input(data_input, data_output, epochs=10 ** 5)
+        result_json = {
+            "constants": {},
+            "variables": {}
+        }
+        for agent in learned_input:
+            for row in learned_input[agent]["constants"].rows:
+                # todo dataframe to json
 
     elif action == 'evaluate':
-        env, agent_dict, data_input, data_output = setup_train_test('simulation.json', 'target/data/', 'target/models/')
+        env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'supplementary/data/', 'supplementary/models/')
         env.solo_test(data_input, data_output)
 
         print("group test:", env.group_test(data_input, data_output, get_aggregator(data_input)))
@@ -143,23 +149,23 @@ if __name__ == '__main__':
     elif action == 'predict':
         if len(sys.argv) < 3:
             raise Exception("time required!")
-        env, agent_dict, data_vec = setup_prediction('simulation.json', 'target/models/', 'target/data/data_vec.json')
+        env, agent_dict, data_vec = setup_prediction('supplementary/simulation.json', 'supplementary/models/', 'supplementary/data/data_vec.json')
         data = env.predict_over_time(data_vec, int(sys.argv[2]))
 
         for agent in data:
             total_data = data[agent]['constants'].join(data[agent]['states'])
-            total_data.to_csv(f'target/results/{agent.name}.csv')
+            total_data.to_csv(f'supplementary/results/{agent.name}.csv')
 
     elif action == 'correlation':
-        env, agent_dict = prepare_environment('simulation.json', 'target/models/')
+        env, agent_dict = prepare_environment('supplementary/simulation.json', 'supplementary/models/')
 
         for agent_name in agent_dict:
-            env.correlation_matrix(agent_dict[agent_name]).to_csv(f'target/results/correlation/{agent_name}.csv')
+            env.correlation_matrix(agent_dict[agent_name]).to_csv(f'supplementary/results/correlation/{agent_name}.csv')
 
     elif action == 'derivative':
         if len(sys.argv) < 4:
             raise Exception("both agent and parameter name required")
-        env, agent_dict = prepare_environment('simulation.json', 'target/models/')
+        env, agent_dict = prepare_environment('supplementary/simulation.json', 'supplementary/models/')
 
         env.derivative_matrix(agent_dict[sys.argv[2]], sys.argv[3], 100).to_csv(
-            f'target/results/derivative/{sys.argv[2]}_{sys.argv[3]}.csv')
+            f'supplementary/results/derivative/{sys.argv[2]}_{sys.argv[3]}.csv')
