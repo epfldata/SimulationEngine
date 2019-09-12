@@ -67,7 +67,7 @@ if __name__ == '__main__':
     variables = params["variables"]
     for agentType in constants:
         append = {
-            "number": (1, 200) if agentType == "Person" else (1, 10),
+            "number": (100, 200) if agentType == "Person" else (2, 10),
             **{gender: (0, 1) for gender in constants[agentType] if "gender" in gender.lower()},
             **{units: (1, 10) for units in constants[agentType] if units in ["buyMu", "buySigma", "consumeMu", "consumeSigma"]},
             **{buyFood: (0, 1) for buyFood in constants[agentType] if "buy" in buyFood.lower() and buyFood not in ["buyMu", "buySigma"]},
