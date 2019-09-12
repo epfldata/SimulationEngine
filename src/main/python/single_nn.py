@@ -25,9 +25,9 @@ if __name__ == '__main__':
 
         number_of_features = x_train.columns.size
         number_of_outputs = y_train.columns.size
-        number_of_layers = 5
-        number_of_units = [64, 64, 64, 64, number_of_outputs]
-        activations = ['relu', 'relu', 'relu', 'relu', 'linear']
+        number_of_layers = 10
+        number_of_units = [64, 128, 256, 512, 512, 512, 256, 128, 64, number_of_outputs]
+        activations = ['relu', 'relu', 'relu', 'relu', 'relu', 'relu', 'relu', 'relu', 'relu', 'linear']
 
         model = Sequential()
         for i in range(number_of_layers):

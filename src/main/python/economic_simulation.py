@@ -137,6 +137,7 @@ if __name__ == '__main__':
         }
         for agent in learned_input:
             for row in learned_input[agent]["constants"].rows:
+                pass
                 # todo dataframe to json
 
     elif action == 'evaluate':

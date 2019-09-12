@@ -80,6 +80,7 @@ class Environment:
         :return: standardized (z-score) data, the data has the same 'data' structure of the project, along with the
                  scales
         """
+
         if from_previous_scale:
             scales = {agent: {
                 type: (self._scales[agent][type]['mean'], self._scales[agent][type]['sd'])
@@ -93,6 +94,9 @@ class Environment:
             type: (data[agent][type] - scales[agent][type][0]) / scales[agent][type][1] for type in
             ['states', 'constants']
         } for agent in data}
+
+        scaled_data = {agent: {type: data[agent][type].fillna(1) for type in ['states', 'constants']} for agent in
+                       scaled_data}
 
         return scaled_data, scales
 
@@ -115,6 +119,8 @@ class Environment:
             scales = {agent: (data[agent].mean(), data[agent].std()) for agent in data}
 
         scaled_data = {agent: (data[agent] - scales[agent][0]) / scales[agent][1] for agent in data}
+
+        scaled_data = {agent: data[agent].fillna(1) for agent in scaled_data}
 
         return scaled_data, scales
 
@@ -164,7 +170,7 @@ class Environment:
         :return: Creates and returns the low-level node corresponding to the high-level agent
         :rtype: Node
         """
-        input_names = agent.constants.copy()
+        input_names = agent.constants
         for in_agent in self._connections[agent]:
             input_names += in_agent.states
         node = Node(agent.name, input_names, agent.states, {
@@ -253,7 +259,7 @@ class Environment:
 
         return rescaled_new_data
 
-    def group_train(self, agent_input, agent_output, aggregator, epochs=100, learning_rate=0.1):
+    def group_train(self, agent_input, agent_output, aggregator, epochs=100):
         """Trains all agents together using aggregated outputs (global statistics)
 
         :param agent_input: The general 'data' structure, refer to README.md
@@ -274,7 +280,7 @@ class Environment:
 
         node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
         global_output = aggregator.aggregate_pd(agent_output)
-        self._graph.group_train(node_input, global_output, aggregator, epochs, learning_rate)
+        self._graph.group_train(node_input, global_output, aggregator, epochs)
 
     def group_test(self, data_input, data_output, aggregator):
         """Tests the aggregated output produced by the model against ground truth
@@ -338,12 +344,14 @@ class Environment:
         :param agent_output:
         :param aggregator:
         :param epochs:
+        :param learning_rate:
         :return:
         """
 
         def get_input_scaled(node_input, agent, type, get_names):
             scales = (self._scales[agent][type]['mean'], self._scales[agent][type]['sd'])
-            return node_input[get_names(agent)] * scales[1] + scales[0]
+            filter_prefix = 'var' if type == 'states' else 'const'
+            return node_input[get_names(agent)].filter(like=filter_prefix) * scales[1] + scales[0]
 
         if self._non_compiled_changes:
             raise Exception('Non-Compiled Changes! Compile first!')
