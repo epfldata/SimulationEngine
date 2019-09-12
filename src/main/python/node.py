@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.layers import Dense, InputLayer
 from tensorflow.python.keras.models import Sequential, load_model
@@ -56,8 +55,7 @@ class Node:
 
     def extended_model(self, n_samples):
         """
-        todo: Complete this doc!
-        :param n_samples:
+        creates a copy of current model
         :return:
         """
         input_variable = tf.Variable(initial_value=tf.ones((n_samples, self.input_size())), trainable=True,

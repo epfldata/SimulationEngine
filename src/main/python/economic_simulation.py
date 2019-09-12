@@ -11,6 +11,9 @@ from math import floor
 
 
 def prepare_environment(config_address, models_address=None):
+    """
+    loads config and models, creates agents and environment
+    """
     with open(config_address, 'r') as sim_file:
         jstring = sim_file.read()
     config = json.loads(jstring)
@@ -33,6 +36,9 @@ def prepare_environment(config_address, models_address=None):
 
 
 def prepare_data(data_address, with_constants):
+    """
+    splits all params in constants and states
+    """
     data = {}
     for agent in data_address:
         raw_data = pd.read_csv(data_address[agent])
@@ -46,6 +52,9 @@ def prepare_data(data_address, with_constants):
 
 
 def train_test_split(data_input, data_output, train_ratio):
+    """
+    splits the input and output by the ratio
+    """
     dataset_size = len(list(data_output.values())[0])
     train_index = np.random.choice(range(dataset_size), floor(train_ratio * dataset_size))
 
@@ -103,6 +112,14 @@ def get_aggregator(input_data):
 
 
 def learn_input(env, data_input, data_output, epochs=10 ** 5):
+    """
+    learns the input for given output
+    :param data_input: contains for each agent constants and states
+    :type data_input dict
+    :param data_output: contains for each agent constants and states
+    :type data_output dict
+    :return: the parameter obejects for all entries
+    """
     learned_input = env.learn_input(data_output, get_aggregator(data_input), epochs)
     result_json = {}
     for agent in learned_input:
