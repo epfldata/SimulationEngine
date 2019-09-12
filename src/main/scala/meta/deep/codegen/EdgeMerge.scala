@@ -5,7 +5,13 @@ import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
 
 import scala.collection.mutable.ArrayBuffer
 
-class GraphMerge() extends StateMachineElement() {
+/**
+  * This class merges edges from the graph, if a program path cannot change between the edges.
+  * This means, when we look at a graph of the format: n1-e1-n2-e2-n3 (where n denotes a node
+  * and e denotes a edge) that n2 has no other edge e, which points to n2 or has no other edge
+  *  e, which points from n2.
+  */
+class EdgeMerge() extends StateMachineElement() {
 
   override def run(compiledActorGraphs: List[CompiledActorGraph])
     : List[CompiledActorGraph] = {
@@ -18,8 +24,7 @@ class GraphMerge() extends StateMachineElement() {
   }
 
   /**
-    * This function removes unnecessary edges
-    * and rewrites state graph to contain new ones
+    * This function removes unnecessary nodes by combining two edges into one
     * @param graph which should be optimized
     * @return new graph with optimized code
     */
@@ -41,23 +46,33 @@ class GraphMerge() extends StateMachineElement() {
     val groupedGraphStart = graph.groupBy(_.from.getNativeId)
     val groupedGraphEnd = graph.groupBy(_.to.getNativeId)
 
+    //This class is used to represent a triple of nodes (n1,n2,n3), where n2 can be removed
     case class MergeInfo(startNode: Int, middleNode: Int, endNode: Int)
+
+    //This list saves all
     var mergeList: List[MergeInfo] = List()
 
     /** The code is executed between two nodes:
-      * This means, that code can be merged between 3 nodes if following is fullfilled:
+      * This means, that code can be merged between 3 nodes if following is fulfilled:
       * Node 2: Has exactly one outgoing and one incoming edge and the incoming edge is not a wait and the outgoing edge has no condition
-      * Extra: I am not allowed to merge with the next code, if a cycle is created
-      * Extra: I am only allowed to merge the code, if the state is the same, otherwise I have to reset state (check with state and stack)
+      * Additionally following has to hold:
+      * * Detecting cycles and handle them differently
+      * * Not allowed to merge, if the state of the edges is different
+      *      (that means, they are from different original actors, thus different registers are used in the edge)
       */
-    // TODO Extra: I am not allowed to merge with the next code, if a cycle is created (since wait required somewhere currently skipped)
+    // TODO Cycle detection not implemented, since wait removes cycles
 
-    var counter = 1 // Do not merge start with end
+    // Do not merge start node (0), since it is the entry point of the program, thus start at 1
+    var counter = 1
+
     //This loops check, if it is possible to merge with the next node
     while (counter < m.length) {
+      //Node incoming and outgoing check
       if (incoming(counter) == 1 && outgoing(counter) == 1) {
+        //Check if first edge is a waitEdge and outgoing edge has no condition
         if (!groupedGraphEnd(counter)(0).waitEdge && groupedGraphStart(counter)(
               0).cond == null) {
+          //Check if the states are equal
           if (groupedGraphEnd(counter)(0).edgeState == groupedGraphStart(counter)(
                 0).edgeState && groupedGraphEnd(counter)(0).positionStack == groupedGraphStart(
                 counter)(0).positionStack) {
@@ -98,12 +113,12 @@ class GraphMerge() extends StateMachineElement() {
       }
 
       //isMethod is not relevant anymore, just interested in first graph for different color
-      // Create a new edgeInfo
+      // Create a new edgeInfo for the merged edge (newEdge)
       val firstEdge: EdgeInfo = groupedGraphStart(entry.startNode)
         .find(_.to.getNativeId == entry.middleNode)
         .get
       val secondEdge: EdgeInfo = groupedGraphStart(entry.middleNode)(0)
-      val newNode: EdgeInfo = EdgeInfo(
+      val newEdge: EdgeInfo = EdgeInfo(
         firstEdge.label + ", " + secondEdge.label,
         firstEdge.from,
         secondEdge.to,
@@ -118,11 +133,12 @@ class GraphMerge() extends StateMachineElement() {
       )
       assert(firstEdge.edgeState == secondEdge.edgeState)
       assert(secondEdge.to.getNativeId == entry.endNode)
+
       // Remove old edgeInfo and inserted new created ones
       groupedGraphStart(entry.startNode)
         .remove(groupedGraphStart(entry.startNode).indexOf(firstEdge))
       groupedGraphStart(entry.middleNode).remove(0)
-      groupedGraphStart(entry.startNode).append(newNode)
+      groupedGraphStart(entry.startNode).append(newEdge)
 
       //Keep references of replaced nodes updated
       replacedNodes = replacedNodes + (entry.middleNode -> entry.startNode)
@@ -134,7 +150,7 @@ class GraphMerge() extends StateMachineElement() {
     }
 
     val graph2 = groupedGraphStart.foldLeft(ArrayBuffer[EdgeInfo]())((a, b) => {
-      // Update jumping positions by changing start and end edges of them
+      // Update jumping positions of nodes by changing start and end edges to point to the new created edge
       b._2.foreach(e => {
         e.storePosRef.foreach(edgeGroup => {
           edgeGroup.foreach(edge => {

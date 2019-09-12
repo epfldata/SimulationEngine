@@ -6,11 +6,12 @@
   * ActorMerge takes a pair of ActorType Names to specify which one to merge.  
   Take care, that the class variables are named differently in the two actors
   * Stateless Server Optimization has following rules:
-    * A Class is considered as statless, if it ends with the word Stateless
+    * A Class is considered as stateless, if it ends with the word Stateless
     * That class should not have a wait in a non-blocking method, otherwise the program is not behaving as original
-    * Statless Server cannot call a method from a non-statless Server
-    * An object can have only one specific reference to one (unique) specifc statless server class.  
+    * Stateless Server cannot call a method from a non-stateless Server
+    * An object can have only one specific reference to one (unique) specifc stateless server class.  
     It can have different references to different stateless servers.
+    * The optimization has to be applied before using the EdgeMerge Optimization, since it requires the original graph
 * Following structures are lifted by default: 
   * while(cond) {code}
   * var x = code
@@ -32,7 +33,7 @@
  
 ### Run Classlifting-Examples
 Make sure to run the code with enough stack size, otherwise you will get a StackOverflowError. 
-You can set this paramter for example in Intellij by putting -Xss128m (128MB Stack size) at VM configuration in the 
+You can set this parameter for example in Intellij by putting -Xss128m (128MB Stack size) at VM configuration in the 
 configuration settings.
 
 At the moment it is important to build squid locally before using this code. Since there is no public release with

@@ -18,7 +18,7 @@ object ServerExampleMerge extends App {
     new CreateActorGraphs(simulationData._1),
     List(
       new ActorMerge(List(("BackendServer", "FrontendServer"))),
-      new GraphMerge(),
+      new EdgeMerge(),
       new CreateCode(simulationData._2, "generated/main/scala"),
     ))
 

@@ -17,7 +17,7 @@ object Instructions {
   }
 
   /**
-    * Puhsed the arg on the stack for the given method and argument position
+    * Pushed the arg on the stack for the given method and argument position
     *
     * @param methodId id of method you want to put the argument on the stack
     * @param argPos   position of argument (Starting with 0, if multiple lists, just continue counting)

@@ -1,7 +1,7 @@
 package meta.example.server_communication
 
 import meta.classLifting.Lifter
-import meta.deep.codegen.{CreateActorGraphs, CreateCode, GraphMerge, Pipeline}
+import meta.deep.codegen.{CreateActorGraphs, CreateCode, EdgeMerge, Pipeline}
 import meta.deep.runtime.Actor
 import meta.deep.IR
 import meta.deep.IR.TopLevel._
@@ -15,7 +15,7 @@ object ServerExample extends App {
   val simulationData = lifter(startClasses, mainClass)
 
   val pipeline = Pipeline(new CreateActorGraphs(simulationData._1), List(
-    new GraphMerge(),
+    new EdgeMerge(),
     new CreateCode(simulationData._2, "generated/main/scala"),
   ))
 

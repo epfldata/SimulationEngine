@@ -8,7 +8,7 @@ case class IfThenElse[A](cond: OpenCode[Boolean],
     extends Algo[A] {
 
   /**
-    * 1. Check if condition is fullfilled,
+    * 1. Check if condition is fulfilled,
     * 2. If yes, run if part and jump then to end of else part
     * 3. If not jump to else start and run the code
     */

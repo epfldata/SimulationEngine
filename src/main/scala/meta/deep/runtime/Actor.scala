@@ -63,7 +63,7 @@ case class RequestMessage(override val senderId: Actor.AgentId,
     extends Message {
 
   /**
-    * this functions simpliefied the replying to a method
+    * this functions simplified the replying to a method
     * @param owner the sender of the reply message
     * @param returnValue the return value/answer for the request message
     */
@@ -78,7 +78,7 @@ case class RequestMessage(override val senderId: Actor.AgentId,
   * This class is used to answer to a received message.
   * @param senderId the id of the sender
   * @param receiverId the id of the receiver
-  * @param arg the return value of the method/anwer of the request message
+  * @param arg the return value of the method/answer of the request message
   */
 case class ResponseMessage(override val senderId: Actor.AgentId,
                            override val receiverId: Actor.AgentId,
@@ -106,7 +106,7 @@ class Actor {
   protected var sendMessages: List[Message] = List()
 
   /**
-    * A map of listeners, which is reuqired to register a listener for a respone of a request message
+    * A map of listeners, which is required to register a listener for a response of a request message
     */
   protected var responseListeners
     : collection.mutable.Map[String, Message => Unit] = collection.mutable.Map()

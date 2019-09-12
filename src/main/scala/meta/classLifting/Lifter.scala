@@ -130,7 +130,7 @@ class Lifter {
     *
     * @param cde               - an [[OpenCode]] that will be lifted
     * @param actorSelfVariable - a self [[Variable]] of this actor, used to create messages
-    * @param clasz             - representatation of the [[Actor]] type, used to create a message handler for his methods
+    * @param clasz             - representation of the [[Actor]] type, used to create a message handler for his methods
     * @tparam T - return type of the expression
     * @return [[Algo]] - deep representation of the expression
     */
@@ -267,7 +267,7 @@ class Lifter {
     *
     * @param cde               - an [[OpenCode]] that will be lifted
     * @param actorSelfVariable - a self [[Variable]] of this actor, used to create messages
-    * @param clasz             - representatation of the [[Actor]] type, used to create a message handler for his methods
+    * @param clasz             - representation of the [[Actor]] type, used to create a message handler for his methods
     * @tparam T - return type of the expression
     * @return [[Algo]] - deep representation of the expression
     */

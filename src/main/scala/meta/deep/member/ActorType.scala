@@ -12,7 +12,7 @@ import meta.deep.runtime.Actor
   * @param methods   lifted methods of the class
   * @param main      main algorithm of the class (use main class)
   * @param self      (variable referencing to itself)
-  * @param X         containg type of Actor
+  * @param X         containing type of Actor
   * @param stateless is the actor type a stateless server, in order for it to be true, actors name has to end with 'stateless'
   * @tparam X actor type
   */

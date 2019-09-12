@@ -142,7 +142,7 @@ class ActorMerge(mergeData: List[(String, String)])
     * This functions generates a product graph based on the transitions on wait graphs
     * @param graph1 a waitgraph of one graph
     * @param graph2 a waitgraph of a second graph
-    * @return a merged graph containing the combined transations between the two graphs
+    * @return a merged graph containing the combined transitions between the two graphs
     */
   def generateMergedStateMachine(
       graph1: ArrayBuffer[EdgeInfo],
@@ -331,7 +331,7 @@ class ActorMerge(mergeData: List[(String, String)])
                   graph1Reachable
                     .getOrElse(edgeTargetId, List())
                     .contains(x._1))) {
-            /*println("DBEUG 1: State not possible", graphPos, edgeTargetId)*/
+            /*println("DEBUG 1: State not possible", graphPos, edgeTargetId)*/
             return
           }
           if (graphStart2 == null && !reachableStates

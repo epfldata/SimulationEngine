@@ -247,7 +247,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
             code"((${Const(a._1._1)},${Const(a._1._2)}),${Const(a._2)}) :: $b")
           code(x._1) = code"$c; ${edgeInfos.head._3}.prepend($lookupT)"
         }
-        //Find edges, which have no poping added and append poping from stack to remove value if added before
+        //Find edges, which have no popping added and append popping from stack to remove value if added before
         /*if (amountM1 != edgeInfos.length) {
           edgeInfoGroup.foreach(edgeInfo => {
             if (!requiredSavings.contains(edgeInfo.from.getNativeId)) {
@@ -319,7 +319,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     var result = code
 
     for (cAG <- this.compiledActorGraphs) {
-      //We only replace compiledActorGraphs witth 1 actor type, otherwise it is a merged one
+      //We only replace compiledActorGraphs with 1 actor type, otherwise it is a merged one
       if (cAG.actorTypes.length == 1) {
         result = result.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName,
                                 "generated." + cAG.name + (if (!init) "Trait" else ""))

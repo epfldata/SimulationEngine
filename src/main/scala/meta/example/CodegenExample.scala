@@ -22,7 +22,7 @@ object CodegenExample extends App {
     new CreateActorGraphs(actorTypes),
     List(
       //new ActorMerge(),
-      new GraphMerge(),
+      new EdgeMerge(),
       new CreateCode(
         code"""val m = new Market; val f = new Farmer(); f.market = m; List(m, f)""",
         "generated/main/scala"),
@@ -171,7 +171,7 @@ object CodegenExample extends App {
     }
 
     val p2 = Variable[Farmer]
-    val nofifyPeers: LiftedMethod[Unit] = new LiftedMethod[Unit](
+    val notifyPeers: LiftedMethod[Unit] = new LiftedMethod[Unit](
       f,
       Foreach[Farmer, Unit](
         code"$farmerSelf.peers",
@@ -191,7 +191,7 @@ object CodegenExample extends App {
         nP.asInstanceOf[this.cls.Method[Unit, cls.Scp]]
     }
 
-    val farmerFunctions = tell :: nofifyPeers :: Nil
+    val farmerFunctions = tell :: notifyPeers :: Nil
     val p1F = Variable[RequestMessage]
 
     val algo: Algo[Any] = NoOp()

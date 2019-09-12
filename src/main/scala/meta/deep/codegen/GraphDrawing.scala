@@ -15,7 +15,7 @@ object GraphDrawing {
     * This functions draws the graph of the connected edges
     * Saves the file in a debug directory
     *
-    * @param graph graph which should be drawen
+    * @param graph graph which should be drawn
     * @param name  some name to make file name unique
     */
   def drawGraph(graph: ArrayBuffer[EdgeInfo], name: String = ""): Unit = {
@@ -62,7 +62,7 @@ object GraphDrawing {
   /**
     * This draws a graph for the mergeInfo node introduced in actorMerge.
     *
-    * @param graph graph which should be drawen
+    * @param graph graph which should be drawn
     * @param name  some name to make file name unique
     */
   def drawMergeGraph(graph: ArrayBuffer[MergeInfo], name: String = ""): Unit = {

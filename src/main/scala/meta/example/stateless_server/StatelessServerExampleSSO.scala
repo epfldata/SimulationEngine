@@ -5,7 +5,7 @@ import meta.deep.IR
 import meta.deep.codegen.{
   CreateActorGraphs,
   CreateCode,
-  GraphMerge,
+  EdgeMerge,
   Pipeline,
   SSO
 }
@@ -28,7 +28,7 @@ object StatelessServerExampleSSO extends App {
     new CreateActorGraphs(simulationData._1),
     List(
       new SSO,
-      new GraphMerge(),
+      new EdgeMerge(),
       new CreateCode(simulationData._2, "generated/main/scala"),
     ))
 

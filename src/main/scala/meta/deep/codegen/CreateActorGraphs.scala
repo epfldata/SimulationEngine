@@ -51,7 +51,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     collection.mutable.Map[Int, Int]()
 
   /**
-    * Is used to save variables, which need to be gloablly initialized
+    * Is used to save variables, which need to be globally initialized
     */
   private var variables: List[VarValue[_]] = List()
 
@@ -205,7 +205,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
   /**
     * Inits the stack for the method variable storage
     *
-    * @param data foramt List[(methodId, amount of variables)]
+    * @param data format List[(methodId, amount of variables)]
     */
   @tailrec
   private def createVariableTableStack(data: List[(Int, Int)]): Unit =

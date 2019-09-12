@@ -55,7 +55,7 @@ object AlgoInfo {
   var variables: List[VarWrapper[_]] = List()
 
   /**
-    * List, saving all variables already defined, so that a redefinement of the variable
+    * List, which saves all variables already defined, so that another definition of the variable is not required
     * is not necessary inside the used fragment.
     */
   var varSavers: List[VarWrapper[_]] = List[VarWrapper[_]]()
@@ -83,7 +83,7 @@ object AlgoInfo {
   }
 
   /**
-    * Helper, for jumping relativly to a different position
+    * Helper, for jumping relatively to a different position
     *
     * @param offset relative jumping offset
     * @return Code containing the position modification
@@ -161,7 +161,7 @@ object AlgoInfo {
     * @param to             end node
     * @param code           actual code, which is executed when
     * @param waitEdge       an information, that this edge is increasing the timer
-    * @param isMethod       is filled out automatically by using the isMethod vaiable of this class
+    * @param isMethod       is filled out automatically by using the isMethod variable of this class
     * @param sendInfo       if this edge is a send, keeps a reference to [[Send]] for relevant info, and also a
     *                       boolean which is true if this is the first in sequence of edges representing the send
     * @param methodId1      if the edge is part of method, keeps its id

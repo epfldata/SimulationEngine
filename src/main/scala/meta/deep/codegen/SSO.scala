@@ -9,6 +9,9 @@ import meta.deep.runtime.Actor
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
+/**
+  * WORKS ONLY IF USED BEFORE [[EdgeMerge]]
+  */
 //TODO when copying a method copy it into my ActorType to stay consistent
 class SSO extends StateMachineElement() {
 
