@@ -6,6 +6,7 @@ import meta.deep.IR
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
 import meta.deep.algo.AlgoInfo.EdgeInfo
+import meta.deep.member.ActorType
 import meta.deep.runtime.Actor
 
 import scala.collection.mutable.ArrayBuffer
@@ -52,6 +53,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
         code"""
               val ${AlgoInfo.timeVar} = squid.lib.MutVar(0)
               val ${AlgoInfo.positionVar} = squid.lib.MutVar(0)
+              meta.deep.algo.Instructions.splitter
               val getCommands = () => $code
               val commands = getCommands()
               meta.deep.algo.Instructions.splitter
@@ -74,9 +76,9 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     //Needed to split, so that a function can be extracted from the code, to write everything as class variables
     val parts =
       steps.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
-    val initVars = parts(0).substring(2)
+    val initVars = parts(0).substring(2).replace(" var "," private var ").replace(" val ", " private val ") + parts(1)
     //This ugly syntax is needed to replace the received code with a correct function definition
-    val run_until = "override def run_until" + parts(1)
+    val run_until = "override def run_until" + parts(2)
       .trim()
       .substring(1)
       .replaceFirst("=>", ": meta.deep.runtime.Actor = ")
@@ -86,14 +88,17 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
 
     // Converts all initParams to state variables again
     var initParams = ""
-    for (actorType <- compiledActorGraph.actorTypes) {
-      for (s <- actorType.states) {
-        initParams = initParams + "var " + s.sym.name + ": " + changeTypes(
-          s.tpe.rep.toString) + " = " + changeTypes(IR.showScala(s.init.rep)) + "\n"
+    //Only render initParams, if one actorType, otherwise inherited from parent
+    if (compiledActorGraph.actorTypes.length == 1) {
+      for (actorType <- compiledActorGraph.actorTypes) {
+        for (s <- actorType.states) {
+          initParams = initParams + "var " + s.sym.name + ": " + changeTypes(
+            s.tpe.rep.toString) + " = " + changeTypes(IR.showScala(s.init.rep)) + "\n"
+        }
       }
     }
 
-    createClass(compiledActorGraph.name, initParams, initVars, run_until)
+    createClass(compiledActorGraph.name, initParams, initVars, run_until, compiledActorGraph.actorTypes.map(_.name).filter(_ != compiledActorGraph.name))
   }
 
   /**
@@ -285,16 +290,20 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
   def createClass(className: String,
                   initParams: String,
                   initVars: String,
-                  run_until: String): Unit = {
+                  run_until: String,
+                  parent: List[String]): Unit = {
     val classString =
       s"""
           package generated
 
-          class $className extends meta.deep.runtime.Actor {
+          trait ${className + "Trait"} extends meta.deep.runtime.Actor ${parent.foldLeft("")((a,b) => a + " with " + b+"Trait")} {
             $initParams
               $initVars
               $run_until
-        }"""
+        }
+
+        class $className extends ${className + "Trait"}
+        """
     val file = new File(storagePath + "/generated/" + className + ".scala")
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(classString)
@@ -306,26 +315,30 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     * @param code which should be changed
     * @return code with replaced variable types
     */
-  def changeTypes(code: String): String = {
+  def changeTypes(code: String, init: Boolean = false): String = {
     var result = code
+
     for (cAG <- this.compiledActorGraphs) {
-      for (aT <- cAG.actorTypes) {
-        result = result.replace(aT.X.runtimeClass.getCanonicalName,
-                                "generated." + cAG.name)
+      //We only replace compiledActorGraphs witth 1 actor type, otherwise it is a merged one
+      if (cAG.actorTypes.length == 1) {
+        result = result.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName,
+                                "generated." + cAG.name + (if (!init) "Trait" else ""))
       }
     }
     result
   }
 
   /**
-    * Converts a list of opencode code fragments to a opencode of list of code fragments
+    * Converts a list of opencode code fragments to a opencode of array of code fragments
     */
   def createCommandOpenCode(
-      commands: List[OpenCode[Unit]]): OpenCode[List[() => Unit]] = {
-    val start: OpenCode[List[() => Unit]] = code"List[() => Unit]()"
-    commands
-      .map(x => code"List(() => $x)")
-      .foldLeft(start)((x, y) => code"$x ::: $y")
+      commands: List[OpenCode[Unit]]): OpenCode[Array[() => Unit]] = {
+    var start: OpenCode[Array[() => Unit]] =
+      code"new Array[() => Unit](${Const(commands.length)})"
+    commands.zipWithIndex.foreach(x => {
+      start = code"val data = $start; data(${Const(x._2)}) = () => ${x._1}; data"
+    })
+    start
   }
 
   /**
@@ -370,7 +383,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
           package generated
 
           object InitData  {
-            def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(code)}}
+            def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(code, init = true)}}
           }
         """
     val file = new File(storagePath + "/generated/InitData.scala")

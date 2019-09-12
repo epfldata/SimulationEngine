@@ -5,41 +5,60 @@ import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
 
 import scala.collection.mutable.ArrayBuffer
 
-class ActorMerge() extends StateMachineElement() {
+/**
+  * Combines to actor types together and creates a new actor type. The original ones are still there, so the new one
+  * can be used afterwards if needed.
+  * A new added graph can be accessed with Name1_Name2
+  * @param mergeData a list of actortype pair names which should be merged. It is not allowed to merge the same actor with itself.
+  */
+class ActorMerge(mergeData: List[(String, String)])
+    extends StateMachineElement() {
 
   override def run(compiledActorGraphs: List[CompiledActorGraph])
     : List[CompiledActorGraph] = {
     //For testing assume, the merge of first two actors
-    val a1 = compiledActorGraphs.head
-    val a2 = compiledActorGraphs.tail.head
 
-    a1.graph.foreach(edge => edge.graphId = 1)
-    a2.graph.foreach(edge => edge.graphId = 2)
+    var newActorGraphs = compiledActorGraphs
 
-    val wa1 = waitGraph(a1.graph)
-    //GraphDrawing.drawGraph(wa1, a1.name + "_wait")
+    mergeData.foreach(mergeType => {
+      val cAG1 = newActorGraphs.find(_.name == mergeType._1)
+      val cAG2 = newActorGraphs.find(_.name == mergeType._2)
 
-    val wa2 = waitGraph(a2.graph)
-    //GraphDrawing.drawGraph(wa2, a2.name + "_wait")
+      if (cAG1.isEmpty || cAG2.isEmpty) {
+        throw new RuntimeException("Actortype not found")
+      }
 
-    val mg = generateMergedStateMachine(wa1, wa2)
-    //GraphDrawing.drawMergeGraph(mg, a1.name + "_" + a2.name + "_merge")
+      val a1 = cAG1.get
+      val a2 = cAG2.get
 
-    val finalGraph = combineActors(mg, a1.graph, a2.graph)
-    //GraphDrawing.drawGraph(finalGraph, a1.name + "_" + a2.name + "_merged")
+      a1.graph.foreach(edge => edge.graphId = 1)
+      a2.graph.foreach(edge => edge.graphId = 2)
 
-    val rest = compiledActorGraphs.tail.tail
+      val wa1 = waitGraph(a1.graph)
+      //GraphDrawing.drawGraph(wa1, a1.name + "_wait")
 
-    CompiledActorGraph(
-      a1.name + "_" + a2.name,
-      finalGraph,
-      a1.variables ::: a2.variables,
-      a1.variables2 ::: a2.variables2,
-      a1.actorTypes ::: a2.actorTypes,
-      a1.positionStack ::: a2.positionStack,
-      a1.returnValue ::: a2.returnValue,
-      a1.responseMessage ::: a2.responseMessage
-    ) :: rest
+      val wa2 = waitGraph(a2.graph)
+      //GraphDrawing.drawGraph(wa2, a2.name + "_wait")
+
+      val mg = generateMergedStateMachine(wa1, wa2)
+      //GraphDrawing.drawMergeGraph(mg, a1.name + "_" + a2.name + "_merge")
+
+      val finalGraph = combineActors(mg, a1.graph, a2.graph)
+      //GraphDrawing.drawGraph(finalGraph, a1.name + "_" + a2.name + "_merged")
+
+      newActorGraphs = CompiledActorGraph(
+        a1.name + "_" + a2.name,
+        finalGraph,
+        a1.variables ::: a2.variables,
+        a1.variables2 ::: a2.variables2,
+        a1.actorTypes ::: a2.actorTypes,
+        a1.positionStack ::: a2.positionStack,
+        a1.returnValue ::: a2.returnValue,
+        a1.responseMessage ::: a2.responseMessage
+      ) :: newActorGraphs
+    })
+
+    newActorGraphs
   }
 
   /**

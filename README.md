@@ -3,7 +3,8 @@
 ### Write Classes using Code-Lifting
 * Do not use val parameters or class arguments, they can't be lifted.  Use var instead
 * The optimzations created work for specific use-cases:
-  * ActorMerge takes the first two Actors. This has to be modified for a real use-case
+  * ActorMerge takes a pair of ActorType Names to specify which one to merge.  
+  Take care, that the class variables are named differently in the two actors
   * Stateless Server Optimization has following rules:
     * A Class is considered as statless, if it ends with the word Stateless
     * That class should not have a wait in a non-blocking method, otherwise the program is not behaving as original

@@ -1,7 +1,7 @@
 package meta.example.server_communication
 
 import meta.classLifting.Lifter
-import meta.deep.codegen.{ActorMerge, CreateActorGraphs, CreateCode, GraphMerge, Pipeline}
+import meta.deep.codegen.{CreateActorGraphs, CreateCode, GraphMerge, Pipeline}
 import meta.deep.runtime.Actor
 import meta.deep.IR
 import meta.deep.IR.TopLevel._

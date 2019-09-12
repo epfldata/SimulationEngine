@@ -17,7 +17,7 @@ object ServerExampleMerge extends App {
   val pipeline = Pipeline(
     new CreateActorGraphs(simulationData._1),
     List(
-      new ActorMerge(),
+      new ActorMerge(List(("BackendServer", "FrontendServer"))),
       new GraphMerge(),
       new CreateCode(simulationData._2, "generated/main/scala"),
     ))
