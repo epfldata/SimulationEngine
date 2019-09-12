@@ -337,14 +337,11 @@ class Environment:
             print()
 
     def learn_input(self, agent_output, aggregator, epochs=100, learning_rate=100):
-        """Learns back the inputs that produce the given output
-        todo: Complete this doc!
-
-        :param agent_output:
-        :param aggregator:
-        :param epochs:
-        :param learning_rate:
-        :return:
+        """
+        Learns back the inputs that produce the given output
+        :param agent_output: contains per agent its output
+        :type agent_output dict
+        :return: rescaled input data per agent
         """
 
         def get_input_scaled(node_input, agent, type, get_names):

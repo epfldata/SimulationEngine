@@ -65,16 +65,17 @@ class Graph:
         return loss_val
 
     def learn_input(self, train_s, aggregator, epochs=100, learning_rate=100):
-        """Learns back the input parameters
-        todo: Complete this doc!
-
-        :param train_s:
-        :param aggregator:
-        :param epochs:
-        :return:
         """
-
+        Learns back the input parameters
+        :param train_s: target data contains global states
+        :return: a dict with a pandas dataframe per node containing the input per sample (row)
+        """
         def equal_predictions(extended_model):
+            """
+            Checks for each node if the extended model is the same as the original one
+            :param extended_model contains for each node the extended model
+            :type extended_model dict
+            """
             for node in extended_model:
                 for i in range(len(node._model.get_weights())):
                     if not np.array_equal(node._model.get_weights()[i], extended_model[node].get_weights()[i]):
@@ -101,7 +102,6 @@ class Graph:
         for node in self._nodes:
             self._sess.run(tf.assign(input_vars[node], np.random.normal(size=(n_samples, node.input_size())),
                                      validate_shape=False))
-            # print(node, self._sess.run(input_vars[node]))
         last_percent = 0
         for i in range(epochs):
             _, l = self._sess.run([train, loss])
@@ -131,7 +131,6 @@ class Graph:
         for in_node in self._edges[node]:
             result = pd.concat([result, data[in_node]["states"]], axis=1)
         result = result.reindex(columns=node.input_names)
-        # todo: remove nan columns
         return result.to_numpy()
 
     def predict(self, data, time=1):
