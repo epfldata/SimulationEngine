@@ -21,6 +21,9 @@ if __name__ == '__main__':
         x = (x - x.mean()) / x.std()
         y = (y - y.mean()) / y.std()
 
+        x = x.fillna(1)
+        y = y.fillna(1)
+
         x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=0.75)
 
         number_of_features = x_train.columns.size

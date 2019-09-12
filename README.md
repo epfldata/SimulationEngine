@@ -44,7 +44,7 @@ env.compile()
 It's important to compile the environment before using it for training, otherwise, the low-level graph and nodes from agents won't be created.
 
 ### Training
-There are two different approaches for training. Before training it's important to make sure all columns have a non-zero variation (sd), because the data goes through a standardization process and would be divided by its sd.
+There are two different approaches for training. The data passed to the networks goes through a normal standardization (z-score) preprocess. If a column's standard deviation is zero, it is substituted with 1. The output data given back to the user is always rescaled to the original scale.
 #### Solo Training
 In the first approach (solo training) each agent is trained individually. This means that for each agent, we try to update its neural network weights according to the loss function computed from its outputs only. However, we still need the whole data of all agents to train each agent individually, since it may have connections from other agents and depend on their data.
 You can use this simple method to run the solo training
