@@ -65,10 +65,18 @@ class Simulation(val constants: Data, val variables: Data) {
       val individualVars: Map[String, List[Double]] = filtered.flatMap(_.variables.toSeq).groupBy(_._1).mapValues(_.map(_._2))
       val individualObs: Map[String, List[Double]] = filtered.flatMap(_.observables.toSeq).groupBy(_._1).mapValues(_.map(_._2()))
       val individualStates = individualVars ++ individualObs
-      val populationStates: Map[String, Double] = individualStates.mapValues(vars => vars.map(_ / vars.size).sum)
+      val populationMeans: Map[String, Double] = individualStates.mapValues(vars => vars.map(_ / vars.size).sum)
+      val populationSDs: Map[String, Double] = individualStates.map {
+        case (name, values) =>
+          val mean = populationMeans(name)
+          val variance = values.map(value => (value - mean) * (value - mean) / values.size).sum
+          (name, math.sqrt(variance))
+      }
       val consts: Map[String, Double] = constants(agentType)
 
-      populationStates.map(t => ("var_" + t._1 + "Mu", t._2)) ++ consts.map(t => ("const_" + t._1, t._2))
+      populationMeans.map(t => ("var_" + t._1 + "Mu", t._2)) ++
+        populationSDs.map(t => ("var_" + t._1 + "Sigma", t._2)) ++
+        consts.map(t => ("const_" + t._1, t._2))
     }
 
     MutableMap(agents.map(agentType => (agentType, getAgentPopulationData(agentType))).toSeq: _*)

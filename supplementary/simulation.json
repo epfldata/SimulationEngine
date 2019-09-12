@@ -44,9 +44,13 @@
     ],
     "states": [
       "var_capitalMu",
+      "var_capitalSigma",
       "var_happinessMu",
+      "var_happinessSigma",
       "var_salaryMu",
-      "var_total_value_destroyedMu"
+      "var_salarySigma",
+      "var_total_value_destroyedMu",
+      "var_total_value_destroyedSigma"
     ],
     "to_agents": [
       "Farm",
@@ -71,10 +75,15 @@
     ],
     "states": [
       "var_capitalMu",
+      "var_capitalSigma",
       "var_employeesMu",
+      "var_employeesSigma",
       "var_goodwillMu",
+      "var_goodwillSigma",
       "var_total_value_destroyedMu",
-      "var_valueProducedMu"
+      "var_total_value_destroyedSigma",
+      "var_valueProducedMu",
+      "var_valueProducedSigma"
     ],
     "to_agents": [
       "Person"
@@ -94,10 +103,15 @@
     ],
     "states": [
       "var_capitalMu",
+      "var_capitalSigma",
       "var_employeesMu",
+      "var_employeesSigma",
       "var_goodwillMu",
+      "var_goodwillSigma",
       "var_total_value_destroyedMu",
-      "var_valueProducedMu"
+      "var_total_value_destroyedSigma",
+      "var_valueProducedMu",
+      "var_valueProducedSigma"
     ],
     "to_agents": [
       "Person",
@@ -118,10 +132,15 @@
     ],
     "states": [
       "var_capitalMu",
+      "var_capitalSigma",
       "var_employeesMu",
+      "var_employeesSigma",
       "var_goodwillMu",
+      "var_goodwillSigma",
       "var_total_value_destroyedMu",
-      "var_valueProducedMu"
+      "var_total_value_destroyedSigma",
+      "var_valueProducedMu",
+      "var_valueProducedSigma"
     ],
     "to_agents": [
       "Person"
@@ -141,10 +160,15 @@
     ],
     "states": [
       "var_capitalMu",
+      "var_capitalSigma",
       "var_employeesMu",
+      "var_employeesSigma",
       "var_goodwillMu",
+      "var_goodwillSigma",
       "var_total_value_destroyedMu",
-      "var_valueProducedMu"
+      "var_total_value_destroyedSigma",
+      "var_valueProducedMu",
+      "var_valueProducedSigma"
     ],
     "to_agents": [
       "Person"
@@ -164,10 +188,15 @@
     ],
     "states": [
       "var_capitalMu",
+      "var_capitalSigma",
       "var_employeesMu",
+      "var_employeesSigma",
       "var_goodwillMu",
+      "var_goodwillSigma",
       "var_total_value_destroyedMu",
-      "var_valueProducedMu"
+      "var_total_value_destroyedSigma",
+      "var_valueProducedMu",
+      "var_valueProducedSigma"
     ],
     "to_agents": [
       "Person",
@@ -188,10 +217,15 @@
     ],
     "states": [
       "var_capitalMu",
+      "var_capitalSigma",
       "var_employeesMu",
+      "var_employeesSigma",
       "var_goodwillMu",
+      "var_goodwillSigma",
       "var_total_value_destroyedMu",
-      "var_valueProducedMu"
+      "var_total_value_destroyedSigma",
+      "var_valueProducedMu",
+      "var_valueProducedSigma"
     ],
     "to_agents": [
       "Person"
