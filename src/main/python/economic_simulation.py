@@ -74,21 +74,26 @@ def setup_train_test(config_address, data_address, model_from_file=None):
     return env, agent_dict, data_input, data_output
 
 
-def setup_prediction(config_address, models_address, data_address):
+def setup_prediction(config_address, models_address, data_address, is_batch):
     env, agent_dict = prepare_environment(config_address, models_address)
 
-    with open(data_address, "r") as f:
-        jstring = f.read()
-    data_vec_raw = json.loads(jstring)
+    if is_batch:
+        input_address = {agent: data_address + agent.name + '_x.csv' for agent in agent_dict.values()}
+        data = prepare_data(input_address, True)
+    else:
+        with open(data_address, "r") as f:
+            jstring = f.read()
+        data_vec_raw = json.loads(jstring)
 
-    def vec_to_df(vec):
-        return {key: [vec[key]] for key in vec}
+        def vec_to_df(vec):
+            return {key: [vec[key]] for key in vec}
 
-    data_vec = {agent_dict[name]: {
-        type: pd.DataFrame(vec_to_df(data_vec_raw[name][type]), dtype=np.float64) for type in ["constants", "states"]
-    } for name in data_vec_raw}
+        data = {agent_dict[name]: {
+            type: pd.DataFrame(vec_to_df(data_vec_raw[name][type]), dtype=np.float64) for type in
+            ["constants", "states"]
+        } for name in data_vec_raw}
 
-    return env, agent_dict, data_vec
+    return env, agent_dict, data
 
 
 def get_aggregator(input_data):
@@ -194,16 +199,30 @@ if __name__ == '__main__':
 
         print("group test:", env.group_test(data_input, data_output, get_aggregator(data_input)))
         print("learn input:", learn_input(env, data_input, data_output, epochs=10 ** 5))
-
-    elif action == 'predict':
+        
+    elif action == 'batch-predict':
         if len(sys.argv) < 3:
             raise Exception("time required!")
-        env, agent_dict, data_vec = setup_prediction('supplementary/simulation.json', 'supplementary/models/', 'supplementary/data/data_vec.json')
+        env, agent_dict, data_input = setup_prediction('supplementary/simulation.json', 'supplementary/models/',
+                                                       'supplementary/data/',
+                                                       True)
+        data = env.predict(data_input, int(sys.argv[2]))
+
+        for agent in data:
+            total_data = data[agent]['constants'].join(data[agent]['states'])
+            total_data.to_csv(f'supplementary/results/batch-prediction/{agent.name}.csv')
+
+    elif action == 'predict-over-time':
+        if len(sys.argv) < 3:
+            raise Exception("time required!")
+        env, agent_dict, data_vec = setup_prediction('supplementary/simulation.json', 'supplementary/models/',
+                                                     'supplementary/data/data_vec.json', False)
         data = env.predict_over_time(data_vec, int(sys.argv[2]))
 
         for agent in data:
             total_data = data[agent]['constants'].join(data[agent]['states'])
             total_data.to_csv(f'supplementary/results/{agent.name}.csv')
+
 
     elif action == 'correlation':
         env, agent_dict = prepare_environment('supplementary/simulation.json', 'supplementary/models/')
