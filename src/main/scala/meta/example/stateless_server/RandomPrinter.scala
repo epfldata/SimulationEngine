@@ -5,7 +5,7 @@ import meta.deep.runtime.Actor
 import squid.quasi.lift
 @lift
 case class RandomPrinter() extends Actor {
-  var server: Serverstateless = null
+  var server: RandomNumberServer = null
   var i: Int = 0
   def printNum(): Unit = {
     println(i, server.getNumber())

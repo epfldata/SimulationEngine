@@ -9,7 +9,7 @@ import IR.TopLevel._
 object StatelessServerExample extends App {
 
   val cls1: ClassWithObject[RandomPrinter] = RandomPrinter.reflect(IR)
-  val cls2: ClassWithObject[Serverstateless] = Serverstateless.reflect(IR)
+  val cls2: ClassWithObject[RandomNumberServer] = RandomNumberServer.reflect(IR)
   val cls3: ClassWithObject[InitActors] = InitActors.reflect(IR)
 
   val startClasses: List[Clasz[_ <: Actor]] = List(cls1, cls2)
@@ -29,5 +29,5 @@ object StatelessServerExample extends App {
 }
 
 //Evaluation with 3 runs:
-//1000 iterations, 1000 actors:  3658638346, 3270125500, 3372795931. best: 3270125500
-//100 iterations, 100000 actors: 29517966109, 28983620441, 30271580639. best: 28983620441
+//1000 iterations, 1000 actors:  3279097288, 3218413896, 3196279381. best: 3196279381
+//100 iterations, 100000 actors: 28772399683, 28164466706, 28342239824. best: 28164466706

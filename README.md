@@ -6,11 +6,11 @@
   * ActorMerge takes a pair of ActorType Names to specify which one to merge.  
   Take care, that the class variables are named differently in the two actors
   * Stateless Server Optimization has following rules:
-    * A Class is considered as stateless, if it ends with the word Stateless
-    * That class should not have a wait in a non-blocking method, otherwise the program is not behaving as original
-    * Stateless Server cannot call a method from a non-stateless Server
-    * An object can have only one specific reference to one (unique) specifc stateless server class.  
-    It can have different references to different stateless servers.
+    * A stateless server here means a class whose methods don't change any of its attributes, because then those methods can be copied to other actors.
+    * A stateless server class should not have a wait in a non-blocking method, otherwise the program will not behave as the original
+    * A stateless server cannot call a method from a non-stateless Server
+    * An object can have only one reference to a (unique) specific stateless server class.
+    It can have different references to different stateless servers(if those servers have unique attribute names among themselves).
     * The optimization has to be applied before using the EdgeMerge Optimization, since it requires the original graph
 * Following structures are lifted by default: 
   * while(cond) {code}

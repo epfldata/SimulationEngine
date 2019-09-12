@@ -177,7 +177,7 @@ object AlgoInfo {
       isMethod: Boolean = isMethod,
       var cond: OpenCode[Boolean] = null,
       var storePosRef: List[List[EdgeInfo]] = Nil, //Refers to callback reference in state
-      var edgeState: (Int, Int) = (-1, -1), //Default state in (int, int), modified when merging
+      var edgeState: (Int, Int) = (-1, -1), //Default state in (int, int), modified when merging actors
       var graphId: Int = -1,
       var positionStack: Variable[ListBuffer[List[((Int, Int), Int)]]] =
         AlgoInfo.positionStack,
