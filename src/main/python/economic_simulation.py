@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 
 import numpy as np
 import pandas as pd
@@ -96,8 +97,34 @@ def get_aggregator(input_data):
                                               "happiness", "valueProduced", "goodwill"])
 
 
-def learn_input(data_input, data_output, epochs=10 ** 5):
-    return env.learn_input(data_output, get_aggregator(data_input), epochs)
+def learn_input(env, data_input, data_output, epochs=10 ** 5):
+    learned_input = env.learn_input(data_output, get_aggregator(data_input), epochs)
+    result_json = {}
+    for agent in learned_input:
+        for (i, c_row), (j, s_row) in zip(learned_input[agent]["constants"].iterrows(),
+                                          learned_input[agent]["states"].iterrows()):
+            if "entry-{}".format(i) not in result_json:
+                result_json["entry-{}".format(i)] = {
+                    "constants": {},
+                    "variables": {}
+                }
+            result_row = result_json["entry-{}".format(i)]
+            result_row["constants"][agent.name] = {column.split(".")[1][len("const_"):]: float(c_row[column]) for column in learned_input[agent]["constants"].columns}
+            result_row["variables"][agent.name] = {column.split(".")[1][len("var_"):]: float(s_row[column]) for column in learned_input[agent]["states"].columns}
+
+    return result_json
+
+
+def runCmd(cmd):
+    print("Run command:", cmd)
+    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (result, error) = process.communicate()
+    rc = process.wait()
+    if rc != 0:
+        print("Error: failed to execute command:", cmd)
+        print(result.decode("utf-8"), error.decode("utf-8"))
+        sys.exit(rc)
+    return result
 
 
 if __name__ == '__main__':
@@ -129,23 +156,44 @@ if __name__ == '__main__':
             env.save_models("supplementary/models/", data_input)
 
     elif action == 'input-learning':
-        env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'supplementary/data/', 'supplementary/models/')
-        learned_input = learn_input(data_input, data_output, epochs=10 ** 5)
-        result_json = {
-            "constants": {},
-            "variables": {}
-        }
-        for agent in learned_input:
-            for row in learned_input[agent]["constants"].rows:
-                pass
-                # todo dataframe to json
+        def add_target(result_entry, stepSize=50):
+            json_temp = "temp.json"
+            for entry in result_entry:
+                f = open(json_temp, "w")
+                f.write(json.dumps(result_entry[entry]))
+                f.close()
+                result = runCmd('sbt --warn "run evaluate {} {} {}"'.format(json_temp, stepSize, entry.split("-")[1]))
+                result_entry[entry]["target"] = -float(result.decode("utf-8")[:-1])
+            return result_entry
+
+        if "--generate" in sys.argv:
+            result_json = {}
+            for stepSize in [20, 50, 100]:
+                sampleSize = 5
+                nSteps = 1
+                runCmd("sbt clean compile")
+                runCmd('sbt "run generate supplementary/params/params.json {} {} {} all"'.format(sampleSize, nSteps, stepSize))
+
+                env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'target/data/', 'supplementary/models/')
+                result_entry = learn_input(env, data_input, data_output, epochs=10 ** 5)
+                result_json["stepSize-{}".format(stepSize)] = add_target(result_entry, stepSize)
+                f = open("supplementary/params/net-result.json", "w")
+                f.write(json.dumps(result_json))
+                f.close()
+        else:
+            env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'target/data/', 'supplementary/models/')
+            result_entry = learn_input(env, data_input, data_output, epochs=10 ** 5)
+            result_entry = add_target(result_entry)
+            f = open("supplementary/params/net-result.json", "w")
+            f.write(json.dumps(result_entry))
+            f.close()
 
     elif action == 'evaluate':
         env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'supplementary/data/', 'supplementary/models/')
         env.solo_test(data_input, data_output)
 
         print("group test:", env.group_test(data_input, data_output, get_aggregator(data_input)))
-        print("learn input:", learn_input(data_input, data_output))
+        print("learn input:", learn_input(env, data_input, data_output, epochs=10 ** 5))
 
     elif action == 'predict':
         if len(sys.argv) < 3:
