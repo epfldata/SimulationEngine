@@ -111,6 +111,11 @@ def get_aggregator(input_data):
                                               "happiness", "valueProduced", "goodwill"])
 
 
+def test_all(env, test_input, test_output):
+    env.solo_test(test_input, test_output)
+    print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
+
+
 def learn_input(env, data_input, data_output, epochs=10 ** 5):
     """
     learns the input for given output
@@ -159,21 +164,22 @@ if __name__ == '__main__':
     if action == 'train':
         env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'supplementary/data/')
 
+        train_ratio = float(sys.argv[2])
+        train_input, train_output, test_input, test_output = train_test_split(data_input, data_output, train_ratio)
         agents = agent_dict.values()
-        train_input, train_output, test_input, test_output = train_test_split(data_input, data_output, 0.75)
         env.solo_train(train_input, train_output, training_hyper_params={
             agent: {'epochs': 500} for agent in agents
         })
-        env.solo_test(test_input, test_output)
-        print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
+        if train_ratio < 1:
+            test_all(env, test_input, test_output)
 
         if '--group' in sys.argv:
             print("group training:")
             env.group_train(train_input, train_output, get_aggregator(train_input), epochs=500)
             print()
 
-        env.solo_test(test_input, test_output)
-        print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
+        if train_ratio < 1:
+            test_all(env, test_input, test_output)
         if '--save' in sys.argv:
             env.save_models("supplementary/models/", data_input)
 
