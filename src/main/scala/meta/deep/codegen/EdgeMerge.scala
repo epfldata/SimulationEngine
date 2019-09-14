@@ -52,7 +52,7 @@ class EdgeMerge() extends StateMachineElement() {
     //This list saves all
     var mergeList: List[MergeInfo] = List()
 
-    /** The code is executed between two nodes:
+    /** The code is executed between three nodes:
       * This means, that code can be merged between 3 nodes if following is fulfilled:
       * Node 2: Has exactly one outgoing and one incoming edge and the incoming edge is not a wait and the outgoing edge has no condition
       * Additionally following has to hold:

@@ -7,7 +7,7 @@ import meta.classLifting.SpecialInstructions._
 import scala.util.Random.nextInt
 
 @lift
-class Serverstateless extends Actor {
+class RandomNumberServer extends Actor {
   def getNumber(): Int = {
     nextInt(1000)
   }

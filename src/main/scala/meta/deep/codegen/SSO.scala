@@ -9,11 +9,24 @@ import meta.deep.runtime.Actor
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-/**
-  * WORKS ONLY IF USED BEFORE [[EdgeMerge]]
+/** This optimization removes unnecessary messaging. Unnecessary messages are the ones that are sent to a stateless
+  *  server. A stateless server here means a class whose methods don't change any of its attributes. Because of that,
+  *  its methods can be moved to the actors that need its services and turned into local methods of those actors,
+  *  and all of the messaging can be replaced with local method calls instead. Since calling local methods doesn't
+  *  take any time, while sending messages does, the optimization will add artificial waits, to simulate sending
+  *  a message, and because of that it will not change the behavior of the actor.
+  *
+  * WORKS ONLY IF USED BEFORE [[EdgeMerge]
   */
 //TODO when copying a method copy it into my ActorType to stay consistent
-class SSO extends StateMachineElement() {
+class SSO(
+    val statelessServers: List[String],
+    val methodVariableTable: collection.mutable.Map[Int,
+                                                    ArrayBuffer[MutVarType[_]]],
+    val methodVariableTableStack: collection.mutable.Map[
+      Int,
+      ArrayBuffer[Variable[ListBuffer[Any]]]])
+    extends StateMachineElement() {
 
   /** map of all the changes that need to be executed. each [[EdgeInfo]] key in this map will be substituted
     *  by the list of [[EdgeInfo]]s in the value
@@ -25,8 +38,8 @@ class SSO extends StateMachineElement() {
     */
   var oldToNewMtdIds: Map[String, Map[Int, Int]] = Map()
 
-  /** a flag which
-    *
+  /** a flag which indicates wheter the optimization done or not
+    *  since the algorithm is iterative, it will not be over until there's an iteration without any changes in it
     */
   var optimizationDone = false
 
@@ -95,10 +108,8 @@ class SSO extends StateMachineElement() {
   def optimizeElement(element: CompiledActorGraph,
                       rest: List[CompiledActorGraph]): CompiledActorGraph = {
 
-    //FIXME this part relies on methodVariableTable and methodVariableTableStack which are global, and might not be valid at this point
     /** for a new method call edges, rewrites the compile only instructions to runtime instructions
-      * warning - relies on one global variables [[methodVariableTable]] and [[methodVariableTableStack]] which are
-      * defined in some of the earlier steps
+      *
       * @param edges - edges which may need to be rewritten
       */
     def rewriteCallMethod(
@@ -400,7 +411,8 @@ class SSO extends StateMachineElement() {
           throw new Exception(
             "Theres a message requesting a non existent method")
         //check if the element containing this graph is a stateless server
-        if (neededElement.get.actorTypes.forall(at => at.stateless)) {
+        if (neededElement.get.actorTypes.forall(at =>
+              statelessServers.contains(at.name))) {
           optimizationDone = false //there will be some copying or changing done in this iteration, so there needs to be more iterations
           val newMethodId = copyMethod(element, neededElement.get, methodId)
           //special case - this send has already been replaced, these edges are left overs that need to be removed

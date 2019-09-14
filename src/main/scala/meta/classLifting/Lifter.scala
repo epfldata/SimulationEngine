@@ -99,14 +99,11 @@ class Lifter {
           mainAlgo = CallMethod[Unit](methodsIdMap(method.symbol), List(List()))
         }
     })
-    //a class is stateless if its name ends with 'stateless'
-    val stateless = clasz.name.endsWith("stateless")
     ActorType[T](clasz.name,
                  endStates,
                  endMethods,
                  mainAlgo,
-                 clasz.self.asInstanceOf[Variable[T]],
-                 stateless)
+                 clasz.self.asInstanceOf[Variable[T]])
   }
 
   /** Lifts the code for actor initialization

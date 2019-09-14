@@ -13,7 +13,6 @@ import meta.deep.runtime.Actor
   * @param main      main algorithm of the class (use main class)
   * @param self      (variable referencing to itself)
   * @param X         containing type of Actor
-  * @param stateless is the actor type a stateless server, in order for it to be true, actors name has to end with 'stateless'
   * @tparam X actor type
   */
 case class ActorType[X <: Actor](
@@ -21,5 +20,4 @@ case class ActorType[X <: Actor](
     var states: List[State[_]],
     methods: List[LiftedMethod[_]],
     main: Algo[_],
-    self: Variable[X],
-    stateless: Boolean = false)(implicit val X: CodeType[X]) {}
+    self: Variable[X])(implicit val X: CodeType[X]) {}
