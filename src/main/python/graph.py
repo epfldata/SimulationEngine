@@ -91,7 +91,7 @@ class Graph:
         n_samples = train_s.shape[0]
         extended_model = {node: node.extended_model(n_samples) for node in self._nodes}
         input_vars = {node: extended_model[node].input for node in self._nodes}
-        assert equal_predictions(extended_model)
+        # assert equal_predictions(extended_model)
 
         indices = {node: {name: i for i, name in enumerate(node.output_names)} for node in self._nodes}
         predict_s = aggregator.aggregate({node: extended_model[node].output for node in self._nodes}, n_samples,
