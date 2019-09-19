@@ -168,14 +168,14 @@ if __name__ == '__main__':
         train_input, train_output, test_input, test_output = train_test_split(data_input, data_output, train_ratio)
         agents = agent_dict.values()
         env.solo_train(train_input, train_output, training_hyper_params={
-            agent: {'epochs': 500} for agent in agents
+            agent: {'epochs': 50} for agent in agents
         })
         if train_ratio < 1:
             test_all(env, test_input, test_output)
 
         if '--group' in sys.argv:
             print("group training:")
-            env.group_train(train_input, train_output, get_aggregator(train_input), epochs=500)
+            env.group_train(train_input, train_output, get_aggregator(train_input), epochs=100)
             print()
 
         if train_ratio < 1:
@@ -210,7 +210,7 @@ if __name__ == '__main__':
                 f.close()
         else:
             env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'target/data/', 'supplementary/models/')
-            result_entry = learn_input(env, data_input, data_output, epochs=10 ** 5)
+            result_entry = learn_input(env, data_input, data_output, epochs=100)
             result_entry = add_target(result_entry)
             f = open("supplementary/params/net-result.json", "w")
             f.write(json.dumps(result_entry))

@@ -60,9 +60,11 @@ object Main {
         val stepSize = args(2).toInt
         val entry = args(3).toInt
         val (matrix, header) = CsvManager.readCsvFile("target/data/global_stat_output.csv")
-        val actuals: Statistics = header.toArray.zip(matrix(entry, ::).inner.toArray).toMap
-        println(Metrics.meanAbsoluteError(simFunction(
-          constants, variables, 1, stepSize, GLOBAL.allAgents).map(_._3).last, actuals))
+        var actuals: Statistics = header.toArray.zip(matrix(entry, ::).inner.toArray).toMap
+        var simResults: Statistics = simFunction(constants, variables, 1, stepSize, GLOBAL.allAgents).map(_._4).last
+        actuals = Metrics.standardize(matrix, header, actuals)
+        simResults = Metrics.standardize(matrix, header, simResults)
+        println(Metrics.meanAbsoluteError(actuals, simResults))
 
       case "lyapunov" =>
         println(ChaosTest(constants, variables).lyapunovExponent(args(2), args(3)))
