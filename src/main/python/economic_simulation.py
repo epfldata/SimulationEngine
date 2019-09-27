@@ -73,14 +73,21 @@ def train_test_split(data_input, data_output, train_ratio):
     return train_input, train_output, test_input, test_output
 
 
-def setup_train_test(config_address, data_address, model_from_file=None):
+def setup_train_test(config_address, data_address, eval_address=None, model_from_file=None):
     env, agent_dict = prepare_environment(config_address, model_from_file)
     agents = agent_dict.values()
-    input_address = {agent: data_address + agent.name + '_x.csv' for agent in agents}
-    output_address = {agent: data_address + agent.name + '_y.csv' for agent in agents}
-    data_input = prepare_data(input_address, True)
-    data_output = prepare_data(output_address, False)
-    return env, agent_dict, data_input, data_output
+    train_input_address = {agent: data_address + agent.name + '_x.csv' for agent in agents}
+    train_output_address = {agent: data_address + agent.name + '_y.csv' for agent in agents}
+    train_input = prepare_data(train_input_address, True)
+    train_output = prepare_data(train_output_address, False)
+    if eval_address is None:
+        return env, agent_dict, train_input, train_output
+
+    eval_input_address = {agent: eval_address + agent.name + '_x.csv' for agent in agents}
+    eval_output_address = {agent: eval_address + agent.name + '_y.csv' for agent in agents}
+    eval_input = prepare_data(eval_input_address, True)
+    eval_output = prepare_data(eval_output_address, False)
+    return env, agent_dict, train_input, train_output, eval_input, eval_output
 
 
 def setup_prediction(config_address, models_address, data_address, is_batch):
@@ -136,8 +143,10 @@ def learn_input(env, data_input, data_output, epochs=10 ** 5):
                     "variables": {}
                 }
             result_row = result_json["entry-{}".format(i)]
-            result_row["constants"][agent.name] = {column.split(".")[1][len("const_"):]: float(c_row[column]) for column in learned_input[agent]["constants"].columns}
-            result_row["variables"][agent.name] = {column.split(".")[1][len("var_"):]: float(s_row[column]) for column in learned_input[agent]["states"].columns}
+            result_row["constants"][agent.name] = {column.split(".")[1][len("const_"):]: float(c_row[column]) for column
+                                                   in learned_input[agent]["constants"].columns}
+            result_row["variables"][agent.name] = {column.split(".")[1][len("var_"):]: float(s_row[column]) for column
+                                                   in learned_input[agent]["states"].columns}
 
     return result_json
 
@@ -162,26 +171,24 @@ if __name__ == '__main__':
 
     action = sys.argv[1]
     if action == 'train':
-        env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'supplementary/data/')
-
-        train_ratio = float(sys.argv[2])
-        train_input, train_output, test_input, test_output = train_test_split(data_input, data_output, train_ratio)
+        env, agent_dict, train_input, train_output, eval_input, eval_output = setup_train_test(
+            'supplementary/simulation.json', 'supplementary/data/training/', 'supplementary/data/evaluation/')
         agents = agent_dict.values()
+
         env.solo_train(train_input, train_output, training_hyper_params={
-            agent: {'epochs': 50} for agent in agents
+            agent: {'epochs': 30} for agent in agents
         })
-        if train_ratio < 1:
-            test_all(env, test_input, test_output)
+
+        test_all(env, eval_input, eval_output)
 
         if '--group' in sys.argv:
             print("group training:")
             env.group_train(train_input, train_output, get_aggregator(train_input), epochs=100)
             print()
 
-        if train_ratio < 1:
-            test_all(env, test_input, test_output)
+        test_all(env, eval_input, eval_output)
         if '--save' in sys.argv:
-            env.save_models("supplementary/models/", data_input)
+            env.save_models("supplementary/models/", train_input)
 
     elif action == 'input-learning':
         def add_target(result_entry, stepSize=50):
@@ -194,42 +201,44 @@ if __name__ == '__main__':
                 result_entry[entry]["target"] = -float(result.decode("utf-8")[:-1])
             return result_entry
 
+
         if "--generate" in sys.argv:
             result_json = {}
             for stepSize in [20, 50, 100]:
                 sampleSize = 5
                 nSteps = 1
                 runCmd("sbt clean compile")
-                runCmd('sbt "run generate supplementary/params/params.json {} {} {} all"'.format(sampleSize, nSteps, stepSize))
+                runCmd('sbt "run generate supplementary/params/params.json {} {} {} all"'.format(sampleSize, nSteps,
+                                                                                                 stepSize))
 
-                env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'target/data/', 'supplementary/models/')
-                result_entry = learn_input(env, data_input, data_output, epochs=10 ** 5)
+                env, agent_dict, train_input, train_output = setup_train_test(
+                    'supplementary/simulation.json', 'target/data/', model_from_file='supplementary/models/')
+                result_entry = learn_input(env, train_input, train_output, epochs=10 ** 5)
                 result_json["stepSize-{}".format(stepSize)] = add_target(result_entry, stepSize)
                 f = open("supplementary/params/net-result.json", "w")
                 f.write(json.dumps(result_json))
                 f.close()
         else:
-            env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'target/data/', 'supplementary/models/')
-            result_entry = learn_input(env, data_input, data_output, epochs=100)
+            env, agent_dict, train_input, train_output = setup_train_test(
+                'supplementary/simulation.json', 'target/data/500/', model_from_file='supplementary/models/')
+            result_entry = learn_input(env, train_input, train_output, epochs=100)
             result_entry = add_target(result_entry)
             f = open("supplementary/params/net-result.json", "w")
             f.write(json.dumps(result_entry))
             f.close()
 
     elif action == 'evaluate':
-        env, agent_dict, data_input, data_output = setup_train_test('supplementary/simulation.json', 'supplementary/data/', 'supplementary/models/')
-        env.solo_test(data_input, data_output)
+        env, agent_dict, test_input, test_output = setup_train_test(
+            'supplementary/simulation.json', 'supplementary/data/evaluation/', model_from_file='supplementary/models/')
+        test_all(env, test_input, test_output)
 
-        print("group test:", env.group_test(data_input, data_output, get_aggregator(data_input)))
-        print("learn input:", learn_input(env, data_input, data_output, epochs=10 ** 5))
-        
     elif action == 'batch-predict':
         if len(sys.argv) < 3:
             raise Exception("time required!")
-        env, agent_dict, data_input = setup_prediction('supplementary/simulation.json', 'supplementary/models/',
-                                                       'supplementary/data/',
-                                                       True)
-        data = env.predict(data_input, int(sys.argv[2]))
+        env, agent_dict, train_input = setup_prediction('supplementary/simulation.json', 'supplementary/models/',
+                                                        'supplementary/data/evaluation',
+                                                        True)
+        data = env.predict(train_input, int(sys.argv[2]))
 
         for agent in data:
             total_data = data[agent]['constants'].join(data[agent]['states'])

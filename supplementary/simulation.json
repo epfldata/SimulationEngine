@@ -60,7 +60,11 @@
       "OilField",
       "Refinery"
     ],
-    "hyper_parameters": {}
+    "hyper_parameters": {
+      "number_of_units": [64, 8],
+      "activations": ["relu", "linear"],
+      "optimizer": "nadam"
+    }
   },
   "Farm": {
     "constants": [
@@ -88,7 +92,11 @@
     "to_agents": [
       "Person"
     ],
-    "hyper_parameters": {}
+    "hyper_parameters": {
+      "number_of_units":  [64, 10],
+      "activations":  ["relu", "linear"],
+      "optimizer": "nadam"
+    }
   },
   "Mill": {
     "constants": [
@@ -117,7 +125,11 @@
       "Person",
       "Bakery"
     ],
-    "hyper_parameters": {}
+    "hyper_parameters": {
+      "number_of_units":  [64, 10],
+      "activations":  ["relu", "linear"],
+      "optimizer":  "nadam"
+    }
   },
   "Bakery": {
     "constants": [
@@ -145,7 +157,11 @@
     "to_agents": [
       "Person"
     ],
-    "hyper_parameters": {}
+    "hyper_parameters": {
+      "number_of_units":  [64, 10],
+      "activations":  ["relu", "linear"],
+      "optimizer":  "nadam"
+    }
   },
   "CattleFarm": {
     "constants": [
@@ -173,7 +189,11 @@
     "to_agents": [
       "Person"
     ],
-    "hyper_parameters": {}
+    "hyper_parameters": {
+      "number_of_units":  [64, 10],
+      "activations":  ["relu", "linear"],
+      "optimizer":  "nadam"
+    }
   },
   "OilField": {
     "constants": [
@@ -202,7 +222,11 @@
       "Person",
       "Refinery"
     ],
-    "hyper_parameters": {}
+    "hyper_parameters": {
+      "number_of_units":  [64, 10],
+      "activations":  ["relu", "linear"],
+      "optimizer":  "nadam"
+    }
   },
   "Refinery": {
     "constants": [
@@ -230,6 +254,10 @@
     "to_agents": [
       "Person"
     ],
-    "hyper_parameters": {}
+    "hyper_parameters": {
+      "number_of_units":  [64, 10],
+      "activations":  ["relu", "linear"],
+      "optimizer":  "nadam"
+    }
   }
 }

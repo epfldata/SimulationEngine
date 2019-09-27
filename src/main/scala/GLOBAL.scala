@@ -10,7 +10,7 @@ class Dummy;
 package object GLOBAL {
   val silent = true
   val strongSilence = true
-  val rnd = new Random(19)
+  val rnd = new Random()
 
   val allAgents = Array("Person", "Farm", "Mill", "Bakery", "CattleFarm", "OilField", "Refinery")
 
