@@ -258,7 +258,7 @@ class Environment:
 
         return rescaled_new_data
 
-    def group_train(self, agent_input, agent_output, aggregator, epochs=100, learning_rate=0.1):
+    def group_train(self, agent_input, agent_output, aggregator, epochs=100, learning_rate=0.01):
         """Trains all agents together using aggregated outputs (global statistics)
 
         :param agent_input: The general 'data' structure, refer to README.md

@@ -35,7 +35,7 @@ class Graph:
         indices = {node: {name: i for i, name in enumerate(train_x[node]["states"].columns.values)} for node in train_x}
         predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, train_s.shape[0],
                                          indices)
-        loss = tf.losses.mean_squared_error(tf.constant(train_s.to_numpy()), predict_s)
+        loss = tf.losses.absolute_difference(tf.constant(train_s.to_numpy()), predict_s)
         optimizer = tf.train.GradientDescentOptimizer(learning_rate)
         train = optimizer.minimize(loss)
         last_percent = 0
@@ -58,7 +58,7 @@ class Graph:
         """
         indices = {node: {name: i for i, name in enumerate(test_x[node]["states"].columns.values)} for node in test_x}
         predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, test_s.shape[0], indices)
-        loss = tf.losses.mean_squared_error(tf.constant(test_s.to_numpy()), predict_s)
+        loss = tf.losses.absolute_difference(tf.constant(test_s.to_numpy()), predict_s)
         loss_val = self._sess.run(loss, feed_dict={
             node.input_tensor(): self._prepare_node_input(test_x, node) for node in self._nodes
         })
@@ -96,7 +96,7 @@ class Graph:
         indices = {node: {name: i for i, name in enumerate(node.output_names)} for node in self._nodes}
         predict_s = aggregator.aggregate({node: extended_model[node].output for node in self._nodes}, n_samples,
                                          indices)
-        loss = tf.losses.mean_squared_error(tf.constant(train_s.to_numpy()), predict_s)
+        loss = tf.losses.absolute_difference(tf.constant(train_s.to_numpy()), predict_s)
         train = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
 
         for node in self._nodes:
