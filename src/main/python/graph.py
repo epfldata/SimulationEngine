@@ -35,7 +35,7 @@ class Graph:
         indices = {node: {name: i for i, name in enumerate(train_x[node]["states"].columns.values)} for node in train_x}
         predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, train_s.shape[0],
                                          indices)
-        loss = tf.losses.absolute_difference(tf.constant(train_s.to_numpy()), predict_s)
+        loss = tf.losses.absolute_difference(tf.constant(train_s.to_numpy(), dtype=tf.float32), predict_s)
         optimizer = tf.train.GradientDescentOptimizer(learning_rate)
         train = optimizer.minimize(loss)
         last_percent = 0
@@ -64,51 +64,86 @@ class Graph:
         })
         return loss_val
 
+    def _input_learning_model(self, aggregator, n_samples):
+        """Creates the trainable input tensor and connects it to all the relevant models
+
+        :param aggregator: The aggregator used for aggregating individual states and making global statistics
+        :param n_samples: Number of samples in the input learning data
+        :return: The trainable input tensors and output tensors
+        """
+
+        def equal_predictions(extended_model, input_vars):
+            """
+            Checks for each node if the extended model is the same as the original one
+
+            :param extended_model contains for each node the extended model
+            :type extended_model dict
+            """
+            for node in self._nodes:
+                self._sess.run(
+                    tf.assign(input_vars[node]['states'], np.random.normal(size=(n_samples, node.state_size())),
+                              validate_shape=False))
+                self._sess.run(
+                    tf.assign(input_vars[node]['constants'], np.random.normal(size=(n_samples, node.constant_size())),
+                              validate_shape=False))
+
+            for node in extended_model:
+                for i in range(len(node._model.get_weights())):
+                    if not np.array_equal(node._model.get_weights()[i], extended_model[node].get_weights()[i]):
+                        return False
+                output1 = node._model.predict(self._sess.run(self._prepare_node_input(input_vars, node, tf)))
+                output2 = self._sess.run(extended_model[node].output)
+                if not np.array_equal(np.round(output1, 4), np.round(output2, 4)):
+                    return False
+            return True
+
+        input_vars = {node: {
+            'states': tf.Variable(initial_value=tf.ones((n_samples, node.state_size())), trainable=True,
+                                  dtype=tf.float32, name=node.name + '-input-state'),
+            'constants': tf.Variable(initial_value=tf.ones((n_samples, node.constant_size())), trainable=True,
+                                     dtype=tf.float32, name=node.name + '-input-constants')
+        } for node in self._nodes}
+        extended_model = {node: node.extended_model(self._prepare_node_input(input_vars, node, tf)) for node in
+                          self._nodes}
+
+        # next line is just for debugging
+        # assert equal_predictions(extended_model, input_vars)
+
+        for node in self._nodes:
+            self._sess.run(tf.assign(input_vars[node]['states'], np.random.normal(size=(n_samples, node.state_size())),
+                                     validate_shape=False))
+            self._sess.run(
+                tf.assign(input_vars[node]['constants'], np.random.normal(size=(n_samples, node.constant_size())),
+                          validate_shape=False))
+
+        indices = {node: {name: i for i, name in enumerate(node.output_names)} for node in self._nodes}
+        predict_s = aggregator.aggregate({node: extended_model[node].output for node in self._nodes}, n_samples,
+                                         indices)
+        return input_vars, predict_s
+
     def learn_input(self, train_s, aggregator, epochs=100, learning_rate=100):
         """
         Learns back the input parameters
         :param train_s: target data contains global states
         :return: a dict with a pandas dataframe per node containing the input per sample (row)
         """
-        def equal_predictions(extended_model):
-            """
-            Checks for each node if the extended model is the same as the original one
-            :param extended_model contains for each node the extended model
-            :type extended_model dict
-            """
-            for node in extended_model:
-                for i in range(len(node._model.get_weights())):
-                    if not np.array_equal(node._model.get_weights()[i], extended_model[node].get_weights()[i]):
-                        return False
-                random_input = np.random.normal(size=(100, node.input_size()))
-                output1 = node._model.predict(random_input)
-                self._sess.run(tf.assign(extended_model[node].input, random_input, validate_shape=False))
-                output2 = self._sess.run(extended_model[node].output)
-                if not np.array_equal(np.round(output1, 4), np.round(output2, 4)):
-                    return False
-            return True
 
         n_samples = train_s.shape[0]
-        extended_model = {node: node.extended_model(n_samples) for node in self._nodes}
-        input_vars = {node: extended_model[node].input for node in self._nodes}
-        # assert equal_predictions(extended_model)
+        input_vars, predict_s = self._input_learning_model(aggregator, n_samples)
 
-        indices = {node: {name: i for i, name in enumerate(node.output_names)} for node in self._nodes}
-        predict_s = aggregator.aggregate({node: extended_model[node].output for node in self._nodes}, n_samples,
-                                         indices)
         loss = tf.losses.absolute_difference(tf.constant(train_s.to_numpy()), predict_s)
         train = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
 
-        for node in self._nodes:
-            self._sess.run(tf.assign(input_vars[node], np.random.normal(size=(n_samples, node.input_size())),
-                                     validate_shape=False))
         last_percent = 0
         for i in range(epochs):
             _, l = self._sess.run([train, loss])
             if int(i * 100.0 / epochs) > last_percent:
                 last_percent = int(i * 100.0 / epochs)
                 print("{} %, loss {}".format(last_percent, l))
-        return {node: pd.DataFrame(self._sess.run(input_vars[node]), columns=node.input_names) for node in self._nodes}
+        return {node: {
+            'states': pd.DataFrame(self._sess.run(input_vars[node]['states']), columns=node.states()),
+            'constants': pd.DataFrame(self._sess.run(input_vars[node]['constants']), columns=node.constants())
+        } for node in self._nodes}
 
     def solo_train(self, node, train_x, train_agent_y, batch_size=32, epochs=10):
         train_agent_y = train_agent_y.reindex(columns=node.output_names)
@@ -118,20 +153,24 @@ class Graph:
         test_agent_y = test_agent_y.reindex(columns=node.output_names)
         return node.test(self._prepare_node_input(test_x, node), test_agent_y.to_numpy())
 
-    def _prepare_node_input(self, data, node):
+    def _prepare_node_input(self, data, node, backend=pd):
         """Extracts and returns the input data of the `node` from the general `data`, based on the input connections
            the `node` has
 
         :param data: The general node indexed and standardized 'data' structure, refer to READEME.md
         :type node: Node
+        :param backend: Can be either pandas or tensorflow
         :return: The `node`'s input as a numpy matrix
         :rtype: np.array
         """
         result = data[node]["constants"]
         for in_node in self._edges[node]:
-            result = pd.concat([result, data[in_node]["states"]], axis=1)
-        result = result.reindex(columns=node.input_names)
-        return result.to_numpy()
+            result = backend.concat([result, data[in_node]["states"]], axis=1)
+        if backend == pd:
+            result = result.reindex(columns=node.input_names)
+            return result.to_numpy()
+        else:
+            return result
 
     def predict(self, data, time=1):
         """Predicts the future using the given data

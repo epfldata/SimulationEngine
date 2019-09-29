@@ -94,8 +94,8 @@ class Environment:
             ['states', 'constants']
         } for agent in data}
 
-        scaled_data = {agent: {type: scaled_data[agent][type].fillna(1) for type in ['states', 'constants']} for agent in
-                       scaled_data}
+        scaled_data = {agent: {type: scaled_data[agent][type].fillna(1) for type in ['states', 'constants']} for agent
+                       in scaled_data}
 
         return scaled_data, scales
 
@@ -103,7 +103,7 @@ class Environment:
         """Returns the standardized (z-score) data
 
         :param data: A dictionary from agents to their state data
-        :type data: dict of (Agent, pd.DataFrame)
+        :type data: dict[Agent, pd.DataFrame]
         :param from_previous_scale: If true, self._scales' mean and sd are used, otherwise they are extracted from data
         :type from_previous_scale: bool
         :return: Standardized (z-score) data, along with the scales
@@ -128,16 +128,16 @@ class Environment:
 
         :param agent_input: The general 'data' structure, refer to README.md
         :param agent_output: A dictionary from agents to their output (state) data
-        :type agent_output: dict of (Agent, pd.DataFrame)
+        :type agent_output: dict[Agent, pd.DataFrame]
         :param from_previous_scale: If true, self._scales' mean and sd are used, otherwise they are extracted from data
         :type from_previous_scale: bool
         :return: prefixed input and output with their respective structures
         """
-        scaled_input = self._normalize_input(agent_input, from_previous_scale)[0]
-        scaled_output = self._normalize_output(agent_output, from_previous_scale)[0]
-        prefixed_input = {agent: _prefix_input_columns_names(scaled_input, agent) for agent in scaled_input}
-        prefixed_output = {agent: _prefix_output_columns_names(scaled_output, agent) for agent in scaled_output}
-        return prefixed_input, prefixed_output
+        prefixed_input = {agent: _prefix_input_columns_names(agent_input, agent) for agent in agent_input}
+        prefixed_output = {agent: _prefix_output_columns_names(agent_output, agent) for agent in agent_output}
+        scaled_input = self._normalize_input(prefixed_input, from_previous_scale)[0]
+        scaled_output = self._normalize_output(prefixed_output, from_previous_scale)[0]
+        return scaled_input, scaled_output
 
     def register_agents(self, *agents):
         """
@@ -258,7 +258,7 @@ class Environment:
 
         return rescaled_new_data
 
-    def group_train(self, agent_input, agent_output, aggregator, epochs=100, learning_rate=0.01):
+    def group_train(self, agent_input, agent_output, aggregator, epochs=100, learning_rate=0.1):
         """Trains all agents together using aggregated outputs (global statistics)
 
         :param agent_input: The general 'data' structure, refer to README.md
@@ -281,7 +281,7 @@ class Environment:
         global_output = aggregator.aggregate_pd(agent_output)
         self._graph.group_train(node_input, global_output, aggregator, epochs, learning_rate)
 
-    def group_test(self, data_input, data_output, aggregator):
+    def group_test(self, data_input, data_output, aggregator, from_train_scale=False):
         """Tests the aggregated output produced by the model against ground truth
 
         :param data_input: The general 'data' structure, refer to README.md
@@ -293,7 +293,8 @@ class Environment:
         if self._non_compiled_changes:
             raise Exception('None Compiled Changes! Compile first!')
 
-        agent_input, agent_output = self._prefix_and_normalize(data_input, data_output, from_previous_scale=False)
+        agent_input, agent_output = self._prefix_and_normalize(data_input, data_output,
+                                                               from_previous_scale=from_train_scale)
         node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
         global_output = aggregator.aggregate_pd(agent_output)
         return self._graph.group_test(node_input, global_output, aggregator)
@@ -344,28 +345,33 @@ class Environment:
         :return: rescaled input data per agent
         """
 
-        def get_input_scaled(node_input, agent, type, get_names):
+        def get_input_scaled(node_input, agent, type):
             scales = (self._scales[agent][type]['mean'], self._scales[agent][type]['sd'])
-            return node_input[get_names(agent)] * scales[1] + scales[0]
+            return node_input * scales[1] + scales[0]
 
         if self._non_compiled_changes:
             raise Exception('Non-Compiled Changes! Compile first!')
 
-        agent_output = {agent: _prefix_output_columns_names(agent_output, agent) for agent in agent_output}
-        scaled_output = self._normalize_output(agent_output, from_previous_scale=True)[0]
+        prefixed_agent_output = {agent: _prefix_output_columns_names(agent_output, agent) for agent in agent_output}
+        scaled_output = self._normalize_output(prefixed_agent_output, from_previous_scale=True)[0]
         global_output = aggregator.aggregate_pd(scaled_output)
 
         node_input = self._graph.learn_input(global_output, aggregator, epochs, learning_rate)
+
         agent_input = {
             self._get_agent(node): {
-                'states': get_input_scaled(node_input[node], self._get_agent(node), 'states', lambda a: a.states),
-                'constants': get_input_scaled(node_input[node], self._get_agent(node), 'constants',
-                                              lambda a: a.constants)
+                'states': get_input_scaled(node_input[node]['states'], self._get_agent(node), 'states'),
+                'constants': get_input_scaled(node_input[node]['constants'], self._get_agent(node), 'constants')
             } for node in node_input
         }
+        for agent in agent_input:
+            agent_input[agent]['constants'].columns = [name[len(agent.name) + 1:] for name in
+                                                       agent_input[agent]['constants'].columns]
+            agent_input[agent]['states'].columns = [name[len(agent.name) + 1:] for name in
+                                                    agent_input[agent]['states'].columns]
         return agent_input
 
-    def solo_test(self, data_input, data_output):
+    def solo_test(self, data_input, data_output, from_train_scale=False):
         """
 
         :param data_input: The general 'data' structure, refer to README.md
@@ -378,8 +384,8 @@ class Environment:
         data_input = {agent: _prefix_input_columns_names(data_input, agent) for agent in data_input}
         data_output = {agent: _prefix_output_columns_names(data_output, agent) for agent in data_output}
 
-        scaled_input = self._normalize_input(data_input, from_previous_scale=False)[0]
-        scaled_output = self._normalize_output(data_output, from_previous_scale=False)[0]
+        scaled_input = self._normalize_input(data_input, from_previous_scale=from_train_scale)[0]
+        scaled_output = self._normalize_output(data_output, from_previous_scale=from_train_scale)[0]
 
         node_input = {self._get_node(agent): scaled_input[agent] for agent in scaled_input}
 

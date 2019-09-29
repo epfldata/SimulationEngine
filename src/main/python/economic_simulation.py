@@ -118,9 +118,9 @@ def get_aggregator(input_data):
                                               "happiness", "valueProduced", "goodwill"])
 
 
-def test_all(env, test_input, test_output):
-    env.solo_test(test_input, test_output)
-    print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input)))
+def test_all(env, test_input, test_output, from_train_scale=False):
+    env.solo_test(test_input, test_output, from_train_scale)
+    print("group test:", env.group_test(test_input, test_output, get_aggregator(test_input), True))
 
 
 def learn_input(env, data_input, data_output, epochs=10 ** 5):
@@ -143,9 +143,9 @@ def learn_input(env, data_input, data_output, epochs=10 ** 5):
                     "variables": {}
                 }
             result_row = result_json["entry-{}".format(i)]
-            result_row["constants"][agent.name] = {column.split(".")[1][len("const_"):]: float(c_row[column]) for column
+            result_row["constants"][agent.name] = {column[len("const_"):]: float(c_row[column]) for column
                                                    in learned_input[agent]["constants"].columns}
-            result_row["variables"][agent.name] = {column.split(".")[1][len("var_"):]: float(s_row[column]) for column
+            result_row["variables"][agent.name] = {column[len("var_"):]: float(s_row[column]) for column
                                                    in learned_input[agent]["states"].columns}
 
     return result_json
@@ -221,7 +221,7 @@ if __name__ == '__main__':
         else:
             env, agent_dict, train_input, train_output = setup_train_test(
                 'supplementary/simulation.json', 'target/data/500/', model_from_file='supplementary/models/')
-            result_entry = learn_input(env, train_input, train_output, epochs=100)
+            result_entry = learn_input(env, train_input, train_output, epochs=1000)
             result_entry = add_target(result_entry)
             f = open("supplementary/params/net-result.json", "w")
             f.write(json.dumps(result_entry))
@@ -230,7 +230,7 @@ if __name__ == '__main__':
     elif action == 'evaluate':
         env, agent_dict, test_input, test_output = setup_train_test(
             'supplementary/simulation.json', 'supplementary/data/evaluation/', model_from_file='supplementary/models/')
-        test_all(env, test_input, test_output)
+        test_all(env, test_input, test_output, True)
 
     elif action == 'batch-predict':
         if len(sys.argv) < 3:

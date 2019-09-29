@@ -53,13 +53,13 @@ class Node:
                             optimizer=hyper_parameters.get('optimizer') or 'sgd',
                             metrics=hyper_parameters.get('metrics') or ['mae'])
 
-    def extended_model(self, n_samples):
+    def extended_model(self, input_variable):
+        """Creates a non-trainable copy of the model for input learning
+
+        :param input_variable: The trainable input tensor of the model
+        :type input_variable: tf.Tensor
+        :return: The non-trainable copy of model
         """
-        creates a copy of current model
-        :return:
-        """
-        input_variable = tf.Variable(initial_value=tf.ones((n_samples, self.input_size())), trainable=True,
-                                     dtype=tf.float32, name=self.name + "-input")
         model = Sequential()
         model.add(InputLayer(input_tensor=input_variable, name=self.name + "-0"))
         for layer in self._model.layers:
@@ -77,11 +77,20 @@ class Node:
     def state_size(self):
         return self._model.output.shape[1]
 
+    def constant_size(self):
+        return len(self.constants())
+
     def output_tensor(self):
         return self._model.output
 
     def input_tensor(self):
         return self._model.input
+
+    def states(self):
+        return [name for name in self.input_names if f'{self.name}.var_' in name]
+
+    def constants(self):
+        return [name for name in self.input_names if 'const_' in name]
 
     def train(self, predictors, targets, batch_size=32, epochs=10):
         """
