@@ -6,6 +6,7 @@ import Securities.Land
 import Simulation.{Person, Simulation}
 import _root_.Simulation.SimLib._
 import bo.DatasetCreator.{Data, Statistics}
+import breeze.linalg.DenseMatrix
 import breeze.stats.distributions.Gaussian
 import spray.json.JsonParser
 
@@ -48,6 +49,28 @@ object Main {
 
 
     args(0) match {
+      case "run-sim" =>
+        val nSteps = args(2).toInt
+        val stepSize = args(3).toInt
+        val agents = GLOBAL.allAgents
+        val simResults = simFunction(constants, variables, nSteps, stepSize, agents)
+        val outputData: Seq[Data] = simResults.map(_._2)
+
+        def writeToCsv(output: Seq[Seq[(String, Double)]], name: String): Unit = {
+          val header: Array[String] = output.head.map(_._1).toArray
+          val matrix: DenseMatrix[Double] = DenseMatrix(output.map(_.map(_._2)): _*)
+          CsvManager.writeCsvFile(matrix, s"target/sim-result/$name.csv", header)
+        }
+
+        agents.foreach {
+          agent =>
+            val output: Seq[Seq[(String, Double)]] = outputData.map(_ (agent).toSeq.sortBy(_._1))
+            writeToCsv(output, agent)
+        }
+        val globalOutput: Seq[Statistics] = simResults.map(_._4)
+        val output: Seq[Seq[(String, Double)]] = globalOutput.map(_.toSeq.sortBy(_._1))
+        writeToCsv(output, "global_stat_output")
+
       case "generate" =>
         val nSamples = args(2).toInt
         val nSteps = args(3).toInt
@@ -59,7 +82,7 @@ object Main {
       case "evaluate" =>
         val stepSize = args(2).toInt
         val entry = args(3).toInt
-        val (matrix, header) = CsvManager.readCsvFile("target/data/global_stat_output.csv")
+        val (matrix, header) = CsvManager.readCsvFile("supplementary/data/evaluation/global_stat_output.csv")
         var actuals: Statistics = header.toArray.zip(matrix(entry, ::).inner.toArray).toMap
         var simResults: Statistics = simFunction(constants, variables, 1, stepSize, GLOBAL.allAgents).map(_._4).last
         actuals = Metrics.standardize(matrix, header, actuals)
