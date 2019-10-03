@@ -1,4 +1,4 @@
-package bo
+package tools
 
 import breeze.linalg.DenseMatrix
 

@@ -1,9 +1,9 @@
-package bo
+package tools
 
 import java.nio.file.{Files, Paths}
 
 import Simulation.Simulation
-import bo.DatasetCreator.Data
+import tools.DatasetCreator.Data
 import breeze.linalg.{Axis, DenseMatrix, DenseVector, linspace, normalize}
 import breeze.plot.{Figure, plot}
 

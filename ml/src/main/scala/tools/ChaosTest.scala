@@ -1,7 +1,7 @@
-package bo
+package tools
 
 import Simulation.Simulation
-import bo.DatasetCreator.{Data, Statistics}
+import tools.DatasetCreator.{Data, Statistics}
 
 case class ChaosTest(var params: Data, var variables: Data) {
   def lyapunovExponent(paramName: String,

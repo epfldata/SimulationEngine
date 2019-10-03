@@ -1,11 +1,11 @@
-package bo
+package tools
 
 import java.io.{BufferedOutputStream, FileDescriptor, FileOutputStream, PrintStream}
 
 import Securities.Land
 import Simulation.{Person, Simulation}
 import _root_.Simulation.SimLib._
-import bo.DatasetCreator.{Data, Statistics}
+import tools.DatasetCreator.{Data, Statistics}
 import breeze.linalg.DenseMatrix
 import breeze.stats.distributions.Gaussian
 import spray.json.JsonParser
