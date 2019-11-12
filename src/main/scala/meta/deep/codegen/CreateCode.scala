@@ -293,17 +293,15 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
                   run_until: String,
                   parent: List[String]): Unit = {
     val classString =
-      s"""
-          package generated
+      s"""package generated
 
-          trait ${className + "Trait"} extends meta.deep.runtime.Actor ${parent.foldLeft("")((a,b) => a + " with " + b+"Trait")} {
-            $initParams
-              $initVars
-              $run_until
-        }
+trait ${className + "Trait"} extends meta.deep.runtime.Actor ${parent.foldLeft("")((a,b) => a + " with " + b+"Trait")} {
+  $initParams
+  $initVars
+  $run_until
+}
 
-        class $className extends ${className + "Trait"}
-        """
+class $className extends ${className + "Trait"}"""
     val file = new File(storagePath + "/generated/" + className + ".scala")
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(classString)
@@ -379,13 +377,11 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     */
   def createInit(code: String): Unit = {
     val classString =
-      s"""
-          package generated
+      s"""package generated
 
-          object InitData  {
-            def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(code, init = true)}}
-          }
-        """
+object InitData  {
+  def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(code, init = true)}}
+}"""
     val file = new File(storagePath + "/generated/InitData.scala")
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(classString)
