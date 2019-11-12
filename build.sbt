@@ -5,6 +5,14 @@ lazy val root = (project in file(".")).settings(
   scalaVersion := "2.12.8"
 )
 
+lazy val generated = (project in file("generated")).settings(
+  name := "economic_simulations_generated",
+  scalaSource in Compile := baseDirectory.value / "main/scala",
+  organization := "ch.epfl.data",
+  version := "1.0",
+  scalaVersion := "2.12.8"
+).dependsOn(root)
+
 // libraryDependencies += "com.quantifind" %% "wisp" % "0.0.4"
 
 libraryDependencies ++= Seq(
