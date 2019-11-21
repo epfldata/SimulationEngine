@@ -319,8 +319,30 @@ class $className extends ${className + "Trait"}"""
     for (cAG <- this.compiledActorGraphs) {
       //We only replace compiledActorGraphs with 1 actor type, otherwise it is a merged one
       if (cAG.actorTypes.length == 1) {
-        result = result.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName,
-                                "generated." + cAG.name + (if (!init) "Trait" else ""))
+
+        // consider actorNamePattern "meta.example.supermarket.Customer"
+        // case: meta.example.supermarket.Customer => generated.Customer
+        // case: meta.example.supermarket.CustomerProfile.EPFL => don't change
+        // case: meta.example.supermarket.Customer() => generatedCustomer()
+        // case: Match keywords inside multi-line strings
+        // case: Multiple matches
+
+        val actorNamePattern = s"${cAG.actorTypes.head.X.runtimeClass.getCanonicalName}".r.unanchored
+        val pattern1 = "((?s).*)"+s"(${cAG.actorTypes.head.X.runtimeClass.getCanonicalName})"+"((?s).*)"
+        val pattern2 = "([^a-zA-Z0-9_])" // the first letter following actor name shouldn't be an alphanumeric type
+
+        actorNamePattern.findFirstIn(result) match {
+          case Some(_) => {
+            pattern1.r.findAllMatchIn(result).foreach(
+            mtch =>
+              if (mtch.group(3).size==0 || pattern2.r.findFirstIn(mtch.group(3)(0).toString())!=None){
+                result = result.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName,
+                                        "generated." + cAG.name + (if (!init) "Trait" else ""))
+              }
+            )
+          }
+          case None =>
+        }
       }
     }
     result
