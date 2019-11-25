@@ -1,0 +1,18 @@
+.idea/
+project/
+target/
+
+# python
+__pycache__/
+
+# conda env config file
+*.cfg
+
+# models and parameters
+*.json
+!supplementary/params/params.json
+!supplementary/simulation.json
+!data_vec.json
+
+# debug
+debug/

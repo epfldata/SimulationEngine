@@ -1,0 +1,166 @@
+{
+  "Person": {
+    "constants": {
+      "const_number": 100,
+      "const_genderMu": 0.5,
+      "const_genderSigma": 0.1,
+      "const_buyMu": 1,
+      "const_buySigma": 2,
+      "const_consumeMu": 1,
+      "const_consumeSigma": 2,
+      "const_buyWheat": 0.5,
+      "const_buyFlour": 0.5,
+      "const_buyBread": 0.5,
+      "const_buyLand": 0.5,
+      "const_buyBeef": 0.5,
+      "const_buyOil": 0.5,
+      "const_buyFuel": 0.5,
+      "const_consumeWheat": 0.5,
+      "const_consumeFlour": 0.5,
+      "const_consumeBread": 0.5,
+      "const_consumeBeef": 0.5,
+      "const_consumeOil": 0.5,
+      "const_consumeFuel": 0.5,
+      "const_enjoyWheatMu": 10,
+      "const_enjoyWheatSigma": 10,
+      "const_enjoyFlourMu": 10,
+      "const_enjoyFlourSigma": 10,
+      "const_enjoyBreadMu": 10,
+      "const_enjoyBreadSigma": 10,
+      "const_enjoyBeefMu": 10,
+      "const_enjoyBeefSigma": 10,
+      "const_enjoyOilMu": 10,
+      "const_enjoyOilSigma": 10,
+      "const_enjoyFuelMu": 10,
+      "const_enjoyFuelSigma": 10,
+      "const_maleEduMu": 6.0,
+      "const_maleEduSigma": 1.0,
+      "const_femaleEduMu": 5.0,
+      "const_femaleEduSigma": 1.0,
+      "const_maleBonusSalMu": 100.0,
+      "const_maleBonusSalSigma": 10.0,
+      "const_femaleBonusSalMu": 80.0,
+      "const_femaleBonusSalSigma": 7.0
+    },
+    "states": {
+      "var_capitalMu": 1000,
+      "var_total_value_destroyedMu": 100,
+      "var_happinessMu": 100,
+      "var_salaryMu": 100
+    }
+  },
+  "Farm": {
+    "constants": {
+      "const_number": 1,
+      "const_salaryMu": 2800000.0,
+      "const_salarySigma": 200.0,
+      "const_itersMu": 10.0,
+      "const_itersSigma": 1.0,
+      "const_required": 1,
+      "const_produced": 10,
+      "const_time": 4
+    },
+    "states": {
+      "var_capitalMu": 10000,
+      "var_total_value_destroyedMu": 1000,
+      "var_goodwillMu": 10,
+      "var_employeesMu": 1,
+      "var_valueProducedMu": 10
+    }
+  },
+  "Mill": {
+    "constants": {
+      "const_number": 1,
+      "const_salaryMu": 2500000.0,
+      "const_salarySigma": 150.0,
+      "const_itersMu": 9.0,
+      "const_itersSigma": 1.0,
+      "const_consumed": 10,
+      "const_produced": 10,
+      "const_time": 1
+    },
+    "states": {
+      "var_capitalMu": 10000,
+      "var_total_value_destroyedMu": 1000,
+      "var_goodwillMu": 10,
+      "var_employeesMu": 1,
+      "var_valueProducedMu": 10
+    }
+  },
+  "Bakery": {
+    "constants": {
+      "const_number": 1,
+      "const_salaryMu": 2800000.0,
+      "const_salarySigma": 200.0,
+      "const_itersMu": 10.0,
+      "const_itersSigma": 1.0,
+      "const_consumed": 5,
+      "const_produced": 10,
+      "const_time": 1
+    },
+    "states": {
+      "var_capitalMu": 10000,
+      "var_total_value_destroyedMu": 1000,
+      "var_goodwillMu": 10,
+      "var_employeesMu": 1,
+      "var_valueProducedMu": 10
+    }
+  },
+  "CattleFarm": {
+    "constants": {
+      "const_number": 1,
+      "const_salaryMu": 2800000.0,
+      "const_salarySigma": 200.0,
+      "const_itersMu": 10.0,
+      "const_itersSigma": 1.0,
+      "const_required": 1,
+      "const_produced": 5,
+      "const_time": 6
+    },
+    "states": {
+      "var_capitalMu": 10000,
+      "var_total_value_destroyedMu": 1000,
+      "var_goodwillMu": 10,
+      "var_employeesMu": 1,
+      "var_valueProducedMu": 10
+    }
+  },
+  "OilField": {
+    "constants": {
+      "const_number": 1,
+      "const_salaryMu": 2800000.0,
+      "const_salarySigma": 200.0,
+      "const_itersMu": 10.0,
+      "const_itersSigma": 1.0,
+      "const_required": 1,
+      "const_produced": 10,
+      "const_time": 1
+    },
+    "states": {
+      "var_capitalMu": 10000,
+      "var_total_value_destroyedMu": 1000,
+      "var_goodwillMu": 10,
+      "var_employeesMu": 1,
+      "var_valueProducedMu": 10
+    }
+  },
+  "Refinery": {
+    "constants": {
+      "const_number": 1,
+      "const_salaryMu": 2800000.0,
+      "const_salarySigma": 200.0,
+      "const_itersMu": 10.0,
+      "const_itersSigma": 1.0,
+      "const_consumed": 10,
+      "const_produced": 9,
+      "const_time": 2
+    },
+    "states": {
+      "var_capitalMu": 10000,
+      "var_total_value_destroyedMu": 1000,
+      "var_goodwillMu": 10,
+      "var_employeesMu": 1,
+      "var_valueProducedMu": 10
+    }
+  }
+}
