@@ -1,16 +1,21 @@
 # economic_simulations
-This fork contains the neural network and bayesian optimization implementations. The neural network is supposed to learn the behavior of the simulation, therefore be able to produce the simulation results much faster than the actual simulation. With its high speed compared to the actual simulation, it can be used to generate lots of outputs from different initial conditions. This data can later be used to analyze the correlation and possibly the causality between the agents. 
+This fork contains the neural network and bayesian optimization implementations. The neural network is supposed to learn the behavior of the simulation, therefore be able to produce the simulation results much faster than the actual simulation. With its high speed compared to the actual simulation, it can be used to generate lots of outputs from different initial conditions. This data can later be used to analyze the correlation and possibly the causality between the agents.
+
+## Dependencies
+1. sbt (for building and running the simulation)
+2. Numpy, Pandas, Keras, and Tensorflow (for training, testing, and using the neural networks)
+3. [fmfn / BayesianOptimization](https://github.com/fmfn/BayesianOptimization)
 
 ## Architecture and Hierarchy of the Network
 Here we use two abstraction levels to model the simulation.
 1. Environment Level: In the higher level of abstraction each type of agent from the simulation (e.g. Person, Farm, ...) is represented by an instance of the class Agent. From now on by agent, we mean an instance of the class Agent, in other words, an agent type from the simulation. An environment (instance of class Environment) keeps the information of all the agents in the world as well as the connections between them. A connection from agent A to agent B means that in the simulation agent B relies on information from agent A. **We also assume by default that each agent has a connection to itself.** These connections form a graph which is used in the lower level of abstraction.
 
-2. Graph Level: In the lower level of abstraction each type of agent is represented by a node in a graph. There is an edge from node A to node B if and only if there is a connection from agent A to agent B in the environment. These nodes contain the actual neural network used for each agent. 
+2. Graph Level: In the lower level of abstraction each type of agent is represented by a node in a graph. There is an edge from node A to node B if and only if there is a connection from agent A to agent B in the environment. These nodes contain the actual neural network used for each agent.
 
 The environment level is merely a wrapper to make working with the graph level easier for the end-user, with no requirement to work with the underlying neural networks.
 
 ## Structure of the Agents
-In this terminology, we use the term parameter as any field, attribute, property, ... an agent can have. Also since each agent is, in fact, representing a type of agents in the simulation, the parameter is the aggregated parameter over all agents of that type. 
+In this terminology, we use the term parameter as any field, attribute, property, ... an agent can have. Also since each agent is, in fact, representing a type of agents in the simulation, the parameter is the aggregated parameter over all agents of that type.
 
 These parameters are divided into two types: **Constants** and **States**.
 
@@ -31,7 +36,7 @@ The above general 'data' structure, however, is mostly used for inputs. For outp
 
 ## Getting Started
 ### Configuring and Compiling the Environment
-For using the neural network abilities, first of all, you have to define the high-level environment. You can do it by defining an environment instance 
+For using the neural network abilities, first of all, you have to define the high-level environment. You can do it by defining an environment instance
 
 ```python
 env = Environment()
@@ -122,7 +127,7 @@ env.correlation_matrix(agent, iters=1000)
 The correlation is computed by sampling the inputs `iters` times and computing the outputs, then estimating the correlation from this data. The return type would be a matrix where each column represents an output, each row represents an input and the elements of the matrix are the correlations.
 
 ### Derivative Matrix
-You can find the partial derivative between a specific output of an agent and all the inputs at different points using this method. By point we mean a combination of values for inputs. 
+You can find the partial derivative between a specific output of an agent and all the inputs at different points using this method. By point we mean a combination of values for inputs.
 ```python
 env.derivative_matrix(agent, param, points=100)
 ```
@@ -131,11 +136,13 @@ The `param` should be any of `agent`'s outputs, in other words, one of its `stat
 ## Example
 The [eceonomic_simulation.py](https://github.com/alirezamoosio/economic_simulations/blob/master/src/main/python/economic_simulation.py)
 is an example of how to prepare the simulation data and pass it to the environment. With this python script you can train, test, predict, learn back inputs and get the correlation or derivative matrices.
+
+Some results of running the following commands are already in `supplementary/results/`.
 ### Training
-```bash 
-python3 economic_simulation.py train --group --save
+```bash
+python3 economic_simulation.py train --group --save -k <number of folds>
 ```
-For the following command training, data must already be prepared in the `supplementary/data` directory. Add `--group` if you want to run the group training as well. Add `--save` if you want to save the models. The models will be saved in the `supplementary/models/` folder. Be sure to create this directory before using `--save`.
+For the following command training, data must already be prepared in the `supplementary/data` directory. Add `--group` if you want to run the group training as well. Add `--save` if you want to save the models. The models will be saved in the `supplementary/models/` folder. Be sure to create this directory before using `--save`. Also, if you wish to use cross-validation for evaluating the model on training data, you can use the optional `-k` flag along with the number of folds.
 
 ### Evaluation
 ```bash
@@ -148,6 +155,7 @@ For the following command, the evaluation data must already be prepared in the `
 python3 economic_simulation batch-predict
 ```
 For batch prediction data and models must have the same structure as evaluation. The prediction results will be written in the `supplementary/results/batch-prediction` directory. Make sure this directory exists before running the command.
+
 
 ```bash
 python3 economic_simulation predict-over-time
@@ -171,3 +179,28 @@ The models must have the same structure as the evaluation. Correlation matrices 
 python3 economoic_simulation derivative agent-name param-name
 ```
 The models must have the same structure as evaluation. The result would be the derivative matrix for `param-name` state parameter of `agent-name` agent and will be written to the `supplementary/results/derivative` directory so make sure this directory exists before running the command.
+
+## Experiments
+### Datasets
+For creating datasets to train and test the network, we sample the simulation constants, run the simulation for some iterations and record the constants and state variables after a fixed number of simulation iterations (a step). After proceesing for a number of steps, we resample the constants and repeat.
+
+We have generated 5 datasets this way. These datasets are present in `supplementary/data/` and are named with the pattern i-j-k, where i is the total number of samples (rows) in the dataset, j is the number of steps before each constant resampling, and k is the step size (number of simulation iterations per step).
+
+### Some experimental results with the Network
+The model already trained on the 5000-40-5 dataset is stored in `supplementary/models/5000-40-5`. If you want to retrain it yourself, you can run the following command:
+```bash
+python3 economic_simulation train --group -k 3
+```
+As you can see, the MAE of the global (aggregated) paramters is 0.08, while its average value on agents is 0.14. Therefore, our model has a better understanding of how the grouped statistics of the simulation behave, without knowing much in details about each agent. Also we can use the 500-5-5 dataset as the held out data to evaluate our performance with. Using the following command
+```bash
+python3 economic_simulation evaluate
+```
+you can see the MAE value on the testing dataset will be 0.15. In order to compare our model with a single neural network trying to learn the whole simulation without being costumized according the structure of the problem, we have also implemented a single feed forward neural network. You can train it on the same training dataset (5000-40-5) using
+```bash
+python3 single_nn.py train
+```
+The trained model will be stored (and is already stored) in `supplementary/models/5000-40-5/single_nn.h5`. Then you can test it using the same testing dataset (500-5-5) using
+```bash
+python3 single_nn.py evaluate
+```
+which will have an MAE of 0.29 on the testing set. This shows that our proposed network can perform much better by exploiting the already known structure of the simulation.

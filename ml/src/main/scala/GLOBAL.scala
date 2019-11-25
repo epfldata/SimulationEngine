@@ -12,7 +12,7 @@ package object GLOBAL {
   val strongSilence = true
   val rnd = new Random()
 
-  val allAgents = Array("Person", "Farm", "Mill", "Bakery", "CattleFarm", "OilField", "Refinery")
+  val allAgents = Array("Person", "Farm", "Mill", "Bakery", "CattleFarm", "OilField", "Refinery", "Landlord")
 
   def isAgent(sim: SimO): Boolean = allAgents.contains(getAgentTypeFromClass(sim.getClass.getName))
 

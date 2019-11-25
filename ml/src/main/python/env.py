@@ -174,11 +174,11 @@ class Environment:
             input_names += in_agent.states
         node = Node(agent.name, input_names, agent.states, {
             'features': len(input_names),
-            'number_of_units': agent.hyper_parameters.get('number_of_units') or [64, 64, 64, len(agent.states)],
-            'activations': agent.hyper_parameters.get('activations') or ['relu', 'relu', 'relu', 'linear'],
+            'number_of_units': agent.hyper_parameters.get('number_of_units') or [64, 64, 64],
+            'activations': agent.hyper_parameters.get('activations') or ['relu', 'relu', 'relu'],
             'loss': agent.hyper_parameters.get('loss') or 'mae',
             'optimizer': agent.hyper_parameters.get('optimizer') or 'sgd',
-            'metrics': agent.hyper_parameters.get('metrics') or ['mae']
+            'metrics': agent.hyper_parameters.get('metrics') or ['mae', 'mse']
         })
         return node
 
@@ -287,8 +287,8 @@ class Environment:
         :param data_input: The general 'data' structure, refer to README.md
         :param data_output: A dictionary from agents to the ground truth value of their states
         :param aggregator: The aggregator used for producing the global statistics from agent states
-        :return: Loss value
-        :rtype: float
+        :return: MAE value, MSE value
+        :rtype: (float, float)
         """
         if self._non_compiled_changes:
             raise Exception('None Compiled Changes! Compile first!')
@@ -298,6 +298,42 @@ class Environment:
         node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
         global_output = aggregator.aggregate_pd(agent_output)
         return self._graph.group_test(node_input, global_output, aggregator)
+
+    def group_predict(self, data_input, data_output, aggregator, n_samples, from_train_scale=False):
+        """Predicts global outcome
+
+        :param data_input: The general 'data' structure, refer to README.md
+        :param data_output: A dictionary from agents to the ground truth value of their states
+        :param aggregator: The aggregator used for producing the global statistics from agent states
+        :param n_samples: The number of samples
+        :param from_train_scale: If true, self._scales' mean and sd are used, otherwise they are extracted from data
+        :return: Loss value
+        :rtype: float
+        """
+        if self._non_compiled_changes:
+            raise Exception('None Compiled Changes! Compile first!')
+        agent_input, _ = self._prefix_and_normalize(data_input, data_output,
+                                                               from_previous_scale=from_train_scale)
+        node_input = {self._get_node(agent): agent_input[agent] for agent in agent_input}
+        return self._graph.group_predict(node_input, aggregator, n_samples)
+
+
+    def group_error(self, data_input, data_output, predictions, aggregator, from_train_scale=False):
+        """Measures the error between global predictions and ground truth
+
+        :param data_input: The general 'data' structure, refer to README.md
+        :param data_output: A dictionary from agents to the ground truth value of their states
+        :param predictions: A dataframe with predicted global observations
+        :param aggregator: The aggregator used for producing the global statistics from agent states
+        :param from_train_scale: If true, self._scales' mean and sd are used, otherwise they are extracted from data
+        :return: mae, mse
+        :rtype: (float, float)
+        """
+        agent_input, agent_output = self._prefix_and_normalize(data_input, data_output,
+                                                               from_previous_scale=from_train_scale)
+        global_output = aggregator.aggregate_pd(agent_output)
+        return self._graph.group_error(global_output.to_numpy(), predictions.to_numpy())
+
 
     def solo_train(self, data_input, data_output, training_hyper_params=None):
         """Trains each agent individually using the loss function from its own state
@@ -337,7 +373,7 @@ class Environment:
                                    epochs)
             print()
 
-    def learn_input(self, agent_output, aggregator, epochs=100, learning_rate=100):
+    def learn_input(self, agent_output, aggregator, epochs=100, learning_rate=0.01):
         """
         Learns back the inputs that produce the given output
         :param agent_output: contains per agent its output

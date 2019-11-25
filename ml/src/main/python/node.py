@@ -1,6 +1,6 @@
 import tensorflow as tf
-from tensorflow.python.keras.layers import Dense, InputLayer
-from tensorflow.python.keras.models import Sequential, load_model
+from tensorflow.keras.layers import Dense, InputLayer
+from tensorflow.keras.models import Sequential, load_model
 
 
 class Node:
@@ -14,6 +14,7 @@ class Node:
         :param hyper_parameters: The neural network's hyper parameters, it can contain:
                     number_of_units:
                             list[int] - the ith element indicates the number of units to use in the ith layer
+                                        (without the output layer)
                             default: [64, 64, 64]
                     activations:
                             list[str] - the ith element indicates the activation function to use in the ith layer
@@ -22,7 +23,7 @@ class Node:
                             int - the number of features the neural network has, must be the same len(input_names)
                             default: 3
                     number_of_layers:
-                            int - number of layers (excluding input, including output) to use
+                            int - number of layers (excluding input and output) to use
                             default: if number_of_units provided its length, otherwise 3
                     loss:
                             str - loss function used for training
@@ -42,12 +43,13 @@ class Node:
         self.output_names = output_names
         self._model = Sequential()
         units = hyper_parameters.get('number_of_units') or [64] * 3
-        activations = hyper_parameters.get('activations') or ['linear'] * 3
+        activations = hyper_parameters.get('activations') or ['relu'] * 3
 
-        self._model.add(Dense(units[0], input_dim=hyper_parameters.get('features') or 3, activation=activations[0],
+        self._model.add(Dense(units[0], input_dim=hyper_parameters.get('features') or len(input_names), activation=activations[0],
                               name=self.name + "-0"))
         for i in range(1, hyper_parameters.get('number_of_layers') or len(units)):
-            self._model.add(Dense(units[i] or 64, activation=activations[i], name="{}-{}".format(self.name, i + 1)))
+            self._model.add(Dense(units[i] or 64, activation=activations[i], name="{}-{}".format(self.name, i)))
+        self._model.add(Dense(len(output_names), activation="linear", name="{}-{}".format(self.name, len(units) + 1)))
 
         self._model.compile(loss=hyper_parameters.get('loss') or 'mae',
                             optimizer=hyper_parameters.get('optimizer') or 'sgd',
@@ -61,7 +63,7 @@ class Node:
         :return: The non-trainable copy of model
         """
         model = Sequential()
-        model.add(InputLayer(input_tensor=input_variable, name=self.name + "-0"))
+        model.add(InputLayer(input_tensor=input_variable, name=self.name + "-in-var"))
         for layer in self._model.layers:
             model.add(Dense(layer.units, layer.activation, trainable=False, name=layer.name + "a"))
 

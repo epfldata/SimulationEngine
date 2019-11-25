@@ -47,22 +47,43 @@ class Graph:
                 last_percent = int(i * 100.0 / epochs)
                 print(f"{last_percent} %, loss {loss_val}")
 
+    def group_predict(self, test_x, aggregator, n_samples):
+        indices = {node: {name: i for i, name in enumerate(test_x[node]["states"].columns.values)} for node in test_x}
+        predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, n_samples,
+                                         indices)
+        predictions = self._sess.run(predict_s, feed_dict={
+            node.input_tensor(): self._prepare_node_input(test_x, node) for node in self._nodes
+        })
+        return predictions
+
+    def group_error(self, test_x, test_s):
+        """
+        Measures the mae and mse for two global observations
+        :param test_x: the predicted global observations
+        :param test_s: ground truth global observations
+        :return: mae, mse
+        """
+        mae = tf.losses.absolute_difference(tf.constant(test_s), tf.constant(test_x))
+        mse = tf.losses.mean_squared_error(tf.constant(test_s), tf.constant(test_x))
+        return self._sess.run((mae, mse))
+
     def group_test(self, test_x, test_s, aggregator):
         """Tests the aggregated output produced by the model against ground truth
 
         :param test_x: The general node indexed and standardized 'data', refer to README.sd
         :param test_s: A DataFrame containing the ground truth for
         :param aggregator: The aggregator used for aggregating individual states and making global statistics
-        :return: Loss value
-        :rtype: float
+        :return: MAE value, MSE value
+        :rtype: (float, float)
         """
         indices = {node: {name: i for i, name in enumerate(test_x[node]["states"].columns.values)} for node in test_x}
         predict_s = aggregator.aggregate({node: node.output_tensor() for node in self._nodes}, test_s.shape[0], indices)
-        loss = tf.losses.absolute_difference(tf.constant(test_s.to_numpy()), predict_s)
-        loss_val = self._sess.run(loss, feed_dict={
+        mae = tf.losses.absolute_difference(tf.constant(test_s.to_numpy()), predict_s)
+        mse = tf.losses.mean_squared_error(tf.constant(test_s.to_numpy()), predict_s)
+        mae_val, mse_val = self._sess.run((mae, mse), feed_dict={
             node.input_tensor(): self._prepare_node_input(test_x, node) for node in self._nodes
         })
-        return loss_val
+        return mae_val, mse_val
 
     def _input_learning_model(self, aggregator, n_samples):
         """Creates the trainable input tensor and connects it to all the relevant models
@@ -121,7 +142,7 @@ class Graph:
                                          indices)
         return input_vars, predict_s
 
-    def learn_input(self, train_s, aggregator, epochs=100, learning_rate=100):
+    def learn_input(self, train_s, aggregator, epochs=100, learning_rate=0.01):
         """
         Learns back the input parameters
         :param train_s: target data contains global states

@@ -147,11 +147,11 @@ abstract class Factory(protected val pls: ProductionLineSpec,
 
   var pl : List[ProductionLine] = List()
   private var zombie_cost2 : Double = 0.0 // cost from canceled prod. runs
-  var prev_mgmt_action : Int = 0
   protected var hr : HR = HR(shared, this, math.abs(distr("salary").sample.round.toInt))
   protected var goal_num_pl = 0;
 
   private var nestedSimIters = math.max(0, math.min(20, distr("iters").sample.round.toInt))
+  private var tacticsProbability = distr("tactics").sample
 
 
   // constructor
@@ -169,12 +169,12 @@ abstract class Factory(protected val pls: ProductionLineSpec,
 
     _to.pl = pl.map(_.mycopy(_to));
     _to.zombie_cost2 = zombie_cost2;
-    _to.prev_mgmt_action = prev_mgmt_action;
     _to.hr = new HR(_shared, _to, hr.salary,
        hr.employees.map{case (employee, salary) => (old2new(employee).asInstanceOf[Person], salary)}
     )
     _to.goal_num_pl = goal_num_pl;
     _to.nestedSimIters = nestedSimIters
+    _to.tacticsProbability = tacticsProbability
   }
 
   /** Returns whether everything was sucessfully bought. */
@@ -261,10 +261,9 @@ abstract class Factory(protected val pls: ProductionLineSpec,
       println(this + " demand_fc = " + demand_fc + ", best_pl = " +
         suitable_num_pl + ", currently = " + pl.length);
 
-
+    goal_num_pl = suitable_num_pl;
     if(suitable_num_pl >= 1) {
       println(this + ": First nested simulation starts.");
-      goal_num_pl = suitable_num_pl;
       val old2new1 = shared.run_sim(nestedSimIters);
       val future_self1 = old2new1(this).asInstanceOf[Factory];
       future_self1.stat;
@@ -276,17 +275,18 @@ abstract class Factory(protected val pls: ProductionLineSpec,
       val old2new2 = shared.run_sim(nestedSimIters);
       val future_self2 = old2new2(this).asInstanceOf[Factory];
       future_self2.stat;
-      goal_num_pl += 1;
       println(this + ": Second nested simulation ends.");
 
       def valuation(f: Factory) = f.assets + f.goodwill + f.liabilities;
 
-      if(valuation(future_self1) < valuation(future_self2))
-        println("ONE LESS WOULD BE BETTER");
-      else println(goal_num_pl + " IS A GOOD DECISION!")
+      if(valuation(future_self1) < valuation(future_self2)) {
+        println("ONE LESS WOULD BE BETTER")
+      }
+      else {
+        goal_num_pl += 1
+        println(goal_num_pl + " IS A GOOD DECISION!")
+      }
     }
-
-    goal_num_pl = suitable_num_pl;
   }
 
 
@@ -300,13 +300,7 @@ abstract class Factory(protected val pls: ProductionLineSpec,
 
   override protected def algo = __forever(
     __do {
-      val mgmt_step_size = 6;
-
-      if(prev_mgmt_action + mgmt_step_size < shared.timer)
-      //if(shared.timer % mgmt_step_size == mgmt_step_size - 1)
-      {
-        prev_mgmt_action = shared.timer; // call before tactics to avoid
-          // immediate recursion in nested simulation.
+      if(shared.recursionDepth == 0 && shared.timer > 0 && GLOBAL.rnd.nextDouble() <= tacticsProbability) {
         tactics(); // changes goal_num_pl
       }
 

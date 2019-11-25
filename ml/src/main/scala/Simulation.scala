@@ -5,7 +5,7 @@ import Markets._
 import Owner._
 import Securities._
 import Simulation.Factory.Factory
-import tools.DatasetCreator.{Data, Statistics}
+import ml_supplements.DatasetCreator.{Data, Statistics}
 import breeze.stats.distributions.{Gaussian, RandBasis, ThreadLocalRandomGenerator}
 import org.apache.commons.math3.random.MersenneTwister
 
@@ -26,6 +26,7 @@ class Simulation(val constants: Data, val variables: Data) {
       var distr: Map[String, Gaussian] = Map(
         ("edu", new Gaussian(constants("Person")(gender + "EduMu"), constants("Person")(gender + "EduSigma"))),
         ("bonusSal", new Gaussian(constants("Person")(gender + "BonusSalMu"), constants("Person")(gender + "BonusSalSigma"))),
+        ("active", new Gaussian(constants("Person")(gender + "ActiveMu"), constants("Person")(gender + "ActiveSigma"))),
         ("buy", new Gaussian(constants("Person")("buyMu"), constants("Person")("buySigma"))),
         ("consume", new Gaussian(constants("Person")("consumeMu"), constants("Person")("consumeSigma"))),
         ("capital", new Gaussian(variables("Person")("capitalMu"), variables("Person")("capitalSigma"))),
@@ -50,6 +51,7 @@ class Simulation(val constants: Data, val variables: Data) {
           constants(factoryType)("salarySigma"))),
         ("iters", new Gaussian(constants(factoryType)("itersMu"),
           constants(factoryType)("itersSigma"))),
+        ("tactics", new Gaussian(constants(factoryType)("tacticsMu"), constants(factoryType)("tacticsSigma"))),
         ("capital", new Gaussian(variables(factoryType)("capitalMu"),
           variables(factoryType)("capitalSigma"))),
         ("total_value_destroyed", new Gaussian(variables(factoryType)("total_value_destroyedMu"),
@@ -208,12 +210,6 @@ class Simulation(val constants: Data, val variables: Data) {
     */
   def run_sim(it: Int): collection.mutable.Map[SimO, SimO] = {
     val (new_sim, old2new) = this.mycopy;
-
-    // prevent recursive simulation. This is only safe it the simulation
-    // runs for fewer than 1000 iterations!
-    for (s <- new_sim.sims)
-      if (s.isInstanceOf[Factory.Factory])
-        s.asInstanceOf[Factory.Factory].prev_mgmt_action += 1000;
 
     new_sim.run(it);
     old2new

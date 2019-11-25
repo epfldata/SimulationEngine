@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 
+import numpy as np
 import sys
 from bayes_opt import BayesianOptimization, UtilityFunction
 
@@ -48,10 +49,13 @@ def runCmd(cmd):
 
 
 if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        raise Exception("number of bo iterations required")
+
     os.chdir('../../..')  # going to the root of the project
     json_original = 'supplementary/params/params.json'
     json_optimize = "supplementary/params/optimize.json"
-    json_temp = 'supplementary/params/.json'
+    json_temp = 'supplementary/params/temp.json'
     json_result = 'supplementary/params/bo-result.json'
 
     f = open(json_original, "r")
@@ -76,9 +80,13 @@ if __name__ == '__main__':
             **{enjoyment: (0, 1000) for enjoyment in constants[agentType] if "enjoy" in enjoyment.lower()},
             **{edu: (0, 10) for edu in constants[agentType] if "edu" in edu.lower()},
             **{bonusSal: (0, 1000) for bonusSal in constants[agentType] if "bonussal" in bonusSal.lower()},
+            **{active: (0, 1) for active in constants[agentType] if "active" in active.lower()},
             **{salary: (10 ** 4, 10 ** 6) for salary in constants[agentType] if "salary" in salary.lower()},
             **{iters: (0, 20) for iters in constants[agentType] if "iters" in iters.lower()},
-            **{plUnits: (1, 20) for plUnits in constants[agentType] if plUnits in ["required", "consumed", "produced", "time"]}
+            **{tactics: (0, 1) for tactics in constants[agentType] if "tactics" in tactics.lower()},
+            **{plUnits: (1, 20) for plUnits in constants[agentType] if plUnits in ["required", "consumed", "produced", "time"]},
+            **{units: (1, 1000) for units in ["units"] if agentType == "Landlord"},
+            **{price: (10 ** 5, 10 ** 7) for price in ["price"] if agentType == "Landlord"}
         }
         pbounds = {**pbounds, **{("constants-{}-{}".format(agentType, key)): append[key] for key in append}}
     for agentType in variables:
@@ -93,15 +101,16 @@ if __name__ == '__main__':
     stepSizes = [20, 50, 100]
     sampleSize = 5
     nSteps = 1
-    optimization_iters = 20
+    optimization_iters = int(sys.argv[1])
     params_result = {"stepSize-{}".format(stepSize): {"entry-{}".format(entry): {} for entry in range(sampleSize)} for stepSize in stepSizes}
 
     runCmd("sbt clean compile")
     for stepSize in stepSizes:
         runCmd('sbt "run generate {} {} {} {}"'.format(json_original, sampleSize, nSteps, stepSize))
+        targets = np.empty(shape=sampleSize)
         for entry in range(sampleSize):
             optimizer = BayesianOptimization(None, pbounds, 10)
-            utility = UtilityFunction(kind="ucb", kappa=2.5, xi=0.0)
+            utility = UtilityFunction(kind="ei", kappa=2.5, xi=0.0)
             for i in range(optimization_iters):
                 print("stepSize:", stepSize, "entry:", entry, "iteration:", i)
                 next_point = optimizer.suggest(utility)
@@ -111,8 +120,13 @@ if __name__ == '__main__':
 
             all_params.update(toJson(optimizer.max['params']))
             params_result["stepSize-{}".format(stepSize)]["entry-{}".format(entry)].update(all_params)
-            params_result["stepSize-{}".format(stepSize)]["entry-{}".format(entry)]["target"] = optimizer.max["target"]
+            targets[entry] = optimizer.max["target"]
+            params_result["stepSize-{}".format(stepSize)]["entry-{}".format(entry)]["target"] = targets[entry]
 
             f = open(json_result, "w")
             f.write(json.dumps(params_result))
             f.close()
+        params_result["stepSize-{}".format(stepSize)]["mean-target"] = targets.mean()
+        f = open(json_result, "w")
+        f.write(json.dumps(params_result))
+        f.close()

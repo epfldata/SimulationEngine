@@ -6,7 +6,6 @@ import code._
 
 class Person(
   val shared: Simulation,
-  val active: Boolean,
   val male: Boolean = GLOBAL.rnd.nextBoolean(),
   var log : List[String] = List()
 ) extends SimO(shared) {
@@ -45,6 +44,8 @@ class Person(
     .map(item => (item, distr("enjoy" + item.name.capitalize).sample.round.toInt))
     .toMap
 
+  private val activeRatio = distr("active").sample
+
   println("dist:")
   println(distr)
   println("ee:")
@@ -52,7 +53,7 @@ class Person(
 
   def mycopy(_shared: Simulation,
              _substitution: collection.mutable.Map[SimO, SimO]) = {
-    val p = new Person(_shared, active, male, log);
+    val p = new Person(_shared, male, log);
     p.variables("salary") = variables("salary")
     p.variables("happiness") = variables("happiness")
     copy_state_to(p);
@@ -68,6 +69,7 @@ class Person(
 
   protected def algo = __forever(
     __do{
+      val active = GLOBAL.rnd.nextDouble() <= activeRatio
       if(active) {
         val buy = getNextCommodity(buyProbs)
         val buyUnits = math.max(1, distr("buy").sample().round.toInt)
