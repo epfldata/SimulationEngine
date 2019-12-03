@@ -48,7 +48,7 @@ class Lifter {
         methodsMap = methodsMap + (method.symbol -> new MethodInfo[method.A](
           method.symbol,
           method.tparams,
-          method.vparams,
+          method.vparamss,
           blocking))
         counter += 1
         Method.getNextMethodId
@@ -72,10 +72,12 @@ class Lifter {
     val actorSelfVariable: Variable[_ <: Actor] =
       clasz.self.asInstanceOf[Variable[T]]
     //lifting states - class attributes
-    var endStates: List[State[_]] = List()
-    endStates = clasz.fields.map {
+    val endStates = clasz.fields.map {
       case field =>
-        State(field.symbol, field.A, field.init)
+        val fi = field.init.getOrElse(
+          squid.utils.lastWords("Cannot handle no init value yet")
+        )
+        State[field.A](field.symbol, field.A, fi)
     }
     var endMethods: List[LiftedMethod[_]] = List()
     var mainAlgo: Algo[_] = DoWhile(code"true", Wait())
