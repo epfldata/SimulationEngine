@@ -10,6 +10,7 @@ import meta.deep.member.ActorType
 import meta.deep.runtime.Actor
 
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.runtime.{universe => ru}
 
 class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     extends StateMachineElement() {
@@ -92,13 +93,13 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     if (compiledActorGraph.actorTypes.length == 1) {
       for (actorType <- compiledActorGraph.actorTypes) {
         for (s <- actorType.states) {
-          initParams = initParams + "var " + s.sym.name + ": " + changeTypes(
+          initParams = initParams + "  var " + s.sym.name + ": " + changeTypes(
             s.tpe.rep.toString) + " = " + changeTypes(IR.showScala(s.init.rep)) + "\n"
         }
       }
     }
 
-    createClass(compiledActorGraph.name, initParams, initVars, run_until, compiledActorGraph.actorTypes.map(_.name).filter(_ != compiledActorGraph.name))
+    createClass(compiledActorGraph.name, initParams, initVars, run_until, compiledActorGraph.parentNames);
   }
 
   /**
@@ -283,6 +284,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
   /**
     * Creates the class file
     *
+    * @param initTypes types defined in the class file in the form of case class
     * @param initParams state variables
     * @param initVars   generated variables needed globally
     * @param run_until  function, which overrides the run until method
@@ -295,13 +297,14 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     val classString =
       s"""package generated
 
-trait ${className + "Trait"} extends meta.deep.runtime.Actor ${parent.foldLeft("")((a,b) => a + " with " + b+"Trait")} {
+trait ${className + "Trait"} extends ${parent.head}${parent.tail.foldLeft("")((a,b) => a + " with " + b)} {
   $initParams
   $initVars
   $run_until
 }
 
 class $className extends ${className + "Trait"}"""
+
     val file = new File(storagePath + "/generated/" + className + ".scala")
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(classString)
@@ -319,13 +322,6 @@ class $className extends ${className + "Trait"}"""
     for (cAG <- this.compiledActorGraphs) {
       //We only replace compiledActorGraphs with 1 actor type, otherwise it is a merged one
       if (cAG.actorTypes.length == 1) {
-
-        // consider actorNamePattern "meta.example.supermarket.Customer"
-        // case: meta.example.supermarket.Customer => generated.Customer
-        // case: meta.example.supermarket.CustomerProfile.EPFL => don't change
-        // case: meta.example.supermarket.Customer() => generatedCustomer()
-        // case: Match keywords inside multi-line strings
-        // case: Multiple matches
 
         val actorNamePattern = s"${cAG.actorTypes.head.X.runtimeClass.getCanonicalName}".r.unanchored
         val pattern1 = "((?s).*)"+s"(${cAG.actorTypes.head.X.runtimeClass.getCanonicalName})"+"((?s).*)"

@@ -59,6 +59,7 @@ abstract class StateMachineElement() extends PipelineElement() {
 /**
   * This class represents the graph representation used for working in StateMachineElement
   * @param name the name of the actortype
+  * @param parentNames a list of parents' names
   * @param graph the graph of EdgeInfos containing the actual code
   * @param variables a list of variables which have been used in code and needs a conversion to MutVar
   * @param variables2 a list of variables which have been additionally added, where no conversion was necessary
@@ -69,6 +70,7 @@ abstract class StateMachineElement() extends PipelineElement() {
   */
 case class CompiledActorGraph(
     var name: String,
+    var parentNames: List[String],
     var graph: ArrayBuffer[EdgeInfo],
     var variables: List[VarWrapper[_]],
     var variables2: List[VarValue[_]],

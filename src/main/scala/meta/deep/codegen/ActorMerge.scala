@@ -6,7 +6,7 @@ import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Combines to actor types together and creates a new actor type. The original ones are still there, so the new one
+  * Combines two actor types together and creates a new actor type. The original ones are still there, so the new one
   * can be used afterwards if needed.
   * A new added graph can be accessed with Name1_Name2
   * @param mergeData a list of actortype pair names which should be merged. It is not allowed to merge the same actor with itself.
@@ -48,6 +48,7 @@ class ActorMerge(mergeData: List[(String, String)])
 
       newActorGraphs = CompiledActorGraph(
         a1.name + "_" + a2.name,
+        (a1.parentNames ::: a2.parentNames).distinct,
         finalGraph,
         a1.variables ::: a2.variables,
         a1.variables2 ::: a2.variables2,

@@ -30,12 +30,14 @@ class Lifter {
     * @param initializationClass - contains only one method, which has to return a list of [[Actor]]
     * @return deep embedding of the classes
     */
+
   def apply(startClasses: List[Clasz[_ <: Actor]],
             initializationClass: Clasz[_])
     : (List[ActorType[_]], OpenCode[List[Actor]]) = {
     val actorsInit: OpenCode[List[Actor]] = liftInitCode(initializationClass)
     //Collecting method symbols and info to generate methodsIdMap and methodsMap
     var counter = 0
+
     startClasses
       .map(c => c.methods)
       .flatten
@@ -68,6 +70,8 @@ class Lifter {
     * @return an [[ActorType]] - deep embedding of an [[Actor]] class
     */
   private def liftActor[T <: Actor](clasz: Clasz[T]) = {
+    val parentNames: List[String] = clasz.parents.map(parent => parent.rep.toString())
+
     import clasz.C
     val actorSelfVariable: Variable[_ <: Actor] =
       clasz.self.asInstanceOf[Variable[T]]
@@ -102,6 +106,7 @@ class Lifter {
         }
     })
     ActorType[T](clasz.name,
+                 parentNames,
                  endStates,
                  endMethods,
                  mainAlgo,
