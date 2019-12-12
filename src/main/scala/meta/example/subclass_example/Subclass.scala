@@ -6,15 +6,16 @@ import squid.quasi.lift
 
 @lift
 class Subclass1 extends Actor with ParentClass{
-  var name = "Children"
+  var name = "subclass1 "
 
-  def accessChildClass(): Unit = {
-    println(name + classType)
+  def accessParentClass(): Unit = {
+    println(name + parentType)
   }
 
   def main(): Unit = {
     while(true) {
-      accessChildClass()
+      accessParentClass()
+
       SpecialInstructions.waitTurns(1)
     }
   }
@@ -22,15 +23,15 @@ class Subclass1 extends Actor with ParentClass{
 
 @lift
 class Subclass2 extends Actor with ParentClass{
-  var name = "Pets"
+  var name = "Subclass2 "
 
-  def accessChildClass(): Unit = {
-    println(name + classType)
+  def accessGrandParentClass(): Unit = {
+    println(name + grandParentType)
   }
 
   def main(): Unit = {
     while(true) {
-      accessChildClass()
+      accessGrandParentClass()
       SpecialInstructions.waitTurns(1)
     }
   }
