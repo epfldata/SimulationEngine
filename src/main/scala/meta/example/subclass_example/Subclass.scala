@@ -13,10 +13,11 @@ class Subclass1 extends Actor with ParentClass{
   }
 
   def main(): Unit = {
-    while(true) {
+    var remainIts: Int = parentType
+    while(remainIts > 0) {
       accessParentClass()
-
       SpecialInstructions.waitTurns(1)
+      remainIts = remainIts - 1
     }
   }
 }
@@ -25,14 +26,16 @@ class Subclass1 extends Actor with ParentClass{
 class Subclass2 extends Actor with ParentClass{
   var name = "Subclass2 "
 
-  def accessGrandParentClass(): Unit = {
-    println(name + grandParentType)
+  def accessGrandParentClass(remainDays: Int): Unit = {
+    println(name + remainDays)
   }
 
   def main(): Unit = {
-    while(true) {
-      accessGrandParentClass()
+    var remainIts: Int = grandParentType
+    while(remainIts > 0) {
+      accessGrandParentClass(remainIts)
       SpecialInstructions.waitTurns(1)
+      remainIts = remainIts - 1
     }
   }
 }
