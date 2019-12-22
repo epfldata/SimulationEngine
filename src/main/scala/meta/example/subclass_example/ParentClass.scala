@@ -1,11 +1,13 @@
 package meta.example.subclass_example
 
-//@lift
-// Macro expansion failed, no ctor for class
 trait ParentClass extends GrandParentClass {
-  var parentType: Int = 5
+  var parentToken: Int = 5
+
+  override def hello: Unit = println("Hello from parent class!")
 }
 
 trait GrandParentClass {
-  var grandParentType: Int = 10
+  var grandParentToken: Int = 10
+
+  def hello: Unit = println("Hello from grandparent class!")
 }

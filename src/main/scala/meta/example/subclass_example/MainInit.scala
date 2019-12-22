@@ -11,6 +11,7 @@ class MainInit {
 
     val subclass1 = new Subclass1
     val subclass2 = new Subclass2
+
     l.append(subclass1, subclass2)
 
     l.toList
