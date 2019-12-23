@@ -2,11 +2,10 @@ package meta.example.supermarket
 
 import meta.classLifting.SpecialInstructions
 import meta.deep.runtime.Actor
-import meta.example.supermarket.goods.ItemTrait
 import squid.quasi.lift
 
 @lift
-class Supermarket extends Actor with ItemTrait {
+class Supermarket extends Actor with SummaryTrait {
 
   def recordWaste(category: String, priceUnit: Int, isSold: Boolean): Unit ={
     println("Record waste at supermarket")
