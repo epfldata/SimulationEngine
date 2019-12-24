@@ -10,7 +10,6 @@ import meta.deep.member.ActorType
 import meta.deep.runtime.Actor
 
 import scala.collection.mutable.ArrayBuffer
-import scala.reflect.runtime.{universe => ru}
 
 class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     extends StateMachineElement() {
