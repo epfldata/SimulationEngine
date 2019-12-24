@@ -5,8 +5,8 @@ import meta.deep.runtime.Actor
 import squid.quasi.lift
 
 @lift
-class Item2 extends Actor with Eggplant with Item{
-  var age = 0
+class Item3 extends Actor with Potato with Item{
+  var age: Int = 0 // age when the item is on display
 
   def main(): Unit = {
     while (age < freshUntil && !state.isConsumed) {

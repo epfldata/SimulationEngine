@@ -1,22 +1,26 @@
 package meta.example.supermarket
 
-import meta.classLifting.SpecialInstructions
-import meta.deep.runtime.Actor
-import squid.quasi.lift
+import meta.example.supermarket.goods.{Item}
 
-@lift
-class Supermarket extends Actor with SummaryTrait {
+import scala.collection.mutable.PriorityQueue
+
+class Supermarket extends SummaryTrait {
+  import Supermarket._
 
   def recordWaste(category: String, priceUnit: Int, isSold: Boolean): Unit ={
-    println("Record waste at supermarket")
     updateWasteSummary(category, priceUnit, isSold)
   }
 
-  def main(): Unit = {
-    while(true) {
-      SpecialInstructions.handleMessages()
-      println("Waste summary: " + wasteSummary)
-      SpecialInstructions.waitTurns(1)
-    }
+  def sell(category: String, item: String): Item = {
+    println("Purchase item! Current size of the queue is: " + vegetables.size)
+    val soldItem: Item = vegetables.dequeue()
+    soldItem.purchase
+    soldItem
   }
+
+  var vegetables: PriorityQueue[Item] = null
+}
+
+object Supermarket {
+  val store: Supermarket = new Supermarket
 }
