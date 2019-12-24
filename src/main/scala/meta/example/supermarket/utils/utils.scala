@@ -13,4 +13,9 @@ object utils {
   def toInt(b: Boolean): Int = {
     if (b) 1 else 0
   }
+
+  // Keep 2 decimal places
+  def to2Dec(value: Double): Double = {
+    (value * 100).round / 100.toDouble
+  }
 }

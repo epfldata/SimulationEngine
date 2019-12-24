@@ -1,7 +1,25 @@
 package meta.example.supermarket.goods
 
-trait ItemTrait {
+import meta.deep.runtime.Actor
+import meta.example.supermarket.Supermarket
+import meta.example.supermarket.utils.to2Dec
+import squid.quasi.lift
+
+//@lift
+trait Item extends Actor{
+
+  val name: String
+  val price: Double
+  val priceUnit: Int
+  val discount: Double
+  val stock: Int
+  val category: String
+  val freshUntil: Int
+  val visibility: Double
+
+  var age: Int
   var state: ItemState = ItemState()
+  var supermarket: Supermarket = Supermarket.store
 
   def updateState(newState: String, itemState: ItemState): Unit ={
     newState match {
@@ -18,7 +36,18 @@ trait ItemTrait {
 
   def consume: Unit = { updateState("isConsumed", state) }
 
-  def updateFreshness(age: Int, freshUntil: Int): Unit ={
-    println("Current age " + age + " freshness " + (1-1.0*age/freshUntil))
+  def itemInfo: Unit = {
+    println("Item id " + id + " name " + name + " Category: " + category +
+      " Age: " + age + " Freshness: " + to2Dec(1-1.0*age/freshUntil) +
+      " State: " + state.get
+    )
+  }
+
+  def cleanExpired: Unit = {
+    if (!state.isConsumed){
+      discard
+      itemInfo
+      supermarket.recordWaste(category, priceUnit, state.isPurchased)
+    }
   }
 }

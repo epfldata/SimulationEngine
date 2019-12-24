@@ -4,6 +4,8 @@ import java.io.{BufferedWriter, File, FileWriter}
 
 import meta.example.supermarket.goods.categories.namePriceUnit
 import meta.example.supermarket.utils
+import collection.mutable.Map
+
 // Don't use Product, which is a default Scala's type used later
 case class Article(name: String, fields: List[Attr])
 case class Category(name: String, fields: List[Attr], children: List[Article])
@@ -93,6 +95,7 @@ object generateGoods extends App{
   }
 
   val category = new categories
+
   category.getSummary.foreach(
     tup => genFile(tup._1, tup._2, tup._3)
   )

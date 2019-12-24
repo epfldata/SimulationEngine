@@ -1,7 +1,8 @@
 package meta.example.supermarket.goods
 
 import meta.example.supermarket.utils
-import scala.collection.mutable.ListBuffer
+
+import scala.collection.mutable.{ListBuffer, Map}
 
 case class categoryAmount(var Vegetable: Double=0.0,
                         var Meat: Double=0.0,
@@ -12,6 +13,7 @@ case class categoryAmount(var Vegetable: Double=0.0,
 class categories {
   import categories._
 
+  private val categoryMap: Map[String, List[String]] = Map[String, List[String]]()
   private def addToSummary(name: String, newCategory: CategoryFields, newCategoryNamePrice: namePriceUnit):Unit = {
     summary.append((name, newCategory, newCategoryNamePrice))
     totalCnt += 1
@@ -28,9 +30,21 @@ class categories {
 
   def getCnt: Int = { totalCnt }
 
-  def getSummary: ListBuffer[(String, CategoryFields, namePriceUnit)] = { summary }
+  def getSummary: List[(String, CategoryFields, namePriceUnit)] = { summary.toList }
 
-  def getCategoryNames: ListBuffer[String] = { summary.map(item => item._1) }
+  def getCategoryNames: List[String] = { summary.toList.map(item => item._1) }
+
+  def getArticleNames(categoryName: String): List[String] ={
+    summary.filter(x => x._1==categoryName.toUpperCase)(0)
+      ._3
+      .map(article => article._1.toUpperCase)
+  }
+
+  def getArticlePrices(categoryName: String): List[Double] ={
+    summary.filter(x => x._1==categoryName.toUpperCase)(0)
+      ._3
+      .map(article => article._2)
+  }
 
   addAll
   assert(utils.ccArgToList(categoryAmount()).map(x => x._1).equals(getCategoryNames))
@@ -68,19 +82,19 @@ object categories {
 
   val Snack: CategoryFields = CategoryFields(100, 1.0)
   val snackss: namePriceUnit = List(
-    ("Kitkat", 3.5, bag),
-    ("Ferraro", 5, box),
+    ("kitkat", 3.5, bag),
+    ("ferraro", 5, box),
     ("darkChocolate", 1.8, bar),
     ("whiteChocolate", 1.8, bar))
 
   val Grain: CategoryFields = CategoryFields(50, 0.6)
   val grainss: namePriceUnit = List(
-    ("Cereal", 4, kg),
-    ("Oatmeal", 4, kg),
-    ("Rice", 2, kg),
-    ("Noodles", 3, kg),
-    ("Spaghetti", 1.5, kg),
-    ("Pasta", 1.5, kg))
+    ("cereal", 4, kg),
+    ("oatmeal", 4, kg),
+    ("rice", 2, kg),
+    ("noodles", 3, kg),
+    ("spaghetti", 1.5, kg),
+    ("pasta", 1.5, kg))
 
   // Treat egg as vegetable as it has expiration date is later
   val Dairy: CategoryFields = CategoryFields(7, 0.8)
