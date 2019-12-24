@@ -1,6 +1,7 @@
 import meta.deep.runtime.Message
 import meta.deep.runtime.{Actor, Message}
 import meta.example.supermarket.Supermarket
+import meta.example.supermarket.goods.Item
 import meta.example.supermarket.priceOrderedPQ
 
 object Simulation extends App {
@@ -9,9 +10,19 @@ object Simulation extends App {
   var messages: List[Message] = List()
   var timer = 0
   var until = 7
+  val supplyThreshold = 10
 
   def init(): Unit = {
     actors = generated.InitData.initActors
+  }
+
+  def addSupply: Unit = {
+    if (Supermarket.store.vegetables.size < supplyThreshold) {
+      val new_actor: generated.Item3 = new generated.Item3()
+      new_actor.timeVar = timer
+      Supermarket.store.vegetables.enqueue(new_actor.asInstanceOf[Item])
+      actors = actors :+ new_actor.asInstanceOf[meta.deep.runtime.Actor]
+    }
   }
 
   def main(): Unit = {
@@ -21,13 +32,7 @@ object Simulation extends App {
     while (timer <= until) {
       println("TIMER", timer)
       val mx = messages.groupBy(_.receiverId)
-
-//      println("Add new actor! Total actor count now: " + actors.size)
-      val new_actor: generated.Item3 = new generated.Item3()
-      new_actor.timeVar_5 = timer
-
-      actors = actors :+ new_actor.asInstanceOf[meta.deep.runtime.Actor]
-
+      addSupply
       actors = actors.map { a =>
         {
           a.cleanSendMessage

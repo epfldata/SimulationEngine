@@ -46,6 +46,10 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
 
     val commands = generateCode(compiledActorGraph)
     val code = this.createCommandOpenCode(commands)
+
+//  val ${AlgoInfo.timeVar} = squid.lib.MutVar(0)
+//  val ${AlgoInfo.positionVar} = squid.lib.MutVar(0)
+
     val codeWithInit = this.generateVarInit(
       compiledActorGraph.variables2,
       this.generateMutVarInit(
@@ -76,12 +80,27 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     //Needed to split, so that a function can be extracted from the code, to write everything as class variables
     val parts =
       steps.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
-    val initVars = parts(0).substring(2).replace(" var "," private var ").replace(" val ", " private val ") + parts(1)
+
+    val timeVarPattern = "timeVar_[0-9]*".r
+
+
+    val timeVarRenamed: String = timeVarPattern.findFirstIn(parts(0)).get
+    println("Matched pattern is " + timeVarRenamed)
+
+//    initVars = initVars.replace(timeVarRenamed, "timeVar")
+
+    val initVars = parts(0).substring(2)
+      .replace(" var "," private var ")
+      .replace(" val ", " private val ")
+      .replace(s"private var ${timeVarRenamed}", "var timeVar") +
+      parts(1).replace(timeVarRenamed, "timeVar")
+
     //This ugly syntax is needed to replace the received code with a correct function definition
     val run_until = "override def run_until" + parts(2)
       .trim()
       .substring(1)
       .replaceFirst("=>", ": meta.deep.runtime.Actor = ")
+      .replaceAll(timeVarRenamed, "timeVar")
       .dropRight(1)
       .trim
       .dropRight(1)
@@ -283,10 +302,11 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
   /**
     * Creates the class file
     *
-    * @param initTypes types defined in the class file in the form of case class
+    * @param className types defined in the class file in the form of case class
     * @param initParams state variables
     * @param initVars   generated variables needed globally
     * @param run_until  function, which overrides the run until method
+    * @param parent a list of strings containing parent names
     */
   def createClass(className: String,
                   initParams: String,
@@ -417,7 +437,7 @@ object InitData  {
   private def initVar[A, R: CodeType](variable: AlgoInfo.VarWrapper[A],
                                       rest: OpenCode[R]): OpenCode[R] = {
     import variable.A
-    code"val ${variable.to} = squid.lib.MutVar(${nullValue[A]}); $rest"
+    code"""val ${variable.to} = squid.lib.MutVar(${nullValue[A]}); $rest"""
   }
 
   /**
