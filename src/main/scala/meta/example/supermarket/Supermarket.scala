@@ -5,46 +5,38 @@ import meta.example.supermarket.goods.Item
 import scala.collection.mutable.Map
 import scala.collection.mutable.PriorityQueue
 
-case class Warehouse(var Vegetable: PriorityQueue[Item] = new priceOrderedPQ().pq,
-                     var Meat: PriorityQueue[Item] = new priceOrderedPQ().pq,
-                     var Snack: PriorityQueue[Item] = new priceOrderedPQ().pq,
-                     var Grain: PriorityQueue[Item] = new priceOrderedPQ().pq,
-                     var Dairy: PriorityQueue[Item] = new priceOrderedPQ().pq)
+case class Warehouse(var Vegetable: Map[String, PriorityQueue[Item]] = Map[String, PriorityQueue[Item]]().withDefaultValue(new priceOrderedPQ().pq),
+                     var Meat: Map[String, PriorityQueue[Item]] = Map[String, PriorityQueue[Item]]().withDefaultValue(new priceOrderedPQ().pq),
+                     var Snack: Map[String, PriorityQueue[Item]] = Map[String, PriorityQueue[Item]]().withDefaultValue(new priceOrderedPQ().pq),
+                     var Grain: Map[String, PriorityQueue[Item]] = Map[String, PriorityQueue[Item]]().withDefaultValue(new priceOrderedPQ().pq),
+                     var Dairy: Map[String, PriorityQueue[Item]] = Map[String, PriorityQueue[Item]]().withDefaultValue(new priceOrderedPQ().pq))
 
 class Supermarket extends SummaryTrait {
-  import Supermarket._
 
   def recordWaste(category: String, priceUnit: Int, isSold: Boolean): Unit ={
     updateWasteSummary(category, priceUnit, isSold)
   }
 
-  def getQueue(category: String): PriorityQueue[Item] = {
-    var requested: PriorityQueue[Item] = new priceOrderedPQ().pq
+  def getQueue(category: String, item: String): PriorityQueue[Item] = {
     category.toLowerCase match {
-      case "vegetable" => requested = warehouse.Vegetable
-      case "meat" => requested = warehouse.Meat
-      case "dairy" => requested = warehouse.Dairy
-      case "snack" => requested = warehouse.Snack
-      case "grain" => requested = warehouse.Grain
-      case _ => throw new Exception
+      case "vegetable" => warehouse.Vegetable(item)
+      case "meat" => warehouse.Meat(item)
+      case "dairy" => warehouse.Dairy(item)
+      case "snack" => warehouse.Snack(item)
+      case "grain" => warehouse.Grain(item)
+      case _ => {println("Unrecognized food category name!"); throw new Exception}
     }
-    requested
   }
 
   val warehouse: Warehouse = Warehouse()
 
-  // randomly select an option based on the category
-  def sell(category: String): Item = {
-    val soldItem: Item = getQueue(category).dequeue()
-    soldItem.purchase
-    soldItem
-  }
-
   def sell(category: String, item: String): Item = {
-    getQueue(category).find(el => el.name.toLowerCase==item.toLowerCase && !el.state.isPurchased) match {
-      case Some(el) => {el.purchase; println("purchased element " + el.id); el}
-      case None => {println("No such item found!"); throw new Exception}
-    }
+    val requested: PriorityQueue[Item] = getQueue(category, item)
+    if (requested.size==0){ println("Item not found :( " + item); throw new Exception }
+    val soldItem: Item = requested.dequeue()
+    soldItem.purchase
+    println(s"Item ${soldItem.name} sold! " + soldItem.id)
+    soldItem
   }
 
   def add(itemList: List[Item]): Unit =  {
@@ -54,7 +46,7 @@ class Supermarket extends SummaryTrait {
   }
 
   def add(item: Item): Unit = {
-    getQueue(item.category).enqueue(item)
+    getQueue(item.category, item.name).enqueue(item)
   }
 }
 
