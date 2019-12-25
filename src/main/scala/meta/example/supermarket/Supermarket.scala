@@ -30,11 +30,24 @@ class Supermarket extends SummaryTrait {
 
   val warehouse: Warehouse = Warehouse()
 
+  def checkQueueSize(requested: PriorityQueue[Item], item: String): Unit = {
+    if (requested.size==0) { println("Item not found :( " + item); throw new Exception }
+  }
+
   def sell(category: String, item: String): Item = {
     val requested: PriorityQueue[Item] = getQueue(category, item)
-    if (requested.size==0){ println("Item not found :( " + item); throw new Exception }
-    val soldItem: Item = requested.dequeue()
+
+    checkQueueSize(requested, item)
+
+    var soldItem: Item = requested.dequeue()
+    while (soldItem.state.isDiscarded){
+      checkQueueSize(requested, item)
+      soldItem = requested.dequeue()
+    }
+
+    assert(!soldItem.state.isDiscarded)
     soldItem.purchase
+
     println(s"Item ${soldItem.name} sold! " + soldItem.id)
     soldItem
   }
