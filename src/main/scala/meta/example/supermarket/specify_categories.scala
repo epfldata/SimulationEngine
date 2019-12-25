@@ -28,6 +28,8 @@ class categories {
     addToSummary("Dairy", Dairy, dairyss)
   }
 
+  addAll
+
   def getCnt: Int = { totalCnt }
 
   def getSummary: List[(String, CategoryFields, namePriceUnit)] = { summary.toList }
@@ -35,18 +37,17 @@ class categories {
   def getCategoryNames: List[String] = { summary.toList.map(item => item._1) }
 
   def getArticleNames(categoryName: String): List[String] ={
-    summary.filter(x => x._1==categoryName.toUpperCase)(0)
+    summary.find(x => x._1==categoryName.capitalize).get
       ._3
-      .map(article => article._1.toUpperCase)
+      .map(article => article._1.capitalize)
   }
 
   def getArticlePrices(categoryName: String): List[Double] ={
-    summary.filter(x => x._1==categoryName.toUpperCase)(0)
+    summary.find(x => x._1==categoryName.capitalize).get
       ._3
       .map(article => article._2)
   }
 
-  addAll
   assert(utils.ccArgToList(categoryAmount()).map(x => x._1).equals(getCategoryNames))
 }
 

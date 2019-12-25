@@ -3,9 +3,7 @@ package meta.example.supermarket.goods
 import meta.deep.runtime.Actor
 import meta.example.supermarket.Supermarket
 import meta.example.supermarket.utils.to2Dec
-import squid.quasi.lift
 
-//@lift
 trait Item extends Actor{
 
   val name: String
@@ -32,7 +30,7 @@ trait Item extends Actor{
 
   def discard: Unit = { updateState("isDiscarded", state) }
 
-  def purchase: Unit = { updateState("isPurchased", state) }
+  def purchase: Unit = { updateState("isPurchased", state)}
 
   def consume: Unit = { updateState("isConsumed", state) }
 

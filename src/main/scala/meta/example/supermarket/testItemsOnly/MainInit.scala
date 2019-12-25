@@ -21,12 +21,13 @@ class MainInit {
 
     val potato = new Item3
     l.append(potato)
-    Supermarket.store.add(potato)
+    Supermarket.store.add(potato.asInstanceOf[Item])
 
     while (ctr < 5){
       val item1 = new Item1
       val item2 = new Item2
-      Supermarket.store.add(List(item1, item2))
+      Supermarket.store.add(List(item1.asInstanceOf[Item],
+        item2.asInstanceOf[Item]))
       l.append(item1, item2)
       ctr = ctr+1
     }
