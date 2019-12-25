@@ -47,9 +47,6 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     val commands = generateCode(compiledActorGraph)
     val code = this.createCommandOpenCode(commands)
 
-//  val ${AlgoInfo.timeVar} = squid.lib.MutVar(0)
-//  val ${AlgoInfo.positionVar} = squid.lib.MutVar(0)
-
     val codeWithInit = this.generateVarInit(
       compiledActorGraph.variables2,
       this.generateMutVarInit(
@@ -83,11 +80,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
 
     val timeVarPattern = "timeVar_[0-9]*".r
 
-
     val timeVarRenamed: String = timeVarPattern.findFirstIn(parts(0)).get
-    println("Matched pattern is " + timeVarRenamed)
-
-//    initVars = initVars.replace(timeVarRenamed, "timeVar")
 
     val initVars = parts(0).substring(2)
       .replace(" var "," private var ")
