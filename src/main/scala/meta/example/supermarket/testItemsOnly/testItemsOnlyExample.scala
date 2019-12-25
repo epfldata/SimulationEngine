@@ -5,7 +5,7 @@ import meta.deep.codegen._
 import meta.deep.runtime.Actor
 import meta.deep.IR
 import meta.deep.IR.TopLevel._
-import meta.example.supermarket.Customer
+import meta.example.supermarket.people.Customer
 import meta.example.supermarket.goods.{Item1, Item2, Item3}
 
 import scala.collection.mutable.ListBuffer

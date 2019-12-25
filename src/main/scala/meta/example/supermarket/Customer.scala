@@ -1,12 +1,12 @@
-package meta.example.supermarket
+package meta.example.supermarket.people
 
 import meta.classLifting.SpecialInstructions
-import meta.deep.runtime.Actor
+import meta.example.supermarket.priceOrderedPQ
 import squid.quasi.lift
 
 @lift
-class Customer extends Actor {
-  val supermarket: Supermarket = Supermarket.store
+class Customer extends People with BiWeeklyShopper{
+//  val supermarket: Supermarket = Supermarket.store
   var fridge: priceOrderedPQ = new priceOrderedPQ
 
   def buyVegetable: Unit = {
