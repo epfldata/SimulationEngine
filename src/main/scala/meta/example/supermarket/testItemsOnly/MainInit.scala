@@ -18,22 +18,19 @@ class MainInit {
 
     l.append(customer)
     var ctr = 0
-    val vegetables: priceOrderedPQ = new priceOrderedPQ
 
     val potato = new Item3
     l.append(potato)
-
-    vegetables.pq ++= List(potato.asInstanceOf[Item])
+    Supermarket.store.add(potato)
 
     while (ctr < 5){
       val item1 = new Item1
       val item2 = new Item2
-      vegetables.pq ++= List(item1.asInstanceOf[Item], item2.asInstanceOf[Item])
+      Supermarket.store.add(List(item1, item2))
       l.append(item1, item2)
       ctr = ctr+1
     }
 
-    Supermarket.store.vegetables = vegetables.pq
     l.toList
   }
 }

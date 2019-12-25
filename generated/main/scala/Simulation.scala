@@ -10,17 +10,17 @@ object Simulation extends App {
   var messages: List[Message] = List()
   var timer = 0
   var until = 7
-  val supplyThreshold = 10
+  val supplyThreshold = 5
 
   def init(): Unit = {
     actors = generated.InitData.initActors
   }
 
   def addSupply: Unit = {
-    if (Supermarket.store.vegetables.size < supplyThreshold) {
+    if (Supermarket.store.warehouse.Vegetable.size < supplyThreshold) {
       val new_actor: generated.Item3 = new generated.Item3()
       new_actor.timeVar = timer
-      Supermarket.store.vegetables.enqueue(new_actor.asInstanceOf[Item])
+      Supermarket.store.warehouse.Vegetable.enqueue(new_actor.asInstanceOf[Item])
       actors = actors :+ new_actor.asInstanceOf[meta.deep.runtime.Actor]
     }
   }

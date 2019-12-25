@@ -6,12 +6,11 @@ import squid.quasi.lift
 
 @lift
 class Customer extends People with BiWeeklyShopper{
-//  val supermarket: Supermarket = Supermarket.store
   var fridge: priceOrderedPQ = new priceOrderedPQ
 
   def buyVegetable: Unit = {
     println("Customer buys vegetable! ")
-    fridge.pq.enqueue(supermarket.sell("Vegetable", "Broccoli"))
+    fridge.pq.enqueue(supermarket.sell("Vegetable", "eggplant"))
   }
 
   def consumeFood: Unit = {

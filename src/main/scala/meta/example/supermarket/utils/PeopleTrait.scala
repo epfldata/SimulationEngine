@@ -9,7 +9,6 @@ trait People extends Actor{
 
 //  val age: Int
   val frequency: Int
-
   var supermarket: Supermarket = Supermarket.store
 
   def customerInfo: Unit = {
