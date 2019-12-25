@@ -5,7 +5,7 @@ import meta.deep.runtime.Actor
 import squid.quasi.lift
 
 @lift
-class Item3 extends Actor with Potato with Item{
+class Item3 extends Item with Potato {
   var age: Int = 0 // age when the item is on display
 
   def main(): Unit = {
