@@ -4,7 +4,7 @@ import meta.deep.runtime.Actor
 import meta.example.supermarket.Supermarket
 import meta.example.supermarket.utils.to2Dec
 
-trait Item extends Actor{
+trait Item extends Actor {
 
   val name: String
   val price: Double
@@ -47,5 +47,6 @@ trait Item extends Actor{
       itemInfo
       supermarket.recordWaste(category, priceUnit, state.isPurchased)
     }
+    supermarket.isInvalids += id
   }
 }

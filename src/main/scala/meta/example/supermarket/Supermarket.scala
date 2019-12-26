@@ -2,8 +2,8 @@ package meta.example.supermarket
 
 import meta.example.supermarket.goods.{Item, categories}
 
-import scala.collection.mutable.Map
-import scala.collection.mutable.PriorityQueue
+import scala.collection.mutable
+import scala.collection.mutable.{ListBuffer, Map, PriorityQueue}
 
 case class Warehouse(var Vegetable: Map[String, PriorityQueue[Item]] = Map[String, PriorityQueue[Item]](),
                      var Meat: Map[String, PriorityQueue[Item]] = Map[String, PriorityQueue[Item]](),
@@ -15,6 +15,9 @@ class Supermarket extends SummaryTrait {
 
   val warehouse: Warehouse = Warehouse()
   val categories: categories = new categories
+//  val isInvalids: ListBuffer[Long] = new ListBuffer() // possibly as a queue
+
+  val isInvalids: mutable.Queue[Long] = new mutable.Queue()
 
   val vegetables: List[String] = categories.getArticleNames("Vegetable")
   val meats: List[String] = categories.getArticleNames("Meat")
@@ -28,7 +31,7 @@ class Supermarket extends SummaryTrait {
 
   def checkItemQueue(category: String, item: String): Option[PriorityQueue[Item]] = {
     category.capitalize match {
-      case "Vegetable" => println("Checked item queue! "); warehouse.Vegetable.get(item)
+      case "Vegetable" => warehouse.Vegetable.get(item)
       case "Meat" => warehouse.Meat.get(item)
       case "Dairy" => warehouse.Dairy.get(item)
       case "Snack" => warehouse.Snack.get(item)
