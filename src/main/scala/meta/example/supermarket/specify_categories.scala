@@ -34,7 +34,7 @@ class categories {
 
   def getSummary: List[(String, CategoryFields, namePriceUnit)] = { summary.toList }
 
-  def getCategoryNames: List[String] = { summary.toList.map(item => item._1) }
+  def getCategoryNames: List[String] = { summary.toList.map(item => item._1.capitalize) }
 
   def getArticleNames(categoryName: String): List[String] ={
     summary.find(x => x._1==categoryName.capitalize).get
