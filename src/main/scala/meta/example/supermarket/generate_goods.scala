@@ -1,10 +1,8 @@
-package meta.example.supermarket.goods
+package meta.example.supermarket
 
 import java.io.{BufferedWriter, File, FileWriter}
-
+import meta.example.supermarket.goods.categories
 import meta.example.supermarket.goods.categories.namePriceUnit
-import meta.example.supermarket.utils
-import collection.mutable.Map
 
 // Don't use Product, which is a default Scala's type used later
 case class Article(name: String, fields: List[Attr])

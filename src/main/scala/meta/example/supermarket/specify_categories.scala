@@ -1,6 +1,6 @@
 package meta.example.supermarket.goods
 
-import meta.example.supermarket.utils
+import meta.example.supermarket.{CategoryFields, utils}
 
 import scala.collection.mutable.{ListBuffer, Map}
 

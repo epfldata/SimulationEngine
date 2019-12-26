@@ -4,7 +4,7 @@ import meta.classLifting.SpecialInstructions
 import squid.quasi.lift
 
 @lift
-class Item2 extends Item with Potato {
+class Item6 extends Item with Carrots {
   var age: Int = 0
 
   def main(): Unit = {
