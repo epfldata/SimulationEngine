@@ -4,8 +4,18 @@ import java.io.{BufferedWriter, File, FileWriter}
 import meta.example.supermarket.categories._
 
 // TODO: track all the values that have been declared and check for possible name clashing
-class generateGoods(storagePath: String) {
+
+object generateGoods extends App {
+
+  case class Attr(name: String, attrVal: Any)
+  case class Article(name: String, fields: List[Attr])
+  case class ArticleFields(price: Double = 1.5, priceUnit: Int = 1000, discount: Double = 0, stock: Int = 100)
+  case class Category(name: String, fields: List[Attr], children: List[Article])
+
   private var parentName: String = ""
+  var cwd = new File(".").getCanonicalPath()
+  cwd = cwd + "/src/main/scala/meta/example/supermarket/"
+  val category = new categories
 
   // Simple function that only returns int, boolean, double, string
   private def bindType(attrVal: Any): String = {
@@ -17,7 +27,7 @@ class generateGoods(storagePath: String) {
     }
   }
 
-  def apply(baseClass: Category): Unit ={
+  def apply(storagePath: String, baseClass: Category): Unit ={
     parentName = baseClass.name.capitalize
 
     val fdir = new File(storagePath + s"/goods/")
@@ -58,12 +68,6 @@ class generateGoods(storagePath: String) {
        |}
        |""".stripMargin
   }
-}
-
-object generateGoods extends App{
-
-  var cwd = new File(".").getCanonicalPath()
-  cwd = cwd + "/src/main/scala/meta/example/supermarket/"
 
   // Take a case class definition and convert it to List[Attr]
   def toAttrss(cc: Product): List[Attr] = {
@@ -80,10 +84,8 @@ object generateGoods extends App{
   }
 
   def genFile(name: String, fields: CategoryFields, namePricess: namePriceUnit): Unit ={
-    new generateGoods(cwd)(Category(name, toAttrss(fields), toArticless(namePricess)))
+    apply(cwd, Category(name, toAttrss(fields), toArticless(namePricess)))
   }
-
-  val category = new categories
 
   category.getSummary.foreach(
     tup => genFile(tup._1, tup._2, tup._3)
