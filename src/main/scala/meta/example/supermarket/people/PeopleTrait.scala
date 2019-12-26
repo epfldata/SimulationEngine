@@ -2,8 +2,6 @@ package meta.example.supermarket.people
 
 import meta.deep.runtime.Actor
 import meta.example.supermarket.{Supermarket, priceOrderedPQ}
-import meta.example.supermarket.utils.to2Dec
-import squid.quasi.lift
 
 import scala.util.Random
 

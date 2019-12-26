@@ -1,19 +1,10 @@
-package meta.example.supermarket.goods
+package meta.example.supermarket
 
-import meta.example.supermarket.{CategoryFields, utils}
-
-import scala.collection.mutable.{ListBuffer, Map}
-
-case class categoryAmount(var Vegetable: Double=0.0,
-                        var Meat: Double=0.0,
-                        var Snack: Double=0.0,
-                        var Grain: Double=0.0,
-                        var Dairy: Double=0.0)
+import scala.collection.mutable.{ListBuffer}
 
 class categories {
   import categories._
 
-  private val categoryMap: Map[String, List[String]] = Map[String, List[String]]()
   private def addToSummary(name: String, newCategory: CategoryFields, newCategoryNamePrice: namePriceUnit):Unit = {
     summary.append((name, newCategory, newCategoryNamePrice))
     totalCnt += 1

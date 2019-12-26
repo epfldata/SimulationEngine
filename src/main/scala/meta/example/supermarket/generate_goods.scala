@@ -1,16 +1,7 @@
 package meta.example.supermarket
 
 import java.io.{BufferedWriter, File, FileWriter}
-import meta.example.supermarket.goods.categories
-import meta.example.supermarket.goods.categories.namePriceUnit
-
-// Don't use Product, which is a default Scala's type used later
-case class Article(name: String, fields: List[Attr])
-case class Category(name: String, fields: List[Attr], children: List[Article])
-case class Attr(name: String, attrVal: Any)
-
-case class CategoryFields(freshUntil: Int = 10, visibility: Double = 1.0)
-case class ArticleFields(price: Double = 1.5, priceUnit: Int = 1000, discount: Double = 0, stock: Int = 100)
+import meta.example.supermarket.categories._
 
 // TODO: track all the values that have been declared and check for possible name clashing
 class generateGoods(storagePath: String) {

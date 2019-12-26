@@ -2,9 +2,6 @@ package meta.example.supermarket
 
 import java.io.{BufferedWriter, File, FileWriter}
 
-import meta.example.supermarket.goods.categories
-
-
 // Don't use Product, which is a default Scala's type used later
 
 // TODO: track all the values that have been declared and check for possible name clashing

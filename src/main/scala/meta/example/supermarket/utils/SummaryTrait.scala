@@ -1,9 +1,6 @@
 package meta.example.supermarket
 
-import meta.example.supermarket.goods.categoryAmount
-//import meta.example.supermarket.utils.toInt
 import meta.example.supermarket.utils._
-
 import scala.util.Random
 
 trait SummaryTrait {
