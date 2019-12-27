@@ -35,10 +35,7 @@ trait Item extends Actor {
   def consume: Unit = { updateState("isConsumed", state) }
 
   def itemInfo: Unit = {
-    println("Item id " + id + " name " + name + " Category: " + category +
-      " Age: " + age + " Freshness: " + to2Dec(1-1.0*age/freshUntil) +
-      " State: " + state.get
-    )
+    println(f"Item id:$id%-5s Name:$name%-20s Category:$category%-15s Age:$age%-3s Freshness:${to2Dec(1-1.0*age/freshUntil)}%-5s State:${state.get}")
   }
 
   def cleanExpired: Unit = {
