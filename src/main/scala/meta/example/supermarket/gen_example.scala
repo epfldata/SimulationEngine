@@ -12,7 +12,7 @@ trait gen_example {
   type agentName = String
 
   // agents' name first letter needs to be capitalized, Supermarket included
-  val agentss: List[agentName] = (1 to 25).toList.map(el=>"Item"+el)
+  val agentss: List[agentName] = (1 to 3).toList.map(el=>"Item"+el)
   var agentCounter: Int = 0
 
   val example_dir: String = "testItemsOnly"
@@ -51,8 +51,6 @@ object file_init extends gen_example {
        |  def main(): List[Actor] = {
        |    val l = ListBuffer[Actor]()
        |
-       |    val supermarket: Supermarket = new Supermarket()
-       |
        |""".stripMargin
 
   def toValStr(name: agentName): String ={
@@ -60,7 +58,7 @@ object file_init extends gen_example {
     assert(val_name!=name)
     agentCounter = agentCounter + 1
     s"""    val ${val_name} = new ${name}
-       |    ${val_name}.supermarket = supermarket
+       |    Supermarket.store.add(${val_name}.asInstanceOf[Item])
        |    l.append(${val_name})
        |
        |""".stripMargin
