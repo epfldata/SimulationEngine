@@ -89,7 +89,7 @@ object file_example extends gen_example {
 
   var result_s: String =
     s"""
-       |object ${example_name}Example extends App {
+       |object ${example_name} extends App {
        |  val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
        |""".stripMargin
 
