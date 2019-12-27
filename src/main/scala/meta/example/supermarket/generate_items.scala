@@ -2,9 +2,12 @@ package meta.example.supermarket
 
 import java.io.{BufferedWriter, File, FileWriter}
 
+import meta.example.supermarket.items.newItemsMap
+
 // Don't use Product, which is a default Scala's type used later
 
 // TODO: track all the values that have been declared and check for possible name clashing
+
 object generateItems extends App{
 
   var agentCounter: Int = 1
@@ -57,10 +60,13 @@ object generateItems extends App{
   }
 
   private def toValueStr(name: String): String = {
-    val result = s"""class Item${agentCounter} extends Item with ${name} {"""
+    val itemName: String = s"Item${agentCounter}"
+    newItemsMap.itemMap += (itemName -> name)
+    val result = s"""class ${itemName} extends Item with ${name} {"""
     agentCounter += 1
     result
   }
 
   main()
+//  println(newItemsMap.itemMap)
 }

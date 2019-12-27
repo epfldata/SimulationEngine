@@ -2,8 +2,7 @@ package meta.example.supermarket
 
 import meta.example.supermarket.goods.{Item}
 
-import scala.collection.mutable
-import scala.collection.mutable.{Map, PriorityQueue}
+import scala.collection.mutable.{Map, PriorityQueue, Queue}
 
 case class Warehouse(var Vegetable: Map[String, PriorityQueue[Item]] = Map[String, PriorityQueue[Item]](),
                      var Meat: Map[String, PriorityQueue[Item]] = Map[String, PriorityQueue[Item]](),
@@ -16,7 +15,7 @@ class Supermarket extends SummaryTrait {
   val warehouse: Warehouse = Warehouse()
   val categories: categories = new categories
 
-  val isInvalids: mutable.Queue[Long] = new mutable.Queue()
+  val isInvalids: Queue[Long] = new Queue()
 
   val vegetables: List[String] = categories.getArticleNames("Vegetable")
   val meats: List[String] = categories.getArticleNames("Meat")

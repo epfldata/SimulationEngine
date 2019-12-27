@@ -5,7 +5,7 @@ import squid.quasi.lift
 
 import scala.collection.mutable.ListBuffer
 import meta.example.supermarket.Supermarket
-import meta.example.supermarket.goods.{Item, Item1, Item2, Item3}
+import meta.example.supermarket.goods._
 import meta.example.supermarket.people.Customer
 
 @lift

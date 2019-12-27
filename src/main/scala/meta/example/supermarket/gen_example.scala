@@ -11,10 +11,9 @@ import java.io.{BufferedWriter, File, FileWriter}
 trait gen_example {
   type agentName = String
 
-  // Randomly generate given number of agents, with random age and state and type
   // agents' name first letter needs to be capitalized, Supermarket included
-  val agentss = List[agentName]("Item1", "Item2")
-  var agentCounter: Int = 1
+  val agentss: List[agentName] = (1 to 25).toList.map(el=>"Item"+el)
+  var agentCounter: Int = 0
 
   val example_dir: String = "testItemsOnly"
   val example_name: String = example_dir+"Example"
@@ -25,11 +24,14 @@ trait gen_example {
   cwd = cwd + "/src/main/scala/meta/example/supermarket/"
   val fdir = new File(cwd + s"${example_dir}")
 
+  val storagePathGegenerated: String = "generated/main/scala"
+//  val storagePathGegenerated: String = "src/main/scala/meta/example/supermarket/testItemsOnly"
+
   // If customers are included, need to modify this.
   val agent_import: String =
     s"""
        |import meta.example.supermarket.Supermarket
-       |import meta.example.supermarket.goods.{${agentss.mkString(", ")}}
+       |import meta.example.supermarket.goods._
        |""".stripMargin
 }
 
@@ -48,8 +50,8 @@ object file_init extends gen_example {
        |class MainInit {
        |  def main(): List[Actor] = {
        |    val l = ListBuffer[Actor]()
-       |    val supermarket = new Supermarket
-       |    l.append(supermarket)
+       |
+       |    val supermarket: Supermarket = new Supermarket()
        |
        |""".stripMargin
 
@@ -89,7 +91,6 @@ object file_example extends gen_example {
     s"""
        |object ${example_name}Example extends App {
        |  val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
-       |  val cls1: ClassWithObject[Supermarket] = Supermarket.reflect(IR)
        |""".stripMargin
 
   def toValStr(name: agentName): String ={
@@ -102,14 +103,15 @@ object file_example extends gen_example {
   val toStartClass: String = "  val startClasses: List[Clasz[_ <: Actor]] " +
     s"= ${(1 until agentCounter+1).map(num => s"cls${num}").toList}"
 
+
   result_s = import_example + result_s + toStartClass +
-    """
+    s"""
       |  val lifter = new Lifter()
       |  val simulationData = lifter(startClasses, mainClass)
       |
       |  val pipeline = Pipeline(new CreateActorGraphs(simulationData._1), List(
       |    new EdgeMerge(),
-      |    new CreateCode(simulationData._2, "generated/main/scala"),
+      |    new CreateCode(simulationData._2, "${storagePathGegenerated}"),
       |  ))
       |
       |  pipeline.run()
