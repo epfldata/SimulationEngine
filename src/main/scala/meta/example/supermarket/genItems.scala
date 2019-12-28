@@ -16,6 +16,8 @@ object generateItems extends App{
        |
        |import scala.collection.mutable.Map
        |
+       |/* Auto generated from file generateItems */
+       |
        |object newItemsMap {
        |  type itemName = String
        |  type goodsName = String
@@ -34,6 +36,8 @@ object generateItems extends App{
        |
        |import meta.classLifting.SpecialInstructions
        |import squid.quasi.lift
+       |
+       |/* Auto generated from file generateItems */
        |
        |@lift
        |""".stripMargin

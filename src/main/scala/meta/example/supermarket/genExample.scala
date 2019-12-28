@@ -11,7 +11,7 @@ object genExample extends App {
   val initName: String = "MainInit"
 
   val totalItems: Int = newItemsMap.itemMap.size
-  val itemIds: List[Int] = List(1, 14)
+  val itemIds: List[Int] = List(1, 7, 11, 18, 23)
 
   assert(totalItems>0)
   assert(itemIds==itemIds.sorted)
@@ -59,6 +59,8 @@ object genExample extends App {
        |import meta.example.supermarket.Supermarket
        |import meta.example.supermarket.goods._
        |import meta.example.supermarket.people._
+       |
+       |/* Auto generated from file genExample */
        |
        |@lift
        |class MainInit {

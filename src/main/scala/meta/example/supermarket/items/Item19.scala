@@ -3,6 +3,8 @@ package meta.example.supermarket.goods
 import meta.classLifting.SpecialInstructions
 import squid.quasi.lift
 
+/* Auto generated from file generateItems */
+
 @lift
 class Item19 extends Item with Spaghetti {
   var age: Int = 0

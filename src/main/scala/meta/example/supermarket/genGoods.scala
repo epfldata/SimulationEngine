@@ -42,6 +42,10 @@ object generateGoods extends App {
     val parentStr: String =
       s"""package meta.example.supermarket.goods
          |
+         |/* Auto generated from file generateGoods
+         | Please adjust file categories for modification purpose
+         | */
+         |
          |trait ${parentName} {
          |  val category: String = "${parentName}"
          |${valueStr}

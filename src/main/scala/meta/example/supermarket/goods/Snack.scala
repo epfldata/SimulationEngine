@@ -1,5 +1,9 @@
 package meta.example.supermarket.goods
 
+/* Auto generated from file generateGoods
+ Please adjust file categories for modification purpose
+ */
+
 trait Snack {
   val category: String = "Snack"
   val freshUntil: Int = 100
@@ -11,7 +15,7 @@ trait Kitkat extends Snack {
   val price: Double = 3.5
   val priceUnit: Int = 300
   val discount: Double = 0.0
-  val stock: Int = 100
+  val stock: Int = 10
 }
 
 trait Ferraro extends Snack {
@@ -19,7 +23,7 @@ trait Ferraro extends Snack {
   val price: Double = 5.0
   val priceUnit: Int = 250
   val discount: Double = 0.0
-  val stock: Int = 100
+  val stock: Int = 10
 }
 
 trait DarkChocolate extends Snack {
@@ -27,7 +31,7 @@ trait DarkChocolate extends Snack {
   val price: Double = 1.8
   val priceUnit: Int = 100
   val discount: Double = 0.0
-  val stock: Int = 100
+  val stock: Int = 10
 }
 
 trait WhiteChocolate extends Snack {
@@ -35,5 +39,5 @@ trait WhiteChocolate extends Snack {
   val price: Double = 1.8
   val priceUnit: Int = 100
   val discount: Double = 0.0
-  val stock: Int = 100
+  val stock: Int = 10
 }
