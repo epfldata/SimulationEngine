@@ -2,7 +2,7 @@ package meta.example.supermarket.goods
 
 import scala.collection.mutable.Map
 
-/* Auto generated from file generateItems */
+/* Auto generated */
 
 object newItemsMap {
   type itemName = String

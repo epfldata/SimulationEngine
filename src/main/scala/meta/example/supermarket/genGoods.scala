@@ -3,14 +3,7 @@ package meta.example.supermarket
 import java.io.{BufferedWriter, File, FileWriter}
 import meta.example.supermarket.categories._
 
-// TODO: track all the values that have been declared and check for possible name clashing
-
-object generateGoods extends App {
-
-  case class Attr(name: String, attrVal: Any)
-  case class Article(name: String, fields: List[Attr])
-  case class ArticleFields(price: Double = 1.5, priceUnit: Int = 1000, discount: Double = 0, stock: Int = 5)
-  case class Category(name: String, fields: List[Attr], children: List[Article])
+object genGoods extends App {
 
   private var parentName: String = ""
   var cwd = new File(".").getCanonicalPath()
@@ -26,24 +19,24 @@ object generateGoods extends App {
     }
   }
 
-  def apply(storagePath: String, baseClass: Category): Unit ={
-    parentName = baseClass.name.capitalize
+  private def toFile(category: Category): Unit ={
+    parentName = category.name.capitalize
 
-    val fdir = new File(storagePath + s"/goods/")
+    val fdir = new File(cwd + s"/goods/")
     if (!fdir.exists()){
       fdir.mkdirs()
     }
 
-    val file = new File(storagePath + s"/goods/${parentName}.scala")
+    val file = new File(cwd + s"/goods/${parentName}.scala")
     val bw = new BufferedWriter(new FileWriter(file))
 
-    val valueStr: String = toValueStr(baseClass.fields)
+    val valueStr: String = toValueStr(category.fields)
 
     val parentStr: String =
       s"""package meta.example.supermarket.goods
          |
-         |/* Auto generated from file generateGoods
-         | Please adjust file categories for modification purpose
+         |/* Auto generated
+         | Please adjust file categories for modification
          | */
          |
          |trait ${parentName} {
@@ -53,7 +46,7 @@ object generateGoods extends App {
          |""".stripMargin
 
     bw.write(parentStr)
-    baseClass.children.foreach(child => bw.write(toChildStr(child)))
+    category.children.foreach(child => bw.write(toChildStr(child)))
     bw.close()
   }
 
@@ -72,12 +65,12 @@ object generateGoods extends App {
        |""".stripMargin
   }
 
-  // Take a case class definition and convert it to List[Attr]
-  def toAttrss(cc: Product): List[Attr] = {
+  // Take a case class definition and convert it to List[Attr]. Product is a default Scala type
+  private def toAttrss(cc: Product): List[Attr] = {
     utils.ccArgToList(cc).map( attr => Attr(attr._1, attr._2) )
   }
 
-  def toArticless(namePrice: namePriceUnit): List[Article]= {
+  private def toArticless(namePrice: namePriceUnit): List[Article]= {
     namePrice.map(
       pair => Article(
         name = pair._1,
@@ -85,12 +78,12 @@ object generateGoods extends App {
       ))
   }
 
-  def genFile(name: String, fields: CategoryFields, namePricess: namePriceUnit): Unit ={
-    apply(cwd, Category(name, toAttrss(fields), toArticless(namePricess)))
+  def main(): Unit = {
+    categories.getSummary.foreach(
+      tup => toFile(Category(tup._1, toAttrss(tup._2), toArticless(tup._3)))
+    )
   }
 
-  categories.getSummary.foreach(
-    tup => genFile(tup._1, tup._2, tup._3)
-  )
+  main()
 }
 

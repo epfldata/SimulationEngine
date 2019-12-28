@@ -60,7 +60,7 @@ object genExample extends App {
        |import meta.example.supermarket.goods._
        |import meta.example.supermarket.people._
        |
-       |/* Auto generated from file genExample */
+       |/* Auto generated */
        |
        |@lift
        |class MainInit {

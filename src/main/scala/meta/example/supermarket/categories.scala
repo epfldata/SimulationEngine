@@ -9,8 +9,14 @@ object categories {
   type priceUnit = Int
   type discount = Double
   type stock = Int
-
   type namePriceUnit = List[(articleName, price, priceUnit, discount, stock)]
+
+  case class Attr(name: String, attrVal: Any)
+  case class Article(name: String, fields: List[Attr])
+  case class Category(name: String, fields: List[Attr], children: List[Article])
+  // Parameters of CategoryFields and ArticleFields should be DISJOINT
+  case class ArticleFields(price: Double, priceUnit: Int, discount: Double, stock: Int)
+  case class CategoryFields(freshUntil: Int, visibility: Double)
 
   val kg: Int = 1000
   val bar: Int = 100
@@ -23,7 +29,6 @@ object categories {
   val summary: ListBuffer[(categoryName, CategoryFields, namePriceUnit)] = ListBuffer()
 
   val Vegie: CategoryFields = CategoryFields(5, 1.0)
-  // (name, price, unit)
   // Unify the unit to simplify random selection of the article
   val vegieStock: stock = 5 // Leave stock as an attribute of item rather than category for more flexibility
   val vegiess: namePriceUnit = List(
@@ -70,7 +75,7 @@ object categories {
     ("Cream", 1, cup, 0, dairyStock),
     ("egg", 3, box, 0, dairyStock))
 
-  private def addToSummary(name: String, newCategory: CategoryFields, newCategoryNamePrice: namePriceUnit):Unit = {
+  private def addToSummary(name: categoryName, newCategory: CategoryFields, newCategoryNamePrice: namePriceUnit):Unit = {
     summary.append((name, newCategory, newCategoryNamePrice))
     totalCategories += 1
   }
@@ -88,41 +93,41 @@ object categories {
 
   def getCnt: Int = { totalCategories }
 
-  def getSummary: List[(String, CategoryFields, namePriceUnit)] = { summary.toList }
+  def getSummary: List[(categoryName, CategoryFields, namePriceUnit)] = { summary.toList }
 
-  def getCategoryNames: List[String] = { summary.toList.map(item => item._1.capitalize) }
+  def getCategoryNames: List[categoryName] = { summary.toList.map(item => item._1.capitalize) }
 
-  def getArticleNames(categoryName: String): List[String] = {
+  def getArticleNames(categoryName: categoryName): List[articleName] = {
     summary.find(x => x._1==categoryName.capitalize).get
       ._3
       .map(article => article._1.capitalize)
   }
 
-  def getArticleNames: List[String] = {
+  def getArticleNames: List[articleName] = {
     getCategoryNames.flatMap(
       categoryName => getArticleNames(categoryName)
     )
   }
 
-  def getArticlePrices(categoryName: String): List[Double] = {
+  def getArticlePrices(categoryName: categoryName): List[price] = {
     summary.find(x => x._1==categoryName.capitalize).get
       ._3
       .map(article => article._2)
   }
 
-  def getArticlePrices: List[Double] = {
+  def getArticlePrices: List[price] = {
     getCategoryNames.flatMap(
       categoryName => getArticlePrices(categoryName)
     )
   }
 
-  def getArticleStocks(categoryName: String): List[Int] = {
+  def getArticleStocks(categoryName: categoryName): List[stock] = {
     summary.find(x => x._1==categoryName.capitalize).get
       ._3
       .map(article => article._5)
   }
 
-  def getArticleStocks: List[Int] = {
+  def getArticleStocks: List[stock] = {
     getCategoryNames.flatMap(
       categoryName => getArticleStocks(categoryName)
     )
