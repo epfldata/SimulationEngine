@@ -339,15 +339,24 @@ class $className extends ${className + "Trait"}"""
         val pattern1 = "((?s).*)"+s"(${cAG.actorTypes.head.X.runtimeClass.getCanonicalName})"+"((?s).*)"
         val pattern2 = "([^a-zA-Z0-9_])" // the first letter following actor name shouldn't be an alphanumeric type
 
+        var bar = ""
         actorNamePattern.findFirstIn(result) match {
           case Some(_) => {
-            pattern1.r.findAllMatchIn(result).foreach(
-            mtch =>
-              if (mtch.group(3).size==0 || pattern2.r.findFirstIn(mtch.group(3)(0).toString())!=None){
-                result = result.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName,
-                                        "generated." + cAG.name + (if (!init) "Trait" else ""))
+            result = result.split("\n").map(
+              line => {
+                val pattern1_list = pattern1.r.findAllMatchIn(line).toList
+                pattern1_list.isEmpty match {
+                  case true => line
+                  case false => pattern1_list.foreach(mtch => {
+                    if (mtch.group(3).size == 0 || pattern2.r.findFirstIn(mtch.group(3)(0).toString()) != None) {
+                      bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, "generated." + cAG.name + (if (!init) "Trait" else ""))
+                    } else {
+                      bar = line
+                    }
+                  }); bar
+                }
               }
-            )
+            ).mkString("\n")
           }
           case None =>
         }
