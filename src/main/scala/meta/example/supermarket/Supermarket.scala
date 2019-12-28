@@ -13,7 +13,6 @@ case class Warehouse(var Vegetable: Map[String, PriorityQueue[Item]] = Map[Strin
 class Supermarket extends SummaryTrait {
 
   val warehouse: Warehouse = Warehouse()
-  val categories: categories = new categories
 
   val isInvalids: Queue[Long] = new Queue()
 

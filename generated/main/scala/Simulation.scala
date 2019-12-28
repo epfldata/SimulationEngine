@@ -14,7 +14,7 @@ object Simulation extends App {
   var actors: Array[Actor] = Array()
   var messages: List[Message] = List()
   var timer = 0
-  var until = 300
+  var until = 30
 //  val supplyThreshold = 5
 
   val memUnit = 1024 // KB
@@ -28,22 +28,22 @@ object Simulation extends App {
 //    actors = generated.InitData.initActors
   }
 
-  def addSupply: Unit = {
-//    if (Supermarket.store.warehouse.Vegetable.size < supplyThreshold) {
-      val new_actor: generated.Item1 = new generated.Item1()
-      new_actor.timeVar = timer
-      Supermarket.store.warehouse.Vegetable.get("Eggplant").get.enqueue(new_actor.asInstanceOf[Item])
-      actors = actors :+ new_actor.asInstanceOf[meta.deep.runtime.Actor]
-      val new_actor2: generated.Item2 = new generated.Item2()
-      new_actor2.timeVar = timer
-      Supermarket.store.warehouse.Vegetable.get("Onion").get.enqueue(new_actor2.asInstanceOf[Item])
-      actors = actors :+ new_actor2.asInstanceOf[meta.deep.runtime.Actor]
-      val new_actor3: generated.Item3 = new generated.Item3()
-      new_actor3.timeVar = timer
-      Supermarket.store.warehouse.Vegetable.get("Potato").get.enqueue(new_actor3.asInstanceOf[Item])
-      actors = actors :+ new_actor3.asInstanceOf[meta.deep.runtime.Actor]
-//    }
-  }
+//  def addSupply: Unit = {
+////    if (Supermarket.store.warehouse.Vegetable.size < supplyThreshold) {
+//      val new_actor: generated.Item1 = new generated.Item1()
+//      new_actor.timeVar = timer
+//      Supermarket.store.warehouse.Vegetable.get("Eggplant").get.enqueue(new_actor.asInstanceOf[Item])
+//      actors = actors :+ new_actor.asInstanceOf[meta.deep.runtime.Actor]
+//      val new_actor2: generated.Item2 = new generated.Item2()
+//      new_actor2.timeVar = timer
+//      Supermarket.store.warehouse.Vegetable.get("Onion").get.enqueue(new_actor2.asInstanceOf[Item])
+//      actors = actors :+ new_actor2.asInstanceOf[meta.deep.runtime.Actor]
+//      val new_actor3: generated.Item3 = new generated.Item3()
+//      new_actor3.timeVar = timer
+//      Supermarket.store.warehouse.Vegetable.get("Potato").get.enqueue(new_actor3.asInstanceOf[Item])
+//      actors = actors :+ new_actor3.asInstanceOf[meta.deep.runtime.Actor]
+////    }
+//  }
 
   val writer = new PrintWriter(new File("output.log"))
 
@@ -56,12 +56,11 @@ object Simulation extends App {
       println("TIMER", timer)
       writer.write("Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / memUnit + "\n")
       val mx = messages.groupBy(_.receiverId)
-      addSupply
-
+//      addSupply
       // remove invalid actors
       while (Supermarket.store.isInvalids.size>0){
         val toRemove = Supermarket.store.isInvalids.dequeue()
-        actors = actors.filter(actors=>actors.id!=toRemove)
+        actors = actors.filter(_.id!=toRemove)
       }
 
       actors = actors.map { a =>

@@ -27,9 +27,9 @@ object categories {
   // Unify the unit to simplify random selection of the article
   val vegieStock: stock = 5 // Leave stock as an attribute of item rather than category for more flexibility
   val vegiess: namePriceUnit = List(
-    ("eggplant", 2, piece, 0, vegieStock),
-    ("potato", 0.8, piece, 0, vegieStock),
-    ("onion", 0.8, piece, 0, vegieStock),
+    ("eggplant", 2, piece, 0, 3),
+    ("potato", 0.8, piece, 0, 2),
+    ("onion", 0.8, piece, 0, 2),
     ("broccoli", 2, piece, 0, vegieStock),
     ("cucumber", 1.5, piece, 0, vegieStock),
     ("carrots", 1, piece, 0, vegieStock))
@@ -98,16 +98,34 @@ object categories {
       .map(article => article._1.capitalize)
   }
 
+  def getArticleNames: List[String] = {
+    getCategoryNames.flatMap(
+      categoryName => getArticleNames(categoryName)
+    )
+  }
+
   def getArticlePrices(categoryName: String): List[Double] = {
     summary.find(x => x._1==categoryName.capitalize).get
       ._3
       .map(article => article._2)
   }
 
+  def getArticlePrices: List[Double] = {
+    getCategoryNames.flatMap(
+      categoryName => getArticlePrices(categoryName)
+    )
+  }
+
   def getArticleStocks(categoryName: String): List[Int] = {
     summary.find(x => x._1==categoryName.capitalize).get
       ._3
       .map(article => article._5)
+  }
+
+  def getArticleStocks: List[Int] = {
+    getCategoryNames.flatMap(
+      categoryName => getArticleStocks(categoryName)
+    )
   }
 
   //  println("1st arg: " + utils.ccArgToList(categoryAmount()).map(x => x._1))
