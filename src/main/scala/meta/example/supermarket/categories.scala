@@ -12,10 +12,10 @@ object categories {
   type namePriceUnit = List[(articleName, price, priceUnit, discount, stock)]
 
   case class Attr(name: String, attrVal: Any)
-  case class Article(name: String, fields: List[Attr])
-  case class Category(name: String, fields: List[Attr], children: List[Article])
+  case class Article(name: articleName, fields: List[Attr])
+  case class Category(name: categoryName, fields: List[Attr], children: List[Article])
   // Parameters of CategoryFields and ArticleFields should be DISJOINT
-  case class ArticleFields(price: Double, priceUnit: Int, discount: Double, stock: Int)
+  case class ArticleFields(price: price, priceUnit: priceUnit, discount: discount, stock: stock)
   case class CategoryFields(freshUntil: Int, visibility: Double)
 
   val kg: Int = 1000

@@ -86,7 +86,7 @@ object genItems extends App{
     )
 
     mapBW.write(mapHeader + mapBody.dropRight(2) + ")" +
-      """
+      s"""  val totalItems: Int = ${itemCounter-1}
         |}
         |""".stripMargin)
 
