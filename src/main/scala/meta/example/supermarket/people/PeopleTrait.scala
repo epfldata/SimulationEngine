@@ -12,7 +12,7 @@ trait People extends Actor{
   var supermarket: Supermarket = Supermarket.store
 
   assert(supermarket.vegetables.size>1)
-  val fridge: ItemQueue = new ItemQueue
+  val fridge: ItemDeque = new ItemDeque
 
   def getRandFood(category: String): String = {
     category.capitalize match {
