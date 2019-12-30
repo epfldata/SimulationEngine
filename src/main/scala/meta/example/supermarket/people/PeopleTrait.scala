@@ -1,7 +1,7 @@
 package meta.example.supermarket.people
 
 import meta.deep.runtime.Actor
-import meta.example.supermarket.{Supermarket, priceOrderedPQ}
+import meta.example.supermarket._
 
 import scala.util.Random
 
@@ -12,11 +12,11 @@ trait People extends Actor{
   var supermarket: Supermarket = Supermarket.store
 
   assert(supermarket.vegetables.size>1)
-  var fridge: priceOrderedPQ = new priceOrderedPQ
+  val fridge: ItemQueue = new ItemQueue
 
   def getRandFood(category: String): String = {
     category.capitalize match {
-      case "Vegetable" => supermarket.vegetables(Random.nextInt(3))
+      case "Vegetable" => supermarket.vegetables(Random.nextInt(supermarket.vegetables.size))
       case "Meat" => supermarket.meats(Random.nextInt(supermarket.meats.size))
       case "Dairy" => supermarket.dairys(Random.nextInt(supermarket.dairys.size))
       case "Snack" => supermarket.snacks(Random.nextInt(supermarket.snacks.size))
@@ -25,14 +25,27 @@ trait People extends Actor{
     }
   }
 
-  def buyFood(category: String, item: String): Unit = {
+  def buyItems(shoppingList: categoryAmount): Unit = {
+    val foods = utils.ccArgToList(shoppingList)
+    foods.foreach(
+      categoryAmountPair => {
+        var itemCtr = 0
+        while (itemCtr < categoryAmountPair._2.asInstanceOf[Double]) {
+          buyItem(categoryAmountPair._1, getRandFood(categoryAmountPair._1))
+          itemCtr = itemCtr + 1
+        }
+      }
+    )
+  }
+
+  def buyItem(category: String, item: String): Unit = {
     println("Customer buys food! " + category + " " + item)
-    fridge.pq.enqueue(supermarket.sell(category, item))
+    fridge += supermarket.sell(category, item)
   }
 
   def consumeFood: Unit = {
     println("Customer consumed vegetable! ")
-    fridge.pq.dequeue().consume
+    fridge.popLeft.consume
   }
 
   def customerInfo: Unit = {
