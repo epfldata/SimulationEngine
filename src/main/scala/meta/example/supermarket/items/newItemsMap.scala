@@ -34,4 +34,5 @@ object newItemsMap {
    "Item23" -> "Cheese",
    "Item24" -> "Cream",
    "Item25" -> "Egg")
+  val totalItems: Int = 25
 }

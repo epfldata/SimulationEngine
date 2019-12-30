@@ -23,6 +23,7 @@ object categories {
   val box: Int = 250
   val bag: Int = 300
   val cup: Int = 50 // a cup of yogurt
+  val carton: Int = 250
   val piece: Int = 200 // a piece of cheese/cucumber
 
   var totalCategories: Int = 0;
@@ -73,7 +74,7 @@ object categories {
     ("Yogurt", 1, cup, 0, dairyStock),
     ("Cheese", 5, piece, 0, dairyStock),
     ("Cream", 1, cup, 0, dairyStock),
-    ("egg", 3, box, 0, dairyStock))
+    ("egg", 3, carton, 0, dairyStock))
 
   private def addToSummary(name: categoryName, newCategory: CategoryFields, newCategoryNamePrice: namePriceUnit):Unit = {
     summary.append((name, newCategory, newCategoryNamePrice))
