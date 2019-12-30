@@ -23,8 +23,8 @@ object genExample extends App {
 
   var fileInit: String = ""
   instances match {
-    case 0 => fileInit = mixedLoop
-    case _ => fileInit = singleLoop
+    case 0 => fileInit = mixedStock
+    case _ => fileInit = sameStock
   }
 
   def main(): Unit = {
@@ -56,46 +56,34 @@ object genExample extends App {
        |class MainInit {
        |  def main(): List[Actor] = {
        |    val l = ListBuffer[Actor]()
-       |    var ctr: Int = 0
+       |    val l_repeat = ListBuffer[Actor]()
+       |
        |""".stripMargin
 
   private def initCustomer: String = {
     customers match {
       case -1 => ""
       case 0 => ""
-      case _ =>
-        initLoopOpening(customers) +
-          custIds.map(initCustToVal(_)).mkString("\n") +
-          initLoopClosing + "\n"
+      case _ => custIds.map(initToVal(_, customers, "customer")).mkString("\n")
     }
   }
 
-  private def initLoopOpening(instances: Int): String =
-    s"""
-       |    ctr = 0
-       |    while (ctr < ${instances}) {
-       |""".stripMargin
-
-  private def initItemToVal(itemId: Int): String = {
-    val itemName = "Item" + itemId
-    val valName = itemName.toLowerCase
-    s"""      val ${valName} = new ${itemName}
-       |      Supermarket.store.add(${valName}.asInstanceOf[Item])
-       |      l.append(${valName})
-       |""".stripMargin
+  private def initToVal(agentId: Int, instances: Int, agentType: String): String = {
+    agentType.toLowerCase match {
+      case "item" =>
+        s"""    1.to(${instances}).foreach(_ => l_repeat.append(new Item${agentId}))
+           |    Supermarket.store.add(l_repeat.toList.map(_.asInstanceOf[Item]), true)
+           |    l ++= l_repeat
+           |    l_repeat.clear()
+           |""".stripMargin
+      case "customer" =>
+        s"""    1.to(${instances}).foreach(_ => l_repeat.append(new Customer${agentId}))
+           |    l ++= l_repeat
+           |    l_repeat.clear()
+           |""".stripMargin
+      case _ => println("Unknown agent type!"); throw new Exception
+    }
   }
-
-  private def initCustToVal(custId: Int): String = {
-    val custName = "Customer" + custId
-    val valName = custName.toLowerCase
-    s"""      val ${valName} = new ${custName}
-       |      l.append(${valName})
-       |""".stripMargin
-  }
-
-  private def initLoopClosing: String =
-    """      ctr = ctr + 1
-      |    }""".stripMargin
 
   private def initClosing: String =
     """
@@ -104,19 +92,18 @@ object genExample extends App {
       |}
       |""".stripMargin
 
-  private def singleLoop: String = {
-    initHeader + initCustomer +
-      initLoopOpening(instances) +
-      itemIds.map(initItemToVal(_)).mkString("\n") +
-      initLoopClosing + initClosing
+  private def sameStock: String = {
+    initHeader +
+      initCustomer + "\n" +
+      itemIds.map(initToVal(_, instances, "item")).mkString("\n") + initClosing
   }
 
-  private def mixedLoop: String = {
+  private def mixedStock: String = {
     val iters: List[Int] = categories.getArticleStocks
     // offset by 1 when reading the stock amount from iters
-    initHeader + initCustomer +
-      itemIds.map(id => initLoopOpening(iters(id-1))+initItemToVal((id))+initLoopClosing).mkString("\n") +
-      initClosing
+    initHeader +
+      initCustomer + "\n" +
+      itemIds.map(id => initToVal(id, iters(id-1), "item")).mkString("\n") + initClosing
   }
 
   private def exampleHeader: String =
