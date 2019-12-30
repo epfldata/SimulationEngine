@@ -1,35 +1,25 @@
 package meta.example.supermarket
 
 import java.io.{BufferedWriter, File, FileWriter}
-import meta.example.supermarket.goods.newItemsMap
 
 object genExample extends App {
-
-  val exampleDir: String = "testItemsOnly"
-  val exampleName: String = exampleDir+"Example"
-  val packageName: String = s"meta.example.supermarket.${exampleName}"
-  val initName: String = "MainInit"
-
-  val totalItems: Int = newItemsMap.itemMap.size
-  val itemIds: List[Int] = List(1, 7, 11, 18, 23)
+  import userSpecific._
 
   assert(totalItems>0)
   assert(itemIds==itemIds.sorted)
   assert(itemIds(0)>0 && itemIds.last<=totalItems)
 
-  val storagePathGegenerated: String = "generated/main/scala"
-  //  val storagePathGegenerated: String = "src/main/scala/meta/example/supermarket/testItemsOnly"
-
-  var cwd = new File(".").getCanonicalPath()
-  cwd = cwd + "/src/main/scala/meta/example/supermarket/"
-  val fdir = new File(cwd + s"${exampleDir}")
-
   if (!fdir.exists()){
     fdir.mkdirs()
   }
 
-  println("Please enter the number of items for each article. 0 if non-uniform")
+  println(s"Please enter the number of items for each article. 0 if non-uniform. There are total ${totalItems} items")
   val instances = scala.io.StdIn.readInt()
+  println("Please enter the number of customers you would like to include. -1 if non-uniform")
+  val customers = scala.io.StdIn.readInt()
+
+  assert(instances >=0)
+  assert(customers >=0)
 
   var fileInit: String = ""
   instances match {
@@ -69,17 +59,36 @@ object genExample extends App {
        |    var ctr: Int = 0
        |""".stripMargin
 
+  private def initCustomer: String = {
+    customers match {
+      case -1 => ""
+      case 0 => ""
+      case _ =>
+        initLoopOpening(customers) +
+          custIds.map(initCustToVal(_)).mkString("\n") +
+          initLoopClosing + "\n"
+    }
+  }
+
   private def initLoopOpening(instances: Int): String =
     s"""
        |    ctr = 0
        |    while (ctr < ${instances}) {
        |""".stripMargin
 
-  private def initToVal(itemId: Int): String = {
+  private def initItemToVal(itemId: Int): String = {
     val itemName = "Item" + itemId
     val valName = itemName.toLowerCase
     s"""      val ${valName} = new ${itemName}
        |      Supermarket.store.add(${valName}.asInstanceOf[Item])
+       |      l.append(${valName})
+       |""".stripMargin
+  }
+
+  private def initCustToVal(custId: Int): String = {
+    val custName = "Customer" + custId
+    val valName = custName.toLowerCase
+    s"""      val ${valName} = new ${custName}
        |      l.append(${valName})
        |""".stripMargin
   }
@@ -96,17 +105,17 @@ object genExample extends App {
       |""".stripMargin
 
   private def singleLoop: String = {
-    initHeader +
+    initHeader + initCustomer +
       initLoopOpening(instances) +
-      itemIds.map(initToVal(_)).mkString("\n") +
+      itemIds.map(initItemToVal(_)).mkString("\n") +
       initLoopClosing + initClosing
   }
 
   private def mixedLoop: String = {
     val iters: List[Int] = categories.getArticleStocks
     // offset by 1 when reading the stock amount from iters
-    initHeader +
-      itemIds.map(id => initLoopOpening(iters(id-1))+initToVal((id))+initLoopClosing).mkString("\n") +
+    initHeader + initCustomer +
+      itemIds.map(id => initLoopOpening(iters(id-1))+initItemToVal((id))+initLoopClosing).mkString("\n") +
       initClosing
   }
 
@@ -127,14 +136,23 @@ object genExample extends App {
        |  val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
        |""".stripMargin
 
-  private def exampleToVal(itemId: Int): String ={
+  private def itemToVal(itemId: Int): String ={
     val itemName: String = "Item" + itemId
     s"  val cls${itemId}: ClassWithObject[${itemName}] = ${itemName}.reflect(IR)"
   }
 
+  private def customerToVal(custId: Int): String = {
+    val custName: String = "Customer" + custId
+    customers match {
+      case -1 => ""
+      case 0 => ""
+      case _ => s"  val clsCust${custId}: ClassWithObject[${custName}] = ${custName}.reflect(IR)"
+    }
+  }
+
   private def toStartClass: String =
     s"""
-      |  val startClasses: List[Clasz[_ <: Actor]] = ${itemIds.map("cls"+_)}
+      |  val startClasses: List[Clasz[_ <: Actor]] = ${itemIds.map("cls"+_) ++ (if (customers>0 || customers==(-1)) custIds.map("clsCust"+_) else List())}
       |""".stripMargin
 
   private def exampleClosing: String =
@@ -152,10 +170,19 @@ object genExample extends App {
        |""".stripMargin
 
   private def fileExample: String  = {
-    exampleHeader +
-      itemIds.map(exampleToVal(_)).mkString("\n") +
-      toStartClass +
-      exampleClosing
+    customers match {
+      case 0 =>
+        exampleHeader +
+        itemIds.map(itemToVal(_)).mkString("\n") +
+        toStartClass +
+        exampleClosing
+      case _ =>
+        exampleHeader +
+        itemIds.map(itemToVal(_)).mkString("\n") + "\n" +
+        custIds.map(customerToVal(_)).mkString("\n") +
+        toStartClass +
+        exampleClosing
+    }
   }
 
   main()
