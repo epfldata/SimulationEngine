@@ -1,6 +1,6 @@
 package meta.example.supermarket
 
-trait Carnivore {
+object Carnivore {
   // 1: 1 unit of food (1 agent)
   val randShoppingList: Vector[categoryAmount] = Vector(
     categoryAmount(1, 0, 0, 0, 1),
