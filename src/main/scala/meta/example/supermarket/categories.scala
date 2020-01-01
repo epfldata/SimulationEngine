@@ -1,6 +1,7 @@
 package meta.example.supermarket
 
-import scala.collection.mutable.{ListBuffer}
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 object categories {
   type categoryName = String
@@ -78,7 +79,6 @@ object categories {
 
   private def addToSummary(name: categoryName, newCategory: CategoryFields, newCategoryNamePrice: namePriceUnit):Unit = {
     summary.append((name, newCategory, newCategoryNamePrice))
-    totalCategories += 1
   }
 
   // Capitalize the Name
@@ -132,6 +132,37 @@ object categories {
     getCategoryNames.flatMap(
       categoryName => getArticleStocks(categoryName)
     )
+  }
+
+  val articleUnitMap: Map[articleName, priceUnit] = (getArticleNames zip getArticleUnits).toMap
+  var articleCategoryMap: mutable.Map[articleName, categoryName] = mutable.Map()
+
+  getCategoryNames.foreach(
+    category => getArticleNames(category).foreach(article => articleCategoryMap+=(article -> category))
+  )
+
+  def getArticleUnits(categoryName: categoryName): List[priceUnit] = {
+    summary.find(x => x._1==categoryName.capitalize).get
+      ._3
+      .map(article => article._3)
+  }
+
+  def getArticleUnits: List[priceUnit] = {
+    getCategoryNames.flatMap(
+      categoryName => getArticleUnits(categoryName)
+    )
+  }
+
+  def getArticleUnit(article: articleName): priceUnit = {
+//    println("article unit map is " + articleUnitMap)
+    assert(articleUnitMap contains article)
+    articleUnitMap.get(article).get
+  }
+
+  def getArticleCategory(article: articleName): categoryName = {
+//    println("article category map is " + articleCategoryMap)
+    assert(articleCategoryMap contains article)
+    articleCategoryMap.get(article).get
   }
 
   //  println("1st arg: " + utils.ccArgToList(categoryAmount()).map(x => x._1))

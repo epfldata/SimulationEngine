@@ -18,4 +18,8 @@ object utils {
   def to2Dec(value: Double): Double = {
     (value * 100).round / 100.toDouble
   }
+
+  def divCeil(a: Int, b: Int): Int = {
+    a/b+toInt(a%b!=0)
+  }
 }
