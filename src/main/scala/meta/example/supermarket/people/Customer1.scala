@@ -5,16 +5,16 @@ import meta.example.supermarket.{categories, categoryAmount, utils}
 import squid.quasi.lift
 
 @lift
-class Customer1 extends People with BiWeeklyShopper{
+class Customer1 extends People with BiWeekly with MealPlanV1_1 with TargetShopper {
 
-  val shoppingList: categoryAmount = categoryAmount(3, 1, 1, 1, 2)
-  val priceSensitiveness: Double = 1
+//  val shoppingList: categoryAmount = categoryAmount(3, 1, 1, 1, 2)
 
   def main(): Unit = {
     while(true) {
       SpecialInstructions.handleMessages()
 //      buyItem("vegetable", getRandFood("vegetable"))
-      buyItems(shoppingList)
+      buyRandItems(shoppingList)
+//      buyListedItems(shoppingList)
       SpecialInstructions.waitTurns(1)
       consumeFood
       SpecialInstructions.waitTurns(1)
