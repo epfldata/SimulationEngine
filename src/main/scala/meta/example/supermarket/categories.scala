@@ -79,6 +79,7 @@ object categories {
 
   private def addToSummary(name: categoryName, newCategory: CategoryFields, newCategoryNamePrice: namePriceUnit):Unit = {
     summary.append((name, newCategory, newCategoryNamePrice))
+    totalCategories += 1
   }
 
   // Capitalize the Name
