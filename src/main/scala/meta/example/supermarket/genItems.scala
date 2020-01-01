@@ -17,10 +17,8 @@ object genItems extends App{
        |/* Auto generated */
        |
        |object newItemsMap {
-       |  type itemName = String
-       |  type goodsName = String
-       |
-       |  val itemMap: Map[itemName, goodsName] = Map(
+       |  // itemName, goodsName
+       |  val itemMap: Map[String, String] = Map(
        |""".stripMargin
   }
 

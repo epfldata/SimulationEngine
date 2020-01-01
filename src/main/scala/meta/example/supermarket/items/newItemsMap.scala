@@ -5,10 +5,8 @@ import scala.collection.mutable.Map
 /* Auto generated */
 
 object newItemsMap {
-  type itemName = String
-  type goodsName = String
 
-  val itemMap: Map[itemName, goodsName] = Map(
+  val itemMap: Map[String, String] = Map(
    "Item1" -> "Eggplant",
    "Item2" -> "Potato",
    "Item3" -> "Onion",
