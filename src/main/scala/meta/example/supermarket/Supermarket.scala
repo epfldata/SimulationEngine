@@ -37,7 +37,7 @@ class Supermarket extends SummaryTrait {
   }
 
   def checkQueueSize(requested: ItemDeque, item: String): Unit = {
-    if (requested.size==0) { println("Item not found :( " + item); throw new Exception }
+    if (requested.size==0) { println("Item not found :( " + item); throw new NoSuchElementException }
   }
 
   def sell(item: String): Item = {

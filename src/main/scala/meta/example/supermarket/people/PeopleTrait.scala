@@ -28,7 +28,7 @@ trait People extends Actor{
       case "Dairy" => supermarket.dairys(Random.nextInt(supermarket.dairys.size))
       case "Snack" => supermarket.snacks(Random.nextInt(supermarket.snacks.size))
       case "Grain" => supermarket.grains(Random.nextInt(supermarket.grains.size))
-      case _ => {println("Unrecognized food category name for generating food! Category is " + category); throw new Exception}
+      case _ => {println("Unrecognized food category name for generating food! Category is " + category); throw new IllegalArgumentException}
     }
   }
 
