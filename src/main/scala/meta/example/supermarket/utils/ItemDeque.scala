@@ -4,10 +4,22 @@ import meta.example.supermarket.goods.Item
 
 import scala.collection.mutable.{ArrayBuffer}
 
-class ItemDeque(var item: Item = null, var itemList: List[Item]=null) {
+class ItemDeque(var item: Item, var itemList: List[Item]) {
   private val itemDeque = ArrayBuffer[Item]()
-  if (item!=null) itemDeque += item
-  if (itemList!=null) itemDeque ++= itemList
+
+  def this(item: Item){
+    this(item, itemList=null)
+    itemDeque += item
+  }
+
+  def this(itemList: List[Item]){
+    this(item=null, itemList)
+    itemDeque ++= itemList
+  }
+
+  def this(){
+    this(item=null, itemList=null)
+  }
 
   def size: Int = {
     itemDeque.size
