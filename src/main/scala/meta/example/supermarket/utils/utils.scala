@@ -1,7 +1,7 @@
 package meta.example.supermarket
 
 object utils {
-  // Take a case class definition and convert it to List[]
+  // Convert the parameter list of case class to a list. See utilsSpec
   def ccArgToList(cc: Product): List[(String, Any)] = {
     cc.getClass
       .getDeclaredFields
@@ -14,7 +14,6 @@ object utils {
     if (b) 1 else 0
   }
 
-  // Keep 2 decimal places
   def to2Dec(value: Double): Double = {
     (value * 100).round / 100.toDouble
   }

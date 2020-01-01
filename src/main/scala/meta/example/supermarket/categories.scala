@@ -165,8 +165,4 @@ object categories {
     assert(articleCategoryMap contains article)
     articleCategoryMap.get(article).get
   }
-
-  //  println("1st arg: " + utils.ccArgToList(categoryAmount()).map(x => x._1))
-  //  println("2nd arg: " + getCategoryNames)
-  assert(utils.ccArgToList(categoryAmount()).map(x => x._1).equals(getCategoryNames))
 }

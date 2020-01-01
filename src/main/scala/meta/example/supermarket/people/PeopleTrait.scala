@@ -18,6 +18,8 @@ trait People extends Actor{
 
   assert(supermarket.vegetables.size>1)
   val fridge: ItemDeque = new ItemDeque
+//  val fridge: Map[articleName, Int]
+//  val leftover: Map[articleName, Int]
 
   def getRandFood(category: String): String = {
     category.capitalize match {
@@ -36,7 +38,7 @@ trait People extends Actor{
       categoryAmountPair => {
         var itemCtr = 0
         while (itemCtr < categoryAmountPair._2.asInstanceOf[Double]) {
-          buyItem(categoryAmountPair._1, getRandFood(categoryAmountPair._1))
+          buyItem(getRandFood(categoryAmountPair._1))
           itemCtr = itemCtr + 1
         }
       }
@@ -45,17 +47,27 @@ trait People extends Actor{
 
   def buyListedItems(shoppingList: Vector[(articleName, categoryName, Int)]): Unit ={
     shoppingList.foreach(articlePair => {
-      1.to(articlePair._3).foreach(_ => buyItem(articlePair._2, articlePair._1))
+      1.to(articlePair._3).foreach(_ => buyItem(articlePair._1))
     })
   }
 
-  def buyItem(category: String, item: String): Unit = {
-    println("Customer buys food! " + category + " " + item)
-    fridge += supermarket.sell(category, item)
+  def buyItem(item: String): Unit = {
+    println("Customer buys food! " + item)
+    fridge += supermarket.sell(item)
   }
 
   def consumeFood: Unit = {
     println("Customer consumed vegetable! ")
+    fridge.popLeft.consume
+  }
+
+  def consumeFood(meal: categoryAmount): Unit = {
+//    println("Customer consumed vegetable! ")
+    fridge.popLeft.consume
+  }
+
+  def consumeFood(meal: Vector[(articleName, Double)]): Unit = {
+    //    println("Customer consumed vegetable! ")
     fridge.popLeft.consume
   }
 

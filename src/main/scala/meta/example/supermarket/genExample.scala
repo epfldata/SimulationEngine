@@ -72,7 +72,7 @@ object genExample extends App {
     agentType.toLowerCase match {
       case "item" =>
         s"""    1.to(${instances}).foreach(_ => l_repeat.append(new Item${agentId}))
-           |    Supermarket.store.add(l_repeat.toList.map(_.asInstanceOf[Item]), true)
+           |    Supermarket.store.initializeItemDeque(l_repeat.toList.map(_.asInstanceOf[Item]))
            |    l ++= l_repeat
            |    l_repeat.clear()
            |""".stripMargin

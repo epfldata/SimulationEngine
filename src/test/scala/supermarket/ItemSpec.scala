@@ -1,4 +1,3 @@
-package supermarket
 import meta.example.supermarket.{Supermarket, categoryAmount}
 import meta.example.supermarket.goods.{Item1, ItemState, newItemsMap}
 import org.scalatest._
@@ -65,20 +64,23 @@ class ItemSpec extends FlatSpec with Matchers {
   }
 
   "store" should "have no isInvalids and waste summary is empty" in {
-    Supermarket.store.isInvalids.size should be (0)
+    Supermarket.store.isInvalids should have size 0
     Supermarket.store.wasteSummary should be (categoryAmount(0, 0, 0, 0, 0))
   }
 
-  "Clean expired" should "set the state to discard and record waste" in {
+  "Clean expired" should "set the state to discard" in {
     val foo: Item1 = new Item1
     foo.id should be (4)
     foo.cleanExpired
     foo.state.get should be ("isDiscarded")
-    Supermarket.store.wasteSummary should be (categoryAmount(foo.priceUnit, 0, 0, 0, 0))
+  }
+
+  it should "record waste in supermarket wasteSummary" in {
+    Supermarket.store.wasteSummary should be (categoryAmount(200, 0, 0, 0, 0))
   }
 
   "Supermarket isInvalids" should "record items been discarded through cleanExpired only" in {
-    Supermarket.store.isInvalids.size should be (1)
+    Supermarket.store.isInvalids should have size 1
     Supermarket.store.isInvalids should be (mutable.Queue(4))
   }
 
@@ -90,6 +92,7 @@ class ItemSpec extends FlatSpec with Matchers {
   }
 
   "ItemMap" should "contain mappings" in {
-    assert(newItemsMap.itemMap.size > 0)
+//    newItemsMap.itemMap should have size > 0
+    newItemsMap.itemMap.size should be > 0
   }
 }

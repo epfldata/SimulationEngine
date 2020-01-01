@@ -19,12 +19,13 @@ trait Item extends Actor {
   var state: ItemState = ItemState()
   var supermarket: Supermarket = Supermarket.store
 
+  // need to explicitly pass the itemstate as a parameter
   def updateState(newState: String, itemState: ItemState): Unit ={
     newState match {
       case "isPurchased" => itemState.purchase
       case "isDiscarded" => itemState.discard
       case "isConsumed" => itemState.consume
-      case _ => throw new Exception
+      case _ => throw new IllegalArgumentException
     }
   }
 
