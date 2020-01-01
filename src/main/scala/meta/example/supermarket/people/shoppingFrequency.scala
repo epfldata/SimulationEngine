@@ -1,13 +1,17 @@
 package meta.example.supermarket.people
 
-trait WeeklyShopper {
+trait Weekly {
   val frequency: Int = 7
 }
 
-trait BiWeeklyShopper {
+trait BiWeekly {
   val frequency: Int = 3
 }
 
-trait DailyShopper {
+trait Daily {
   val frequency: Int = 1
+}
+
+trait SemiWeekly {
+  val frequency: Int = 10
 }

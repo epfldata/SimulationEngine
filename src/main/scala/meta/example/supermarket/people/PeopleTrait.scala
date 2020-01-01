@@ -2,6 +2,7 @@ package meta.example.supermarket.people
 
 import meta.deep.runtime.Actor
 import meta.example.supermarket._
+import meta.example.supermarket.categories.{articleName, categoryName}
 
 import scala.util.Random
 
@@ -9,6 +10,10 @@ trait People extends Actor{
 
 //  val age: Int
   val frequency: Int
+  val priceConscious: Double
+  val needBased: Double
+//  val diet: String
+  val shoppingList: ShoppingList
   var supermarket: Supermarket = Supermarket.store
 
   assert(supermarket.vegetables.size>1)
@@ -25,7 +30,7 @@ trait People extends Actor{
     }
   }
 
-  def buyItems(shoppingList: categoryAmount): Unit = {
+  def buyRandItems(shoppingList: categoryAmount): Unit = {
     val foods = utils.ccArgToList(shoppingList)
     foods.foreach(
       categoryAmountPair => {
@@ -36,6 +41,12 @@ trait People extends Actor{
         }
       }
     )
+  }
+
+  def buyListedItems(shoppingList: Vector[(articleName, categoryName, Int)]): Unit ={
+    shoppingList.foreach(articlePair => {
+      1.to(articlePair._3).foreach(_ => buyItem(articlePair._2, articlePair._1))
+    })
   }
 
   def buyItem(category: String, item: String): Unit = {
