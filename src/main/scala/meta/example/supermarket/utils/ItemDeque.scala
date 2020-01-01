@@ -34,10 +34,12 @@ class ItemDeque(var item: Item, var itemList: List[Item]) {
   }
 
   def popLeft: Item = {
+    if (size == 0) throw new NoSuchElementException
     itemDeque.remove(0)
   }
 
   def popRight: Item = {
+    if (size == 0) throw new NoSuchElementException
     itemDeque.remove(size-1)
   }
 }
