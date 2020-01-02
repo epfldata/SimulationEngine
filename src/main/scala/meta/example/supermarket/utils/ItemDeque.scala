@@ -4,7 +4,7 @@ import meta.example.supermarket.goods.Item
 
 import scala.collection.mutable.{ArrayBuffer}
 
-class ItemDeque(var item: Item, var itemList: List[Item]) {
+class ItemDeque(var item: Item, var itemList: Vector[Item]) {
   private val itemDeque = ArrayBuffer[Item]()
 
   def this(item: Item){
@@ -12,7 +12,7 @@ class ItemDeque(var item: Item, var itemList: List[Item]) {
     itemDeque += item
   }
 
-  def this(itemList: List[Item]){
+  def this(itemList: Vector[Item]){
     this(item=null, itemList)
     itemDeque ++= itemList
   }
@@ -29,7 +29,7 @@ class ItemDeque(var item: Item, var itemList: List[Item]) {
     itemDeque += item
   }
 
-  def +=(itemList: List[Item]): Unit = {
+  def +=(itemList: Vector[Item]): Unit = {
     itemDeque ++= itemList
   }
 
@@ -41,5 +41,9 @@ class ItemDeque(var item: Item, var itemList: List[Item]) {
   def popRight: Item = {
     if (size == 0) throw new NoSuchElementException
     itemDeque.remove(size-1)
+  }
+
+  def peak: Item = {
+    itemDeque(0)
   }
 }

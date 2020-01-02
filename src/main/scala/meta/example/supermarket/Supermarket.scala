@@ -1,23 +1,18 @@
 package meta.example.supermarket
 
 import meta.example.supermarket.goods.Item
+import meta.example.supermarket.utils.randElement
 import scala.collection.mutable.{Map, Queue}
-
-//case class Warehouse(var Vegetable: Map[String, ItemDeque] = Map[String, ItemDeque](),
-//                     var Meat: Map[String, ItemDeque] = Map[String, ItemDeque](),
-//                     var Snack: Map[String, ItemDeque] = Map[String, ItemDeque](),
-//                     var Grain: Map[String, ItemDeque] = Map[String, ItemDeque](),
-//                     var Dairy: Map[String, ItemDeque] = Map[String, ItemDeque]())
 
 class Supermarket extends SummaryTrait {
   val warehouse: Map[String, ItemDeque] = Map[String, ItemDeque]()
   val isInvalids: Queue[Long] = new Queue()
 
-  val vegetables: List[String] = categories.getArticleNames("Vegetable")
-  val meats: List[String] = categories.getArticleNames("Meat")
-  val snacks: List[String] = categories.getArticleNames("Snack")
-  val grains: List[String] = categories.getArticleNames("Grain")
-  val dairys: List[String] = categories.getArticleNames("Dairy")
+  val vegetables: Vector[String] = categories.getArticleNames("Vegetable")
+  val meats: Vector[String] = categories.getArticleNames("Meat")
+  val snacks: Vector[String] = categories.getArticleNames("Snack")
+  val grains: Vector[String] = categories.getArticleNames("Grain")
+  val dairys: Vector[String] = categories.getArticleNames("Dairy")
 
   def recordWaste(category: String, priceUnit: Int, isSold: Boolean): Unit ={
     updateWasteSummary(category, priceUnit, isSold)
@@ -31,9 +26,10 @@ class Supermarket extends SummaryTrait {
     warehouse += (item.name -> new ItemDeque(item))
   }
 
-  def initializeItemDeque(item: List[Item]): Unit = {
-    assert(item.size > 0)
-    warehouse += (item(0).name -> new ItemDeque(item))
+  def initializeItemDeque(item: Vector[Item]): Unit = {
+    item.groupBy(_.name).foreach(pair =>
+      warehouse += (pair._1 -> new ItemDeque(pair._2))
+    )
   }
 
   def checkQueueSize(requested: ItemDeque, item: String): Unit = {
@@ -56,6 +52,17 @@ class Supermarket extends SummaryTrait {
 
     println(s"Item ${soldItem.name} sold! " + soldItem.id)
     soldItem
+  }
+
+  def getRandFood(category: String): String = {
+    category.capitalize match {
+      case "Vegetable" => randElement(vegetables)
+      case "Meat" => randElement(meats)
+      case "Dairy" => randElement(dairys)
+      case "Snack" => randElement(snacks)
+      case "Grain" => randElement(grains)
+      case _ => {println("Unrecognized food category name for generating food! Category is " + category); throw new IllegalArgumentException}
+    }
   }
 }
 

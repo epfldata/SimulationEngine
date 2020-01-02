@@ -13,7 +13,7 @@ class ItemDequeSpec extends FlatSpec with Matchers {
     val item1 = new Item1
     val item2 = new Item2
     val item3 = new Item3
-    val newDeque = new ItemDeque(List(item1, item2, item3))
+    val newDeque = new ItemDeque(Vector(item1, item2, item3))
     newDeque should have size 3
   }
 
@@ -31,9 +31,9 @@ class ItemDequeSpec extends FlatSpec with Matchers {
 
   "Item deque +=" should "add a list of Item to the queue" in {
     val emptyDeque = new ItemDeque()
-    emptyDeque += List(new Item1, new Item2, new Item3)
+    emptyDeque += Vector(new Item1, new Item2, new Item3)
     emptyDeque should have size 3
-    emptyDeque += List(new Item1, new Item2)
+    emptyDeque += Vector(new Item1, new Item2)
     emptyDeque should have size 5
   }
 
@@ -41,7 +41,7 @@ class ItemDequeSpec extends FlatSpec with Matchers {
     val item1 = new Item1
     val item2 = new Item2
     val item3 = new Item3
-    val newDeque = new ItemDeque(List(item1, item2, item3))
+    val newDeque = new ItemDeque(Vector(item1, item2, item3))
     newDeque.popLeft should be (item1)
     newDeque should have size 2
   }
@@ -50,10 +50,10 @@ class ItemDequeSpec extends FlatSpec with Matchers {
     val item1 = new Item1
     val item2 = new Item2
     val item3 = new Item3
-    val newDeque = new ItemDeque(List(item1, item2, item3))
+    val newDeque = new ItemDeque(Vector(item1, item2, item3))
     newDeque.popRight should be (item3)
     newDeque should have size 2
-    newDeque += List(item1, item2)
+    newDeque += Vector(item1, item2)
     newDeque should have size 4
     newDeque.popRight should be (item2)
   }

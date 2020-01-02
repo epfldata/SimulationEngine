@@ -2,9 +2,8 @@ package meta.example.supermarket.people
 
 import meta.deep.runtime.Actor
 import meta.example.supermarket._
-import meta.example.supermarket.categories.{articleName, categoryName}
-
-import scala.util.Random
+import meta.example.supermarket.categories.{articleName, gram}
+import meta.example.supermarket.utils.{randElement}
 
 trait People extends Actor{
 
@@ -14,61 +13,46 @@ trait People extends Actor{
   val needBased: Double
 //  val diet: String
   val shoppingList: ShoppingList
+  val mealPlan: Vector[(articleName, gram)]
   var supermarket: Supermarket = Supermarket.store
-
-  assert(supermarket.vegetables.size>1)
-  val fridge: ItemDeque = new ItemDeque
-//  val fridge: Map[articleName, Int]
-//  val leftover: Map[articleName, Int]
-
-  def getRandFood(category: String): String = {
-    category.capitalize match {
-      case "Vegetable" => supermarket.vegetables(Random.nextInt(supermarket.vegetables.size))
-      case "Meat" => supermarket.meats(Random.nextInt(supermarket.meats.size))
-      case "Dairy" => supermarket.dairys(Random.nextInt(supermarket.dairys.size))
-      case "Snack" => supermarket.snacks(Random.nextInt(supermarket.snacks.size))
-      case "Grain" => supermarket.grains(Random.nextInt(supermarket.grains.size))
-      case _ => {println("Unrecognized food category name for generating food! Category is " + category); throw new IllegalArgumentException}
-    }
-  }
+  assert(supermarket.vegetables.size>1) // store has been properly initialized
+  val fridge: Fridge = new Fridge
 
   def buyRandItems(shoppingList: categoryAmount): Unit = {
-    val foods = utils.ccArgToList(shoppingList)
+    val foods = utils.ccArgToVector(shoppingList)
     foods.foreach(
       categoryAmountPair => {
         var itemCtr = 0
         while (itemCtr < categoryAmountPair._2.asInstanceOf[Double]) {
-          buyItem(getRandFood(categoryAmountPair._1))
+          buyItem(supermarket.getRandFood(categoryAmountPair._1))
           itemCtr = itemCtr + 1
         }
       }
     )
   }
 
-  def buyListedItems(shoppingList: Vector[(articleName, categoryName, Int)]): Unit ={
+  def buyListedItems(shoppingList: Vector[(articleName, Int)]): Unit ={
     shoppingList.foreach(articlePair => {
-      1.to(articlePair._3).foreach(_ => buyItem(articlePair._1))
+      1.to(articlePair._2).foreach(_ => buyItem(articlePair._1))
     })
   }
 
   def buyItem(item: String): Unit = {
     println("Customer buys food! " + item)
-    fridge += supermarket.sell(item)
+    fridge.add(supermarket.sell(item))
   }
 
+  // Random consumption behavior
   def consumeFood: Unit = {
-    println("Customer consumed vegetable! ")
-    fridge.popLeft.consume
+    fridge.consume(randElement(fridge.getAvailFood), 100)
   }
 
-  def consumeFood(meal: categoryAmount): Unit = {
-//    println("Customer consumed vegetable! ")
-    fridge.popLeft.consume
-  }
-
-  def consumeFood(meal: Vector[(articleName, Double)]): Unit = {
-    //    println("Customer consumed vegetable! ")
-    fridge.popLeft.consume
+  // Target consumption behavior
+  def consumeFood(mealPlan: Vector[(articleName, gram)]): Unit = {
+    val consumed: Vector[Int] = mealPlan.map(pair =>
+      fridge.consume(pair._1, pair._2)
+    )
+    println(consumed)
   }
 
   def customerInfo: Unit = {

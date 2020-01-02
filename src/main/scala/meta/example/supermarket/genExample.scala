@@ -72,7 +72,7 @@ object genExample extends App {
     agentType.toLowerCase match {
       case "item" =>
         s"""    1.to(${instances}).foreach(_ => l_repeat.append(new Item${agentId}))
-           |    Supermarket.store.initializeItemDeque(l_repeat.toList.map(_.asInstanceOf[Item]))
+           |    Supermarket.store.initializeItemDeque(l_repeat.toVector.map(_.asInstanceOf[Item]))
            |    l ++= l_repeat
            |    l_repeat.clear()
            |""".stripMargin
@@ -99,7 +99,7 @@ object genExample extends App {
   }
 
   private def mixedStock: String = {
-    val iters: List[Int] = categories.getArticleStocks
+    val iters: Vector[Int] = categories.getArticleStocks
     // offset by 1 when reading the stock amount from iters
     initHeader +
       initCustomer + "\n" +

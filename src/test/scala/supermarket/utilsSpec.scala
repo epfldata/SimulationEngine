@@ -5,7 +5,7 @@ class utilsSpec extends FlatSpec with Matchers{
 
   "ccArgToList" should "convert the parameter list of a case class to a list" in {
     val foo: categoryAmount = categoryAmount(1, 2, 3, 4, 5)
-    utils.ccArgToList(foo) should be
+    utils.ccArgToVector(foo) should be
     List(("Vegetable", 1.0), ("Meat", 2.0), ("Snack", 3.0), ("Grain", 4.0), ("Dairy", 5.0))
   }
 
@@ -24,5 +24,9 @@ class utilsSpec extends FlatSpec with Matchers{
     utils.divCeil(1, 5) should be (1)
   }
 
-  info("Util methods work as expected!")
+  "toShoppingList which is based on divCeil" should "convert weight (gram) to the number of items" in {
+    utils.toShoppingList(Vector(("Egg", 50))) should be (Vector(("Egg", "Dairy", 1)))
+  }
+
+//  info("Util methods work as expected!")
 }

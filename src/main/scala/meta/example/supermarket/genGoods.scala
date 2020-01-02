@@ -50,7 +50,7 @@ object genGoods extends App {
     bw.close()
   }
 
-  private def toValueStr(attrs: List[Attr]): String = {
+  private def toValueStr(attrs: Vector[Attr]): String = {
     attrs.map(attr => s"  val ${attr.name}: ${bindType(attr.attrVal)}")
       .mkString("\n")
       .stripLineEnd
@@ -66,11 +66,11 @@ object genGoods extends App {
   }
 
   // Take a case class definition and convert it to List[Attr]. Product is a default Scala type
-  private def toAttrss(cc: Product): List[Attr] = {
-    utils.ccArgToList(cc).map( attr => Attr(attr._1, attr._2) )
+  private def toAttrss(cc: Product): Vector[Attr] = {
+    utils.ccArgToVector(cc).map( attr => Attr(attr._1, attr._2) )
   }
 
-  private def toArticless(namePrice: namePriceUnit): List[Article]= {
+  private def toArticless(namePrice: namePriceUnit): Vector[Article]= {
     namePrice.map(
       pair => Article(
         name = pair._1,

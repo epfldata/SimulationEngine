@@ -8,13 +8,14 @@ object categories {
   type articleName = String
   type price = Double
   type priceUnit = Int
+  type gram = Int
   type discount = Double
   type stock = Int
-  type namePriceUnit = List[(articleName, price, priceUnit, discount, stock)]
+  type namePriceUnit = Vector[(articleName, price, priceUnit, discount, stock)]
 
   case class Attr(name: String, attrVal: Any)
-  case class Article(name: articleName, fields: List[Attr])
-  case class Category(name: categoryName, fields: List[Attr], children: List[Article])
+  case class Article(name: articleName, fields: Vector[Attr])
+  case class Category(name: categoryName, fields: Vector[Attr], children: Vector[Article])
   // Parameters of CategoryFields and ArticleFields should be DISJOINT
   case class ArticleFields(price: price, priceUnit: priceUnit, discount: discount, stock: stock)
   case class CategoryFields(freshUntil: Int, visibility: Double)
@@ -33,7 +34,7 @@ object categories {
   val Vegie: CategoryFields = CategoryFields(5, 1.0)
   // Unify the unit to simplify random selection of the article
   val vegieStock: stock = 5 // Leave stock as an attribute of item rather than category for more flexibility
-  val vegiess: namePriceUnit = List(
+  val vegiess: namePriceUnit = Vector(
     ("eggplant", 2, piece, 0, 3),
     ("potato", 0.8, piece, 0, 2),
     ("onion", 0.8, piece, 0, 2),
@@ -43,7 +44,7 @@ object categories {
 
   val Meat: CategoryFields = CategoryFields(15, 0.8)
   val meatStock: stock = 3
-  val meatss: namePriceUnit = List(
+  val meatss: namePriceUnit = Vector(
     ("chicken", 15, kg, 0, meatStock),
     ("beef", 35, kg, 0, meatStock),
     ("pork", 25, kg, 0, meatStock),
@@ -51,7 +52,7 @@ object categories {
 
   val Snack: CategoryFields = CategoryFields(100, 1.0)
   val snackStock: stock = 10
-  val snackss: namePriceUnit = List(
+  val snackss: namePriceUnit = Vector(
     ("kitkat", 3.5, bag, 0, snackStock),
     ("ferraro", 5, box, 0, snackStock),
     ("darkChocolate", 1.8, bar, 0, snackStock),
@@ -59,7 +60,7 @@ object categories {
 
   val Grain: CategoryFields = CategoryFields(50, 0.6)
   val grainStock: stock = 4
-  val grainss: namePriceUnit = List(
+  val grainss: namePriceUnit = Vector(
     ("cereal", 4, kg, 0, grainStock),
     ("oatmeal", 4, kg, 0, grainStock),
     ("rice", 2, kg, 0, grainStock),
@@ -70,14 +71,14 @@ object categories {
   // Treat egg as vegetable as it has expiration date is later
   val Dairy: CategoryFields = CategoryFields(7, 0.8)
   val dairyStock: stock = 3
-  val dairyss: namePriceUnit = List(
+  val dairyss: namePriceUnit = Vector(
     ("Milk", 2, kg, 0, dairyStock),
     ("Yogurt", 1, cup, 0, dairyStock),
     ("Cheese", 5, piece, 0, dairyStock),
     ("Cream", 1, cup, 0, dairyStock),
     ("egg", 3, carton, 0, dairyStock))
 
-  private def addToSummary(name: categoryName, newCategory: CategoryFields, newCategoryNamePrice: namePriceUnit):Unit = {
+  private def addToSummary(name: categoryName, newCategory: CategoryFields, newCategoryNamePrice: namePriceUnit): Unit = {
     summary.append((name, newCategory, newCategoryNamePrice))
     totalCategories += 1
   }
@@ -95,41 +96,41 @@ object categories {
 
   def getCnt: Int = { totalCategories }
 
-  def getSummary: List[(categoryName, CategoryFields, namePriceUnit)] = { summary.toList }
+  def getSummary: Vector[(categoryName, CategoryFields, namePriceUnit)] = { summary.toVector }
 
-  def getCategoryNames: List[categoryName] = { summary.toList.map(item => item._1.capitalize) }
+  def getCategoryNames: Vector[categoryName] = { summary.toVector.map(item => item._1.capitalize) }
 
-  def getArticleNames(categoryName: categoryName): List[articleName] = {
+  def getArticleNames(categoryName: categoryName): Vector[articleName] = {
     summary.find(x => x._1==categoryName.capitalize).get
       ._3
       .map(article => article._1.capitalize)
   }
 
-  def getArticleNames: List[articleName] = {
+  def getArticleNames: Vector[articleName] = {
     getCategoryNames.flatMap(
       categoryName => getArticleNames(categoryName)
     )
   }
 
-  def getArticlePrices(categoryName: categoryName): List[price] = {
+  def getArticlePrices(categoryName: categoryName): Vector[price] = {
     summary.find(x => x._1==categoryName.capitalize).get
       ._3
       .map(article => article._2)
   }
 
-  def getArticlePrices: List[price] = {
+  def getArticlePrices: Vector[price] = {
     getCategoryNames.flatMap(
       categoryName => getArticlePrices(categoryName)
     )
   }
 
-  def getArticleStocks(categoryName: categoryName): List[stock] = {
+  def getArticleStocks(categoryName: categoryName): Vector[stock] = {
     summary.find(x => x._1==categoryName.capitalize).get
       ._3
       .map(article => article._5)
   }
 
-  def getArticleStocks: List[stock] = {
+  def getArticleStocks: Vector[stock] = {
     getCategoryNames.flatMap(
       categoryName => getArticleStocks(categoryName)
     )
@@ -142,13 +143,13 @@ object categories {
     category => getArticleNames(category).foreach(article => articleCategoryMap+=(article -> category))
   )
 
-  def getArticleUnits(categoryName: categoryName): List[priceUnit] = {
+  def getArticleUnits(categoryName: categoryName): Vector[priceUnit] = {
     summary.find(x => x._1==categoryName.capitalize).get
       ._3
       .map(article => article._3)
   }
 
-  def getArticleUnits: List[priceUnit] = {
+  def getArticleUnits: Vector[priceUnit] = {
     getCategoryNames.flatMap(
       categoryName => getArticleUnits(categoryName)
     )

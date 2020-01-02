@@ -9,7 +9,7 @@ class categoriesSpec extends FlatSpec with Matchers {
   }
 
   "Parameter list of categoryAmount" should "match the category names" in {
-    assert(utils.ccArgToList(categoryAmount()).map(x => x._1).equals(getCategoryNames))
+    assert(utils.ccArgToVector(categoryAmount()).map(x => x._1).equals(getCategoryNames))
   }
 
   "getArticleNames" should "return the name of articles defined" in {
