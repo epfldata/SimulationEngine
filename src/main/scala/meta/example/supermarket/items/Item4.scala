@@ -15,6 +15,6 @@ class Item4 extends Item with Broccoli {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

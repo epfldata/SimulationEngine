@@ -15,6 +15,6 @@ class Item11 extends Item with Kitkat {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

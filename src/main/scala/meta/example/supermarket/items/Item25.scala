@@ -15,6 +15,6 @@ class Item25 extends Item with Egg {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

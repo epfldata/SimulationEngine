@@ -15,6 +15,6 @@ class Item7 extends Item with Chicken {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

@@ -32,6 +32,13 @@ class Fridge {
     opened.filterKeys(opened(_)!=0).keys.toVector
   }
 
+  def rmExpired(item: Item): Unit = {
+    storage.get(item.name).get.popLeft
+    amountMap += (item.name -> (amountMap(item.name)-opened(item.name)))
+    item.cleanExpired(opened(item.name))
+    opened += (item.name -> 0)
+  }
+
   def consume(article: articleName, amount: gram): Int = {
     val currentAmount: Int = getAmount(article)
     currentAmount match {
@@ -39,7 +46,6 @@ class Fridge {
       case _ => {
         val targetItem: Item = storage.get(article).get.peak
         val targetUnit: Int = targetItem.priceUnit
-
         (currentAmount <= amount) match {
           case true => {
             consumeAll(article)

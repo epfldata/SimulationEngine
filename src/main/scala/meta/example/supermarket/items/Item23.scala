@@ -15,6 +15,6 @@ class Item23 extends Item with Cheese {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

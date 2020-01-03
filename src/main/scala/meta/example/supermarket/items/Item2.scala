@@ -15,6 +15,6 @@ class Item2 extends Item with Potato {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

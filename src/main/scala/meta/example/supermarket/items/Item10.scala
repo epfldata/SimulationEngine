@@ -15,6 +15,6 @@ class Item10 extends Item with Lamb {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

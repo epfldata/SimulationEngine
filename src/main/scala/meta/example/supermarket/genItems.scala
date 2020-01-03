@@ -49,7 +49,7 @@ object genItems extends App{
        |        SpecialInstructions.waitTurns(1)
        |        age = age + 1
        |    }
-       |    cleanExpired
+       |    cleanExpired()
        |  }
        |}
        |""".stripMargin

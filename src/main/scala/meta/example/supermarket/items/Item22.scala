@@ -15,6 +15,6 @@ class Item22 extends Item with Yogurt {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

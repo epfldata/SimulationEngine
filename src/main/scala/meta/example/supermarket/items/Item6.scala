@@ -15,6 +15,6 @@ class Item6 extends Item with Carrots {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

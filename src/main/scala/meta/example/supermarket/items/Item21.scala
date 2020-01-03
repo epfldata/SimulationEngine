@@ -15,6 +15,6 @@ class Item21 extends Item with Milk {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

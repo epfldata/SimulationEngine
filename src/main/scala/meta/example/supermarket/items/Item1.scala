@@ -15,6 +15,6 @@ class Item1 extends Item with Eggplant {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

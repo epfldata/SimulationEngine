@@ -15,6 +15,6 @@ class Item16 extends Item with Oatmeal {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

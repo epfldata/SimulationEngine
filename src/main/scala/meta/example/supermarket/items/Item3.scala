@@ -15,6 +15,6 @@ class Item3 extends Item with Onion {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

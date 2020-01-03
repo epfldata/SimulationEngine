@@ -15,6 +15,6 @@ class Item9 extends Item with Pork {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

@@ -15,6 +15,6 @@ class Item17 extends Item with Rice {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

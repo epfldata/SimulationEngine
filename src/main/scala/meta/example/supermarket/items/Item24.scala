@@ -15,6 +15,6 @@ class Item24 extends Item with Cream {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

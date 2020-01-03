@@ -10,7 +10,7 @@ class Customer1 extends People with BiWeekly with MealPlanV1_1 with TargetShoppe
   def main(): Unit = {
     while(true) {
       SpecialInstructions.handleMessages()
-      buyRandItems(shoppingList.randItems)
+      buyListedItems(shoppingList.targetItems)
       SpecialInstructions.waitTurns(1)
       consumeFood
       SpecialInstructions.waitTurns(1)

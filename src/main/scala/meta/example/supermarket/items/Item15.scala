@@ -15,6 +15,6 @@ class Item15 extends Item with Cereal {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

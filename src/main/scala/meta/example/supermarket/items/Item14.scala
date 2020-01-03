@@ -15,6 +15,6 @@ class Item14 extends Item with WhiteChocolate {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

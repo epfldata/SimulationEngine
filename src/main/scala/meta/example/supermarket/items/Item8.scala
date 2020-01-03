@@ -15,6 +15,6 @@ class Item8 extends Item with Beef {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

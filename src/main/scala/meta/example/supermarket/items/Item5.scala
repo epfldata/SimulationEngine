@@ -15,6 +15,6 @@ class Item5 extends Item with Cucumber {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

@@ -15,6 +15,6 @@ class Item20 extends Item with Pasta {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

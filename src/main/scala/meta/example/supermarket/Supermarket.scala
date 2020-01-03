@@ -14,8 +14,8 @@ class Supermarket extends SummaryTrait {
   val grains: Vector[String] = categories.getArticleNames("Grain")
   val dairys: Vector[String] = categories.getArticleNames("Dairy")
 
-  def recordWaste(category: String, priceUnit: Int, isSold: Boolean): Unit ={
-    updateWasteSummary(category, priceUnit, isSold)
+  def recordWaste(category: String, wastedAmount: Int): Unit ={
+    updateWasteSummary(category, wastedAmount)
   }
 
   def getItemDeque(item: String): ItemDeque = {

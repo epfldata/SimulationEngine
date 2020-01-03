@@ -15,6 +15,6 @@ class Item12 extends Item with Ferraro {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }

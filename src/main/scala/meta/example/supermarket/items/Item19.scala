@@ -15,6 +15,6 @@ class Item19 extends Item with Spaghetti {
         SpecialInstructions.waitTurns(1)
         age = age + 1
     }
-    cleanExpired
+    cleanExpired()
   }
 }
