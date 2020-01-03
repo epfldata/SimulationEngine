@@ -11,6 +11,7 @@ class Customer1 extends People with BiWeekly with MealPlanV1_1 with TargetShoppe
     while(true) {
       SpecialInstructions.handleMessages()
       buyListedItems(shoppingList.targetItems)
+      buyRandItems(shoppingList.randItems)
       SpecialInstructions.waitTurns(1)
       consumeFood(mealPlan)
       SpecialInstructions.waitTurns(1)

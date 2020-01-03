@@ -46,6 +46,7 @@ trait Item extends Actor {
     if (state.onDisplay) {
       discard
       itemInfo
+      supermarket.warehouse(name).popLeft
       supermarket.recordWaste(category, priceUnit)
       supermarket.isInvalids += id
     } else if (state.isConsumed) {
@@ -57,6 +58,7 @@ trait Item extends Actor {
     }
   }
 
+  // fridge calls popleft to remove the expired first. No need to do it here
   def cleanExpired(wastedAmount: Int): Unit = {
     assert(state.isExpired)
     discard

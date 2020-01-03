@@ -1,7 +1,7 @@
 package meta.example.supermarket.goods
 
-/* Auto generated from file generateGoods
- Please adjust file categories for modification purpose
+/* Auto generated
+ Please adjust file categories for modification
  */
 
 trait Dairy {

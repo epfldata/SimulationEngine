@@ -4,33 +4,44 @@ import scala.collection.mutable.Map
 
 /* Auto generated */
 
+trait newItem {
+ var timeVar: Int
+}
+
 object newItemsMap {
-  // itemName, goodsName
+  // goodsName, itemName
   val itemMap: Map[String, String] = Map(
-   "Item1" -> "Eggplant",
-   "Item2" -> "Potato",
-   "Item3" -> "Onion",
-   "Item4" -> "Broccoli",
-   "Item5" -> "Cucumber",
-   "Item6" -> "Carrots",
-   "Item7" -> "Chicken",
-   "Item8" -> "Beef",
-   "Item9" -> "Pork",
-   "Item10" -> "Lamb",
-   "Item11" -> "Kitkat",
-   "Item12" -> "Ferraro",
-   "Item13" -> "DarkChocolate",
-   "Item14" -> "WhiteChocolate",
-   "Item15" -> "Cereal",
-   "Item16" -> "Oatmeal",
-   "Item17" -> "Rice",
-   "Item18" -> "Noodles",
-   "Item19" -> "Spaghetti",
-   "Item20" -> "Pasta",
-   "Item21" -> "Milk",
-   "Item22" -> "Yogurt",
-   "Item23" -> "Cheese",
-   "Item24" -> "Cream",
-   "Item25" -> "Egg")
-  val totalItems: Int = 25
+   "Eggplant" -> "Item1",
+   "Potato" -> "Item2",
+   "Onion" -> "Item3",
+   "Broccoli" -> "Item4",
+   "Cucumber" -> "Item5",
+   "Carrots" -> "Item6",
+   "Celery" -> "Item7",
+   "Tomato" -> "Item8",
+   "Mushroom" -> "Item9",
+   "Cabbage" -> "Item10",
+   "Squash" -> "Item11",
+   "Chicken" -> "Item12",
+   "Beef" -> "Item13",
+   "Pork" -> "Item14",
+   "Lamb" -> "Item15",
+   "Bacon" -> "Item16",
+   "Kitkat" -> "Item17",
+   "Ferraro" -> "Item18",
+   "DarkChocolate" -> "Item19",
+   "WhiteChocolate" -> "Item20",
+   "Cereal" -> "Item21",
+   "Oatmeal" -> "Item22",
+   "Rice" -> "Item23",
+   "Noodles" -> "Item24",
+   "Spaghetti" -> "Item25",
+   "Pasta" -> "Item26",
+   "Milk" -> "Item27",
+   "Yogurt" -> "Item28",
+   "Cheese" -> "Item29",
+   "Cream" -> "Item30",
+   "Egg" -> "Item31")
+  val totalItems: Int = 31
+
 }

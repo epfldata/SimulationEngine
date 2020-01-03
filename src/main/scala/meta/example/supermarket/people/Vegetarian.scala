@@ -20,8 +20,16 @@ object Vegetarian {
     ),
     Vector(
       ("Carrots", 200),
-      ("Cucumber", 200),
-      ("Potato", 200)
+      ("Tomato", 200),
+      ("Cheese", 50),
+      ("Spaghetti", 100),
+      ("Kitkat", 50)
+    ),
+    Vector(
+      ("Rice", 100),
+      ("Eggplant", 200),
+      ("Tomato", 100),
+      ("Onion", 200)
     )
   )
 }

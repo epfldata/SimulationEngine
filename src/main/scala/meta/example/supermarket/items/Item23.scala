@@ -6,7 +6,7 @@ import squid.quasi.lift
 /* Auto generated */
 
 @lift
-class Item23 extends Item with Cheese {
+class Item23 extends Item with Rice {
   var age: Int = 0
 
   def main(): Unit = {

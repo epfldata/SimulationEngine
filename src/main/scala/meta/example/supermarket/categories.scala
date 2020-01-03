@@ -40,7 +40,13 @@ object categories {
     ("onion", 0.8, piece, 0, 2),
     ("broccoli", 2, piece, 0, vegieStock),
     ("cucumber", 1.5, piece, 0, vegieStock),
-    ("carrots", 1, piece, 0, vegieStock))
+    ("carrots", 1, piece, 0, vegieStock),
+    ("celery", 2, piece, 0, vegieStock),
+    ("tomato", 1.5, piece, 0, vegieStock),
+    ("mushroom", 2, piece, 0, vegieStock),
+    ("cabbage", 1, piece, 0, vegieStock),
+    ("squash", 1, piece, 0, vegieStock)
+  )
 
   val Meat: CategoryFields = CategoryFields(15, 0.8)
   val meatStock: stock = 3
@@ -48,7 +54,9 @@ object categories {
     ("chicken", 15, kg, 0, meatStock),
     ("beef", 35, kg, 0, meatStock),
     ("pork", 25, kg, 0, meatStock),
-    ("lamb", 45, kg, 0, meatStock))
+    ("lamb", 45, kg, 0, meatStock),
+    ("bacon", 25, kg, 0, meatStock)
+  )
 
   val Snack: CategoryFields = CategoryFields(100, 1.0)
   val snackStock: stock = 10

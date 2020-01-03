@@ -16,14 +16,18 @@ object genItems extends App{
        |
        |/* Auto generated */
        |
+       |trait newItem {
+       | var timeVar: Int
+       |}
+       |
        |object newItemsMap {
-       |  // itemName, goodsName
+       |  // goodsName, itemName
        |  val itemMap: Map[String, String] = Map(
        |""".stripMargin
   }
 
   private def mapAdd(itemName: String, article: String): String = {
-    s"""   "${itemName}" -> "${article}",
+    s"""   "${article}" -> "${itemName}",
        |""".stripMargin
   }
 

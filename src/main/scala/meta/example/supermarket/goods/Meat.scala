@@ -1,7 +1,7 @@
 package meta.example.supermarket.goods
 
-/* Auto generated from file generateGoods
- Please adjust file categories for modification purpose
+/* Auto generated
+ Please adjust file categories for modification
  */
 
 trait Meat {
@@ -37,6 +37,14 @@ trait Pork extends Meat {
 trait Lamb extends Meat {
   val name: String = "Lamb"
   val price: Double = 45.0
+  val priceUnit: Int = 1000
+  val discount: Double = 0.0
+  val stock: Int = 3
+}
+
+trait Bacon extends Meat {
+  val name: String = "Bacon"
+  val price: Double = 25.0
   val priceUnit: Int = 1000
   val discount: Double = 0.0
   val stock: Int = 3

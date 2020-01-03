@@ -14,14 +14,21 @@ object Carnivore {
 
   val mealPlan: Vector[Vector[(articleName, gram)]] = Vector(
     Vector(
+      ("Egg", 50),
+      ("Milk", 200),
+      ("Bacon", 100),
+      ("Oatmeal", 100)
+    ),
+    Vector(
       ("Broccoli", 200),
       ("Beef", 500),
       ("Rice", 200),
       ("WhiteChocolate", 50)
     ),
     Vector(
-      ("Carrots", 200),
+      ("Mushroom", 200),
       ("Chicken", 200),
+      ("Milk", 200),
       ("Noodles", 200)
     )
   )

@@ -1,7 +1,7 @@
 package meta.example.supermarket.goods
 
-/* Auto generated from file generateGoods
- Please adjust file categories for modification purpose
+/* Auto generated
+ Please adjust file categories for modification
  */
 
 trait Vegetable {
@@ -52,6 +52,46 @@ trait Cucumber extends Vegetable {
 
 trait Carrots extends Vegetable {
   val name: String = "Carrots"
+  val price: Double = 1.0
+  val priceUnit: Int = 200
+  val discount: Double = 0.0
+  val stock: Int = 5
+}
+
+trait Celery extends Vegetable {
+  val name: String = "Celery"
+  val price: Double = 2.0
+  val priceUnit: Int = 200
+  val discount: Double = 0.0
+  val stock: Int = 5
+}
+
+trait Tomato extends Vegetable {
+  val name: String = "Tomato"
+  val price: Double = 1.5
+  val priceUnit: Int = 200
+  val discount: Double = 0.0
+  val stock: Int = 5
+}
+
+trait Mushroom extends Vegetable {
+  val name: String = "Mushroom"
+  val price: Double = 2.0
+  val priceUnit: Int = 200
+  val discount: Double = 0.0
+  val stock: Int = 5
+}
+
+trait Cabbage extends Vegetable {
+  val name: String = "Cabbage"
+  val price: Double = 1.0
+  val priceUnit: Int = 200
+  val discount: Double = 0.0
+  val stock: Int = 5
+}
+
+trait Squash extends Vegetable {
+  val name: String = "Squash"
   val price: Double = 1.0
   val priceUnit: Int = 200
   val discount: Double = 0.0
