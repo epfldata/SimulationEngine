@@ -21,7 +21,7 @@ class Fridge {
     }
     val newAmount: Int = amountMap(item.name) + item.priceUnit
     amountMap += (item.name -> newAmount)
-    opened += (item.name -> item.priceUnit)
+    if (opened(item.name)==0){ opened += (item.name -> item.priceUnit) }
   }
 
   def getAmount(article: articleName): Int = {
@@ -32,38 +32,53 @@ class Fridge {
     opened.filterKeys(opened(_)!=0).keys.toVector
   }
 
-  def rmExpired(item: Item): Unit = {
-    storage.get(item.name).get.popLeft
-    amountMap += (item.name -> (amountMap(item.name)-opened(item.name)))
-    item.cleanExpired(opened(item.name))
-    opened += (item.name -> 0)
+  // Return the amount of food exists
+  def rmExpired(item: Item): Int = {
+    val article: String = item.name
+    var targetItem: Item = item
+
+    while (storage(article).size>0 && targetItem.state.isExpired){
+      targetItem = storage(article).popLeft
+      amountMap += (article -> (amountMap(article)-opened(article)))
+      targetItem.cleanExpired(opened(article))
+      opened += (article -> 0)
+      if (storage(article).size>0){
+        targetItem = storage(article).peek
+        opened += (article -> targetItem.priceUnit)
+      }
+    }
+    amountMap(article)
   }
 
   def consume(article: articleName, amount: gram): Int = {
-    val currentAmount: Int = getAmount(article)
-    currentAmount match {
-      case 0 => 0
-      case _ => {
-        val targetItem: Item = storage.get(article).get.peak
-        val targetUnit: Int = targetItem.priceUnit
-        (currentAmount <= amount) match {
-          case true => {
-            consumeAll(article)
-            currentAmount
-          }
-          case false => {
-            if (amount > opened(article)) {
-              set2Consume(article, divCeil(amount - opened(article), targetUnit))
-              opened += (article -> (opened(article) - (amount - opened(article))%targetUnit))
-            } else {
-              opened += (article -> (opened(article)-amount))
+    if (getAmount(article)==0) {
+      0
+    } else {
+      val peekItem: Item = storage(article).peek
+      val targetUnit: Int = peekItem.priceUnit
+      val currentAmount: Int = rmExpired(peekItem)
+      currentAmount match {
+        case 0 => 0
+        case _ => {
+          (currentAmount <= amount) match {
+            case true => {
+              consumeAll(article)
+              currentAmount
             }
-            if (opened(article)==0){
-              set2Consume(article, 1)
-              opened += (article -> targetUnit)
+            case false => {
+              if (amount > opened(article)) {
+                set2Consume(article, divCeil(amount - opened(article), targetUnit))
+                opened += (article -> (opened(article) - (amount - opened(article)) % targetUnit))
+              } else {
+                opened += (article -> (opened(article) - amount))
+              }
+              if (opened(article) == 0) {
+                set2Consume(article, 1)
+                opened += (article -> targetUnit)
+              }
+              amountMap += (article -> (amountMap(article) - amount))
+              amount
             }
-            amountMap += (article -> (amountMap(article)-amount))
-            amount
           }
         }
       }

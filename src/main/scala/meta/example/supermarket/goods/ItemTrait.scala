@@ -25,9 +25,12 @@ trait Item extends Actor {
       case "isPurchased" => itemState.purchase
       case "isDiscarded" => itemState.discard
       case "isConsumed" => itemState.consume
+      case "isExpired" => itemState.expire
       case _ => throw new IllegalArgumentException
     }
   }
+
+  def expire: Unit = { updateState("isExpired", state) }
 
   def discard: Unit = { updateState("isDiscarded", state) }
 
@@ -39,12 +42,26 @@ trait Item extends Actor {
     println(f"Item id:$id%-5s Name:$name%-20s Category:$category%-15s Age:$age%-3s Freshness:${to2Dec(1-1.0*age/freshUntil)}%-5s State:${state.get}")
   }
 
-  def cleanExpired: Unit = {
-    if (!state.isConsumed){
+  def cleanExpired(): Unit = {
+    if (state.onDisplay) {
       discard
       itemInfo
-      supermarket.recordWaste(category, priceUnit, state.isPurchased)
+      supermarket.recordWaste(category, priceUnit)
+      supermarket.isInvalids += id
+    } else if (state.isConsumed) {
+      itemInfo
+      supermarket.isInvalids += id
+    } else {
+      expire
+      itemInfo
     }
+  }
+
+  def cleanExpired(wastedAmount: Int): Unit = {
+    assert(state.isExpired)
+    discard
+    itemInfo
+    supermarket.recordWaste(category, wastedAmount)
     supermarket.isInvalids += id
   }
 }

@@ -1,8 +1,9 @@
 import meta.example.supermarket.Fridge
-import meta.example.supermarket.goods.{Item1, Item2}
+import meta.example.supermarket.goods._
 //import meta.example.supermarket.{categories, categoryAmount, utils}
 import org.scalatest._
 
+//@Ignore
 class FridgeSpec extends FlatSpec with Matchers {
   val fridge: Fridge = new Fridge()
   val item1_1 = new Item1
@@ -87,5 +88,56 @@ class FridgeSpec extends FlatSpec with Matchers {
     fridge.consume(item1_1.name, 100)
     fridge.consume(item1_1.name, 100)
     fridge.getAvailFood.toSet should be (Vector(item2.name).toSet)
+  }
+
+  "Remove expired food" should "update the wastage summary" in {
+    val aboutToExpireItem: Item = new Item3
+    aboutToExpireItem.state.purchase
+    aboutToExpireItem.state.get should be ("isPurchased")
+    fridge.add(aboutToExpireItem)
+    fridge.consume(aboutToExpireItem.name, 50)
+    fridge.getAmount(aboutToExpireItem.name) should be (aboutToExpireItem.priceUnit-50)
+    fridge.opened(aboutToExpireItem.name) should be (aboutToExpireItem.priceUnit-50)
+
+    aboutToExpireItem.cleanExpired()
+    aboutToExpireItem.state.get should be ("isExpired")
+
+    fridge.rmExpired(aboutToExpireItem)
+    fridge.getAmount(aboutToExpireItem.name) should be (0)
+    fridge.opened(aboutToExpireItem.name) should be (0)
+    aboutToExpireItem.state.get should be ("isDiscarded")
+  }
+
+  "When an item expires" should "not be consumed" in {
+    val expireFoo: Item = new Item10
+    val expireBar: Item = new Item10
+    Vector(expireBar, expireFoo).foreach(
+      item=> { fridge.add(item); item.state.purchase })
+    expireFoo.cleanExpired()
+    expireBar.cleanExpired()
+    expireFoo.state.get should be ("isExpired")
+    expireBar.state.get should be ("isExpired")
+    fridge.storage(expireFoo.name) should have size (2)
+    fridge.opened(expireFoo.name) should be (expireFoo.priceUnit)
+    fridge.consume(expireFoo.name, 100) should be (0)
+    fridge.storage(expireFoo.name) should have size (0)
+    fridge.opened(expireFoo.name) should be (0)
+    fridge.amountMap(expireBar.name) should be (0)
+    expireFoo.state.get should be ("isDiscarded")
+    expireBar.state.get should be ("isDiscarded")
+  }
+
+  "Add new items of the same name" should "not change the opened amount" in {
+    val egg1: Item = new Item25
+    val egg2: Item = new Item25
+    fridge.add(egg1)
+    egg1.state.purchase
+    fridge.opened(egg1.name) should be (egg1.priceUnit)
+    fridge.consume(egg1.name, 50)
+    fridge.opened(egg1.name) should be (egg1.priceUnit-50)
+    fridge.add(egg2)
+    egg2.state.purchase
+    fridge.opened(egg1.name) should be (egg1.priceUnit-50)
+    fridge.amountMap(egg1.name) should be (2*egg1.priceUnit-50)
   }
 }

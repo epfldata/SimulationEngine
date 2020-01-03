@@ -12,7 +12,7 @@ class Customer1 extends People with BiWeekly with MealPlanV1_1 with TargetShoppe
       SpecialInstructions.handleMessages()
       buyListedItems(shoppingList.targetItems)
       SpecialInstructions.waitTurns(1)
-      consumeFood
+      consumeFood(mealPlan)
       SpecialInstructions.waitTurns(1)
     }
   }

@@ -44,15 +44,17 @@ trait People extends Actor{
 
   // Random consumption behavior
   def consumeFood: Unit = {
-    fridge.consume(randElement(fridge.getAvailFood), 100)
+    val someFood: String = randElement(fridge.getAvailFood)
+    println("Customer consumes 100g of random food " + someFood)
+    fridge.consume(someFood, 100)
   }
 
   // Target consumption behavior
   def consumeFood(mealPlan: Vector[(articleName, gram)]): Unit = {
-    val consumed: Vector[Int] = mealPlan.map(pair =>
+    val consumed: Vector[Int] = mealPlan.map(pair => {
+      println("Customer consumes food! " + pair._1 + " Amount " + pair._2)
       fridge.consume(pair._1, pair._2)
-    )
-    println(consumed)
+    })
   }
 
   def customerInfo: Unit = {

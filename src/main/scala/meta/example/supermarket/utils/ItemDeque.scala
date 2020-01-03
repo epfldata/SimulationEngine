@@ -43,7 +43,7 @@ class ItemDeque(var item: Item, var itemList: Vector[Item]) {
     itemDeque.remove(size-1)
   }
 
-  def peak: Item = {
+  def peek: Item = {
     itemDeque(0)
   }
 }

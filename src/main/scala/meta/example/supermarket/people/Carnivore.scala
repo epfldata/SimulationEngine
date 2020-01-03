@@ -15,7 +15,7 @@ object Carnivore {
   val mealPlan: Vector[Vector[(articleName, gram)]] = Vector(
     Vector(
       ("Broccoli", 200),
-      ("Beef", 200),
+      ("Beef", 500),
       ("Rice", 200),
       ("WhiteChocolate", 50)
     ),
