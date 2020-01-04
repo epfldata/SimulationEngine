@@ -2,16 +2,15 @@ package meta.example.supermarket.people
 
 import meta.deep.runtime.Actor
 import meta.example.supermarket._
-import meta.example.supermarket.categories.{articleName, gram}
-import meta.example.supermarket.utils.{randElement}
+import meta.example.supermarket.categories.{articleName, gram, getArticleUnit}
+import meta.example.supermarket.utils.{randElement, toShoppingList}
 
 trait People extends Actor{
 
 //  val age: Int
   val frequency: Int
   val priceConscious: Double
-  val needBased: Double
-//  val diet: String
+  val needBased: Boolean
   val shoppingList: ShoppingList
   val mealPlan: Vector[(articleName, gram)]
   var supermarket: Supermarket = Supermarket.store
@@ -22,23 +21,26 @@ trait People extends Actor{
     val foods = utils.ccArgToVector(shoppingList)
     foods.foreach(
       categoryAmountPair => {
-        var itemCtr = 0
-        while (itemCtr < categoryAmountPair._2.asInstanceOf[Double]) {
-          buyItem(supermarket.getRandFood(categoryAmountPair._1))
-          itemCtr = itemCtr + 1
-        }
+        1.to(categoryAmountPair._2.asInstanceOf[Int]).foreach(_ => {
+          val randFood: String = supermarket.getRandFood(categoryAmountPair._1)
+          println("Customer buys random food! " + randFood)
+          buyItem(randFood)
+        })
       }
     )
   }
 
-  def buyListedItems(shoppingList: Vector[(articleName, Int)]): Unit ={
-    shoppingList.foreach(articlePair => {
-      1.to(articlePair._2).foreach(_ => buyItem(articlePair._1))
+  def buyListedItems(meal: Vector[(articleName, Int)]): Unit ={
+    val shoppingList: Map[String, Int] = toShoppingList(meal).toMap
+    meal.foreach(articlePair => {
+      if (fridge.getAmount(articlePair._1)<(frequency*articlePair._2)) {
+        println("Customer buys food from shopping list! " + articlePair._1)
+        1.to(shoppingList(articlePair._1)).foreach(_ => buyItem(articlePair._1))
+      }
     })
   }
 
   def buyItem(item: String): Unit = {
-    println("Customer buys food! " + item)
     fridge.add(supermarket.sell(item))
   }
 
@@ -51,9 +53,9 @@ trait People extends Actor{
 
   // Target consumption behavior
   def consumeFood(mealPlan: Vector[(articleName, gram)]): Unit = {
-    val consumed: Vector[Int] = mealPlan.map(pair => {
-      println("Customer consumes food! " + pair._1 + " Amount " + pair._2)
-      fridge.consume(pair._1, pair._2)
+//    val consumed: Vector[Int] = mealPlan.map(pair => {
+    mealPlan.foreach(pair => {
+      println("Customer consumed " + pair._1 + " Amount " + fridge.consume(pair._1, pair._2))
     })
   }
 
