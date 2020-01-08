@@ -18,10 +18,6 @@ class Supermarket extends SummaryTrait {
     updateWasteSummary(category, wastedAmount)
   }
 
-  def getItemDeque(item: String): ItemDeque = {
-    warehouse.get(item).get
-  }
-
   def initializeItemDeque(item: Item): Unit = {
     warehouse += (item.name -> new ItemDeque(item))
   }
@@ -32,24 +28,29 @@ class Supermarket extends SummaryTrait {
     )
   }
 
-  def checkQueueSize(requested: ItemDeque, item: String): Unit = {
-    if (requested.size==0) { println("Item not found :( " + item); throw new NoSuchElementException }
+  def rmDiscarded(items: ItemDeque): Unit = {
+    while (!items.isEmpty && items.peek.state.isDiscarded){
+      items.popLeft
+    }
   }
 
-  def sell(item: String): Item = {
-    val requested: ItemDeque = getItemDeque(item)
-    checkQueueSize(requested, item)
+  def sell(item: String, fifo: Boolean = true): Item = {
+    val requested: ItemDeque = warehouse.getOrElse(item, new ItemDeque())
+    rmDiscarded(requested)
 
-    var soldItem: Item = requested.popLeft
-
-    while (soldItem.state.isDiscarded){
-      checkQueueSize(requested, item)
-      soldItem = requested.popLeft
+    if (requested.isEmpty){
+      println("Item not found :( " + item)
+      throw new NoSuchElementException
     }
 
-    assert(!soldItem.state.isDiscarded)
-    soldItem.purchase
+    var soldItem: Item = null
+    if (fifo) {
+      soldItem = requested.popLeft
+    } else {
+      soldItem = requested.popRight
+    }
 
+    soldItem.purchase
     println(s"Item ${soldItem.name} sold! " + soldItem.id)
     soldItem
   }
