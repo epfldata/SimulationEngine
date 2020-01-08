@@ -102,15 +102,15 @@ class FridgeSpec extends FlatSpec with Matchers {
     aboutToExpireItem.cleanExpired()
     aboutToExpireItem.state.get should be ("isExpired")
 
-    fridge.rmExpired(aboutToExpireItem)
+    fridge.rmExpired(aboutToExpireItem.name)
     fridge.getAmount(aboutToExpireItem.name) should be (0)
     fridge.opened(aboutToExpireItem.name) should be (0)
     aboutToExpireItem.state.get should be ("isDiscarded")
   }
 
   "When an item expires" should "not be consumed" in {
-    val expireFoo: Item = new Item10
-    val expireBar: Item = new Item10
+    val expireFoo: Item = new Item3
+    val expireBar: Item = new Item3
     Vector(expireBar, expireFoo).foreach(
       item=> { fridge.add(item); item.state.purchase })
     expireFoo.cleanExpired()

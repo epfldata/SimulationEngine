@@ -1,6 +1,6 @@
 package meta.example.supermarket
 
-import meta.example.supermarket.utils.{divCeil, randElement}
+import meta.example.supermarket.utils.{divCeil, randElement, toInt}
 import meta.example.supermarket.categories.{articleName, gram}
 import meta.example.supermarket.goods.Item
 import scala.collection.mutable.Map
@@ -21,68 +21,61 @@ class Fridge {
     }
     val newAmount: Int = amountMap(item.name) + item.priceUnit
     amountMap += (item.name -> newAmount)
-    if (opened(item.name)==0){ opened += (item.name -> item.priceUnit) }
+    if (notOpened(item.name)){ opened += (item.name -> item.priceUnit) }
   }
 
   def getAmount(article: articleName): Int = {
     amountMap(article)
   }
 
+  def noStock(article: articleName): Boolean = {
+    amountMap(article)==0
+  }
+
+  def notOpened(article: String): Boolean = {
+    opened(article)==0
+  }
+
   def getAvailFood: Vector[articleName] = {
     opened.filterKeys(opened(_)!=0).keys.toVector
   }
 
-  // Return the amount of food exists
-  def rmExpired(item: Item): Int = {
-    val article: String = item.name
-    var targetItem: Item = item
-
-    while (storage(article).size>0 && targetItem.state.isExpired){
-      targetItem = storage(article).popLeft
+  // Return the amount of unexpired food remains in the fridge
+  def rmExpired(article: String): Int = {
+    var expiredItem: Item = null
+    while (!storage(article).isEmpty && storage(article).peek.state.isExpired) {
+      expiredItem = storage(article).popLeft
       amountMap += (article -> (amountMap(article)-opened(article)))
-      targetItem.cleanExpired(opened(article))
+      expiredItem.cleanExpired(opened(article))
       opened += (article -> 0)
-      if (storage(article).size>0){
-        targetItem = storage(article).peek
-        opened += (article -> targetItem.priceUnit)
+      if (!storage(article).isEmpty){
+        opened += (article -> expiredItem.priceUnit)
       }
     }
     amountMap(article)
   }
 
   def consume(article: articleName, amount: gram): Int = {
-    if (getAmount(article)==0) {
-      0
-    } else {
-      assert(storage(article).size>0)
-      val peekItem: Item = storage(article).peek
-      val targetUnit: Int = peekItem.priceUnit
-      val currentAmount: Int = rmExpired(peekItem)
-      currentAmount match {
-        case 0 => 0
-        case _ => {
-          (currentAmount <= amount) match {
-            case true => {
-              consumeAll(article)
-              currentAmount
-            }
-            case false => {
-              if (amount > opened(article)) {
-                set2Consume(article, divCeil(amount - opened(article), targetUnit))
-                opened += (article -> (targetUnit - (amount - opened(article))))
-              } else {
-                opened += (article -> (opened(article) - amount))
-              }
-              if (opened(article) == 0) {
-                set2Consume(article, 1)
-                opened += (article -> targetUnit)
-              }
-              amountMap += (article -> (amountMap(article) - amount))
-              amount
-            }
-          }
+    val currentAmount = rmExpired(article)
+    if (currentAmount > 0){
+      val targetUnit: Int = storage(article).peek.priceUnit
+      if (currentAmount <= amount){
+        consumeAll(article)
+        currentAmount
+      } else {
+        if (amount > opened(article)) {
+          set2Consume(article, divCeil(amount - opened(article), targetUnit))
         }
+        opened += (article -> (opened(article)-amount+toInt(amount>opened(article))*targetUnit))
+        if (notOpened(article)) {
+          set2Consume(article, 1)
+          opened += (article -> targetUnit)
+        }
+        amountMap += (article -> (amountMap(article) - amount))
+        amount
       }
+    } else {
+      0
     }
   }
 
@@ -94,16 +87,16 @@ class Fridge {
 
   // remove count number of instances of given article
   private def set2Consume(article: articleName, count: Int): Unit = {
-    1.to(count).foreach(
+    (1 to count).foreach(
       _ => storage.get(article).get.popLeft.consume
     )
   }
 
   override def toString: String = {
     amountMap.map(pair => pair._1 + ": " + pair._2).mkString(" ") +
-      "\nOpened amount map \n" +
+    "\nOpened amount map \n" +
     opened.map(pair => pair._1 + ": " + pair._2).mkString(" ") +
-    "\n Storage size \n" +
+    "\nStorage size \n" +
     storage.map(pair => pair._1 + ": " + pair._2.size).mkString(" ")
 //    getAvailFood
 //      .map(food_name => food_name + " " + amountMap(food_name))
