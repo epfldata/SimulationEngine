@@ -57,30 +57,26 @@ class Fridge {
 
   def consume(article: articleName, amount: gram): Int = {
     val currentAmount = rmExpired(article)
-    if (currentAmount > 0){
-      val targetUnit: Int = storage(article).peek.priceUnit
-      if (currentAmount <= amount){
-        consumeAll(article)
-        currentAmount
-      } else {
-        if (amount > opened(article)) {
-          set2Consume(article, divCeil(amount - opened(article), targetUnit))
-        }
-        opened += (article -> (opened(article)-amount+toInt(amount>opened(article))*targetUnit))
-        if (notOpened(article)) {
-          set2Consume(article, 1)
-          opened += (article -> targetUnit)
-        }
-        amountMap += (article -> (amountMap(article) - amount))
-        amount
-      }
+    if (currentAmount <= amount){
+      consumeAll(article)
+      currentAmount
     } else {
-      0
+      val targetUnit: Int = storage(article).peek.priceUnit
+      if (amount > opened(article)) {
+        set2Consume(article, divCeil(amount - opened(article), targetUnit))
+      }
+      opened += (article -> (opened(article)-amount+toInt(amount>opened(article))*targetUnit))
+      if (notOpened(article)) {
+        set2Consume(article, 1)
+        opened += (article -> targetUnit)
+      }
+      amountMap += (article -> (amountMap(article) - amount))
+      amount
     }
   }
 
   def consumeAll(article: articleName): Unit = {
-    set2Consume(article, storage.get(article).get.size)
+    set2Consume(article, storage(article).size)
     amountMap += (article -> 0)
     opened += (article -> 0)
   }

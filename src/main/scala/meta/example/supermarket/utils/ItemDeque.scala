@@ -46,4 +46,8 @@ class ItemDeque(var item: Item, var itemList: Vector[Item]) {
   def peek: Item = {
     itemDeque(0)
   }
+
+  def isEmpty: Boolean = {
+    itemDeque.size == 0
+  }
 }
