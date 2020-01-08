@@ -1,6 +1,7 @@
 package meta.example.supermarket
 
 import meta.example.supermarket.categories.{articleName, gram}
+import scala.util.Random
 
 object Carnivore {
   // 1: 1 unit of food (1 agent)
@@ -27,9 +28,14 @@ object Carnivore {
     ),
     Vector(
       ("Mushroom", 200),
+      ("Carrots", 50),
       ("Chicken", 200),
       ("Milk", 200),
       ("Noodles", 200)
     )
   )
+
+  def getRandShoppingList(listNum: Int = 1): categoryAmount = {
+    randShoppingList(Random.nextInt(randShoppingList.size))
+  }
 }

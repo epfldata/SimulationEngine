@@ -62,14 +62,13 @@ class Fridge {
       currentAmount
     } else {
       val targetUnit: Int = storage(article).peek.priceUnit
-      if (amount > opened(article)) {
-        set2Consume(article, divCeil(amount - opened(article), targetUnit))
-      }
-      opened += (article -> (opened(article)-amount+toInt(amount>opened(article))*targetUnit))
-      if (notOpened(article)) {
-        set2Consume(article, 1)
-        opened += (article -> targetUnit)
-      }
+      val actorCnt: Int = toInt(amount > opened(article))*((amount - opened(article))/targetUnit)
+      // Consume the opened ones first, if exist
+      set2Consume(article, toInt(!notOpened(article) && (amount >= opened(article))))
+      set2Consume(article, toInt(amount > opened(article))*(amount-opened(article))/targetUnit)
+      opened += (article -> (opened(article) - amount + toInt(opened(article)<=amount)*targetUnit*(actorCnt + 1)))
+
+      assert(opened(article)>=0)
       amountMap += (article -> (amountMap(article) - amount))
       amount
     }
@@ -84,7 +83,7 @@ class Fridge {
   // remove count number of instances of given article
   private def set2Consume(article: articleName, count: Int): Unit = {
     (1 to count).foreach(
-      _ => storage.get(article).get.popLeft.consume
+      _ => storage(article).popLeft.consume
     )
   }
 
