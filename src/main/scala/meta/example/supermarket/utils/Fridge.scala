@@ -54,6 +54,7 @@ class Fridge {
     if (getAmount(article)==0) {
       0
     } else {
+      assert(storage(article).size>0)
       val peekItem: Item = storage(article).peek
       val targetUnit: Int = peekItem.priceUnit
       val currentAmount: Int = rmExpired(peekItem)
@@ -68,7 +69,7 @@ class Fridge {
             case false => {
               if (amount > opened(article)) {
                 set2Consume(article, divCeil(amount - opened(article), targetUnit))
-                opened += (article -> (opened(article) - (amount - opened(article)) % targetUnit))
+                opened += (article -> (targetUnit - (amount - opened(article))))
               } else {
                 opened += (article -> (opened(article) - amount))
               }
@@ -96,6 +97,17 @@ class Fridge {
     1.to(count).foreach(
       _ => storage.get(article).get.popLeft.consume
     )
+  }
+
+  override def toString: String = {
+    amountMap.map(pair => pair._1 + ": " + pair._2).mkString(" ") +
+      "\nOpened amount map \n" +
+    opened.map(pair => pair._1 + ": " + pair._2).mkString(" ") +
+    "\n Storage size \n" +
+    storage.map(pair => pair._1 + ": " + pair._2.size).mkString(" ")
+//    getAvailFood
+//      .map(food_name => food_name + " " + amountMap(food_name))
+//      .mkString("\n")
   }
 }
 
