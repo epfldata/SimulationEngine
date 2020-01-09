@@ -6,7 +6,7 @@ import scala.collection.mutable.{ListBuffer, Map}
 
 object genMealPlans extends App {
 
-  val mealPlanFileName: String = "MealPlanGenerated"
+  val mealPlanFileName: String = "MealPlan"
   var cwd = new File(".").getCanonicalPath()
   cwd = cwd + "/src/main/scala/meta/example/supermarket/people/"
 
@@ -29,9 +29,8 @@ object genMealPlans extends App {
   var cnt: Int = 0;
 
   def genTrait(mealType: String, mealsPerDay: Int, mealPlan: String): (String, String) = {
-    val mealAcronym: Char = mealType(0)
     (s"""
-      |trait MealPlan${mealAcronym}${mealsPerDay}_${cnt} {
+      |trait MealPlan${cnt} {
       |  val preference: String = "${mealType}"
       |  val mealCnt: Int = ${mealsPerDay}
       |  val mealPlan: Vector[(articleName, gram)] = ${mealPlan}
@@ -39,7 +38,7 @@ object genMealPlans extends App {
       |  val shoppingList: ShoppingList = new ShoppingList(randShoppingList, mealPlan)
       |}
       |""".stripMargin,
-      s"MealPlan${mealAcronym}${mealsPerDay}_${cnt}")
+      s"MealPlan${cnt}")
   }
 
   def mealPlanPerm(mealType: String, mealsPerDay: Int): Vector[String] = {

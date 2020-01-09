@@ -13,6 +13,8 @@ trait People extends Actor{
   val needBased: Boolean
   val shoppingList: ShoppingList
   val mealPlan: Vector[(articleName, gram)]
+  val preference: String
+  val mealCnt: Int
   var supermarket: Supermarket = Supermarket.store
   assert(supermarket.vegetables.size>1) // store has been properly initialized
   val fridge: Fridge = new Fridge
@@ -30,36 +32,40 @@ trait People extends Actor{
     )
   }
 
-  def buyListedItems(meal: Vector[(articleName, Int)]): Unit ={
+  def buyListedItems(meal: Vector[(articleName, Int)], onBudget: Boolean = true): Unit ={
     val shoppingList: Map[String, Int] = toShoppingList(meal).toMap
     meal.foreach(articlePair => {
       if (fridge.getAmount(articlePair._1)<(frequency*articlePair._2)) {
         println("Customer buys food from shopping list! " + articlePair._1)
-        1.to(shoppingList(articlePair._1)).foreach(_ => buyItem(articlePair._1))
+        1.to(shoppingList(articlePair._1)).foreach(_ => buyItem(articlePair._1, onBudget))
       }
     })
   }
 
-  def buyItem(item: String): Unit = {
-    fridge.add(supermarket.sell(item))
+  def buyItem(item: String, onBudget: Boolean = true): Unit = {
+    fridge.add(supermarket.sell(item, onBudget))
   }
 
   // Random consumption behavior
   def consumeFood: Unit = {
     val someFood: String = randElement(fridge.getAvailFood)
-    println("Customer consumes 100g of random food " + someFood)
-    fridge.consume(someFood, 100)
+    println("Customer consumes random food " + someFood)
+    println(" amount " + fridge.consume(someFood, 200))
   }
 
   // Target consumption behavior
   def consumeFood(mealPlan: Vector[(articleName, gram)]): Unit = {
-//    val consumed: Vector[Int] = mealPlan.map(pair => {
     mealPlan.foreach(pair => {
-      println("Customer consumed " + pair._1 + " Amount " + fridge.consume(pair._1, pair._2))
+      val consumed: Int = fridge.consume(pair._1, pair._2)
+      println("Customer consumed " + pair._1 + " Amount " + consumed)
+      if (consumed < pair._2){
+        println("Not enough food left! Do shopping!")
+        buyListedItems(Vector((pair._1, pair._2)))
+      }
     })
   }
 
   def customerInfo: Unit = {
-    println("Customer's Actor id " + id + " shopping frequency " + frequency)
+    println("Customer's Actor id " + id + " frequency " + frequency + " fridge " + fridge)
   }
 }
