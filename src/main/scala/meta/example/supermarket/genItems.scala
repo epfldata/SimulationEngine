@@ -1,7 +1,7 @@
 package meta.example.supermarket
 
 import java.io.{BufferedWriter, File, FileWriter}
-
+import scala.collection.mutable.{Map}
 
 object genItems extends App{
 
@@ -9,27 +9,7 @@ object genItems extends App{
   var cwd = new File(".").getCanonicalPath()
   val storagePath = cwd + "/src/main/scala/meta/example/supermarket/"
 
-  private def mapHeader: String = {
-    s"""package meta.example.supermarket.goods
-       |
-       |import scala.collection.mutable.Map
-       |
-       |/* Auto generated */
-       |
-       |trait newItem {
-       | var timeVar: Int
-       |}
-       |
-       |object newItemsMap {
-       |  // goodsName, itemName
-       |  val itemMap: Map[String, String] = Map(
-       |""".stripMargin
-  }
-
-  private def mapAdd(itemName: String, article: String): String = {
-    s"""   "${article}" -> "${itemName}",
-       |""".stripMargin
-  }
+  val itemMap: Map[String, String] = Map()
 
   private def itemHeader: String = {
     s"""package meta.example.supermarket.goods
@@ -63,6 +43,7 @@ object genItems extends App{
     val file = new File(storagePath + s"/items/Item${itemCounter}.scala")
     val bw = new BufferedWriter(new FileWriter(file))
     val className: String = s"""class ${item} extends Item with ${article} {"""
+    itemMap += (s""""${article}""""->s""""${item}"""")
     bw.write(itemHeader + className + itemBody)
     bw.close()
   }
@@ -76,23 +57,35 @@ object genItems extends App{
     val mapFile = new File(storagePath + s"/items/newItemsMap.scala")
     val mapBW = new BufferedWriter(new FileWriter(mapFile))
 
-    var mapBody: String = ""
-
     categories.getArticleNames.foreach(
       article => {
         val itemName: String = s"Item${itemCounter}"
         newItem(itemName, article)
-        mapBody += mapAdd(itemName, article)
         itemCounter += 1
       }
     )
 
-    mapBW.write(mapHeader + mapBody.dropRight(2) + ")" +
-      s"""
-        |  val totalItems: Int = ${itemCounter-1}
-        |}
-        |""".stripMargin)
-
+    mapBW.write(
+      s"""package meta.example.supermarket.goods
+         |
+         |import scala.collection.mutable.Map
+         |
+         |/* Auto generated */
+         |
+         |trait newItem {
+         | var timeVar: Int
+         |}
+         |
+         |object newItemsMap {
+         |  val totalItems: Int = ${itemCounter-1}
+         |
+         |  // goodsName, itemName
+         |  val itemMap: Map[String, String] = Map(
+         |    ${itemMap.mkString(",\n    ")}
+         |  )
+         |}
+         |""".stripMargin
+    )
     mapBW.close()
   }
 
