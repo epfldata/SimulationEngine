@@ -40,6 +40,11 @@ run-time generation of new actors tailored for this example.
   - Input: item instance is 1 and customer instance is 0  
   - Intended to test state transitions of items as well as wastage summary update 
   
+- `testCustomers` is another example of **genExample** 
+  - *custIds: List[Int] = List(1, 77)* in **userSpecificGenExample**
+  - Input: item instance is 5 and customer instance is 1  
+  - Intended to test customer purchasing and consuming behavior  
+    
 - `utils` collects data structures specified for the simulation and helper functions
 
 - **supermarket** implements a single instance of Supermarket object in the simulation 
