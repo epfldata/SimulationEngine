@@ -2,8 +2,6 @@ package meta.example.supermarket
 
 import meta.example.supermarket.categories.{articleName, categoryName}
 
-//case class itemAmount(var name: String, var quantity: Double)
-
 class ShoppingList(var randItems: categoryAmount, var targetItems: Vector[(articleName, Int)]) {
   var isRandom: Boolean = true
 
