@@ -15,3 +15,12 @@ trait Daily {
 trait SemiWeekly {
   val frequency: Int = 10
 }
+
+object frequencySummary {
+  val names: Vector[String] = Vector(
+    "Weekly",
+    "BiWeekly",
+    "Daily",
+    "SemiWeekly"
+  )
+}

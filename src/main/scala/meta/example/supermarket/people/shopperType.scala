@@ -18,3 +18,11 @@ trait TargetShopper {
   val priceConscious: Double = 0.5
   val needBased: Boolean = true
 }
+
+object shopperTypeSummary {
+  val names: Vector[String] = Vector(
+    "ImpulseShopper",
+    "BargainShopper",
+    "TargetShopper"
+  )
+}

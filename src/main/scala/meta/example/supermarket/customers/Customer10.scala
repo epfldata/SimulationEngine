@@ -1,22 +1,21 @@
 package meta.example.supermarket.people
 
-import meta.classLifting
 import meta.classLifting.SpecialInstructions
-import meta.example.supermarket._
 import squid.quasi.lift
+import scala.util.Random
+
+/* Auto generated from genCustomers */
 
 @lift
-class Customer1 extends People with BiWeekly with MealPlan1 with TargetShopper {
-
+class Customer10 extends People with Weekly with MealPlan10 with ImpulseShopper {
   def main(): Unit = {
-
     while(true) {
       SpecialInstructions.handleMessages()
       customerInfo
 
-      buyListedItems(shoppingList.targetItems)
+      buyListedItems(shoppingList.targetItems, (Random.nextFloat < priceConscious))
       buyRandItems(shoppingList.randItems)
-      customerInfo
+
       List.range(0, frequency).foreach(_ => {
         consumeFood(mealPlan)
         consumeFood
