@@ -20,16 +20,18 @@ trait People extends Actor{
   val fridge: Fridge = new Fridge
 
   def buyRandItems(shoppingList: categoryAmount): Unit = {
-    val foods = utils.ccArgToVector(shoppingList)
-    foods.foreach(
-      categoryAmountPair => {
-        1.to(categoryAmountPair._2.asInstanceOf[Int]).foreach(_ => {
-          val randFood: String = supermarket.getRandFood(categoryAmountPair._1)
-          println("Customer buys random food! " + randFood)
-          buyItem(randFood)
-        })
-      }
-    )
+    if (!needBased){
+      val foods = utils.ccArgToVector(shoppingList)
+      foods.foreach(
+        categoryAmountPair => {
+          1.to(categoryAmountPair._2.asInstanceOf[Int]).foreach(_ => {
+            val randFood: String = supermarket.getRandFood(categoryAmountPair._1)
+            println("Customer buys random food! " + randFood)
+            buyItem(randFood)
+          })
+        }
+      )
+    }
   }
 
   def buyListedItems(meal: Vector[(articleName, Int)], onBudget: Boolean = true): Unit ={
