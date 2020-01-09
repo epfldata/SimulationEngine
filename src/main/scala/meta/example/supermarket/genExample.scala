@@ -5,6 +5,7 @@ import java.io.{BufferedWriter, File, FileWriter}
 object genExample extends App {
   import userSpecificGenExample._
 
+  val generatingFileName: String = "genExample"
   assert(totalItems>0)
   assert(itemIds==itemIds.sorted)
   assert(itemIds(0)>0 && itemIds.last<=totalItems)
@@ -50,7 +51,7 @@ object genExample extends App {
        |import meta.example.supermarket.goods._
        |import meta.example.supermarket.people._
        |
-       |/* Auto generated */
+       |/* Auto generated from ${generatingFileName}*/
        |
        |@lift
        |class MainInit {

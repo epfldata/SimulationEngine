@@ -5,6 +5,7 @@ import meta.example.supermarket.categories._
 
 object genGoods extends App {
 
+  val generatingFileName: String = "genGoods"
   private var parentName: String = ""
   var cwd = new File(".").getCanonicalPath()
   cwd = cwd + "/src/main/scala/meta/example/supermarket/"
@@ -35,7 +36,7 @@ object genGoods extends App {
     val parentStr: String =
       s"""package meta.example.supermarket.goods
          |
-         |/* Auto generated
+         |/* Auto generated from ${generatingFileName}
          | Please adjust file categories for modification
          | */
          |
