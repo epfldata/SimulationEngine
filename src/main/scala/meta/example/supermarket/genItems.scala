@@ -5,26 +5,23 @@ import scala.collection.mutable.{Map}
 
 object genItems extends App{
 
-  var itemCounter: Int = 1
+  val generatingFileName: String = "genItems"
+  var counter: Int = 1
   var cwd = new File(".").getCanonicalPath()
   val storagePath = cwd + "/src/main/scala/meta/example/supermarket/"
 
   val itemMap: Map[String, String] = Map()
 
-  private def itemHeader: String = {
+  private def itemString(className: String): String =
     s"""package meta.example.supermarket.goods
        |
        |import meta.classLifting.SpecialInstructions
        |import squid.quasi.lift
        |
-       |/* Auto generated */
+       |/* Auto generated from ${generatingFileName} */
        |
        |@lift
-       |""".stripMargin
-  }
-
-  private def itemBody: String = {
-    s"""
+       |$className
        |  var age: Int = 0
        |
        |  def main(): Unit = {
@@ -37,14 +34,16 @@ object genItems extends App{
        |  }
        |}
        |""".stripMargin
-  }
 
-  private def newItem(item: String, article: String): Unit ={
-    val file = new File(storagePath + s"/items/Item${itemCounter}.scala")
+
+  private def newItem(article: String): Unit ={
+    val file = new File(storagePath + s"/items/Item${counter}.scala")
     val bw = new BufferedWriter(new FileWriter(file))
-    val className: String = s"""class ${item} extends Item with ${article} {"""
-    itemMap += (s""""${article}""""->s""""${item}"""")
-    bw.write(itemHeader + className + itemBody)
+
+    val className: String = s"""class Item${counter} extends Item with ${article} {"""
+    itemMap += (s""""${article}""""->s""""Item${counter}"""")
+
+    bw.write(itemString(className))
     bw.close()
   }
 
@@ -59,9 +58,8 @@ object genItems extends App{
 
     categories.getArticleNames.foreach(
       article => {
-        val itemName: String = s"Item${itemCounter}"
-        newItem(itemName, article)
-        itemCounter += 1
+        newItem(article)
+        counter += 1
       }
     )
 
@@ -70,14 +68,14 @@ object genItems extends App{
          |
          |import scala.collection.mutable.Map
          |
-         |/* Auto generated */
+         |/* Auto generated from ${generatingFileName} */
          |
          |trait newItem {
          | var timeVar: Int
          |}
          |
          |object newItemsMap {
-         |  val totalItems: Int = ${itemCounter-1}
+         |  val totalItems: Int = ${counter-1}
          |
          |  // goodsName, itemName
          |  val itemMap: Map[String, String] = Map(

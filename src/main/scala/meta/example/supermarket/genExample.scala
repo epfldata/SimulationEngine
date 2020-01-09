@@ -3,7 +3,7 @@ package meta.example.supermarket
 import java.io.{BufferedWriter, File, FileWriter}
 
 object genExample extends App {
-  import userSpecific._
+  import userSpecificGenExample._
 
   assert(totalItems>0)
   assert(itemIds==itemIds.sorted)
@@ -71,13 +71,13 @@ object genExample extends App {
   private def initToVal(agentId: Int, instances: Int, agentType: String): String = {
     agentType.toLowerCase match {
       case "item" =>
-        s"""    1.to(${instances}).foreach(_ => l_repeat.append(new Item${agentId}))
+        s"""    (1 to ${instances}).foreach(_ => l_repeat.append(new Item${agentId}))
            |    Supermarket.store.initializeItemDeque(l_repeat.toVector.map(_.asInstanceOf[Item]))
            |    l ++= l_repeat
            |    l_repeat.clear()
            |""".stripMargin
       case "customer" =>
-        s"""    1.to(${instances}).foreach(_ => l_repeat.append(new Customer${agentId}))
+        s"""    (1 to ${instances}).foreach(_ => l_repeat.append(new Customer${agentId}))
            |    l ++= l_repeat
            |    l_repeat.clear()
            |""".stripMargin
