@@ -130,7 +130,7 @@ trait MealPlan14 {
   val shoppingList: ShoppingList = new ShoppingList(randShoppingList, mealPlan)
 }
 
-object MealPlanSummary {
+object mealPlanSummary {
   val total: Int = 14
 
   val mealPlanMap: Map[(String, Int), Vector[String]] = Map(

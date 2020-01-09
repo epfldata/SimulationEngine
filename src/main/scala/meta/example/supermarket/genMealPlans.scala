@@ -6,7 +6,8 @@ import scala.collection.mutable.{ListBuffer, Map}
 
 object genMealPlans extends App {
 
-  val mealPlanFileName: String = "MealPlan"
+  val generatingFileName: String = "genMealPlans"
+  val mealPlanFileName: String = "mealPlan"
   var cwd = new File(".").getCanonicalPath()
   cwd = cwd + "/src/main/scala/meta/example/supermarket/people/"
 
@@ -14,12 +15,12 @@ object genMealPlans extends App {
   val bw = new BufferedWriter(new FileWriter(file))
 
   val headerStr: String =
-    """package meta.example.supermarket.people
+    s"""package meta.example.supermarket.people
       |
       |import meta.example.supermarket.categories.{articleName, gram}
       |import meta.example.supermarket.{Carnivore, ShoppingList, Vegetarian, categoryAmount}
       |
-      |/* Auto generated from genMealPlans */
+      |/* Auto generated from ${generatingFileName} */
       |""".stripMargin
 
   val mealsPerDay: Vector[Int] = Vector(1, 2, 3)
@@ -76,7 +77,7 @@ object genMealPlans extends App {
   bw.write(headerStr + mealPlanTraits)
 
   bw.write(
-    s"""object MealPlanSummary {
+    s"""object mealPlanSummary {
       |  val total: Int = ${cnt}
       |
       |  val mealPlanMap: Map[(String, Int), Vector[String]] = Map(
