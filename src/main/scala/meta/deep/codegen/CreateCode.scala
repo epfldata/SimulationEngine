@@ -11,7 +11,7 @@ import meta.deep.runtime.Actor
 
 import scala.collection.mutable.ArrayBuffer
 
-class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
+class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageName: String = "generated")
     extends StateMachineElement() {
 
   var compiledActorGraphs: List[CompiledActorGraph] = Nil
@@ -82,7 +82,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
 
     val timeVarRenamed: String = timeVarPattern.findFirstIn(parts(0)).get
 
-    val initVars = parts(0).substring(2)
+    var initVars: String = parts(0).substring(2)
       .replace(" var "," private var ")
       .replace(" val ", " private val ")
       .replace(s"private var ${timeVarRenamed}", "var timeVar") +
@@ -101,15 +101,19 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
     // Converts all initParams to state variables again
     var initParams = ""
     //Only render initParams, if one actorType, otherwise inherited from parent
-    if (compiledActorGraph.actorTypes.length == 1) {
-      for (actorType <- compiledActorGraph.actorTypes) {
-        for (s <- actorType.states) {
-          initParams = initParams + "  var " + s.sym.name + ": " + changeTypes(
-            s.tpe.rep.toString) + " = " + changeTypes(IR.showScala(s.init.rep)) + "\n"
-        }
+    // Creating a local copy instead of inheriting from merged actors
+    for (actorType <- compiledActorGraph.actorTypes) {
+      for (s <- actorType.states) {
+        initParams = initParams + "  var " + s.sym.name + ": " + changeTypes(
+          s.tpe.rep.toString) + " = " + changeTypes(IR.showScala(s.init.rep)) + "\n"
       }
     }
 
+//    if (compiledActorGraph.actorTypes.length > 1) {
+//    //    if more than one actor Type, do not re-declare timeVar.
+//      // var timeVar: scala.Int = 0;   -> timeVar = 0;
+//      initVars = initVars.replace("var timeVar: scala.Int", "timeVar")
+//    }
     createClass(compiledActorGraph.name, initParams, initVars, run_until, compiledActorGraph.parentNames);
   }
 
@@ -307,7 +311,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String)
                   run_until: String,
                   parent: List[String]): Unit = {
     val classString =
-      s"""package generated
+      s"""package ${packageName}
 
 trait ${className + "Trait"} extends ${parent.head}${parent.tail.foldLeft("")((a,b) => a + " with " + b)} with meta.example.supermarket.goods.newItem {
   $initParams
@@ -349,7 +353,7 @@ class $className extends ${className + "Trait"}"""
                   case true => line
                   case false => pattern1_list.foreach(mtch => {
                     if (mtch.group(3).size == 0 || pattern2.r.findFirstIn(mtch.group(3)(0).toString()) != None) {
-                      bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, "generated." + cAG.name + (if (!init) "Trait" else ""))
+                      bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name + (if (!init) "Trait" else ""))
                     } else {
                       bar = line
                     }
@@ -416,7 +420,7 @@ class $className extends ${className + "Trait"}"""
     */
   def createInit(code: String): Unit = {
     val classString =
-      s"""package generated
+      s"""package ${packageName}
 
 object InitData  {
   def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(code, init = true)}}
