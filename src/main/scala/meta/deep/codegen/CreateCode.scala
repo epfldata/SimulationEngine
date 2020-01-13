@@ -101,7 +101,6 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     // Converts all initParams to state variables again
     var initParams = ""
     //Only render initParams, if one actorType, otherwise inherited from parent
-    // Creating a local copy instead of inheriting from merged actors
     for (actorType <- compiledActorGraph.actorTypes) {
       for (s <- actorType.states) {
         initParams = initParams + "  var " + s.sym.name + ": " + changeTypes(
@@ -109,11 +108,6 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
       }
     }
 
-//    if (compiledActorGraph.actorTypes.length > 1) {
-//    //    if more than one actor Type, do not re-declare timeVar.
-//      // var timeVar: scala.Int = 0;   -> timeVar = 0;
-//      initVars = initVars.replace("var timeVar: scala.Int", "timeVar")
-//    }
     createClass(compiledActorGraph.name, initParams, initVars, run_until, compiledActorGraph.parentNames);
   }
 
