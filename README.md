@@ -42,21 +42,28 @@ the bug fixes.
 Please note that `/src/main/scala/ecosim` contains a standalone copy of the project in current master branch, which is the initial version that doesn't include message passing or relying on Squid. 
 
 Examples in `meta`, upon successful termination, will generate files which are used for the actual simulation in 
-folder `generated`. For example, consider the case `server_communication` in `src/main/scala/meta/example`. After running *ServerExample*, one should find 
-files *BackendServer*, *FrontendServer*, and *InitData* been generated in folder `generated/main/scala/generated`. Now one 
-can proceed to start the actual simulation by running *generated/main/scala/generated/Simulation* and the expected output is
+folder `generated`. For example, consider the case `server_communication` in `src/main/scala/meta/example`. After running **ServerExample**, one should find 
+files **BackendServer**, **FrontendServer**, and **InitData** been generated in folder `generated/main/scala/generated`. Now one 
+can proceed to start the actual simulation by running **generated/main/scala/generated/Simulation** and the expected output is
 ```$xslt
 (TIMER, 0)
 ...
 (Time consumed, *some_number*)
 ```
-If desired, you can test the actorMerge optimization by replacing the *ServerExample* with *ServerExampleMerge*. One should see the merged file `BackendServer_FrontendServer` being generated in 
-`generated`. As of now, you need to modify the generated *InitData* file to start the merged actor. 
+If desired, you can test the actorMerge optimization by replacing the **ServerExample** with **ServerExampleMerge**. One should see the merged file `BackendServer_FrontendServer` being generated in 
+`generated`. As of now, you need to modify the generated **InitData** file to start the merged actor. 
 
-To test the performance with Spark support, you can run *generated/main/scala/generated/SimulationSpark* in lieu of *generated/main/scala/generated/Simulation* over IRs. Please do note
-that the *InitData* is overwritten by the new example. It is easy to modify the output directory and package name for the desired simulation, where are specified in the **Example* file. Upon 
-such modification, please also change ```actors = generated.InitData.initActors``` in *Simulation* to ```actors = *new_package_name*.InitData.initActors``` where the *new_package_name* is
-what specified in **Example* file with default value "generated" defined in `src/main/scala/meta/deep/codegen/CreateCode`. 
+To test the performance with Spark support, you can run **generated/main/scala/generated/SimulationSpark** in lieu of **generated/main/scala/generated/Simulation** over IRs. Please do note
+that the **InitData** is overwritten by the new example. It is easy to modify the output directory and package name for the desired simulation, where are specified in the ***Example** file. Upon 
+such modification, please also change 
+
+```actors = generated.InitData.initActors``` 
+
+in **Simulation** to 
+
+```actors = *new_package_name*.InitData.initActors```
+
+where the **new_package_name** is what specified in ***Example** file with default value "generated" defined in `src/main/scala/meta/deep/codegen/CreateCode`. 
  
 ### Code Format
 We use Scalafmt for formatting the code.
