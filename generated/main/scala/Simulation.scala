@@ -4,9 +4,8 @@ import meta.deep.runtime.Message
 import meta.deep.runtime.{Actor, Message}
 import meta.example.supermarket.Supermarket
 import meta.example.supermarket.goods.Item
-import com.typesafe.scalalogging.Logger
-import org.apache.log4j.BasicConfigurator
-
+//import org.apache.log4j.BasicConfigurator
+import scala.util.Random
 import scala.collection.mutable.ListBuffer
 
 object Simulation extends App {
@@ -31,7 +30,7 @@ object Simulation extends App {
       actors = actors.map { a =>
         {
           a.cleanSendMessage
-            .addReceiveMessages(mx.getOrElse(a.id, List()))
+            .addReceiveMessages(Random.shuffle(mx.getOrElse(a.id, List())))
             .run_until(timer)
         }
       }
