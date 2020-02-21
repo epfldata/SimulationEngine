@@ -10,17 +10,15 @@ class MainInit {
   def main(): List[Actor] = {
     val l = ListBuffer[Actor]()
 
-    val sharedObject: SharedObject = new SharedObject()
-
-//    l.append(sharedObject)
+    val consensus_object: Consensus = new Consensus()
 
     (1 to 5).foreach(i => {
-      val competitor1: Competitor1 = new Competitor1()
-      competitor1.sharedObj = sharedObject
-      l.append(competitor1)
+      val voter: Voter = new Voter()
+      voter.consensus_object = consensus_object
+      l.append(voter)
     })
 
-    l.append(sharedObject)
+    l.append(consensus_object)
     l.toList
 
   }

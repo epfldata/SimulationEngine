@@ -7,9 +7,8 @@ import meta.deep.IR
 import meta.deep.IR.TopLevel._
 
 object LockExample extends App {
-  val cls1: ClassWithObject[SharedObject] = SharedObject.reflect(IR)
-  val cls2: ClassWithObject[Competitor1] = Competitor1.reflect(IR)
-//  val cls3: ClassWithObject[Competitor2] = Competitor2.reflect(IR)
+  val cls1: ClassWithObject[Consensus] = Consensus.reflect(IR)
+  val cls2: ClassWithObject[Voter] = Voter.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
   val startClasses: List[Clasz[_ <: Actor]] = List(cls1, cls2)
   val lifter = new Lifter()

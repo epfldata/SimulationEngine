@@ -5,14 +5,21 @@ import meta.deep.runtime.Actor
 import meta.deep.runtime.Actor.AgentId
 import squid.quasi.lift
 
+/**
+  * Consensus object has one operation, propose()
+  * No two processes decide differently
+  * Every decided value is a proposed value
+  *
+  * SWMR register
+  */
 @lift
-class SharedObject() extends Actor {
+class Consensus() extends Actor {
 
   private var isLocked: Boolean = false
   private var winner: String = ""
 
-  def vote(name: String): String = {
-    println("Vote received for " + name + " Current state isLocked " + isLocked + " last winner " + winner )
+  def propose(name: String): String = {
+    println("Vote received for " + name)
     if (!isLocked) {
       isLocked = true
       winner = name
@@ -20,16 +27,10 @@ class SharedObject() extends Actor {
     winner
   }
 
-  def init(): Unit = {
-    println("Re-initialize the shared object!")
-    isLocked = false
-    winner = ""
-  }
-
   def main(): Unit = {
     while(true) {
       SpecialInstructions.handleMessages()
-      init()
+      isLocked = false
       SpecialInstructions.waitTurns(1)
     }
   }

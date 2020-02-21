@@ -6,20 +6,18 @@ import meta.deep.runtime.Actor.AgentId
 import squid.quasi.lift
 
 @lift
-class Competitor2() extends Actor {
+class Voter() extends Actor {
 
-  var sharedObj: SharedObject = null
-//  val name: AgentId = id
+  var consensus_object: Consensus = null
 
-  def propose(): String = {
-    println("Competitor proposes!" + id.toString)
-    sharedObj.vote(id.toString)
+  def vote(): String = {
+    println("Voter proposes! " + id.toString)
+    consensus_object.propose(id.toString)
   }
 
   def main(): Unit = {
     while(true) {
-      SpecialInstructions.handleMessages()
-      println(propose())
+      println("winner is " + vote())
       SpecialInstructions.waitTurns(1)
     }
   }
