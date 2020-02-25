@@ -78,22 +78,15 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     val parts =
       steps.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
 
-    val timeVarPattern = "timeVar_[0-9]*".r
-
-    val timeVarRenamed: String = timeVarPattern.findFirstIn(parts(0)).get
-
     var initVars: String = parts(0).substring(2)
       .replace(" var "," private var ")
-      .replace(" val ", " private val ")
-      .replace(s"private var ${timeVarRenamed}", "var timeVar") +
-      parts(1).replace(timeVarRenamed, "timeVar")
+      .replace(" val ", " private val ") + parts(1)
 
     //This ugly syntax is needed to replace the received code with a correct function definition
     val run_until = "override def run_until" + parts(2)
       .trim()
       .substring(1)
       .replaceFirst("=>", ": meta.deep.runtime.Actor = ")
-      .replaceAll(timeVarRenamed, "timeVar")
       .dropRight(1)
       .trim
       .dropRight(1)
@@ -307,7 +300,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     val classString =
       s"""package ${packageName}
 
-trait ${className + "Trait"} extends ${parent.head}${parent.tail.foldLeft("")((a,b) => a + " with " + b)} with meta.example.supermarket.goods.newItem {
+trait ${className + "Trait"} extends ${parent.head}${parent.tail.foldLeft("")((a,b) => a + " with " + b)} {
   $initParams
   $initVars
   $run_until
