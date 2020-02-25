@@ -21,18 +21,13 @@ class Transaction extends Actor {
   val new_val = 1
 
   def tx_begin(): Boolean = {
-    println("When is this printed?")
+    println("Optimization in action!")
     cas.cas(register, old_val, new_val)
-  }
-
-  def hello(): String = {
-    "Does it print out anything?"
   }
 
   def main(): Unit = {
     while(true) {
-//      SpecialInstructions.handleMessages()
-      println("Transaction begin! " + tx_begin + hello())
+      println("Transaction begins! " + tx_begin)
       SpecialInstructions.waitTurns(1)
     }
   }

@@ -5,14 +5,6 @@ import meta.deep.runtime.Actor
 import meta.deep.runtime.Actor.AgentId
 import squid.quasi.lift
 
-/**
-  * CAS object has one operation, propose()
-  * No two processes decide differently
-  * Every decided value is a proposed value
-  *
-  * SWMR register
-  */
-
 @lift
 class Register() extends Actor {
   private var value: Int = 0
@@ -23,15 +15,14 @@ class Register() extends Actor {
     value
   }
 
-  def write(new_val: Int): Unit = {
+  def write(new_val: Int): Boolean = {
     value = new_val
+    true
   }
 
   def main(): Unit = {
     while(true) {
-//      SpecialInstructions.handleMessages()
-//      isLocked = false
-      println("Content of register: " + value)
+      println("Content of register: " + read())
       SpecialInstructions.waitTurns(1)
     }
   }

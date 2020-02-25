@@ -17,10 +17,9 @@ import squid.quasi.lift
 class CAS extends Actor {
 
   def cas(reg: Register, old_val: Int, new_val: Int): Boolean = {
-    println("cas with old val" + old_val + " new val " + new_val)
+    println("cas with old val " + old_val + " new val " + new_val)
     if (reg.read()==old_val){
       reg.write(new_val)
-      true
     } else {
       false
     }
@@ -28,7 +27,6 @@ class CAS extends Actor {
 
   def main(): Unit = {
     while(true) {
-//      SpecialInstructions.handleMessages()
       SpecialInstructions.waitTurns(1)
     }
   }
