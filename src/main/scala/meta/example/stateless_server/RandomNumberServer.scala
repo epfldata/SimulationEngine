@@ -13,7 +13,7 @@ class RandomNumberServer extends Actor {
   }
   def main(): Unit = {
     while (true) {
-      handleMessages()
+//      handleMessages()
       waitTurns(1)
     }
   }

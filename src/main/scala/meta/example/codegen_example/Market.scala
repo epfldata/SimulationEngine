@@ -32,7 +32,7 @@ class Market extends Actor {
     println(z)
 
     while (true) {
-      handleMessages()
+//      handleMessages()
       //x = x + 1
       //println("Binding test:", x)
       sell(10)

@@ -1,9 +1,9 @@
-package meta.example.lock_example
+package meta.example.cas_example
 
 import meta.classLifting.SpecialInstructions
 import meta.deep.runtime.Actor
 import meta.deep.runtime.Actor.AgentId
-import squid.quasi.{lift, dbg_lift}
+import squid.quasi.lift
 
 /**
   * Consensus object has one operation, propose()
@@ -12,26 +12,27 @@ import squid.quasi.{lift, dbg_lift}
   *
   * SWMR register
   */
-//@dbg_lift
 @lift
-class Consensus() extends Actor {
+class Transaction extends Actor {
+  var cas: CAS = null
+  var register: Register = null
 
-  private var isLocked: Boolean = false
-  private var winner: String = ""
+  val old_val = 0
+  val new_val = 1
 
-  def propose(name: String): String = {
-    println("Vote received for " + name)
-    if (!isLocked) {
-      isLocked = true
-      winner = name
-    }
-    winner
+  def tx_begin(): Boolean = {
+    println("When is this printed?")
+    cas.cas(register, old_val, new_val)
+  }
+
+  def hello(): String = {
+    "Does it print out anything?"
   }
 
   def main(): Unit = {
     while(true) {
 //      SpecialInstructions.handleMessages()
-      isLocked = false
+      println("Transaction begin! " + tx_begin + hello())
       SpecialInstructions.waitTurns(1)
     }
   }

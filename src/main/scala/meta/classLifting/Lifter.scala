@@ -182,45 +182,10 @@ class Lifter {
                            liftCode(elseBody, actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
       case code"SpecialInstructions.waitTurns(${Const(turns: Int)}) " =>
-        val f = liftWait(turns)
+        val f = LetBinding(None,
+          liftWait(turns).asInstanceOf[Algo[T]],
+          handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])
         f.asInstanceOf[Algo[T]]
-      case code"SpecialInstructions.handleMessages()  " =>
-        //generates an IfThenElse for each of this class' methods, which checks if the called method id is the same
-        //as any of this class' methods, and calls the method if it is
-        val resultMessageCall = Variable[Any]
-        val p1 = Variable[RequestMessage]
-        //Default, add back, if message is not for my message handler, it its for a merged actor
-        val algo: Algo[Any] = ScalaCode(
-          code"$actorSelfVariable.addReceiveMessages(List($p1))")
-        val callCode = clasz.methods.foldRight(algo)((method, rest) => {
-          val methodId = methodsIdMap(method.symbol)
-          val methodInfo = methodsMap(method.symbol)
-          //map method parameters correctly
-          val argss: List[List[OpenCode[_]]] =
-            methodInfo.vparams.zipWithIndex.map(x => {
-              x._1.zipWithIndex.map(y => {
-                code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
-              })
-            })
-          IfThenElse(
-            code"$p1.methodId==${Const(methodId)}",
-            LetBinding(
-              Option(resultMessageCall),
-              CallMethod[Any](methodId, argss),
-              ScalaCode(
-                code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")),
-            rest
-          )
-
-        })
-
-        //for each received message, use callCode
-        val handleMessage = Foreach(
-          code"$actorSelfVariable.popRequestMessages",
-          p1,
-          callCode
-        )
-        handleMessage.asInstanceOf[Algo[T]]
       case code"${MethodApplication(ma)}:Any  "
           if methodsIdMap.get(ma.symbol).isDefined =>
         //extracting arguments and formatting them
@@ -286,7 +251,7 @@ class Lifter {
     * @param turns
     * @return
     */
-  private def liftWait(turns: Int) = {
+  private def liftWait(turns: Int): Algo[Unit] = {
     if (turns <= 0)
       throw new Exception("waitTurns takes a positive integer as a parameter")
     else if (turns == 1) {
@@ -302,5 +267,45 @@ class Lifter {
                            Wait()))
       )
     }
+  }
+
+  /* handle msg automatically at the end of each wait call */
+  private def handleMsg(actorSelfVariable: Variable[_ <: Actor],
+                        clasz: Clasz[_ <: Actor]): Algo[Unit] = {
+    //generates an IfThenElse for each of this class' methods, which checks if the called method id is the same
+    //as any of this class' methods, and calls the method if it is
+    val resultMessageCall = Variable[Any]
+    val p1 = Variable[RequestMessage]
+    //Default, add back, if message is not for my message handler, it its for a merged actor
+    val algo: Algo[Any] = ScalaCode(
+      code"$actorSelfVariable.addReceiveMessages(List($p1))")
+    val callCode = clasz.methods.foldRight(algo)((method, rest) => {
+      val methodId = methodsIdMap(method.symbol)
+      val methodInfo = methodsMap(method.symbol)
+      //map method parameters correctly
+      val argss: List[List[OpenCode[_]]] =
+        methodInfo.vparams.zipWithIndex.map(x => {
+          x._1.zipWithIndex.map(y => {
+            code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
+          })
+        })
+      IfThenElse(
+        code"$p1.methodId==${Const(methodId)}",
+        LetBinding(
+          Option(resultMessageCall),
+          CallMethod[Any](methodId, argss),
+          ScalaCode(
+            code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")),
+        rest
+      )
+    })
+
+    //for each received message, use callCode
+    Foreach(
+      code"$actorSelfVariable.popRequestMessages",
+      p1,
+      callCode
+    )
+//    handleMessage
   }
 }
