@@ -44,7 +44,7 @@ class Lifter {
       .foreach(method => {
         import method.A
         methodsIdMap = methodsIdMap + (method.symbol -> counter)
-        //the method is only blocking if its return type is a subtype of NBUnit
+        //the method is only nonblocking if its return type is a subtype of NBUnit
         var blocking = true
         if (method.A <:< codeTypeOf[NBUnit]) blocking = false
         methodsMap = methodsMap + (method.symbol -> new MethodInfo[method.A](
@@ -204,6 +204,7 @@ class Lifter {
                        recipientActorVariable,
                        methodsIdMap(ma.symbol),
                        argss,
+//                        false)
                        methodsMap(ma.symbol).blocking)
           f.asInstanceOf[Algo[T]]
         }
@@ -306,6 +307,5 @@ class Lifter {
       p1,
       callCode
     )
-//    handleMessage
   }
 }

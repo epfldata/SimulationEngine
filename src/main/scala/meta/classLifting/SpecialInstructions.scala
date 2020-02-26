@@ -10,4 +10,7 @@ object SpecialInstructions {
 
 //  /** makes the actor handle all received messages */
 //  def handleMessages(): Unit = ???
+
+  // Consider batching messages (multicasting)
+//  def batchMsg(any: Any): Unit = ???
 }
