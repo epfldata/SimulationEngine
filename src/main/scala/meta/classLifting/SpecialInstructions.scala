@@ -8,6 +8,9 @@ object SpecialInstructions {
     */
   def waitTurns(numTurns: Int): Unit = ???
 
-  /** makes the actor handle all received messages */
-  def handleMessages(): Unit = ???
+//  /** makes the actor handle all received messages */
+//  def handleMessages(): Unit = ???
+
+  // Consider batching messages (multicasting)
+//  def batchMsg(any: Any): Unit = ???
 }
