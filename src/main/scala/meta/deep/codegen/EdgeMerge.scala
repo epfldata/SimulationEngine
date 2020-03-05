@@ -1,5 +1,6 @@
 package meta.deep.codegen
 
+import com.sun.tools.javac.util.Position
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
 
@@ -62,29 +63,24 @@ class EdgeMerge() extends StateMachineElement() {
       */
     // TODO Cycle detection not implemented, since wait removes cycles
 
-    // Do not merge start node (0), since it is the entry point of the program, thus start at 1
-    var counter = 1
-
-    //This loops check, if it is possible to merge with the next node
-    while (counter < m.length) {
-      //Node incoming and outgoing check
-      if (incoming(counter) == 1 && outgoing(counter) == 1) {
-        //Check if first edge is a waitEdge and outgoing edge has no condition
-        if (!groupedGraphEnd(counter)(0).waitEdge && groupedGraphStart(counter)(
-              0).cond == null) {
-          //Check if the states are equal
-          if (groupedGraphEnd(counter)(0).edgeState == groupedGraphStart(counter)(
-                0).edgeState && groupedGraphEnd(counter)(0).positionStack == groupedGraphStart(
-                counter)(0).positionStack) {
-            mergeList = MergeInfo(
-              groupedGraphEnd(counter)(0).from.getNativeId,
-              counter,
-              groupedGraphStart(counter)(0).to.getNativeId) :: mergeList
-          }
+    outgoing.zipWithIndex
+      .filter(_._1==1)
+      .map(_._2)
+      .filter(nodeId =>
+        groupedGraphEnd.get(nodeId).isDefined &&
+        groupedGraphStart.get(nodeId).isDefined &&
+        (!groupedGraphEnd(nodeId)(0).waitEdge) &&
+        (groupedGraphStart(nodeId)(0).cond == null) &&
+        (groupedGraphEnd(nodeId)(0).edgeState == groupedGraphStart(nodeId)(0).edgeState) &&
+        (groupedGraphEnd(nodeId)(0).positionStack == groupedGraphStart(nodeId)(0).positionStack) &&
+        incoming(nodeId)==1)
+      .foreach(nodeId => {
+          mergeList = MergeInfo(
+            groupedGraphEnd(nodeId)(0).from.getNativeId,
+            nodeId,
+            groupedGraphStart(nodeId)(0).to.getNativeId) :: mergeList
         }
-      }
-      counter += 1
-    }
+      )
 
     mergeList = mergeList.sortBy(_.startNode)
     var replacedNodes: Map[Int, Int] = Map()
