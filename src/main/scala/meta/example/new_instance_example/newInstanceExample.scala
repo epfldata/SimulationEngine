@@ -6,7 +6,7 @@ import meta.deep.runtime.Actor
 import meta.deep.IR
 import meta.deep.IR.TopLevel._
 
-object objectExample extends App {
+object newInstanceExample extends App {
   val cls1: ClassWithObject[object1] = object1.reflect(IR)
   val cls2: ClassWithObject[object2] = object2.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
@@ -21,26 +21,3 @@ object objectExample extends App {
 
   pipeline.run()
 }
-
-// Expected behavior:
-//  (TIMER,0)
-//  Object1 1
-//  (TIMER,1)
-//  Object1 1
-//  Object1 3
-//  (TIMER,2)
-//  Object1 1
-//  Object1 3
-//  Object1 4
-//  (TIMER,3)
-//  Object1 1
-//  Object1 3
-//  Object1 4
-//  Object1 5
-//  (TIMER,4)
-//  Object1 1
-//  Object1 3
-//  Object1 4
-//  Object1 5
-//  Object1 6
-//  ...
