@@ -8,8 +8,6 @@ import squid.quasi.lift
 @lift
 class Register() extends Actor {
   private var value: Int = 0
-//  private var isLocked: Boolean = false
-//  private var ownerId: AgentId = 0
 
   def read(): Int = {
     value

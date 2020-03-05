@@ -14,7 +14,6 @@ class BackendServer() extends Actor {
 
   def main(): Unit = {
     while(true) {
-//      SpecialInstructions.handleMessages()
       SpecialInstructions.waitTurns(1)
     }
   }

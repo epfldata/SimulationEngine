@@ -12,7 +12,6 @@ import squid.quasi.{lift, dbg_lift}
   *
   * SWMR register
   */
-//@dbg_lift
 @lift
 class Consensus() extends Actor {
 
@@ -30,7 +29,6 @@ class Consensus() extends Actor {
 
   def main(): Unit = {
     while(true) {
-//      SpecialInstructions.handleMessages()
       isLocked = false
       SpecialInstructions.waitTurns(1)
     }

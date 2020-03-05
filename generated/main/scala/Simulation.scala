@@ -1,12 +1,6 @@
-import java.io.{File, PrintWriter}
-
-import meta.deep.runtime.Message
 import meta.deep.runtime.{Actor, Message}
-import meta.example.supermarket.Supermarket
-import meta.example.supermarket.goods.Item
-//import org.apache.log4j.BasicConfigurator
+
 import scala.util.Random
-import scala.collection.mutable.ListBuffer
 
 object Simulation extends App {
 

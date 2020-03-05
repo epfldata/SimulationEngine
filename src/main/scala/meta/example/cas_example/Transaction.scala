@@ -5,13 +5,6 @@ import meta.deep.runtime.Actor
 import meta.deep.runtime.Actor.AgentId
 import squid.quasi.lift
 
-/**
-  * Consensus object has one operation, propose()
-  * No two processes decide differently
-  * Every decided value is a proposed value
-  *
-  * SWMR register
-  */
 @lift
 class Transaction extends Actor {
   var cas: CAS = null
