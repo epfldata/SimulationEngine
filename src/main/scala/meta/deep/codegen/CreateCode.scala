@@ -78,15 +78,22 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     val parts =
       steps.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
 
+    val timerPattern = "timeVar_[0-9]*".r
+    val timeVarGenerated: String = timerPattern.findFirstIn(parts(0)).get
+    val timeVarReplaceWith: String = "timer" // timer as defined by actor class
+
     var initVars: String = parts(0).substring(2)
       .replace(" var "," private var ")
-      .replace(" val ", " private val ") + parts(1)
+      .replace(" val ", " private val ")
+      .replace(s"private var ${timeVarGenerated}: scala.Int = 0", s"${timeVarReplaceWith} = 0") +
+      parts(1).replace(timeVarGenerated, timeVarReplaceWith)
 
     //This ugly syntax is needed to replace the received code with a correct function definition
     val run_until = "override def run_until" + parts(2)
       .trim()
       .substring(1)
       .replaceFirst("=>", ": meta.deep.runtime.Actor = ")
+      .replaceAll(timeVarGenerated, timeVarReplaceWith)
       .dropRight(1)
       .trim
       .dropRight(1)
@@ -340,7 +347,17 @@ class $className extends ${className + "Trait"}"""
                   case true => line
                   case false => pattern1_list.foreach(mtch => {
                     if (mtch.group(3).size == 0 || pattern2.r.findFirstIn(mtch.group(3)(0).toString()) != None) {
-                      bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name + (if (!init) "Trait" else ""))
+                      if (mtch.group(1).endsWith(" new ")) {
+                        if (!init){
+                          val generatedValName: String = mtch.group(1).split(" ").filter(x => x!="")(1) // val x = new className
+                          bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name ) +
+                            s"\n  meta.deep.runtime.Actor.newActors.append(${generatedValName})"
+                        } else {
+                          bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name )
+                        }
+                      } else {
+                        bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name + "Trait")
+                      }
                     } else {
                       bar = line
                     }

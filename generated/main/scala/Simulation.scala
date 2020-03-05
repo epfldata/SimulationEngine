@@ -13,12 +13,19 @@ object Simulation extends App {
     actors = generated.InitData.initActors
   }
 
+  def collect(current_time: Int): Unit = {
+    meta.deep.runtime.Actor.newActors.map(i => i.timer = current_time)
+    actors = actors ::: meta.deep.runtime.Actor.newActors.toList
+    meta.deep.runtime.Actor.newActors.clear()
+  }
+
   def main(): Unit = {
     init()
     val start = System.nanoTime()
 
     while (timer <= until) {
       println("TIMER", timer)
+      collect(timer)
       val mx = messages.groupBy(_.receiverId)
 
       actors = actors.map { a =>

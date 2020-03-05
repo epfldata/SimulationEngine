@@ -4,9 +4,11 @@ import java.util.UUID
 
 import meta.deep.runtime.Actor.AgentId
 
+import scala.collection.mutable.ListBuffer
+
 /**
   * This object handles the unique id generation of an actor
-  * as long as all ids are generated ona single instance
+  * as long as all ids are generated on a single instance
   */
 object Actor {
   type AgentId = Long
@@ -22,6 +24,7 @@ object Actor {
     lastAgentId
   }
 
+  val newActors: ListBuffer[Actor] = ListBuffer[Actor]()
 }
 
 /**
