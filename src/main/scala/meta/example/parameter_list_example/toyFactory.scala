@@ -5,11 +5,18 @@ import meta.deep.runtime.Actor
 import squid.quasi.{lift, dbg_lift}
 
 @lift
-class object1(val name: String) extends Actor {
+class toyFactory extends Actor {
 
-  def main(): Unit = {
+  def genToy(cnt: Int): Unit = {
+    new toy("Bob", cnt)
+    new toy("Alice", cnt + 5)
+  }
+
+  def main(): Unit ={
+    var cnt: Int = 1
     while (true) {
-      println("Name is " + name)
+      genToy(cnt)
+      cnt = cnt + 10
       waitTurns(1)
     }
   }

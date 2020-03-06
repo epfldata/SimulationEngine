@@ -6,8 +6,8 @@ import squid.quasi.lift
 @lift
 class MainInit extends Actor {
   def main(): List[Actor] = {
-    val foo: object1 = new object1("Bob")
-
-    List(foo)
+//    val foo: toy = new toy("Woody", 100)
+    val bar: toyFactory = new toyFactory
+    List(bar)
   }
 }
