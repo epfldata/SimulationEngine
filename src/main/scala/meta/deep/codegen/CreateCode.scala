@@ -85,7 +85,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     var initVars: String = parts(0).substring(2)
       .replace(" var "," private var ")
       .replace(" val ", " private val ")
-      .replace(s"private var ${timeVarGenerated}: scala.Int = 0", s"${timeVarReplaceWith} = 0") +
+      .replace(s"private var ${timeVarGenerated}: scala.Int = 0;\n  ", s"") +
       parts(1).replace(timeVarGenerated, timeVarReplaceWith)
 
     //This ugly syntax is needed to replace the received code with a correct function definition
