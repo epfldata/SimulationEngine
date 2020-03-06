@@ -114,6 +114,7 @@ object CodegenExample extends App {
     val market = ActorType[Market](
       "Market",
       List("meta.deep.runtime.Actor"),
+      List(),
       State[List[String]](IR.methodSymbol[Market]("goods"),
                           codeTypeOf[List[String]],
                           code"Nil") :: Nil,
@@ -223,6 +224,7 @@ object CodegenExample extends App {
     val farmer = ActorType[Farmer](
       "Farmer",
       List("meta.deep.runtime.Actor"),
+      List(),
       State[Market](IR.methodSymbol[Farmer]("market"),
                     codeTypeOf[Market],
                     nullValue[Market].asOpenCode) ::
@@ -269,6 +271,7 @@ object CodegenExample extends App {
     val cF = ActorType[ControlFlowTestObject](
       "ControlFlowTestObject",
       List("meta.deep.runtime.Actor"),
+      List(),
       State[Int](IR.methodSymbol[ControlFlowTestObject]("x"),
                  codeTypeOf[Int],
                  code"0") ::

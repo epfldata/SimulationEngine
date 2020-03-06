@@ -71,18 +71,18 @@ class Lifter {
     */
   private def liftActor[T <: Actor](clasz: Clasz[T]) = {
     val parentNames: List[String] = clasz.parents.map(parent => parent.rep.toString())
+    val parameterList: List[String] = clasz.fields.filter(field => !field.init.isDefined).map(x => s"${x.name}: ${x.A.rep}")
 
     import clasz.C
     val actorSelfVariable: Variable[_ <: Actor] =
       clasz.self.asInstanceOf[Variable[T]]
     //lifting states - class attributes
-    val endStates = clasz.fields.map {
+
+    val endStates = clasz.fields.filter(field => field.init.isDefined).map {
       case field =>
-        val fi = field.init.getOrElse(
-          squid.utils.lastWords("Cannot handle no init value yet")
-        )
-        State[field.A](field.symbol, field.A, fi)
+        State[field.A](field.symbol, field.A, field.init.get)
     }
+
     var endMethods: List[LiftedMethod[_]] = List()
     var mainAlgo: Algo[_] = DoWhile(code"true", Wait())
     //lifting methods - with main method as special case
@@ -105,8 +105,10 @@ class Lifter {
           mainAlgo = CallMethod[Unit](methodsIdMap(method.symbol), List(List()))
         }
     })
+
     ActorType[T](clasz.name,
                  parentNames,
+                 parameterList,
                  endStates,
                  endMethods,
                  mainAlgo,

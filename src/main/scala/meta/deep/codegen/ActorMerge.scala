@@ -49,6 +49,7 @@ class ActorMerge(mergeData: List[(String, String)])
       newActorGraphs = CompiledActorGraph(
         a1.name + "_" + a2.name,
         (a1.parentNames ::: a2.parentNames).distinct,
+        (a1.parameterList ::: a2.parameterList),
         finalGraph,
         a1.variables ::: a2.variables,
         a1.variables2 ::: a2.variables2,

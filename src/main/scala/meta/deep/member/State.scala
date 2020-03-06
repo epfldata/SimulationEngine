@@ -13,5 +13,5 @@ import meta.deep.IR.Predef._
   */
 case class State[A](sym: IR.MtdSymbol, tpe: CodeType[A], init: OpenCode[A]) {
   override def toString =
-    s"var ${sym.asMethodSymbol.owner.name}.${sym.asMethodSymbol.name}"
+    s"""var ${sym.asMethodSymbol.owner.name}.${sym.asMethodSymbol.name}"""
 }

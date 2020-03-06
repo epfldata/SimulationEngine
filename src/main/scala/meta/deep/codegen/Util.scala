@@ -71,6 +71,7 @@ abstract class StateMachineElement() extends PipelineElement() {
 case class CompiledActorGraph(
     var name: String,
     var parentNames: List[String],
+    var parameterList: List[String],
     var graph: ArrayBuffer[EdgeInfo],
     var variables: List[VarWrapper[_]],
     var variables2: List[VarValue[_]],

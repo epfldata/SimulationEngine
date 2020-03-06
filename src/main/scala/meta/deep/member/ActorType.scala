@@ -18,6 +18,7 @@ import meta.deep.runtime.Actor
 case class ActorType[X <: Actor](
     name: String,
     parentNames: List[String],
+    parameterList: List[String],
     var states: List[State[_]],
     methods: List[LiftedMethod[_]],
     main: Algo[_],

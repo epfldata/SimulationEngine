@@ -153,6 +153,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     CompiledActorGraph(
       actorType.name,
       actorType.parentNames,
+      actorType.parameterList,
       AlgoInfo.stateGraph.clone(),
       AlgoInfo.variables,
       variables,

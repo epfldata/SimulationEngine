@@ -108,7 +108,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
       }
     }
 
-    createClass(compiledActorGraph.name, initParams, initVars, run_until, compiledActorGraph.parentNames);
+    createClass(compiledActorGraph.name, compiledActorGraph.parameterList, initParams, initVars, run_until, compiledActorGraph.parentNames);
   }
 
   /**
@@ -300,6 +300,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     * @param parent a list of strings containing parent names
     */
   def createClass(className: String,
+                  parameterList: List[String],
                   initParams: String,
                   initVars: String,
                   run_until: String,
@@ -307,13 +308,13 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     val classString =
       s"""package ${packageName}
 
-trait ${className + "Trait"} extends ${parent.head}${parent.tail.foldLeft("")((a,b) => a + " with " + b)} {
+class ${className} (${parameterList.mkString(",")}) extends ${parent.head}${parent.tail.foldLeft("")((a,b) => a + " with " + b)} {
   $initParams
   $initVars
   $run_until
 }
 
-class $className extends ${className + "Trait"}"""
+"""
 
     val file = new File(storagePath + "/generated/" + className + ".scala")
     val bw = new BufferedWriter(new FileWriter(file))
@@ -347,16 +348,12 @@ class $className extends ${className + "Trait"}"""
                   case true => line
                   case false => pattern1_list.foreach(mtch => {
                     if (mtch.group(3).size == 0 || pattern2.r.findFirstIn(mtch.group(3)(0).toString()) != None) {
-                      if (mtch.group(1).endsWith(" new ")) {
-                        if (!init){
-                          val generatedValName: String = mtch.group(1).split(" ").filter(x => x!="")(1) // val x = new className
-                          bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name ) +
-                            s"\n  meta.deep.runtime.Actor.newActors.append(${generatedValName})"
-                        } else {
-                          bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name )
-                        }
+                      if (!init){
+                        val generatedValName: String = mtch.group(1).split(" ").filter(x => x!="")(1) // val x = new className
+                        bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name ) +
+                          s"\n  meta.deep.runtime.Actor.newActors.append(${generatedValName})"
                       } else {
-                        bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name + "Trait")
+                        bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name )
                       }
                     } else {
                       bar = line
