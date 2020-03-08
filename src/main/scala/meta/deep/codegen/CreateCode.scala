@@ -348,12 +348,12 @@ class ${className} (${parameterList.mkString(",")}) extends ${parent.head}${pare
                   case true => line
                   case false => pattern1_list.foreach(mtch => {
                     if (mtch.group(3).size == 0 || pattern2.r.findFirstIn(mtch.group(3)(0).toString()) != None) {
-                      if (!init){
-                        val generatedValName: String = mtch.group(1).split(" ").filter(x => x!="")(1) // val x = new className
-                        bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name ) +
-                          s"\n  meta.deep.runtime.Actor.newActors.append(${generatedValName})"
+                      if (mtch.group(1).endsWith(" new ") && !init) {
+                          val generatedValName: String = mtch.group(1).split(" ").filter(x => x!="")(1) // val x = new className
+                          bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name ) +
+                            s"\n  meta.deep.runtime.Actor.newActors.append(${generatedValName})"
                       } else {
-                        bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name )
+                        bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name)
                       }
                     } else {
                       bar = line
