@@ -1,4 +1,4 @@
-package meta.example.parameter_list_example
+package meta.example.parameter_list_example.toy_factory_example
 
 import meta.classLifting.Lifter
 import meta.deep.codegen.{CreateActorGraphs, CreateCode, EdgeMerge, Pipeline}
@@ -6,7 +6,7 @@ import meta.deep.runtime.Actor
 import meta.deep.IR
 import meta.deep.IR.TopLevel._
 
-object parameterListExmaple extends App {
+object toyFactoryExmaple extends App {
   val cls1: ClassWithObject[toy] = toy.reflect(IR)
   val cls2: ClassWithObject[toyFactory] = toyFactory.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)

@@ -1,4 +1,4 @@
-package meta.example.parameter_list_example
+package meta.example.parameter_list_example.toy_factory_example
 
 import meta.deep.runtime.Actor
 import squid.quasi.lift
