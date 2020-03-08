@@ -2,7 +2,7 @@ package meta.example.parameter_list_example.toy_factory_example
 
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.Actor
-import squid.quasi.{lift, dbg_lift}
+import squid.quasi.lift
 
 @lift
 class toy(val name: String, val number: Int) extends Actor {

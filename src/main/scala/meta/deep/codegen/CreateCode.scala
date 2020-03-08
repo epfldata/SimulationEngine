@@ -308,7 +308,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     val classString =
       s"""package ${packageName}
 
-class ${className} (${parameterList.mkString(",")}) extends ${parent.head}${parent.tail.foldLeft("")((a,b) => a + " with " + b)} {
+class ${className} (${parameterList.map(x => changeTypes(x, false)).mkString(",")}) extends ${parent.head}${parent.tail.foldLeft("")((a,b) => a + " with " + b)} {
   $initParams
   $initVars
   $run_until

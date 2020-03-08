@@ -71,7 +71,7 @@ class Lifter {
     */
   private def liftActor[T <: Actor](clasz: Clasz[T]) = {
     val parentNames: List[String] = clasz.parents.map(parent => parent.rep.toString())
-    val parameterList: List[String] = clasz.fields.filter(field => !field.init.isDefined).map(x => s"${x.name}: ${x.A.rep}")
+    val parameterList: List[String] = clasz.fields.filter(field => !field.init.isDefined).map(x => s"var ${x.name}: ${x.A.rep}")
 
     import clasz.C
     val actorSelfVariable: Variable[_ <: Actor] =
