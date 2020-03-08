@@ -41,8 +41,11 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     * @param compiledActorGraph the graph data required for generating the class
     */
   def prepareClass(compiledActorGraph: CompiledActorGraph): Unit = {
-    val selfs = compiledActorGraph.actorTypes.map(actorType =>
-      actorType.self.toCode.toString().substring(5).dropRight(1))
+    var self_name = Map[String, String]()
+    compiledActorGraph.actorTypes.map(actorType =>
+      self_name += (actorType.self.toCode.toString().substring(5).dropRight(1) -> actorType.name))
+//    val selfs = compiledActorGraph.actorTypes.map(actorType =>
+//      actorType.self.toCode.toString().substring(5).dropRight(1))
 
     val commands = generateCode(compiledActorGraph)
     val code = this.createCommandOpenCode(commands)
@@ -71,7 +74,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
 
     val scalaCode = IR.showScala(codeWithInit.rep)
     var replacedTypes = scalaCode
-    selfs.foreach(x => replacedTypes = replacedTypes.replace(x, "this"))
+//    selfs.foreach(x => replacedTypes = replacedTypes.replace(x, "this"))
     val steps = changeTypes(replacedTypes)
 
     //Needed to split, so that a function can be extracted from the code, to write everything as class variables
@@ -89,7 +92,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
       parts(1).replace(timeVarGenerated, timeVarReplaceWith)
 
     //This ugly syntax is needed to replace the received code with a correct function definition
-    val run_until = "override def run_until" + parts(2)
+    var run_until = "  override def run_until" + parts(2)
       .trim()
       .substring(1)
       .replaceFirst("=>", ": meta.deep.runtime.Actor = ")
@@ -98,16 +101,20 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
       .trim
       .dropRight(1)
 
-    // Converts all initParams to state variables again
-    var initParams = ""
-    //Only render initParams, if one actorType, otherwise inherited from parent
-    for (actorType <- compiledActorGraph.actorTypes) {
-      for (s <- actorType.states) {
-        initParams = initParams + "  var " + s.sym.name + ": " + changeTypes(
-          s.tpe.rep.toString) + " = " + changeTypes(IR.showScala(s.init.rep)) + "\n"
-      }
-    }
+    var initParams: String = compiledActorGraph.actorTypes.flatMap(actorType => {
+      actorType.states.map(s =>{
+        self_name.keys.foreach(self => {
+          initVars = initVars.replace(s"${self}.${s.sym.name};", s"this.${self_name(self)}_${s.sym.name};")
+          initVars = initVars.replace(s"${self}.`${s.sym.name}_=`", s"this.`${self_name(self)}_${s.sym.name}_=`")
+        })
+        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
+      })}).mkString("\n")
 
+    self_name.keys.foreach(self => {
+      initParams = initParams.replace(self, "this")
+      initVars = initVars.replace(self, "this")
+      run_until = run_until.replace(self, "this")
+    })
     createClass(compiledActorGraph.name, compiledActorGraph.parameterList, initParams, initVars, run_until, compiledActorGraph.parentNames);
   }
 
@@ -309,11 +316,11 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
       s"""package ${packageName}
 
 class ${className} (${parameterList.map(x => changeTypes(x, false)).mkString(",")}) extends ${parent.head}${parent.tail.foldLeft("")((a,b) => a + " with " + b)} {
-  $initParams
-  $initVars
-  $run_until
-}
+$initParams
 
+$initVars
+$run_until
+}
 """
 
     val file = new File(storagePath + "/generated/" + className + ".scala")
@@ -460,5 +467,4 @@ object InitData  {
                                        rest: OpenCode[R]): OpenCode[R] = {
     code"val ${variable.variable} = ${variable.init}; $rest"
   }
-
 }
