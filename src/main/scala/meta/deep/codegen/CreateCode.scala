@@ -115,7 +115,11 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
       initVars = initVars.replace(self, "this")
       run_until = run_until.replace(self, "this")
     })
-    createClass(compiledActorGraph.name, compiledActorGraph.parameterList, initParams, initVars, run_until, compiledActorGraph.parentNames);
+
+    def parents: String = s"${compiledActorGraph.parentNames.head}${compiledActorGraph.parentNames.tail.foldLeft("")((a,b) => a + " with " + b)}"
+    def parameters: String = s"${compiledActorGraph.parameterList.map(x => changeTypes(x, false)).mkString(",")}"
+
+    createClass(compiledActorGraph.name, parameters, initParams, initVars, run_until, parents);
   }
 
   /**
@@ -304,18 +308,18 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     * @param initParams state variables
     * @param initVars   generated variables needed globally
     * @param run_until  function, which overrides the run until method
-    * @param parent a list of strings containing parent names
+    * @param parents a string containing parent names
     */
   def createClass(className: String,
-                  parameterList: List[String],
+                  parameters: String,
                   initParams: String,
                   initVars: String,
                   run_until: String,
-                  parent: List[String]): Unit = {
+                  parents: String): Unit = {
     val classString =
       s"""package ${packageName}
 
-class ${className} (${parameterList.map(x => changeTypes(x, false)).mkString(",")}) extends ${parent.head}${parent.tail.foldLeft("")((a,b) => a + " with " + b)} {
+class ${className} (${parameters}) extends ${parents} {
 $initParams
 
 $initVars
