@@ -113,8 +113,8 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     val parameters: String = compiledActorGraph.parameterList.map(x => {
       val namess: Array[String] = x._1.split(",")
       self_name.keys.foreach(self => {
-        initVars = initVars.replace(s"${self}.${x._1};", s"this.${namess(0)}_${namess(1)};")
-        initVars = initVars.replace(s"${self}.`${x._1}_=`", s"this.`${namess(0)}_${namess(1)}_=`")
+        initVars = initVars.replace(s"${self}.${namess(1)};", s"this.${namess(0)}_${namess(1)};")
+        initVars = initVars.replace(s"${self}.`${namess(1)}_=`", s"this.`${namess(0)}_${namess(1)}_=`")
       })
       s"var ${namess(0)}_${namess(1)}: ${changeTypes(x._2, false)}"
     }).mkString(", ")
