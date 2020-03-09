@@ -2,7 +2,7 @@ package meta.deep.codegen
 
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{EdgeInfo, VarWrapper}
-import meta.deep.member.ActorType
+import meta.deep.member.{ActorType}
 import meta.deep.runtime.ResponseMessage
 import squid.lib.MutVar
 
@@ -71,7 +71,7 @@ abstract class StateMachineElement() extends PipelineElement() {
 case class CompiledActorGraph(
     var name: String,
     var parentNames: List[String],
-    var parameterList: List[String],
+    var parameterList: List[(String, String)],
     var graph: ArrayBuffer[EdgeInfo],
     var variables: List[VarWrapper[_]],
     var variables2: List[VarValue[_]],

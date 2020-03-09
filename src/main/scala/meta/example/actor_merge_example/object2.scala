@@ -5,8 +5,8 @@ import meta.deep.runtime.Actor
 import squid.quasi.lift
 
 @lift
-class object2 extends Actor {
-  val name: String = "object 2"
+class object2(val name: String) extends Actor {
+//  val name: String = "object 2"
   var age: Int = 5
 
   def introduction: Unit = {

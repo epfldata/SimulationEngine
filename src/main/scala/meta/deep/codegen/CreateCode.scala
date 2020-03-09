@@ -6,7 +6,7 @@ import meta.deep.IR
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
 import meta.deep.algo.AlgoInfo.EdgeInfo
-import meta.deep.member.ActorType
+import meta.deep.member.{ActorType}
 import meta.deep.runtime.Actor
 
 import scala.collection.mutable.ArrayBuffer
@@ -110,6 +110,15 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
         s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
       })}).mkString("\n")
 
+    val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
+      actorType.parameterList.map(x => {
+        self_name.keys.foreach(self => {
+          initVars = initVars.replace(s"${self}.${x._1};", s"this.${self_name(self)}_${x._1};")
+          initVars = initVars.replace(s"${self}.`${x._1}_=`", s"this.`${self_name(self)}_${x._1}_=`")
+        })
+        s"var ${actorType.name}_${x._1}: ${changeTypes(x._2, false)}"
+      })}).mkString(", ")
+
     self_name.keys.foreach(self => {
       initParams = initParams.replace(self, "this")
       initVars = initVars.replace(self, "this")
@@ -117,7 +126,6 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     })
 
     def parents: String = s"${compiledActorGraph.parentNames.head}${compiledActorGraph.parentNames.tail.foldLeft("")((a,b) => a + " with " + b)}"
-    def parameters: String = s"${compiledActorGraph.parameterList.map(x => changeTypes(x, false)).mkString(",")}"
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars, run_until, parents);
   }
@@ -321,7 +329,6 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
 
 class ${className} (${parameters}) extends ${parents} {
 $initParams
-
 $initVars
 $run_until
 }
