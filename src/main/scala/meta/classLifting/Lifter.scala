@@ -184,10 +184,17 @@ class Lifter {
                            liftCode(ifBody, actorSelfVariable, clasz),
                            liftCode(elseBody, actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
-      case code"SpecialInstructions.waitTurns(${Const(turns: Int)}) " =>
-        val f = LetBinding(None,
-          liftWait(turns).asInstanceOf[Algo[T]],
-          handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])
+      case code"SpecialInstructions.waitTurns($x)" =>
+        val waiterCounter = Variable[Int]
+        val f =
+          LetBinding(
+            Some(waiterCounter),
+            ScalaCode(code"0"),
+            DoWhile(code"$waiterCounter < $x",
+              LetBinding(Some(waiterCounter),
+                ScalaCode(code"$waiterCounter + 1"),
+                Wait())))
+        handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]]
         f.asInstanceOf[Algo[T]]
       case code"${MethodApplication(ma)}:Any  "
           if methodsIdMap.get(ma.symbol).isDefined =>
@@ -248,29 +255,6 @@ class Lifter {
                                  actorSelfVariable: Variable[_ <: Actor],
                                  clasz: Clasz[_ <: Actor]): Option[Algo[T]] = {
     None
-  }
-
-  /** Lifts instruction [[meta.classLifting.SpecialInstructions.waitTurns]] into a [[DoWhile]] where in each iteration there's one [[Wait]]
-    *
-    * @param turns
-    * @return
-    */
-  private def liftWait(turns: Int): Algo[Unit] = {
-    if (turns <= 0)
-      throw new Exception("waitTurns takes a positive integer as a parameter")
-    else if (turns == 1) {
-      Wait()
-    } else {
-      val waitCounter = Variable[Int]
-      LetBinding(
-        Some(waitCounter),
-        ScalaCode(code"0"),
-        DoWhile(code"$waitCounter < ${Const(turns)}",
-                LetBinding(Some(waitCounter),
-                           ScalaCode(code"$waitCounter + 1"),
-                           Wait()))
-      )
-    }
   }
 
   /* handle msg automatically at the end of each wait call */
