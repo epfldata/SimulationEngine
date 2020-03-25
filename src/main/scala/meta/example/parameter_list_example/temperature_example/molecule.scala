@@ -9,8 +9,12 @@ class molecule(var temperature: Double, val neighbor: molecule) extends Actor {
 
   def action(): Unit = {
     if (neighbor!=null){
-      temperature = .5*(neighbor.temperature + temperature)
+      temperature = .5*(neighbor.getTemperature + temperature)
     }
+  }
+
+  def getTemperature(): Double = {
+    temperature
   }
 
   def main(): Unit = {

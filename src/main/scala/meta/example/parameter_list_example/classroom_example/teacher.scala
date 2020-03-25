@@ -9,6 +9,10 @@ class teacher(val name: String) extends Actor {
 
   val school: String = "Princeton"
 
+  def getName(): String = {
+    name
+  }
+
   def introduction(): Unit = {
     println(s"Professor: Moi, c'est ${name} et Je travaille à ${school}")
   }

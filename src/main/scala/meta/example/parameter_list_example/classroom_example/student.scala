@@ -12,7 +12,7 @@ class student(val name: String, val advisor: teacher) extends Actor {
   val question: String = Random.nextString(5)
 
   def introduction(): Unit = {
-    println(s"Student: My name is ${name} and my advisor is ${advisor.name}")
+    println(s"Student: My name is ${name} and my advisor is ${advisor.getName()}")
   }
 
   def ask(): Unit = {
