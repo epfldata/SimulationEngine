@@ -3,8 +3,9 @@ package meta.example.stateless_server
 import meta.classLifting.SpecialInstructions.waitTurns
 import meta.deep.runtime.Actor
 import squid.quasi.lift
+
 @lift
-case class RandomPrinter() extends Actor {
+class RandomPrinter() extends Actor {
   var server: RandomNumberServer = null
   var i: Int = 0
   def printNum(): Unit = {
