@@ -323,10 +323,13 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
                   initVars: String,
                   run_until: String,
                   parents: String): Unit = {
+
+    // zt. Remove the parents for now, as it may contain abstract methods
     val classString =
       s"""package ${packageName}
 
-class ${className} (${parameters}) extends ${parents} {
+class ${className} (${parameters}) extends Actor {
+
 $initParams
 $initVars
 $run_until
