@@ -187,14 +187,15 @@ class Lifter {
       case code"SpecialInstructions.waitTurns($x)" =>
         val waiterCounter = Variable[Int]
         val f =
-          LetBinding(
-            Some(waiterCounter),
-            ScalaCode(code"0"),
-            DoWhile(code"$waiterCounter < $x",
-              LetBinding(Some(waiterCounter),
-                ScalaCode(code"$waiterCounter + 1"),
-                Wait())))
-        handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]]
+          LetBinding(None,
+            LetBinding(
+              Some(waiterCounter),
+              ScalaCode(code"0"),
+              DoWhile(code"$waiterCounter < $x",
+                LetBinding(Some(waiterCounter),
+                  ScalaCode(code"$waiterCounter + 1"),
+                  Wait()))),
+          handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])
         f.asInstanceOf[Algo[T]]
       case code"${MethodApplication(ma)}:Any  "
           if methodsIdMap.get(ma.symbol).isDefined =>
