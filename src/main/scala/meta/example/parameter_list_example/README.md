@@ -1,0 +1,1 @@
+This folder contains a few examples demonstrating how parameter list is supported in the simulation. Please note that direct accessing a variable in the parameter list is *not* supported. Please use get method instead. 
