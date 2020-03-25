@@ -328,7 +328,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     val classString =
       s"""package ${packageName}
 
-class ${className} (${parameters}) extends Actor {
+class ${className} (${parameters}) extends meta.deep.runtime.Actor {
 
 $initParams
 $initVars
