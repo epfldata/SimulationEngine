@@ -113,3 +113,34 @@ Greeting from object3
 ```
 
 As can be seen, even though msg1 contains wait statement, it only delays its own execution, and the rest of the messages are delivered without any blocking. 
+
+Comparison: without batching: 
+```
+(TIMER,0)
+(TIMER,1)
+(TIMER,2)
+Greeting from object2 10 sibling's age is 15
+(TIMER,3)
+(TIMER,4)
+Greeting from object3
+(TIMER,5)
+Hello world
+(TIMER,6)
+(TIMER,7)
+(TIMER,8)
+Greeting from object2 10 sibling's age is 15
+(TIMER,9)
+(TIMER,10)
+Greeting from object3
+(TIMER,11)
+Hello world
+(TIMER,12)
+(TIMER,13)
+(TIMER,14)
+Greeting from object2 10 sibling's age is 15
+(TIMER,15)
+(TIMER,16)
+Greeting from object3
+(TIMER,17)
+Hello world
+```

@@ -18,8 +18,13 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
       val msg1 = ()=> n1.get(10, 15)
       val msg2 = ()=> n2.get()
       val msg3 = ()=> hello("world") // local msg
-      batchMessages(msg3, msg1, msg2)
-//      batchMessages(msg1, msg2, msg3)
+//      batchMessages(msg3, msg1, msg2)
+      batchMessages(msg1, msg2, msg3)
+
+      // Example for without batching
+//      n1.get(10, 15)
+//      n2.get()
+//      hello("world")
       waitTurns(1)
     }
   }
