@@ -217,7 +217,7 @@ class Lifter {
                         recipientActorVariable,
                         methodsIdMap(msg.symbol),
                         argss,
-                        methodsMap(msg.symbol).blocking))
+                        false))
 
               case code"(() => ${MethodApplication(msg)}: Any)" =>
                 val argss = msg.args.tail.map(_.toList.map(arg => code"$arg")).toList

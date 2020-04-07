@@ -14,8 +14,6 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
 
   def main(): Unit = {
     while (true) {
-      n1.get(30, 30)
-      n1.get(0, 0)
 
       val msg1 = ()=> n1.get(10, 15)
       val msg2 = ()=> n2.get()
