@@ -9,6 +9,7 @@ class Object2 extends Actor{
 
   def get(age: Int, sibling_age: Int): Unit = {
     println("Greeting from object2 " + age + " sibling's age is " + sibling_age)
+//    waitTurns(1)
   }
 
   def main(): Unit = {

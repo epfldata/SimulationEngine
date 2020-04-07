@@ -26,7 +26,7 @@ Greeting from object3
 Since there are no waitTurns in any of the method call, one batch message is sent every turn. Since Object2 checks its mailbox every 2 turns, 
 we see that Object2 receives two messages in its mailbox. 
 
-However, if there are wait statements in any of batchMessages' arguments, then batchMessages take time to complete and will block any following call. 
+However, if there are wait statements in any of batchMessages' local messages, then batchMessages take time to complete and will block any following call. 
 Consider uncommenting waitTurns(1) in hello() in Object1. The expected output now becomes
 ```
 (TIMER,0)
@@ -85,3 +85,31 @@ Greeting from object3
 
 If we make msg3 the last message, then the result is identical to when waitTurns of Object1 is changed to 2. 
 
+However, if the wait statements are in the remote calls, then it won't block any of the following messages. Consider uncommenting waitTurns(1) in Object2 get(). Now with no other wait statements in messages
+and the order of the messages being msg1, msg2, msg3, the expected output is: 
+```
+(TIMER,0)
+Hello world
+(TIMER,1)
+Hello world
+Greeting from object3
+(TIMER,2)
+Hello world
+Greeting from object2 10 sibling's age is 15
+Greeting from object3
+(TIMER,3)
+Hello world
+Greeting from object2 10 sibling's age is 15
+Greeting from object3
+(TIMER,4)
+Hello world
+Greeting from object2 10 sibling's age is 15
+Greeting from object3
+(TIMER,5)
+Hello world
+Greeting from object2 10 sibling's age is 15
+Greeting from object3
+(TIMER,6)
+```
+
+As can be seen, even though msg1 contains wait statement, it only delays its own execution, and the rest of the messages are delivered without any blocking. 
