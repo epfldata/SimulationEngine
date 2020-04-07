@@ -7,9 +7,9 @@ import squid.quasi.{lift, dbg_lift}
 @lift
 class Object1(var n1: Object2, var n2: Object3) extends Actor {
 
-  def hello(name: String): String = {
-    println("Name is " + name)
-    "hello! " + name
+  def hello(name: String): Unit = {
+    println("Hello " + name)
+//    waitTurns(1)
   }
 
   def main(): Unit = {
@@ -17,7 +17,9 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
 
       val msg1 = ()=> n1.get(10, 15)
       val msg2 = ()=> n2.get()
-      batchMessages(msg1, msg2)
+      val msg3 = ()=> hello("world") // local msg
+      batchMessages(msg3, msg1, msg2)
+//      batchMessages(msg1, msg2, msg3)
       waitTurns(1)
     }
   }

@@ -13,7 +13,7 @@ class Object2 extends Actor{
 
   def main(): Unit = {
     while (true) {
-      waitTurns(1)
+      waitTurns(2)
     }
   }
 }

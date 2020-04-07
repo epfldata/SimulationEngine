@@ -204,7 +204,7 @@ class Lifter {
           if (msgSeq.isEmpty) {
             NoOp().asInstanceOf[Algo[T]]
           } else {
-            msgSeq.last match {
+            msgSeq.head match {
               case code"(() => {val $nm: $nmt = $v; ${MethodApplication(msg)}}: Unit)" =>
                 val argss =
                   msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
@@ -224,7 +224,7 @@ class Lifter {
                 f = CallMethod(methodsIdMap(msg.symbol), argss)
               case _ => throw new Exception("Batched messages should be of lambda form")
             }
-            LetBinding(None, f, batchMsg(msgSeq.dropRight(1)))
+            LetBinding(None, f, batchMsg(msgSeq.drop(1)))
           }
         }
         batchMsg(ma.args(1).map(_.asOpenCode))
@@ -288,39 +288,6 @@ class Lifter {
                                  clasz: Clasz[_ <: Actor]): Option[Algo[T]] = {
     None
   }
-
-//  private def batchMsg(msgList: Seq[Any], actorSelfVariable: Variable[_ <: Actor],
-//                       clasz: Clasz[_ <: Actor]): Unit = {
-////    println(msgList.last)
-//      var f: Algo[Unit] = null
-//      msgList.last match {
-//        case code"(() => {val $nm: $nmt = $v; ${MethodApplication(ma)}}: Unit)" =>
-//          val argss =
-//            ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
-//          //method is local - method recipient is this(self)
-//          val recipientActorVariable =
-//            ma.args.head.head.asInstanceOf[OpenCode[Actor]]
-//          if (actorSelfVariable.toCode == recipientActorVariable) {
-//            f = CallMethod(methodsIdMap(ma.symbol), argss)
-//            //                val f = CallMethod(methodsIdMap(ma.symbol), argss)
-//            //                f.asInstanceOf[Algo[T]]
-//          } else {  //method recipient is another actor - a message has to be sent
-//            f = Send(actorSelfVariable.toCode,
-//              recipientActorVariable,
-//              methodsIdMap(ma.symbol),
-//              argss,
-//              methodsMap(ma.symbol).blocking)
-//            //                f.asInstanceOf[Algo[T]]
-//          }
-//        case None => f = None.asInstanceOf[Algo[Unit]]
-//        case _ => throw new Exception("Batched messages should be of lambda form")
-//      }
-////    LetBinding(None,
-////      f,
-////      f
-//////      batchMsg(msgList.dropRight(1), actorSelfVariable, clasz)
-////    )
-//  }
 
   /* handle msg automatically at the end of each wait call */
   private def handleMsg(actorSelfVariable: Variable[_ <: Actor],
