@@ -8,5 +8,8 @@ object SpecialInstructions {
     */
   def waitTurns(numTurns: Int): Unit = ???
 
-  def batchMessages(message: (()=> Any)*): Unit = ???
+  def batchMessages(message: (()=> Unit)*): Unit = ???
+
+  def batchMessagesWR[T](message: (()=> T)*): Seq[T] = ???
+
 }
