@@ -47,6 +47,14 @@ abstract class Message extends Serializable {
     */
   var sessionId: String = UUID.randomUUID().toString
 
+  type MessageId = Long
+  var lastMessageId: MessageId = 0
+
+  def getNextMessageId: MessageId = {
+    lastMessageId = lastMessageId + 1
+    lastMessageId
+  }
+
   override def toString: String = {
     "Message: " + senderId + " -> " + receiverId + "(" + sessionId + ")"
   }
@@ -64,6 +72,8 @@ case class RequestMessage(override val senderId: Actor.AgentId,
                           methodId: Int,
                           argss: List[List[Any]])
     extends Message {
+
+  var sentOrder: MessageId = getNextMessageId
 
   /**
     * this functions simplified the replying to a method
@@ -87,6 +97,14 @@ case class ResponseMessage(override val senderId: Actor.AgentId,
                            override val receiverId: Actor.AgentId,
                            arg: Any)
     extends Message
+
+case class Future[+T](val isCompleted: Boolean = false,
+                      val value: Option[T] = None,
+                      val id: String = UUID.randomUUID().toString){
+  def setValue[U >: T](y: U): Future[U] ={
+    Future(true, Some(y), id)
+  }
+}
 
 /**
   * This class represents the main class of the generated classes

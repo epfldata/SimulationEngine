@@ -6,7 +6,7 @@ import meta.deep.member.{ActorType}
 import meta.deep.runtime.ResponseMessage
 import squid.lib.MutVar
 
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map}
 
 /**
   * This is a class which contains the generation pipeline
@@ -67,6 +67,7 @@ abstract class StateMachineElement() extends PipelineElement() {
   * @param positionStack a list of positionStack, one for each original actortype
   * @param returnValue a list of returnValue, one for each original actortype
   * @param responseMessage a list of responseMessage, one for each original actortype
+  * @param responseMessagess a list of a map of responseMessagess, one for each original actortype
   */
 case class CompiledActorGraph(
     var name: String,
@@ -79,6 +80,7 @@ case class CompiledActorGraph(
     var positionStack: List[Variable[ListBuffer[List[((Int, Int), Int)]]]], //required to generate popping from stack statements at create code
     returnValue: List[Variable[MutVar[Any]]],
     responseMessage: List[Variable[MutVar[ResponseMessage]]],
+    responseMessagess: List[Variable[Map[String, ResponseMessage]]]
 )
 
 /**

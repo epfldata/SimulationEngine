@@ -1,7 +1,7 @@
 package meta.deep.algo
 
 import meta.deep.IR.Predef._
-import meta.deep.runtime.Actor
+import meta.deep.runtime.{Actor, Future}
 
 case class Send[R](actorFrom: OpenCode[Actor],
                    actorRef: OpenCode[Actor],
@@ -30,24 +30,22 @@ case class Send[R](actorFrom: OpenCode[Actor],
       // 4. Asap message is received, set return value and reset responseMessage to null, so that it can be used the next time again
       val f1: OpenCode[Unit] =
         code"""
-                    val sender = $actorFrom;
-                    val receiver = $actorRef;
-                    val requestMessage = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
-                    sender.sendMessage(requestMessage);
-                    sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.deep.runtime.Message) => {
-                      ${AlgoInfo.responseMessage} := response.asInstanceOf[meta.deep.runtime.ResponseMessage]
-                    })
-                    ${AlgoInfo.returnValue} := null
-                    ()
-              """
+          val sender = $actorFrom;
+          val receiver = $actorRef;
+          val requestMessage = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
+          sender.sendMessage(requestMessage);
+          sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.deep.runtime.Message) => {
+            ${AlgoInfo.responseMessage} := response.asInstanceOf[meta.deep.runtime.ResponseMessage]
+          })
+          ${AlgoInfo.returnValue} := null
+          ()"""
       val f2: OpenCode[Unit] = code"""()"""
       val f3: OpenCode[Unit] = code"""()"""
       val f4: OpenCode[Unit] =
         code"""
-                       ${AlgoInfo.returnValue} := (${AlgoInfo.responseMessage}!).arg;
-                       ${AlgoInfo.responseMessage} := null;
-                       ()"""
-
+         ${AlgoInfo.returnValue} := (${AlgoInfo.responseMessage}!).arg;
+         ${AlgoInfo.responseMessage} := null;
+         ()"""
       AlgoInfo.stateGraph.append(
         AlgoInfo.EdgeInfo("Send b f1",
                           AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
@@ -64,23 +62,19 @@ case class Send[R](actorFrom: OpenCode[Actor],
                           sendInfo = (this, false)))
       AlgoInfo.nextPos()
       AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo(
-          "Send b f3 result",
-          AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-          AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
-          f3,
-          cond = code"(${AlgoInfo.responseMessage}!) != null",
-          sendInfo = (this, false)
-        ))
+        AlgoInfo.EdgeInfo("Send b f3 result",
+                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
+                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+                          f3,
+                          cond = code"(${AlgoInfo.responseMessage}!) != null",
+                          sendInfo = (this, false)))
       AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo(
-          "Send b f3 no result",
-          AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-          AlgoInfo.CodeNodePos(AlgoInfo.posCounter - 1),
-          f3,
-          cond = code"(${AlgoInfo.responseMessage}!) == null",
-          sendInfo = (this, false)
-        ))
+        AlgoInfo.EdgeInfo("Send b f3 no result",
+                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
+                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter - 1),
+                          f3,
+                          cond = code"(${AlgoInfo.responseMessage}!) == null",
+                          sendInfo = (this, false)))
       AlgoInfo.nextPos()
       AlgoInfo.stateGraph.append(
         AlgoInfo.EdgeInfo("Send b f4",
@@ -90,22 +84,29 @@ case class Send[R](actorFrom: OpenCode[Actor],
                           sendInfo = (this, false)))
       AlgoInfo.nextPos()
     } else {
-      val f1: OpenCode[Unit] =
-        code"""
-                    val sender = $actorFrom;
-                    val receiver = $actorRef;
-                    val requestMessage = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
-                    sender.sendMessage(requestMessage);
-                    ${AlgoInfo.returnValue} := null
-                    ()
-              """
-      AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo("Send nb f1",
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
-                          f1,
-                          sendInfo = (this, true)))
-      AlgoInfo.nextPos()
+          val f1: OpenCode[Unit] =
+          code"""
+            val sender = $actorFrom;
+            val receiver = $actorRef;
+            var resp = Future[Int]();
+            val requestMessage = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
+            sender.sendMessage(requestMessage);
+            sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.deep.runtime.Message) => {
+              ${AlgoInfo.responseMessagess} += (resp.id -> response.asInstanceOf[meta.deep.runtime.ResponseMessage])
+            })
+            val resp_val: Option[meta.deep.runtime.ResponseMessage] = ${AlgoInfo.responseMessagess}.get(resp.id)
+            if (resp_val.isDefined){
+              resp = resp.setValue(resp_val.get.arg.asInstanceOf[Int])
+            }
+            ${AlgoInfo.returnValue} := resp
+            ()"""
+        AlgoInfo.stateGraph.append(
+          AlgoInfo.EdgeInfo("Send nb f1",
+                            AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
+                            AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+                            f1,
+                            sendInfo = (this, true)))
+        AlgoInfo.nextPos()
     }
   }
 }

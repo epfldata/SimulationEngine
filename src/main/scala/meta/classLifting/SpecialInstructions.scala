@@ -1,4 +1,6 @@
 package meta.classLifting
+//import scala.concurrent.{ExecutionContext, Future}
+import meta.deep.runtime.Future
 
 object SpecialInstructions {
 
@@ -10,6 +12,5 @@ object SpecialInstructions {
 
   def batchMessages(message: (()=> Unit)*): Unit = ???
 
-  def batchMessagesWR[T](message: (()=> T)*): Seq[T] = ???
-
+  def asyncMessage[T](message: (()=>T)): Future[T] = ???
 }
