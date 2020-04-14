@@ -11,6 +11,11 @@ class Object3 extends Actor{
     println("Greeting from object3")
   }
 
+  def getWR(): Int = {
+    println("getWR is called from object3!")
+    11
+  }
+
   def main(): Unit = {
     while (true) {
       waitTurns(1)

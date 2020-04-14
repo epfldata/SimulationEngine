@@ -88,17 +88,9 @@ case class Send[R](actorFrom: OpenCode[Actor],
           code"""
             val sender = $actorFrom;
             val receiver = $actorRef;
-            var resp = Future[Int]();
             val requestMessage = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
             sender.sendMessage(requestMessage);
-            sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.deep.runtime.Message) => {
-              ${AlgoInfo.responseMessagess} += (resp.id -> response.asInstanceOf[meta.deep.runtime.ResponseMessage])
-            })
-            val resp_val: Option[meta.deep.runtime.ResponseMessage] = ${AlgoInfo.responseMessagess}.get(resp.id)
-            if (resp_val.isDefined){
-              resp = resp.setValue(resp_val.get.arg.asInstanceOf[Int])
-            }
-            ${AlgoInfo.returnValue} := resp
+            ${AlgoInfo.returnValue} := null
             ()"""
         AlgoInfo.stateGraph.append(
           AlgoInfo.EdgeInfo("Send nb f1",

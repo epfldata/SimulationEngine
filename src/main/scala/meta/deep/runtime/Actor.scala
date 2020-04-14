@@ -47,14 +47,6 @@ abstract class Message extends Serializable {
     */
   var sessionId: String = UUID.randomUUID().toString
 
-  type MessageId = Long
-  var lastMessageId: MessageId = 0
-
-  def getNextMessageId: MessageId = {
-    lastMessageId = lastMessageId + 1
-    lastMessageId
-  }
-
   override def toString: String = {
     "Message: " + senderId + " -> " + receiverId + "(" + sessionId + ")"
   }
@@ -73,8 +65,7 @@ case class RequestMessage(override val senderId: Actor.AgentId,
                           argss: List[List[Any]])
     extends Message {
 
-  var sentOrder: MessageId = getNextMessageId
-
+  var future: Future[Any] = Future[Any]()
   /**
     * this functions simplified the replying to a method
     * @param owner the sender of the reply message
@@ -98,7 +89,13 @@ case class ResponseMessage(override val senderId: Actor.AgentId,
                            arg: Any)
     extends Message
 
-case class Future[+T](val isCompleted: Boolean = false,
+//case class Promise[T](){
+//  def future: Future[T] = Future[T]()
+//  def success: Boolean = false
+//  def failure: Boolean = false
+//}
+
+case class Future[+T](var isCompleted: Boolean = false,
                       val value: Option[T] = None,
                       val id: String = UUID.randomUUID().toString){
   def setValue[U >: T](y: U): Future[U] ={
@@ -112,9 +109,23 @@ case class Future[+T](val isCompleted: Boolean = false,
   * functions for a step-wise simulation
   */
 class Actor {
+
   var id: AgentId = Actor.getNextAgentId
   var timer: Int = 0
   var current_pos: Int = 0
+  var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
+
+  def isCompleted(futureId: String): Boolean = {
+    async_messages.get(futureId).isDefined
+  }
+
+  def getFutureValue[T](futureId: String): T = {
+    async_messages.get(futureId).get.value.get.asInstanceOf[T]
+  }
+
+  def clearFutureResponse(futureId: String): Unit = {
+    async_messages = async_messages.-(futureId)
+  }
 
   /**
     * Contains the received messages from the previous step

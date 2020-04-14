@@ -7,7 +7,7 @@ import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
 import meta.deep.runtime.{Actor, RequestMessage}
-import scala.concurrent.{ExecutionContext, Future}
+import meta.deep.runtime.{Future}
 
 /** Code lifter
   *
@@ -198,18 +198,19 @@ class Lifter {
                   Wait()))),
           handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])
         f.asInstanceOf[Algo[T]]
+
       case code"SpecialInstructions.asyncMessage[$mt]((() => {val $nm: $nmt = $v; ${MethodApplication(msg)}}: mt))" =>
         val argss =
           msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
         val recipientActorVariable =
           msg.args.head.head.asInstanceOf[OpenCode[Actor]]
-        LetBinding(Some(nm),
-          liftCode(v, actorSelfVariable, clasz),
-          Send(actorSelfVariable.toCode,
-            recipientActorVariable,
-            methodsIdMap(msg.symbol),
-            argss,
-            false))
+          LetBinding(Some(nm),
+            liftCode(v, actorSelfVariable, clasz),
+            AsyncSend[T, mt.Typ](
+              actorSelfVariable.toCode,
+              recipientActorVariable,
+              methodsIdMap(msg.symbol),
+              argss))
 
       case code"SpecialInstructions.batchMessages(${MethodApplication(ma)}:_*)" =>
         var f: Algo[T] = null
