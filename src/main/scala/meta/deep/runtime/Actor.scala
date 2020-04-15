@@ -115,16 +115,17 @@ class Actor {
   var current_pos: Int = 0
   var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
 
-  def isCompleted(futureId: String): Boolean = {
-    async_messages.get(futureId).isDefined
+  def isCompleted(future_obj: Future[Any]): Boolean = {
+    async_messages.get(future_obj.id).isDefined
   }
 
-  def getFutureValue[T](futureId: String): T = {
-    async_messages.get(futureId).get.value.get.asInstanceOf[T]
+  def getFutureValue[T](future_obj: Future[T]): T = {
+    async_messages.get(future_obj.id).get.value.get.asInstanceOf[T]
   }
 
-  def clearFutureResponse(futureId: String): Unit = {
-    async_messages = async_messages.-(futureId)
+  def clearFutureObj(future_obj: Future[Any]): None.type ={
+    async_messages = async_messages.-(future_obj.id)
+    None
   }
 
   /**

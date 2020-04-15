@@ -29,11 +29,12 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
         println("Send async msg1")
         future_obj1 = Some(asyncMessage(msg1))
       } else {
-        if (isCompleted(future_obj1.get.id)){
+        if (isCompleted(future_obj1.get)){
           println("msg1 is completed!")
-          println("msg1 value +10 is " + (getFutureValue[Int](future_obj1.get.id) + 10))
-          clearFutureResponse(future_obj1.get.id)
-          future_obj1 = None
+          println("msg1 value +10 is " + (getFutureValue[Int](future_obj1.get) + 10))
+//          clearFutureResponse(future_obj1.get.id)
+//          future_obj1 = None
+          future_obj1 = clearFutureObj(future_obj1.get)
         } else {
           println("msg1 not completed!")
         }
@@ -47,11 +48,10 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
         println("Send async msg3")
         future_obj2 = Some(asyncMessage(msg3))
       } else {
-        if (isCompleted(future_obj2.get.id)){
+        if (isCompleted(future_obj2.get)){
           println("msg3 is completed!")
-          println("msg3 value is " + getFutureValue[Int](future_obj2.get.id))
-          clearFutureResponse(future_obj2.get.id)
-          future_obj2 = None
+          println("msg3 value is " + getFutureValue[Int](future_obj2.get))
+          future_obj2 = clearFutureObj(future_obj2.get)
         } else {
           println("msg3 not completed!")
         }
