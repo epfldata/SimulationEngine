@@ -8,7 +8,7 @@ class MainInit extends Actor {
     val foo: object1 = new object1
     val bar: object2 = new object2
 
-    monitor.initTimeseries("Infectious", "Recovered")
+    foo.monitor.initTimeseries("Infectious", "Recovered")
     List(foo, bar)
   }
 }
