@@ -1,4 +1,4 @@
-import meta.deep.runtime.{Actor, Message}
+import meta.deep.runtime.{Actor, Message, Monitor}
 
 import scala.util.Random
 
@@ -36,11 +36,13 @@ object Simulation extends App {
         }
       }
       messages = actors.flatMap(_.getSendMessages).toList
+      Monitor.eachIteration()
       timer += 1
     }
 
     val end = System.nanoTime()
     val consumed = end - start
+    Monitor.onCompletion()
     println("Time consumed", consumed)
   }
 
