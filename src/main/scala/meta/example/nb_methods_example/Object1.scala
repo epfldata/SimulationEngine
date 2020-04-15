@@ -67,6 +67,7 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
 //        clearFutureResponse(future_obj3.id)
 //      }
 
+      assert(async_messages.size == 0)
       waitTurns(1)
     }
   }
