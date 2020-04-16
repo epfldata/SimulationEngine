@@ -219,7 +219,7 @@ class Lifter {
             NoOp().asInstanceOf[Algo[T]]
           } else {
             msgSeq.head match {
-              case code"(() => {val $nm: $nmt = $v; ${MethodApplication(msg)}}: Unit)" =>
+              case code"(() => {val $nm: $nmt = $v; ${MethodApplication(msg)}}: Any)" =>
                 val argss =
                   msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
                 val recipientActorVariable =
@@ -233,7 +233,7 @@ class Lifter {
                         argss,
                         false))
 
-              case code"(() => ${MethodApplication(msg)}: Unit)" =>
+              case code"(() => ${MethodApplication(msg)}: Any)" =>
                 val argss = msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
                 f = CallMethod(methodsIdMap(msg.symbol), argss)
               case _ => throw new Exception("Batched messages should be of lambda form")
