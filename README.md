@@ -1,7 +1,7 @@
 # economic_simulations
 
 ### Write Classes using Code-Lifting
-* Do not use val parameters or class arguments, they can't be lifted.  Use var instead
+* Do not use val parameters, they can't be lifted.  Use var instead
 * The optimzations created work for specific use-cases:
   * ActorMerge takes a pair of ActorType Names to specify which one to merge.  
   Take care, that the class variables are named differently in the two actors
@@ -25,7 +25,7 @@
   * Extend the lifter and override the method liftCodeOther  
   and handle there your created algos.
 * You can call following additional functions:
-  * handleMessages() ... handles all messages received
+  * asyncMessage(message) ... send a nonblocking message. Please checkout the example in folder nb_methods_example/ for how it is used 
   * waitTurns(x) ... the actor waits for x steps
 * It is required to use waitTurns at least once in a loop, like while(true),
   otherwise this actor will not stop its step
