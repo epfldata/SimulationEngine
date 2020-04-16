@@ -1,9 +1,10 @@
 package meta.deep.algo
 
 import meta.deep.IR.Predef._
-import meta.deep.runtime.ResponseMessage
+import meta.deep.runtime.{Future, ResponseMessage}
 import squid.lib.MutVar
 
+import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 /**
@@ -32,7 +33,7 @@ object AlgoInfo {
   val stateGraph: ArrayBuffer[EdgeInfo] = ArrayBuffer[EdgeInfo]()
 
   /**
-    * This stack is used to save a position into it, so that it can be used to jump
+    * This stack is used to save a position onto it, so that it can be used to jump
     * to it in a later part. For example, to jump back after a method call
     */
   var positionStack: Variable[ListBuffer[List[((Int, Int), Int)]]] =
@@ -48,6 +49,8 @@ object AlgoInfo {
     */
   var responseMessage: Variable[MutVar[ResponseMessage]] =
     Variable[MutVar[ResponseMessage]]
+
+  var responseMessagess: Variable[mutable.Map[String, ResponseMessage]] = Variable[mutable.Map[String, ResponseMessage]]
 
   /**
     * List, saving all variables, which should be defined at the beginning
@@ -80,6 +83,7 @@ object AlgoInfo {
     this.positionStack = Variable[ListBuffer[List[((Int, Int), Int)]]]
     this.returnValue = Variable[MutVar[Any]]
     this.responseMessage = Variable[MutVar[ResponseMessage]]
+    this.responseMessagess = Variable[mutable.Map[String, ResponseMessage]]
   }
 
   /**

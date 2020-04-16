@@ -7,6 +7,7 @@ import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
 import meta.deep.runtime.{Actor, RequestMessage}
+import meta.deep.runtime.{Future}
 
 /** Code lifter
   *
@@ -125,7 +126,7 @@ class Lifter {
     //it's expected that this class' first method initializes actors
     val initMethod = clasz.methods.head
     val initCode = clasz.methods.head.body
-    //check if the method returns a list of actors
+
     if (initMethod.A <:< codeTypeOf[List[Actor]])
       initCode.asInstanceOf[OpenCode[List[Actor]]]
     else {
@@ -185,40 +186,84 @@ class Lifter {
                            liftCode(elseBody, actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
       case code"SpecialInstructions.waitTurns($x)" =>
-        val waiterCounter = Variable[Int]
+        val waitCounter = Variable[Int]
         val f =
           LetBinding(None,
             LetBinding(
-              Some(waiterCounter),
+              Some(waitCounter),
               ScalaCode(code"0"),
-              DoWhile(code"$waiterCounter < $x",
-                LetBinding(Some(waiterCounter),
-                  ScalaCode(code"$waiterCounter + 1"),
+              DoWhile(code"$waitCounter < $x",
+                LetBinding(Some(waitCounter),
+                  ScalaCode(code"$waitCounter + 1"),
                   Wait()))),
           handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])
         f.asInstanceOf[Algo[T]]
-      case code"${MethodApplication(ma)}:Any  "
-          if methodsIdMap.get(ma.symbol).isDefined =>
-        //extracting arguments and formatting them
+
+      case code"SpecialInstructions.asyncMessage[$mt]((() => {val $nm: $nmt = $v; ${MethodApplication(msg)}}: mt))" =>
         val argss =
-          ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
-        //method is local - method recipient is this(self)
+          msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
         val recipientActorVariable =
-          ma.args.head.head.asInstanceOf[OpenCode[Actor]]
-        if (actorSelfVariable.toCode == recipientActorVariable) {
-          val f = CallMethod(methodsIdMap(ma.symbol), argss)
-          f.asInstanceOf[Algo[T]]
+          msg.args.head.head.asInstanceOf[OpenCode[Actor]]
+          LetBinding(Some(nm),
+            liftCode(v, actorSelfVariable, clasz),
+            AsyncSend[T, mt.Typ](
+              actorSelfVariable.toCode,
+              recipientActorVariable,
+              methodsIdMap(msg.symbol),
+              argss))
+
+      case code"SpecialInstructions.batchMessages(${MethodApplication(ma)}:_*)" =>
+        var f: Algo[T] = null
+        def batchMsg(msgSeq: Seq[OpenCode[Any]]): Algo[T] = {
+          if (msgSeq.isEmpty) {
+            NoOp().asInstanceOf[Algo[T]]
+          } else {
+            msgSeq.head match {
+              case code"(() => {val $nm: $nmt = $v; ${MethodApplication(msg)}}: Unit)" =>
+                val argss =
+                  msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
+                val recipientActorVariable =
+                  msg.args.head.head.asInstanceOf[OpenCode[Actor]]
+                  f =
+                    LetBinding(Some(nm),
+                      liftCode(v, actorSelfVariable, clasz),
+                      Send(actorSelfVariable.toCode,
+                        recipientActorVariable,
+                        methodsIdMap(msg.symbol),
+                        argss,
+                        false))
+
+              case code"(() => ${MethodApplication(msg)}: Unit)" =>
+                val argss = msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
+                f = CallMethod(methodsIdMap(msg.symbol), argss)
+              case _ => throw new Exception("Batched messages should be of lambda form")
+            }
+            LetBinding(None, f, batchMsg(msgSeq.drop(1)))
+          }
         }
-        //method recipient is another actor - a message has to be sent
-        else {
-          val f = Send(actorSelfVariable.toCode,
-                       recipientActorVariable,
-                       methodsIdMap(ma.symbol),
-                       argss,
-//                        false)
-                       methodsMap(ma.symbol).blocking)
-          f.asInstanceOf[Algo[T]]
-        }
+        batchMsg(ma.args(1).map(_.asOpenCode))
+
+      case code"${MethodApplication(ma)}:Any "
+        if methodsIdMap.get(ma.symbol).isDefined =>
+          //extracting arguments and formatting them
+          val argss =
+            ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+          //method is local - method recipient is this(self)
+          val recipientActorVariable =
+            ma.args.head.head.asInstanceOf[OpenCode[Actor]]
+          if (actorSelfVariable.toCode == recipientActorVariable) {
+            val f = CallMethod(methodsIdMap(ma.symbol), argss)
+            f.asInstanceOf[Algo[T]]
+          }
+          //method recipient is another actor - a message has to be sent
+          else {
+            val f = Send(actorSelfVariable.toCode,
+                         recipientActorVariable,
+                         methodsIdMap(ma.symbol),
+                         argss,
+                         methodsMap(ma.symbol).blocking)
+            f.asInstanceOf[Algo[T]]
+          }
       case _ =>
         //here there is space for some more code patterns to be lifted, by using the liftCodeOther method which can be overriden
         val liftedCode = liftCodeOther(cde, actorSelfVariable, clasz)

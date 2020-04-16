@@ -65,6 +65,7 @@ case class RequestMessage(override val senderId: Actor.AgentId,
                           argss: List[List[Any]])
     extends Message {
 
+  var future: Future[Any] = Future[Any]()
   /**
     * this functions simplified the replying to a method
     * @param owner the sender of the reply message
@@ -88,15 +89,45 @@ case class ResponseMessage(override val senderId: Actor.AgentId,
                            arg: Any)
     extends Message
 
+//case class Promise[T](){
+//  def future: Future[T] = Future[T]()
+//  def success: Boolean = false
+//  def failure: Boolean = false
+//}
+
+case class Future[+T](var isCompleted: Boolean = false,
+                      val value: Option[T] = None,
+                      val id: String = UUID.randomUUID().toString){
+  def setValue[U >: T](y: U): Future[U] ={
+    Future(true, Some(y), id)
+  }
+}
+
 /**
   * This class represents the main class of the generated classes
   * It contains the logic for message handling and defines the
   * functions for a step-wise simulation
   */
 class Actor {
+
   var id: AgentId = Actor.getNextAgentId
   var timer: Int = 0
   var current_pos: Int = 0
+
+  var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
+
+  final def isCompleted(future_obj: Future[Any]): Boolean = {
+    async_messages.get(future_obj.id).isDefined
+  }
+
+  final def getFutureValue[T](future_obj: Future[T]): T = {
+    async_messages.get(future_obj.id).get.value.get.asInstanceOf[T]
+  }
+
+  final def clearFutureObj(future_obj: Future[Any]): None.type ={
+    async_messages = async_messages.-(future_obj.id)
+    None
+  }
 
   /**
     * Contains the received messages from the previous step
