@@ -57,7 +57,7 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
         }
       }
 
-      // Wrong! will always return not completed
+      // Wrong! a new future_obj3 is created in each iteration, always return non completed
 //      var future_obj3: Option[Future[Int]] = asyncMessage(msg3)
 //
 //      if (!isCompleted(future_obj3.get)){
