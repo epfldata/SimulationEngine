@@ -4,7 +4,7 @@ import java.util.UUID
 
 import meta.deep.runtime.Actor.AgentId
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, Map}
 
 /**
   * This object handles the unique id generation of an actor
@@ -25,6 +25,55 @@ object Actor {
   }
 
   val newActors: ListBuffer[Actor] = ListBuffer[Actor]()
+}
+
+object Monitor {
+  val aggregates: Map[String, Int] = Map[String, Int]()
+  val timeseries: Map[String, ListBuffer[Int]] = Map[String, ListBuffer[Int]]()
+
+  private var daily_aggregate: Map[String, Int] = Map[String, Int]()
+
+  def logAggregate(attr: String, num: Int = 1): Unit = {
+    if (!aggregates.get(attr).isDefined){
+      aggregates += (attr -> num)
+    } else {
+      aggregates += (attr -> (aggregates.get(attr).get+num))
+    }
+  }
+
+  def logTimeseries(attr: String, num: Int = 1): Unit = {
+    if (!daily_aggregate.get(attr).isDefined){
+      daily_aggregate += (attr -> num)
+    } else {
+      daily_aggregate += (attr -> (daily_aggregate.get(attr).get+num))
+    }
+  }
+
+  def initTimeseries(attr: String *): Unit = {
+    attr.foreach(x =>
+      timeseries += (x -> ListBuffer())
+    )
+  }
+
+  // consider handling aggregates at different granularity
+  private def timeElapse(): Unit = {
+    timeseries.foreach(x =>
+      x._2.append(daily_aggregate.getOrElse(x._1, 0))
+    )
+    daily_aggregate.clear()
+  }
+
+  def eachIteration(action:()=>Unit =
+                    ()=>{println("Monitor stats: " + aggregates)}): Unit = {
+    (action())
+    timeElapse()
+  }
+
+  def onCompletion(action:()=>Unit =
+                    ()=>println("Summary: \n" + aggregates
+                    + "\nTimeseries:\n" + timeseries)): Unit = {
+    (action())
+  }
 }
 
 /**
@@ -89,12 +138,6 @@ case class ResponseMessage(override val senderId: Actor.AgentId,
                            arg: Any)
     extends Message
 
-//case class Promise[T](){
-//  def future: Future[T] = Future[T]()
-//  def success: Boolean = false
-//  def failure: Boolean = false
-//}
-
 case class Future[+T](var isCompleted: Boolean = false,
                       val value: Option[T] = None,
                       val id: String = UUID.randomUUID().toString){
@@ -113,6 +156,7 @@ class Actor {
   var id: AgentId = Actor.getNextAgentId
   var timer: Int = 0
   var current_pos: Int = 0
+  var monitor = Monitor
 
   var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
 
@@ -143,7 +187,7 @@ class Actor {
     * A map of listeners, which is required to register a listener for a response of a request message
     */
   protected var responseListeners
-    : collection.mutable.Map[String, Message => Unit] = collection.mutable.Map()
+    : Map[String, Message => Unit] = Map()
 
   /**
     * Adds one message to the sendActions list, which will be collected and distributed at the end of the step
