@@ -27,68 +27,6 @@ object Actor {
   val newActors: ListBuffer[Actor] = ListBuffer[Actor]()
 }
 
-/**
-  * This class is the supertype of the messages
-  */
-abstract class Message extends Serializable {
-
-  /**
-    * The sender of the message
-    */
-  val senderId: Actor.AgentId
-
-  /**
-    * The receiver of the message
-    */
-  val receiverId: Actor.AgentId
-
-  /**
-    * A unique id for the message-communication (request/response)
-    */
-  var sessionId: String = UUID.randomUUID().toString
-
-  override def toString: String = {
-    "Message: " + senderId + " -> " + receiverId + "(" + sessionId + ")"
-  }
-}
-
-/**
-  * This represents a message, which is used for sending something to another actor
-  * @param senderId the id of the sender
-  * @param receiverId the id of the receiver
-  * @param methodId the id of the method which should be called
-  * @param argss the arguments of the method
-  */
-case class RequestMessage(override val senderId: Actor.AgentId,
-                          override val receiverId: Actor.AgentId,
-                          methodId: Int,
-                          argss: List[List[Any]])
-    extends Message {
-
-  /**
-    * this functions simplified the replying to a method
-    * @param owner the sender of the reply message
-    * @param returnValue the return value/answer for the request message
-    */
-  def reply(owner: Actor, returnValue: Any): Unit = {
-    val msg = ResponseMessage(receiverId, senderId, returnValue)
-    msg.sessionId = this.sessionId
-    owner.sendMessage(msg)
-  }
-}
-
-/**
-  * This class is used to answer to a received message.
-  * @param senderId the id of the sender
-  * @param receiverId the id of the receiver
-  * @param arg the return value of the method/answer of the request message
-  */
-case class ResponseMessage(override val senderId: Actor.AgentId,
-                           override val receiverId: Actor.AgentId,
-                           arg: Any)
-    extends Message
-
-
 object Monitor {
   val aggregates: Map[String, Int] = Map[String, Int]()
   val timeseries: Map[String, ListBuffer[Int]] = Map[String, ListBuffer[Int]]()
@@ -139,15 +77,102 @@ object Monitor {
 }
 
 /**
+  * This class is the supertype of the messages
+  */
+abstract class Message extends Serializable {
+
+  /**
+    * The sender of the message
+    */
+  val senderId: Actor.AgentId
+
+  /**
+    * The receiver of the message
+    */
+  val receiverId: Actor.AgentId
+
+  /**
+    * A unique id for the message-communication (request/response)
+    */
+  var sessionId: String = UUID.randomUUID().toString
+
+  override def toString: String = {
+    "Message: " + senderId + " -> " + receiverId + "(" + sessionId + ")"
+  }
+}
+
+/**
+  * This represents a message, which is used for sending something to another actor
+  * @param senderId the id of the sender
+  * @param receiverId the id of the receiver
+  * @param methodId the id of the method which should be called
+  * @param argss the arguments of the method
+  */
+case class RequestMessage(override val senderId: Actor.AgentId,
+                          override val receiverId: Actor.AgentId,
+                          methodId: Int,
+                          argss: List[List[Any]])
+    extends Message {
+
+  var future: Future[Any] = Future[Any]()
+  /**
+    * this functions simplified the replying to a method
+    * @param owner the sender of the reply message
+    * @param returnValue the return value/answer for the request message
+    */
+  def reply(owner: Actor, returnValue: Any): Unit = {
+    val msg = ResponseMessage(receiverId, senderId, returnValue)
+    msg.sessionId = this.sessionId
+    owner.sendMessage(msg)
+  }
+}
+
+/**
+  * This class is used to answer to a received message.
+  * @param senderId the id of the sender
+  * @param receiverId the id of the receiver
+  * @param arg the return value of the method/answer of the request message
+  */
+case class ResponseMessage(override val senderId: Actor.AgentId,
+                           override val receiverId: Actor.AgentId,
+                           arg: Any)
+    extends Message
+
+case class Future[+T](var isCompleted: Boolean = false,
+                      val value: Option[T] = None,
+                      val id: String = UUID.randomUUID().toString){
+  def setValue[U >: T](y: U): Future[U] ={
+    Future(true, Some(y), id)
+  }
+}
+
+/**
   * This class represents the main class of the generated classes
   * It contains the logic for message handling and defines the
   * functions for a step-wise simulation
   */
 class Actor {
+
   var id: AgentId = Actor.getNextAgentId
   var timer: Int = 0
   var current_pos: Int = 0
   var monitor = Monitor
+
+  var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
+
+  final def isCompleted(future_obj: Future[Any]): Boolean = {
+    async_messages.get(future_obj.id).isDefined
+  }
+
+  final def getFutureValue[T](future_obj: Future[T]): T = {
+    async_messages.get(future_obj.id).get.value.get.asInstanceOf[T]
+  }
+
+  final def clearFutureObj(future_obj: Future[Any]): None.type ={
+    async_messages = async_messages.-(future_obj.id)
+    None
+  }
+
   /**
     * Contains the received messages from the previous step
     */

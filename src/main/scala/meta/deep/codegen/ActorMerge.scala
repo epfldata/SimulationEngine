@@ -56,7 +56,8 @@ class ActorMerge(mergeData: List[(String, String)])
         a1.actorTypes ::: a2.actorTypes,
         a1.positionStack ::: a2.positionStack,
         a1.returnValue ::: a2.returnValue,
-        a1.responseMessage ::: a2.responseMessage
+        a1.responseMessage ::: a2.responseMessage,
+        a1.responseMessagess ::: a2.responseMessagess,
       ) :: newActorGraphs
     })
 

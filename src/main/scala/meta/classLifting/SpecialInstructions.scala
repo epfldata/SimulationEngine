@@ -1,4 +1,6 @@
 package meta.classLifting
+//import scala.concurrent.{ExecutionContext, Future}
+import meta.deep.runtime.Future
 
 object SpecialInstructions {
 
@@ -8,9 +10,7 @@ object SpecialInstructions {
     */
   def waitTurns(numTurns: Int): Unit = ???
 
-//  /** makes the actor handle all received messages */
-//  def handleMessages(): Unit = ???
+  def batchMessages(message: (()=> Unit)*): Unit = ???
 
-  // Consider batching messages (multicasting)
-//  def batchMsg(any: Any): Unit = ???
+  def asyncMessage[T](message: (()=>T)): Future[T] = ???
 }
