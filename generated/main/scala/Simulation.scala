@@ -8,7 +8,7 @@ object Simulation extends App {
   var messages: List[Message] = List()
   var timer: Int = 0
   var until: Int = 10
-  var monitor_enabled: Boolean = true
+  var monitor_enabled: Boolean = false
 
   def init(): Unit = {
     actors = generated.InitData.initActors
@@ -23,7 +23,7 @@ object Simulation extends App {
   def main(): Unit = {
     init()
     val start = System.nanoTime()
-
+    println("Monitor is enabled: " + monitor_enabled)
     while (timer <= until) {
       println("TIMER", timer)
       collect(timer)
