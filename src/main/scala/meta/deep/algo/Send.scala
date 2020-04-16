@@ -90,7 +90,7 @@ case class Send[R](actorFrom: OpenCode[Actor],
             val receiver = $actorRef;
             val requestMessage = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
             sender.sendMessage(requestMessage);
-            ${AlgoInfo.returnValue} := null
+            ${AlgoInfo.returnValue} := None
             ()"""
         AlgoInfo.stateGraph.append(
           AlgoInfo.EdgeInfo("Send nb f1",

@@ -27,7 +27,7 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
 
       if (future_obj1 == None){
         println("Send async msg1")
-        future_obj1 = Some(asyncMessage(msg1))
+        future_obj1 = asyncMessage(msg1)
       } else {
         if (isCompleted(future_obj1.get)){
           println("msg1 is completed!")
@@ -46,7 +46,7 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
       // multiple async calls that return at the same iteration
       if (future_obj2 == None){
         println("Send async msg3")
-        future_obj2 = Some(asyncMessage(msg3))
+        future_obj2 = asyncMessage(msg3)
       } else {
         if (isCompleted(future_obj2.get)){
           println("msg3 is completed!")
@@ -57,14 +57,14 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
         }
       }
 
-      // Error: squid.lib.MutVar.apply[scala.Nothing](())
-//      val future_obj3: Future[Int] = asyncMessage(msg3)
-////
-//      if (!isCompleted(future_obj3.id)){
+      // Wrong! will always return not completed
+//      var future_obj3: Option[Future[Int]] = asyncMessage(msg3)
+//
+//      if (!isCompleted(future_obj3.get)){
 //        println("4 Not completed!")
 //      } else {
-//        println("4 Reply value is " + getFutureValue(future_obj3.id))
-//        clearFutureResponse(future_obj3.id)
+//        println("4 Reply value is " + getFutureValue[Int](future_obj3.get))
+//        future_obj3 = clearFutureObj(future_obj3.get)
 //      }
 
       assert(async_messages.size == 0)

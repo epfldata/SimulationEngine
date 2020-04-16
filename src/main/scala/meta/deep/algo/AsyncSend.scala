@@ -34,7 +34,7 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
           requestMessage.future = requestMessage.future.setValue((response.asInstanceOf[meta.deep.runtime.ResponseMessage]).arg).asInstanceOf[meta.deep.runtime.Future[T]]
          sender.async_messages = sender.async_messages + (requestMessage.future.id -> requestMessage.future)
         })
-        ${AlgoInfo.returnValue} := requestMessage.future
+        ${AlgoInfo.returnValue} := Some(requestMessage.future)
         ()"""
 
     if (T <:< codeTypeOf[Unit]){

@@ -12,5 +12,5 @@ object SpecialInstructions {
 
   def batchMessages(message: (()=> Any)*): Unit = ???
 
-  def asyncMessage[T](message: (()=>T)): Future[T] = ???
+  def asyncMessage[T](message: (()=>T)): Option[Future[T]] = ???
 }
