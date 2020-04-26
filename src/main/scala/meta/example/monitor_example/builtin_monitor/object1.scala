@@ -1,4 +1,4 @@
-package meta.example.monitor_example
+package meta.example.monitor_example.builtin_monitor
 
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.Actor
