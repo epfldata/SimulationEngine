@@ -3,19 +3,19 @@ This example demonstrates the behavior of stateless merged examples.
 Expected output: 
 ```
 (TIMER,0)
-Name is object 1 Age 5
-Name is object 2 Age is 5
+My name is Bob. I am 5
+Je m'appelle Alice. J'ai 5 ans.
 (TIMER,1)
-Name is object 1 Age 6
-Name is object 2 Age is 10
+My name is Bob. I am 10
+Je m'appelle Alice. J'ai 6 ans.
 (TIMER,2)
-Name is object 1 Age 7
-Name is object 2 Age is 15
+My name is Bob. I am 15
+Je m'appelle Alice. J'ai 7 ans.
 (TIMER,3)
-Name is object 1 Age 8
-Name is object 2 Age is 20
+My name is Bob. I am 20
+Je m'appelle Alice. J'ai 8 ans.
 (TIMER,4)
-Name is object 1 Age 9
-Name is object 2 Age is 25
+My name is Bob. I am 25
+Je m'appelle Alice. J'ai 9 ans.
 ...
 ```

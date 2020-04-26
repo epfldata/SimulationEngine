@@ -10,7 +10,7 @@ class object2(val name: String) extends Actor {
   var age: Int = 5
 
   def introduction: Unit = {
-    println(s"Name is ${name} Age is ${age}")
+    println(s"My name is ${name}. I am ${age}")
   }
 
   def main(): Unit = {
