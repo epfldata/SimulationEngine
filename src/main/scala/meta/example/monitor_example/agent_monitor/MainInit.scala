@@ -1,5 +1,5 @@
 package meta.example.monitor_example.agent_monitor
-import meta.deep.runtime.{Actor, Monitor}
+import meta.deep.runtime.{Actor}
 import squid.quasi.lift
 
 @lift
