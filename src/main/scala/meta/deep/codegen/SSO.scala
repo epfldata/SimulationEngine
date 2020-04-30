@@ -20,12 +20,7 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
   */
 //TODO when copying a method copy it into my ActorType to stay consistent
 class SSO(
-    val statelessServers: List[String],
-    val methodVariableTable: collection.mutable.Map[Int,
-                                                    ArrayBuffer[MutVarType[_]]],
-    val methodVariableTableStack: collection.mutable.Map[
-      Int,
-      ArrayBuffer[Variable[ListBuffer[Any]]]])
+    val statelessServers: List[String])
     extends StateMachineElement() {
 
   /** map of all the changes that need to be executed. each [[EdgeInfo]] key in this map will be substituted
@@ -38,7 +33,7 @@ class SSO(
     */
   var oldToNewMtdIds: Map[String, Map[Int, Int]] = Map()
 
-  /** a flag which indicates wheter the optimization done or not
+  /** a flag which indicates whether the optimization done or not
     *  since the algorithm is iterative, it will not be over until there's an iteration without any changes in it
     */
   var optimizationDone = false
@@ -118,7 +113,7 @@ class SSO(
         edge.code = edge.code.rewrite({
           case code"meta.deep.algo.Instructions.setMethodParam(${Const(a)}, ${Const(
                 b)}, $c) " =>
-            val variable: MutVarType[_] = methodVariableTable(a)(b)
+            val variable: MutVarType[_] = CreateActorGraphs.methodVariableTable(a)(b)
 
             variable match {
               case v: MutVarType[a] =>
@@ -128,15 +123,15 @@ class SSO(
           case code"meta.deep.algo.Instructions.saveMethodParam(${Const(a)}, ${Const(
                 b)}, $c) " =>
             val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
-              methodVariableTableStack(a)
+              CreateActorGraphs.methodVariableTableStack(a)
             val varstack: Variable[ListBuffer[Any]] = stack(b)
             code"$varstack.prepend($c);"
           case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)}) " =>
             val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
-              methodVariableTableStack(a)
+              CreateActorGraphs.methodVariableTableStack(a)
             val initCode: OpenCode[Unit] = code"()"
             stack.zipWithIndex.foldRight(initCode)((c, b) => {
-              val variable: MutVarType[_] = methodVariableTable(a)(c._2)
+              val variable: MutVarType[_] = CreateActorGraphs.methodVariableTable(a)(c._2)
               val ab = c._1
               variable match {
                 case v: MutVarType[a] =>
@@ -344,6 +339,7 @@ class SSO(
       AlgoInfo.resetData()
       CallMethod[Any](newMethodId, send.argss).codegen()
       //for each of the new edges, set the correct methodId and tos and froms
+//      println(AlgoInfo.stateGraph)
       val newEdges = AlgoInfo.stateGraph.map(edge1 => {
         //since its replacing the sendEdge, these edges have to belong to the same method as that sendEdge
         edge1.methodId1 = sendEdge.methodId1

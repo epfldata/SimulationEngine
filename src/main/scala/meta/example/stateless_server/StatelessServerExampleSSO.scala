@@ -27,9 +27,7 @@ object StatelessServerExampleSSO extends App {
   val pipeline = Pipeline(
     new CreateActorGraphs(simulationData._1),
     List(
-      new SSO(List("RandomNumberServer"),
-              CreateActorGraphs.methodVariableTable,
-              CreateActorGraphs.methodVariableTableStack),
+      new SSO(List("RandomNumberServer")),
       new EdgeMerge(),
       new CreateCode(simulationData._2, "generated/main/scala"),
     )
