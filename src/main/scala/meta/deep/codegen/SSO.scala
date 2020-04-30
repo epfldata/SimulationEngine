@@ -415,12 +415,12 @@ class SSO(
           if (send.blocking && !edge.sendInfo._2) {
             changes = changes + (edge -> List())
           } else {
-            val newEdges =
+            var newEdges =
               createCallMethodEdges(newMethodId, methodId, edge, send)
             if (send.blocking) {
               if (edge.sendInfo._2) {
                 //add 2 wait edges to simulate the waiting for the answer to the message
-                surroundWithWaitEdges(newEdges, edge.methodId1)
+                newEdges = surroundWithWaitEdges(newEdges, edge.methodId1)
                 val moveThreshold =
                   newEdges.head.from.asInstanceOf[CodeNodePos].pos
                 val moveAmmount = 0
