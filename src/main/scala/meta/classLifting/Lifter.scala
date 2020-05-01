@@ -7,7 +7,6 @@ import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
 import meta.deep.runtime.{Actor, RequestMessage}
-import meta.deep.runtime.{Future}
 
 /** Code lifter
   *
@@ -212,36 +211,14 @@ class Lifter {
               methodsIdMap(msg.symbol),
               argss))
 
-      case code"SpecialInstructions.batchMessages(${MethodApplication(ma)}:_*)" =>
-        var f: Algo[T] = null
-        def batchMsg(msgSeq: Seq[OpenCode[Any]]): Algo[T] = {
-          if (msgSeq.isEmpty) {
-            NoOp().asInstanceOf[Algo[T]]
-          } else {
-            msgSeq.head match {
-              case code"(() => {val $nm: $nmt = $v; ${MethodApplication(msg)}}: Any)" =>
-                val argss =
-                  msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
-                val recipientActorVariable =
-                  msg.args.head.head.asInstanceOf[OpenCode[Actor]]
-                  f =
-                    LetBinding(Some(nm),
-                      liftCode(v, actorSelfVariable, clasz),
-                      Send(actorSelfVariable.toCode,
-                        recipientActorVariable,
-                        methodsIdMap(msg.symbol),
-                        argss,
-                        false))
-
-              case code"(() => ${MethodApplication(msg)}: Any)" =>
-                val argss = msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
-                f = CallMethod(methodsIdMap(msg.symbol), argss)
-              case _ => throw new Exception("Batched messages should be of lambda form")
-            }
-            LetBinding(None, f, batchMsg(msgSeq.drop(1)))
-          }
-        }
-        batchMsg(ma.args(1).map(_.asOpenCode))
+      case code"SpecialInstructions.asyncMessage[$mt]((() => ${MethodApplication(msg)}: mt))" =>
+        val argss =
+          msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
+        AsyncSend[T, mt.Typ](
+            actorSelfVariable.toCode,
+            actorSelfVariable.toCode,
+            methodsIdMap(msg.symbol),
+            argss)
 
       case code"${MethodApplication(ma)}:Any "
         if methodsIdMap.get(ma.symbol).isDefined =>
