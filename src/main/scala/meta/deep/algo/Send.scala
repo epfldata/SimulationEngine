@@ -93,7 +93,7 @@ case class Send[R](actorFrom: OpenCode[Actor],
             ${AlgoInfo.returnValue} := None
             ()"""
         AlgoInfo.stateGraph.append(
-          AlgoInfo.EdgeInfo("Send nb f1",
+          AlgoInfo.EdgeInfo("Async wo_reply f1",
                             AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
                             AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
                             f1,
