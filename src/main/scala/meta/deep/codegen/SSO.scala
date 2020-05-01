@@ -2,8 +2,7 @@ package meta.deep.codegen
 
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{CodeNodeMtd, CodeNodePos, EdgeInfo}
-import meta.deep.algo.{AlgoInfo, CallMethod, Send}
-import meta.deep.codegen.CreateActorGraphs._
+import meta.deep.algo.{AlgoInfo, CallMethod, Send, AsyncSend}
 import meta.deep.member.Method
 import meta.deep.runtime.Actor
 
@@ -103,48 +102,6 @@ class SSO(
     */
   def optimizeElement(element: CompiledActorGraph,
                       rest: List[CompiledActorGraph]): CompiledActorGraph = {
-
-    /** for a new method call edges, rewrites the compile only instructions to runtime instructions
-      *
-      * @param edges - edges which may need to be rewritten
-      */
-    def rewriteCallMethod(
-        edges: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
-      edges.foreach(edge => {
-        edge.code = edge.code.rewrite({
-          case code"meta.deep.algo.Instructions.setMethodParam(${Const(a)}, ${Const(
-                b)}, $c) " =>
-            val variable: MutVarType[_] = CreateActorGraphs.methodVariableTable(a)(b)
-
-            variable match {
-              case v: MutVarType[a] =>
-                code"${v.variable} := $c.asInstanceOf[${v.codeType}]"
-              case _ => throw new RuntimeException("Illegal state")
-            }
-          case code"meta.deep.algo.Instructions.saveMethodParam(${Const(a)}, ${Const(
-                b)}, $c) " =>
-            val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
-              CreateActorGraphs.methodVariableTableStack(a)
-            val varstack: Variable[ListBuffer[Any]] = stack(b)
-            code"$varstack.prepend($c);"
-          case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)}) " =>
-            val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
-              CreateActorGraphs.methodVariableTableStack(a)
-            val initCode: OpenCode[Unit] = code"()"
-            stack.zipWithIndex.foldRight(initCode)((c, b) => {
-              val variable: MutVarType[_] = CreateActorGraphs.methodVariableTable(a)(c._2)
-              val ab = c._1
-              variable match {
-                case v: MutVarType[a] =>
-                  code"$ab.remove(0); if(!$ab.isEmpty) {${v.variable} := $ab(0).asInstanceOf[${v.codeType}]}; $b; ()"
-                case _ => throw new RuntimeException("Illegal state")
-              }
-            })
-        })
-
-      })
-      edges
-    }
 
     /** copies the method from neededElement to element and returns the new methodId
       *
@@ -329,43 +286,16 @@ class SSO(
       * @param newMethodId -
       * @param oldMethodId -
       * @param sendEdge
-      * @param send
       * @return
       */
     def createCallMethodEdges(newMethodId: Int,
                               oldMethodId: Int,
-                              sendEdge: EdgeInfo,
-                              send: Send[_]): ArrayBuffer[EdgeInfo] = {
-
-      AlgoInfo.resetData()
-      CallMethod[Any](newMethodId, send.argss).codegen()
-      //for each of the new edges, set the correct methodId and tos and froms
-//      println(AlgoInfo.stateGraph)
-      val newEdges = AlgoInfo.stateGraph.map(edge1 => {
-        //since its replacing the sendEdge, these edges have to belong to the same method as that sendEdge
-        edge1.methodId1 = sendEdge.methodId1
-        //move them to the right place
-        edge1.from match {
-          case c: CodeNodePos =>
-            edge1.from =
-              CodeNodePos(c.pos + sendEdge.from.asInstanceOf[CodeNodePos].pos)
-          case _ =>
-        }
-        edge1.to match {
-          case c: CodeNodePos =>
-            edge1.to =
-              CodeNodePos(c.pos + sendEdge.from.asInstanceOf[CodeNodePos].pos)
-          case _ =>
-        }
-        edge1
-      })
-      AlgoInfo.resetData()
+                              sendEdge: EdgeInfo): ArrayBuffer[EdgeInfo] = {
+      val newEdges = utilObj.createCallMethodEdges(newMethodId, sendEdge)
       //rewrite the compile only methods to runtime methods
-      CreateActorGraphs.methodVariableTableStack(newMethodId) =
-        CreateActorGraphs.methodVariableTableStack(oldMethodId)
-      CreateActorGraphs.methodVariableTable(newMethodId) =
-        CreateActorGraphs.methodVariableTable(oldMethodId)
-      rewriteCallMethod(newEdges)
+      CreateActorGraphs.methodVariableTableStack(newMethodId) = CreateActorGraphs.methodVariableTableStack(oldMethodId)
+      CreateActorGraphs.methodVariableTable(newMethodId) = CreateActorGraphs.methodVariableTable(oldMethodId)
+      utilObj.rewriteCallMethod(newEdges)
     }
 
     /** used to translate the graph by a moveAmmount, after the moveThreshold
@@ -412,15 +342,16 @@ class SSO(
               statelessServers.contains(at.name))) {
           optimizationDone = false
           val newMethodId = copyMethod(element, neededElement.get, methodId)
+
           if (send.blocking && !edge.sendInfo._2) { // remove non-leading send edges
             changes = changes + (edge -> List())
           } else {
-            var newEdges = createCallMethodEdges(newMethodId, methodId, edge, send)
+            var newEdges = createCallMethodEdges(newMethodId, methodId, edge)
             if (send.blocking) {
-                newEdges = glueGraphs(newEdges, edge.methodId1)
-                changes = changes + (edge -> newEdges.toList)
+              newEdges = utilObj.addGlue(newEdges, edge.methodId1, removeWait)
+              changes = changes + (edge -> newEdges.toList)
             } else {
-              // TODO: verify this branch
+              // TODO: doesn't work
               val moveThreshold = newEdges.head.from.asInstanceOf[CodeNodePos].pos
               val moveAmount = 1
               moveGraphPositions(moveAmount, moveThreshold)
@@ -436,42 +367,5 @@ class SSO(
 //      GraphDrawing.drawGraph(element.graph, element.name + "_SSO")
     })
     element
-  }
-
-  /** glues the graph newly created with other components
-    * @param edges edges that need to be surrounded by waits
-    * @param methodId method id to be given to the new wait edges
-    * @return
-    */
-  def glueGraphs(edges: ArrayBuffer[EdgeInfo],
-                 methodId: Int): ArrayBuffer[EdgeInfo] = {
-    val firstFrom = edges.head.from
-    edges.foreach(edge1 => {
-      edge1.to match {
-        case c: CodeNodePos =>
-          edge1.to = CodeNodePos(c.pos + 1)
-        case _ =>
-      }
-      edge1.from match {
-        case c: CodeNodePos =>
-          edge1.from = CodeNodePos(c.pos + 1)
-        case _ =>
-      }
-    })
-    val w1 = AlgoInfo.EdgeInfo("wait",
-                               firstFrom,
-                               edges.head.from,
-                               code"()",
-                               waitEdge = !removeWait,
-                               methodId1 = methodId)
-    val w2 = AlgoInfo.EdgeInfo("wait",
-                               edges.last.to,
-                               CodeNodePos(edges.last.to.asInstanceOf[CodeNodePos].pos + 1),
-                               code"()",
-                               waitEdge = !removeWait,
-                               methodId1 = methodId)
-    edges.prepend(w1)
-    edges.append(w2)
-    edges
   }
 }
