@@ -34,13 +34,11 @@ case class Foreach[E, R: CodeType](ls: OpenCode[List[E]],
     AlgoInfo.nextPos()
 
     AlgoInfo.stateGraph.append(
-      AlgoInfo.EdgeInfo(
-        "Foreach f2 if",
-        AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-        AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
-        code"$listValMut := $iter.next; ()",
-        cond = code"$iter.hasNext"
-      ))
+      AlgoInfo.EdgeInfo("Foreach f2 if",
+                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
+                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+                        code"$listValMut := $iter.next; ()",
+                        cond = code"$iter.hasNext"))
 //    AlgoInfo.nextPos()
     //Pos of f2 has to be saved before calling createCode of f3!!!
     val tmpPos = AlgoInfo.posCounter
