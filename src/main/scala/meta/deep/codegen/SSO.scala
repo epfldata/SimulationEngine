@@ -21,11 +21,7 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 //TODO when copying a method copy it into my ActorType to stay consistent
 class SSO(
     val statelessServers: List[String],
-    val methodVariableTable: collection.mutable.Map[Int,
-                                                    ArrayBuffer[MutVarType[_]]],
-    val methodVariableTableStack: collection.mutable.Map[
-      Int,
-      ArrayBuffer[Variable[ListBuffer[Any]]]])
+    val removeWait: Boolean = true)
     extends StateMachineElement() {
 
   /** map of all the changes that need to be executed. each [[EdgeInfo]] key in this map will be substituted
@@ -38,7 +34,7 @@ class SSO(
     */
   var oldToNewMtdIds: Map[String, Map[Int, Int]] = Map()
 
-  /** a flag which indicates wheter the optimization done or not
+  /** a flag which indicates whether the optimization done or not
     *  since the algorithm is iterative, it will not be over until there's an iteration without any changes in it
     */
   var optimizationDone = false
@@ -118,7 +114,7 @@ class SSO(
         edge.code = edge.code.rewrite({
           case code"meta.deep.algo.Instructions.setMethodParam(${Const(a)}, ${Const(
                 b)}, $c) " =>
-            val variable: MutVarType[_] = methodVariableTable(a)(b)
+            val variable: MutVarType[_] = CreateActorGraphs.methodVariableTable(a)(b)
 
             variable match {
               case v: MutVarType[a] =>
@@ -128,15 +124,15 @@ class SSO(
           case code"meta.deep.algo.Instructions.saveMethodParam(${Const(a)}, ${Const(
                 b)}, $c) " =>
             val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
-              methodVariableTableStack(a)
+              CreateActorGraphs.methodVariableTableStack(a)
             val varstack: Variable[ListBuffer[Any]] = stack(b)
             code"$varstack.prepend($c);"
           case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)}) " =>
             val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
-              methodVariableTableStack(a)
+              CreateActorGraphs.methodVariableTableStack(a)
             val initCode: OpenCode[Unit] = code"()"
             stack.zipWithIndex.foldRight(initCode)((c, b) => {
-              val variable: MutVarType[_] = methodVariableTable(a)(c._2)
+              val variable: MutVarType[_] = CreateActorGraphs.methodVariableTable(a)(c._2)
               val ab = c._1
               variable match {
                 case v: MutVarType[a] =>
@@ -344,6 +340,7 @@ class SSO(
       AlgoInfo.resetData()
       CallMethod[Any](newMethodId, send.argss).codegen()
       //for each of the new edges, set the correct methodId and tos and froms
+//      println(AlgoInfo.stateGraph)
       val newEdges = AlgoInfo.stateGraph.map(edge1 => {
         //since its replacing the sendEdge, these edges have to belong to the same method as that sendEdge
         edge1.methodId1 = sendEdge.methodId1
@@ -394,48 +391,39 @@ class SSO(
       })
     }
 
+    //steps:
+    //1. find the actorType which has this method
+    //2. find the method's node position
+    //3. copy the method to this elements graph
+    //4. create the call method edges which will replace the send edges
+    // (and translate the graph by a certain amount, since the might be more or less edges after replacing)
+    //5. replace the send edges with call method edges
     element.graph.foreach(edge => {
       if (edge.sendInfo != null) {
-        //steps:
-        //1. find the actorType which has this method
-        //2. in his graph find the part of it that is this method
-        //3. copy the method to this elements graph
-        //4. create the call method edges which will replace the send edges
-        // (and translate the graph by a certain amount, since the might be more or less edges after replacing)
-        //5. replace the send edges with call method edges
         val send = edge.sendInfo._1
         val methodId = send.methodId
         val neededElement = (element :: rest).find(element =>
           element.graph.exists(edge2 => edge2.methodId1 == methodId))
         if (neededElement.isEmpty)
           throw new Exception(
-            "Theres a message requesting a non existent method")
+            "Message requests a non existent method")
         //check if the element containing this graph is a stateless server
         if (neededElement.get.actorTypes.forall(at =>
               statelessServers.contains(at.name))) {
-          optimizationDone = false //there will be some copying or changing done in this iteration, so there needs to be more iterations
+          optimizationDone = false
           val newMethodId = copyMethod(element, neededElement.get, methodId)
-          //special case - this send has already been replaced, these edges are left overs that need to be removed
-          if (send.blocking && !edge.sendInfo._2) {
+          if (send.blocking && !edge.sendInfo._2) { // remove non-leading send edges
             changes = changes + (edge -> List())
           } else {
-            val newEdges =
-              createCallMethodEdges(newMethodId, methodId, edge, send)
+            var newEdges = createCallMethodEdges(newMethodId, methodId, edge, send)
             if (send.blocking) {
-              if (edge.sendInfo._2) {
-                //add 2 wait edges to simulate the waiting for the answer to the message
-                surroundWithWaitEdges(newEdges, edge.methodId1)
-                val moveThreshold =
-                  newEdges.head.from.asInstanceOf[CodeNodePos].pos
-                val moveAmmount = 0
-                moveGraphPositions(moveAmmount, moveThreshold)
+                newEdges = glueGraphs(newEdges, edge.methodId1)
                 changes = changes + (edge -> newEdges.toList)
-              }
             } else {
-              val moveThreshold =
-                newEdges.head.from.asInstanceOf[CodeNodePos].pos
-              val moveAmmount = 1
-              moveGraphPositions(moveAmmount, moveThreshold)
+              // TODO: verify this branch
+              val moveThreshold = newEdges.head.from.asInstanceOf[CodeNodePos].pos
+              val moveAmount = 1
+              moveGraphPositions(moveAmount, moveThreshold)
               changes = changes + (edge -> newEdges.toList)
             }
           }
@@ -445,18 +433,18 @@ class SSO(
     changes.foreach(change => {
       element.graph = element.graph.flatMap(edge =>
         if (edge == change._1) change._2 else List(edge))
+//      GraphDrawing.drawGraph(element.graph, element.name + "_SSO")
     })
     element
   }
 
-  /** creates 2 new wait edges and puts them before and after the edges given by the edges parameter
-    *  the new edges will belong to the method methodId
+  /** glues the graph newly created with other components
     * @param edges edges that need to be surrounded by waits
     * @param methodId method id to be given to the new wait edges
     * @return
     */
-  def surroundWithWaitEdges(edges: ArrayBuffer[EdgeInfo],
-                            methodId: Int): ArrayBuffer[EdgeInfo] = {
+  def glueGraphs(edges: ArrayBuffer[EdgeInfo],
+                 methodId: Int): ArrayBuffer[EdgeInfo] = {
     val firstFrom = edges.head.from
     edges.foreach(edge1 => {
       edge1.to match {
@@ -474,18 +462,16 @@ class SSO(
                                firstFrom,
                                edges.head.from,
                                code"()",
-                               waitEdge = true,
+                               waitEdge = !removeWait,
                                methodId1 = methodId)
-    val w2 = AlgoInfo.EdgeInfo(
-      "wait",
-      edges.last.to,
-      CodeNodePos(edges.last.to.asInstanceOf[CodeNodePos].pos + 1),
-      code"()",
-      waitEdge = true,
-      methodId1 = methodId)
+    val w2 = AlgoInfo.EdgeInfo("wait",
+                               edges.last.to,
+                               CodeNodePos(edges.last.to.asInstanceOf[CodeNodePos].pos + 1),
+                               code"()",
+                               waitEdge = !removeWait,
+                               methodId1 = methodId)
     edges.prepend(w1)
     edges.append(w2)
     edges
   }
-
 }

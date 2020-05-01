@@ -10,7 +10,5 @@ object SpecialInstructions {
     */
   def waitTurns(numTurns: Int): Unit = ???
 
-  def batchMessages(message: (()=> Any)*): Unit = ???
-
   def asyncMessage[T](message: (()=>T)): Option[Future[T]] = ???
 }

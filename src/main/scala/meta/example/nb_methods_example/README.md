@@ -6,9 +6,7 @@ This should be printed in each iteration
 Send async msg1
 Send async msg3
 (TIMER,1)
-This should be printed in each iteration
-msg1 not completed!
-msg3 not completed!
+Hello Chris
 object2!
 getWR is called from object3!
 Greeting from object3
@@ -18,19 +16,13 @@ msg1 is completed!
 msg1 value +10 is 35
 msg3 is completed!
 msg3 value is 11
-Greeting from object3
 (TIMER,3)
-This should be printed in each iteration
-Send async msg1
-Send async msg3
+Hello Chris
 Greeting from object3
 (TIMER,4)
 This should be printed in each iteration
-msg1 not completed!
-msg3 not completed!
-object2!
-getWR is called from object3!
-Greeting from object3
+Send async msg1
+Send async msg3
 (TIMER,5)
 ```
 

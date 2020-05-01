@@ -11,6 +11,7 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
 
   def hello(name: String): Unit = {
     println("Hello " + name)
+    waitTurns(1)
   }
 
   var future_obj1: Option[Future[Int]]= None
@@ -22,6 +23,7 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
       val msg1 = ()=> n1.get(10, 15)
       val msg2 = ()=> n2.get()
       val msg3 = ()=> n2.getWR()
+      val msg4 = ()=> hello("Chris")
 
       println("This should be printed in each iteration")
 
@@ -42,6 +44,7 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
 
       // async call without returning values
       asyncMessage(msg2)
+      asyncMessage(msg4)
 
       // multiple async calls that return at the same iteration
       if (future_obj2 == None){
