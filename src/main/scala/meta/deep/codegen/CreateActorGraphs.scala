@@ -110,37 +110,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     AlgoInfo.convertStageGraph(methodLookupTable.toMap,
                                methodLookupTableEnd.toMap)
 
-    AlgoInfo.stateGraph.foreach(edge => {
-      edge.code = edge.code.rewrite({
-        case code"meta.deep.algo.Instructions.setMethodParam(${Const(a)}, ${Const(
-              b)}, $c)  " =>
-          val variable: MutVarType[_] = methodVariableTable(a)(b)
-          variable match {
-            case v: MutVarType[a] =>
-              code"${v.variable} := $c.asInstanceOf[${v.codeType}]"
-            case _ => throw new RuntimeException("Illegal state")
-          }
-        case code"meta.deep.algo.Instructions.saveMethodParam(${Const(a)}, ${Const(
-              b)}, $c)  " =>
-          val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
-            methodVariableTableStack(a)
-          val varstack: Variable[ListBuffer[Any]] = stack(b)
-          code"$varstack.prepend($c);"
-        case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)})  " =>
-          val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
-            methodVariableTableStack(a)
-          val initCode: OpenCode[Unit] = code"()"
-          stack.zipWithIndex.foldRight(initCode)((c, b) => {
-            val variable: MutVarType[_] = methodVariableTable(a)(c._2)
-            val ab = c._1
-            variable match {
-              case v: MutVarType[a] =>
-                code"$ab.remove(0); if(!$ab.isEmpty) {${v.variable} := $ab(0).asInstanceOf[${v.codeType}]}; $b; ()"
-              case _ => throw new RuntimeException("Illegal state")
-            }
-          })
-      })
-    })
+    utilObj.rewriteCallMethod(AlgoInfo.stateGraph)
 
     expandEndNodes()
 

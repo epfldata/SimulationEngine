@@ -1,8 +1,10 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.{EdgeInfo, VarWrapper}
-import meta.deep.member.{ActorType}
+import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo, VarWrapper}
+import meta.deep.algo.{AlgoInfo, CallMethod, Send}
+import meta.deep.codegen.CreateActorGraphs._
+import meta.deep.member.ActorType
 import meta.deep.runtime.ResponseMessage
 import squid.lib.MutVar
 
@@ -93,3 +95,104 @@ case class CompiledActorGraph(
   */
 case class VarValue[C](variable: Variable[C], init: OpenCode[C])(
     implicit val A: CodeType[C]) {}
+
+object utilObj {
+
+  def createCallMethodEdges(methodId: Int,
+                            sendEdge: EdgeInfo): ArrayBuffer[EdgeInfo] = {
+
+    AlgoInfo.resetData()
+    CallMethod[Any](methodId, sendEdge.sendInfo._1.argss).codegen()
+
+    val newEdges = AlgoInfo.stateGraph.map(edge1 => {
+      edge1.methodId1 = sendEdge.methodId1
+      edge1.from match {
+        case c: CodeNodePos =>
+          edge1.from =
+            CodeNodePos(c.pos + sendEdge.from.asInstanceOf[CodeNodePos].pos)
+        case _ =>
+      }
+      edge1.to match {
+        case c: CodeNodePos =>
+          edge1.to =
+            CodeNodePos(c.pos + sendEdge.from.asInstanceOf[CodeNodePos].pos)
+        case _ =>
+      }
+      edge1
+    })
+    AlgoInfo.resetData()
+    newEdges
+  }
+
+  def rewriteCallMethod(edges: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
+    edges.foreach(edge => {
+      edge.code = edge.code.rewrite({
+        case code"meta.deep.algo.Instructions.setMethodParam(${Const(a)}, ${Const(
+        b)}, $c) " =>
+          val variable: MutVarType[_] = methodVariableTable(a)(b)
+
+          variable match {
+            case v: MutVarType[a] =>
+              code"${v.variable} := $c.asInstanceOf[${v.codeType}]"
+            case _ => throw new RuntimeException("Illegal state")
+          }
+        case code"meta.deep.algo.Instructions.saveMethodParam(${Const(a)}, ${Const(
+        b)}, $c) " =>
+          val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
+            methodVariableTableStack(a)
+          val varstack: Variable[ListBuffer[Any]] = stack(b)
+          code"$varstack.prepend($c);"
+        case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)}) " =>
+          val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
+            methodVariableTableStack(a)
+          val initCode: OpenCode[Unit] = code"()"
+          stack.zipWithIndex.foldRight(initCode)((c, b) => {
+            val variable: MutVarType[_] = methodVariableTable(a)(c._2)
+            val ab = c._1
+            variable match {
+              case v: MutVarType[a] =>
+                code"$ab.remove(0); if(!$ab.isEmpty) {${v.variable} := $ab(0).asInstanceOf[${v.codeType}]}; $b; ()"
+              case _ => throw new RuntimeException("Illegal state")
+            }
+          })
+      })
+    })
+    edges
+  }
+
+  /*
+   Surround the graphs with 'wait edge' though there needs not to be latency penalty
+   */
+  def addGlue(edges: ArrayBuffer[EdgeInfo],
+                 methodId: Int,
+                 removeWait: Boolean = true): ArrayBuffer[EdgeInfo] = {
+    val firstFrom = edges.head.from
+    edges.foreach(edge1 => {
+      edge1.to match {
+        case c: CodeNodePos =>
+          edge1.to = CodeNodePos(c.pos + 1)
+        case _ =>
+      }
+      edge1.from match {
+        case c: CodeNodePos =>
+          edge1.from = CodeNodePos(c.pos + 1)
+        case _ =>
+      }
+    })
+    val w1 = AlgoInfo.EdgeInfo("wait",
+      firstFrom,
+      edges.head.from,
+      code"()",
+      waitEdge = !removeWait,
+      methodId1 = methodId)
+    val w2 = AlgoInfo.EdgeInfo("wait",
+      edges.last.to,
+      CodeNodePos(edges.last.to.asInstanceOf[CodeNodePos].pos + 1),
+      code"()",
+      waitEdge = !removeWait,
+      methodId1 = methodId)
+    edges.prepend(w1)
+    edges.append(w2)
+    edges
+  }
+}
