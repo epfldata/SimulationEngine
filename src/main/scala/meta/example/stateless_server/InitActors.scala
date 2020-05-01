@@ -8,7 +8,7 @@ class InitActors extends Actor {
   def init() = {
     val server = new RandomNumberServer()
     var printers = List[Actor]()
-    for (i <- 0 until 100000) {
+    for (i <- 0 until 1) {
       val x = new RandomPrinter()
       x.server = server
       x.i = i

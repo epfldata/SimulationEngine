@@ -7,15 +7,12 @@ import squid.quasi.lift
 @lift
 class Object2 extends Actor{
 
-  def get(age: Int, sibling_age: Int): Int = {
-    println("object2!")
-    age + sibling_age
-//    waitTurns(1)
-  }
+  val deposit: Int = 500
 
-  def getWR(): String = {
-    println("getWR is called from object2!")
-    "Greeting from object2 "
+  def get(msgId: Int): Int = {
+    println("Async msg" + msgId + ": remote method with wait 1")
+    waitTurns(1)
+    deposit
   }
 
   def main(): Unit = {

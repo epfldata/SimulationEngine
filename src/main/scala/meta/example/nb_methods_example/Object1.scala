@@ -9,33 +9,29 @@ import scala.collection.mutable.ListBuffer
 @lift
 class Object1(var n1: Object2, var n2: Object3) extends Actor {
 
-  def hello(name: String): Unit = {
-    println("Hello " + name)
+  def hello(msgId: Int): Unit = {
+    println("Async msg" + msgId + ": local method with wait 1")
     waitTurns(1)
   }
 
   var future_obj1: Option[Future[Int]]= None
-  var future_obj2: Option[Future[Int]] = None
+  var future_obj2: Option[Future[String]] = None
 
   def main(): Unit = {
 
     while (true) {
-      val msg1 = ()=> n1.get(10, 15)
-      val msg2 = ()=> n2.get()
-      val msg3 = ()=> n2.getWR()
-      val msg4 = ()=> hello("Chris")
-
-      println("This should be printed in each iteration")
+      val msg1 = ()=> n1.get(1)
+      val msg2 = ()=> n2.get(2)
+      val msg3 = ()=> hello(3)
+      val msg4 = ()=> n2.getWR(4)
 
       if (future_obj1 == None){
-        println("Send async msg1")
+        println("Send async msg1: with response")
         future_obj1 = asyncMessage(msg1)
       } else {
         if (isCompleted(future_obj1.get)){
-          println("msg1 is completed!")
-          println("msg1 value +10 is " + (getFutureValue[Int](future_obj1.get) + 10))
-//          clearFutureResponse(future_obj1.get.id)
-//          future_obj1 = None
+          println("Receive response from msg1!")
+//          println("msg1 value is " + getFutureValue[Int](future_obj1.get))
           future_obj1 = clearFutureObj(future_obj1.get)
         } else {
           println("msg1 not completed!")
@@ -43,20 +39,21 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
       }
 
       // async call without returning values
+      println("Send async msg2: w/o response")
       asyncMessage(msg2)
-      asyncMessage(msg4)
+      println("Send async msg3: w/o response")
+      asyncMessage(msg3)
 
       // multiple async calls that return at the same iteration
       if (future_obj2 == None){
-        println("Send async msg3")
-        future_obj2 = asyncMessage(msg3)
+        println("Send async msg4: with response")
+        future_obj2 = asyncMessage(msg4)
       } else {
         if (isCompleted(future_obj2.get)){
-          println("msg3 is completed!")
-          println("msg3 value is " + getFutureValue[Int](future_obj2.get))
+          println("Receive response from msg4!")
           future_obj2 = clearFutureObj(future_obj2.get)
         } else {
-          println("msg3 not completed!")
+          println("msg4 not completed!")
         }
       }
 

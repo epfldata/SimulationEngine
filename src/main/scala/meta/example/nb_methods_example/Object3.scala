@@ -7,13 +7,13 @@ import squid.quasi.lift
 @lift
 class Object3 extends Actor{
 
-  def get(): Unit = {
-    println("Greeting from object3")
+  def get(msgId: Int): Unit = {
+    println("Async msg" + msgId)
   }
 
-  def getWR(): Int = {
-    println("getWR is called from object3!")
-    11
+  def getWR(msgId: Int): String = {
+    println("Async msg" + msgId)
+    "Object3"
   }
 
   def main(): Unit = {
