@@ -90,7 +90,10 @@ class ActorMerge(mergeData: List[(String, String)])
         finalGraph,
         a1.variables.filter(x => !(x.A <:< a2.actorTypes.head.X)) :::
           a2.variables.filter(x => !(x.A <:< a1.actorTypes.head.X)),
-        a1.variables2 ::: a2.variables2.tail, // head is reset var
+        a1.variables2 :::
+          a2.variables2.tail
+            .filter(x => (x.A.rep.toString() != "squid.lib.package.MutVar[meta.deep.runtime.ResponseMessage]"))
+            .filter(x => x.A.rep.toString() != "scala.collection.mutable.Map[String,meta.deep.runtime.ResponseMessage]"),
         a1.actorTypes ::: a2.actorTypes,
         a1.positionStack ::: a2.positionStack,
         a1.returnValue,
