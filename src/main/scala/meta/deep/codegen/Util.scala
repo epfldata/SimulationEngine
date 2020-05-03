@@ -7,6 +7,7 @@ import meta.deep.codegen.CreateActorGraphs._
 import meta.deep.member.ActorType
 import meta.deep.runtime.ResponseMessage
 import squid.lib.MutVar
+import meta.deep.runtime.Actor
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map}
 
@@ -330,6 +331,21 @@ object utilObj {
   def getEdgesByMtdId(graph: ArrayBuffer[EdgeInfo], methodId: Int): ArrayBuffer[EdgeInfo] = {
     graph.filter(edge => edge.methodId1== methodId)
       .map(edge => edge.myCopy())
+  }
+
+  /*
+  Replace "this1" and "return1" for graph with "this2" and "return2". Modify the graph directly
+   */
+  def resetThisReturn(graph: ArrayBuffer[EdgeInfo],
+                      this1: Variable[Actor],
+                      this2: Variable[Actor],
+                      return1: Variable[MutVar[Any]],
+                      return2: Variable[MutVar[Any]]): Unit ={
+    graph.foreach(edge =>
+      if (edge.code!= null){
+        edge.code = edge.code.subs(this1).~>(this2.toCode)
+        edge.code = edge.code.subs(return1).~>(return2.toCode)
+      })
   }
 }
 

@@ -21,8 +21,6 @@ import meta.deep.runtime.Actor
 class ActorMerge(mergeData: List[(String, String)])
     extends StateMachineElement() {
 
-//  val oldToNewMtdIds: mutable.Map[String, mutable.Map[Int, Int]] = mutable.Map()
-
   override def run(compiledActorGraphs: List[CompiledActorGraph])
     : List[CompiledActorGraph] = {
     //For testing assume, the merge of first two actors
@@ -43,18 +41,35 @@ class ActorMerge(mergeData: List[(String, String)])
       a1.graph.foreach(edge => edge.graphId = 1)
       a2.graph.foreach(edge => edge.graphId = 2)
 
+      val a1This = a1.actorTypes.head.self.asInstanceOf[Variable[Actor]]
+      val a2This = a2.actorTypes.head.self.asInstanceOf[Variable[Actor]]
+      val a1Return = a1.returnValue.head
+      val a2Return = a2.returnValue.head
+
       // replace send messages with local message calls
       var a1_updated_graph: ArrayBuffer[EdgeInfo] = a1.graph.clone()
       var a2_updated_graph: ArrayBuffer[EdgeInfo] = a2.graph.clone()
+//      var a2_updated_graph: ArrayBuffer[EdgeInfo] = a2.graph
 
-//      println(Lifter.methodsIdMap)
-//      val oldToNewMtdIds: mutable.Map[Int, Int] = mutable.Map()
-//      val oldMethodId: Int = 2
-//      oldToNewMtdIds += (copyMethod(oldMethodId, a1_updated_graph) -> oldMethodId)
+      val a1LeadSends: ArrayBuffer[EdgeInfo] = getLeadSends(a1_updated_graph, a2.name)
+      val a2LeadSends: ArrayBuffer[EdgeInfo] = getLeadSends(a2_updated_graph, a1.name)
 
-//      replaceSends(a1_updated_graph, mergeType._2, 1)
-      replaceSends(a2_updated_graph, mergeType._1, 2)
-//      GraphDrawing.drawGraph(a2_updated_graph, a2.name + "_with_no_mtd")
+      val newToOldMtdIds: mutable.Map[Int, Int] = mutable.Map()
+
+      val localizedMethodIdSend: ArrayBuffer[(Int, EdgeInfo)] = ArrayBuffer[(Int, EdgeInfo)]()
+
+      // TODO: check for each copied method, whether it contains another method call or local call, and copy recursively
+      a2_updated_graph ++= a2LeadSends.flatMap(sendEdge =>{
+          val localizedIdSubgraph = copyMethod(sendEdge, a1_updated_graph, utilObj.getFreePos(a2_updated_graph))
+          utilObj.resetThisReturn(localizedIdSubgraph._2, a1This, a2This, a1Return, a2Return)
+          newToOldMtdIds += localizedIdSubgraph._1 -> sendEdge.sendInfo._1.methodId
+          localizedMethodIdSend.append((localizedIdSubgraph._1, sendEdge))
+          CreateActorGraphs.methodVariableTableStack(localizedIdSubgraph._1) = CreateActorGraphs.methodVariableTableStack(sendEdge.sendInfo._1.methodId)
+          CreateActorGraphs.methodVariableTable(localizedIdSubgraph._1) = CreateActorGraphs.methodVariableTable(sendEdge.sendInfo._1.methodId)
+          localizedIdSubgraph._2
+        })
+
+      utilObj.replaceSends(a2_updated_graph, 2, localizedMethodIdSend)
 
       val wa1 = waitGraph(a1_updated_graph)
 //      GraphDrawing.drawGraph(wa1, a1.name+ "_wait")
@@ -71,29 +86,17 @@ class ActorMerge(mergeData: List[(String, String)])
       /*
         The merged graph should have a single return value, reuse the one from a1
        */
-      val a1This = a1.actorTypes.head.self.asInstanceOf[Variable[Actor]]
-      val a2This = a2.actorTypes.head.self.asInstanceOf[Variable[Actor]]
-      val a1Return = a1.returnValue.head
-      val a2Return = a2.returnValue.head
+      utilObj.resetThisReturn(finalGraph, a2This, a1This, a2Return, a1Return)
 
-      finalGraph.foreach(edge =>
-        if (edge.code!= null){
-          edge.code = edge.code.subs(a2This).~>(a1This.toCode)
-          edge.code = edge.code.subs(a2Return).~>(a1Return.toCode)
-        })
+      val mergedVariables = utilObj.mergeVariables(a1, a2)
 
       newActorGraphs = CompiledActorGraph(
         a1.name + "_" + a2.name,
         (a1.parentNames ::: a2.parentNames).distinct,
-        a1.parameterList.filter(x => x._2!=a2.actorTypes.head.X.rep.toString()) :::
-          a2.parameterList.filter(x => x._2!=a1.actorTypes.head.X.rep.toString()),
+        mergedVariables._1,
         finalGraph,
-        a1.variables.filter(x => !(x.A <:< a2.actorTypes.head.X)) :::
-          a2.variables.filter(x => !(x.A <:< a1.actorTypes.head.X)),
-        a1.variables2 :::
-          a2.variables2.tail
-            .filter(x => (x.A.rep.toString() != "squid.lib.package.MutVar[meta.deep.runtime.ResponseMessage]"))
-            .filter(x => x.A.rep.toString() != "scala.collection.mutable.Map[String,meta.deep.runtime.ResponseMessage]"),
+        mergedVariables._2,
+        mergedVariables._3,
         a1.actorTypes ::: a2.actorTypes,
         a1.positionStack ::: a2.positionStack,
         a1.returnValue,
@@ -105,69 +108,37 @@ class ActorMerge(mergeData: List[(String, String)])
     newActorGraphs
   }
 
-  def newCallMethodEdges(methodId: Int,
-                         sendEdge: EdgeInfo): ArrayBuffer[EdgeInfo] = {
-    val newEdges = utilObj.createCallMethodEdges(methodId, sendEdge)
-    utilObj.rewriteCallMethod(newEdges)
-  }
-
-  def getReceiverName(msg: Send[_]): String = {
-    msg.actorRef.rep.dfn.typ.toString.split("\\.").last
+  def getLeadSends(graph: ArrayBuffer[EdgeInfo], receiverName: String): ArrayBuffer[EdgeInfo] = {
+    def getReceiverName(msg: Send[_]): String = {
+      msg.actorRef.rep.dfn.typ.toString.split("\\.").last
+    }
+    graph.filter(edge => edge.sendInfo != null)
+      .filter(sendEdge => (getReceiverName(sendEdge.sendInfo._1) == receiverName && sendEdge.sendInfo._2))
   }
 
   /*
-   * Identify the part of the graph containing the method
+   * Identify the part of the graph containing the method id in the Send edge
    * Return the methodId
    */
-  def copyMethod(methodId: Int, graph: ArrayBuffer[EdgeInfo]): Int = {
-    val newId = Method.getNextMethodId
-    val methodGraph = graph.filter(edge => edge.methodId1== methodId)
-                           .map(edge => edge.myCopy())
-    methodGraph.foreach(edge => edge.methodId1 = newId)
-    val oldPos = methodGraph.head.from.asInstanceOf[CodeNodePos].pos
-//    var freePos = utilObj.getFreePos()
-    newId
+  def copyMethod(sendEdge: EdgeInfo, graph: ArrayBuffer[EdgeInfo], freePos: Int): (Int, ArrayBuffer[EdgeInfo]) = {
+    val methodId: Int = sendEdge.sendInfo._1.methodId
+    val newMtdId: Int = Method.getNextMethodId
+    val methodGraph: ArrayBuffer[EdgeInfo] = utilObj.getEdgesByMtdId(graph, methodId)
+
+    val oldPos: Int = methodGraph.head.from.asInstanceOf[CodeNodePos].pos
+
+    methodGraph.foreach(edge => {
+      edge.methodId1 = newMtdId
+      edge.graphId = sendEdge.graphId
+      edge.positionStack = sendEdge.positionStack
+    })
+
+    // Move (freePos - oldPos) for all edges in methodGraph
+    utilObj.moveGraphPositions(methodGraph, freePos - oldPos, 0)
+
+    (newMtdId, methodGraph)
   }
 
-  // For testing, allow some hardcode value with remainders
-  def replaceSends(graph: ArrayBuffer[EdgeInfo], receiverType: String, graphId: Int): Unit = {
-    /* ScalaCode (return value = receiver),
-    * LetBinding (resolve the type of the receiver and create and binding mutvar),
-    * Send, Send, Send, Send, Send
-     */
-    val firstOffset: Int = 2 // two edges precede the leading edge (setup the receiver and environment)
-    val lastOffset: Int = 4 // four edges after the leading edge (total four send edges)
-
-    val leadingSendEdge: ArrayBuffer[EdgeInfo] = graph.filter(edge => (edge.sendInfo!=null)
-      && (getReceiverName(edge.sendInfo._1) == receiverType)
-      && (edge.sendInfo._2))
-
-    var newEdgesMap: Map[Int, ArrayBuffer[EdgeInfo]] = Map[Int, ArrayBuffer[EdgeInfo]]()
-
-    // TODO: replace 2 with algorithms that find the correct method id
-    graph --= leadingSendEdge
-      .map(edge => {
-        val edgeIdx = graph.indexOf(edge)
-        newEdgesMap = newEdgesMap + (edgeIdx -> {
-          val newEdges: ArrayBuffer[EdgeInfo] = newCallMethodEdges(2, edge)
-          newEdges.head.from = graph(edgeIdx - firstOffset).from
-          newEdges.last.to = graph(edgeIdx + lastOffset).to
-          newEdges.foreach(x => {
-            x.positionStack = edge.positionStack
-            x.graphId = graphId
-          })
-          newEdges
-        })
-        edgeIdx})
-      .flatMap(x => Range(x-firstOffset, x + lastOffset + 1)) // Range exclude the last element
-      .map(x => graph(x))
-
-    newEdgesMap.values.foreach(x => graph++=x)
-
-    // TODO: rewrite the mtd lookup, using push-based registration rather than repeated looping
-    // Because we might have unresolved positions (methods in the other actor, don't convert to pos nodes yet
-    utilObj.mtdToPosNodes(graph)
-  }
 
 
   /**
