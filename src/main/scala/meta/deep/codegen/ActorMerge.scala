@@ -4,10 +4,13 @@ import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
 import meta.deep.algo.{AlgoInfo, CallMethod, Send}
 import meta.deep.codegen.CreateActorGraphs.MutVarType
+import meta.deep.member.Method
+import meta.deep.member.ActorType
 
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import meta.classLifting.Lifter
+import meta.deep.runtime.Actor
 
 /**
   * Combines two actor types together and creates a new actor type. The original ones are still there, so the new one
@@ -17,6 +20,8 @@ import meta.classLifting.Lifter
   */
 class ActorMerge(mergeData: List[(String, String)])
     extends StateMachineElement() {
+
+//  val oldToNewMtdIds: mutable.Map[String, mutable.Map[Int, Int]] = mutable.Map()
 
   override def run(compiledActorGraphs: List[CompiledActorGraph])
     : List[CompiledActorGraph] = {
@@ -42,33 +47,53 @@ class ActorMerge(mergeData: List[(String, String)])
       var a1_updated_graph: ArrayBuffer[EdgeInfo] = a1.graph.clone()
       var a2_updated_graph: ArrayBuffer[EdgeInfo] = a2.graph.clone()
 
-      println(Lifter.methodsIdMap)
+//      println(Lifter.methodsIdMap)
+//      val oldToNewMtdIds: mutable.Map[Int, Int] = mutable.Map()
+//      val oldMethodId: Int = 2
+//      oldToNewMtdIds += (copyMethod(oldMethodId, a1_updated_graph) -> oldMethodId)
 
-      replaceSends(a1_updated_graph, mergeType._2, 1)
+//      replaceSends(a1_updated_graph, mergeType._2, 1)
       replaceSends(a2_updated_graph, mergeType._1, 2)
+//      GraphDrawing.drawGraph(a2_updated_graph, a2.name + "_with_no_mtd")
 
       val wa1 = waitGraph(a1_updated_graph)
 //      GraphDrawing.drawGraph(wa1, a1.name+ "_wait")
 
       val wa2 = waitGraph(a2_updated_graph)
 //      GraphDrawing.drawGraph(wa2, a2.name + "_wait")
-//
+
       val mg = generateMergedStateMachine(wa1, wa2)
-////      GraphDrawing.drawMergeGraph(mg, a1.name + "_" + a2.name + "_merge")
-//
+//      GraphDrawing.drawMergeGraph(mg, a1.name + "_" + a2.name + "_merge")
+
       val finalGraph = combineActors(mg, a1_updated_graph, a2_updated_graph)
 //      GraphDrawing.drawGraph(finalGraph, a1.name + "_" + a2.name + "_merged")
+
+      /*
+        The merged graph should have a single return value, reuse the one from a1
+       */
+      val a1This = a1.actorTypes.head.self.asInstanceOf[Variable[Actor]]
+      val a2This = a2.actorTypes.head.self.asInstanceOf[Variable[Actor]]
+      val a1Return = a1.returnValue.head
+      val a2Return = a2.returnValue.head
+
+      finalGraph.foreach(edge =>
+        if (edge.code!= null){
+          edge.code = edge.code.subs(a2This).~>(a1This.toCode)
+          edge.code = edge.code.subs(a2Return).~>(a1Return.toCode)
+        })
 
       newActorGraphs = CompiledActorGraph(
         a1.name + "_" + a2.name,
         (a1.parentNames ::: a2.parentNames).distinct,
-        (a1.parameterList ::: a2.parameterList),
+        a1.parameterList.filter(x => x._2!=a2.actorTypes.head.X.rep.toString()) :::
+          a2.parameterList.filter(x => x._2!=a1.actorTypes.head.X.rep.toString()),
         finalGraph,
-        (a1.variables ::: a2.variables),
-        a1.variables2 ::: a2.variables2,
+        a1.variables.filter(x => !(x.A <:< a2.actorTypes.head.X)) :::
+          a2.variables.filter(x => !(x.A <:< a1.actorTypes.head.X)),
+        a1.variables2 ::: a2.variables2.tail, // head is reset var
         a1.actorTypes ::: a2.actorTypes,
         a1.positionStack ::: a2.positionStack,
-        a1.returnValue ::: a2.returnValue,
+        a1.returnValue,
         a1.responseMessage ::: a2.responseMessage,
         a1.responseMessagess ::: a2.responseMessagess,
       ) :: newActorGraphs
@@ -83,21 +108,30 @@ class ActorMerge(mergeData: List[(String, String)])
     utilObj.rewriteCallMethod(newEdges)
   }
 
-  def makeMap(affectedEdges: ArrayBuffer[EdgeInfo]): Map[Int, Int] = {
-    var targetMap: Map[Int, Int] = Map()
-    affectedEdges.foreach(edge => {
-      targetMap = targetMap + (edge.from.getNativeId -> edge.to.getNativeId)
-    })
-    targetMap
-  }
-
   def getReceiverName(msg: Send[_]): String = {
     msg.actorRef.rep.dfn.typ.toString.split("\\.").last
   }
 
+  /*
+   * Identify the part of the graph containing the method
+   * Return the methodId
+   */
+  def copyMethod(methodId: Int, graph: ArrayBuffer[EdgeInfo]): Int = {
+    val newId = Method.getNextMethodId
+    val methodGraph = graph.filter(edge => edge.methodId1== methodId)
+                           .map(edge => edge.myCopy())
+    methodGraph.foreach(edge => edge.methodId1 = newId)
+    val oldPos = methodGraph.head.from.asInstanceOf[CodeNodePos].pos
+//    var freePos = utilObj.getFreePos()
+    newId
+  }
+
   // For testing, allow some hardcode value with remainders
   def replaceSends(graph: ArrayBuffer[EdgeInfo], receiverType: String, graphId: Int): Unit = {
-    // TODO: replace the hard-coded offset with some detection method
+    /* ScalaCode (return value = receiver),
+    * LetBinding (resolve the type of the receiver and create and binding mutvar),
+    * Send, Send, Send, Send, Send
+     */
     val firstOffset: Int = 2 // two edges precede the leading edge (setup the receiver and environment)
     val lastOffset: Int = 4 // four edges after the leading edge (total four send edges)
 
@@ -128,6 +162,7 @@ class ActorMerge(mergeData: List[(String, String)])
     newEdgesMap.values.foreach(x => graph++=x)
 
     // TODO: rewrite the mtd lookup, using push-based registration rather than repeated looping
+    // Because we might have unresolved positions (methods in the other actor, don't convert to pos nodes yet
     utilObj.mtdToPosNodes(graph)
   }
 
@@ -153,6 +188,7 @@ class ActorMerge(mergeData: List[(String, String)])
       if (visited.contains(currentNode)) {
         return
       }
+
       if (edgeInfo == null) {
         //Already handled that node as start node
         if (startNodes.contains(currentNode)) {
