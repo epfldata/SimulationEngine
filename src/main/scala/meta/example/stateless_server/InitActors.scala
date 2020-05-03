@@ -9,8 +9,7 @@ class InitActors extends Actor {
     val server = new RandomNumberServer()
     var printers = List[Actor]()
     for (i <- 0 until 1) {
-      val x = new RandomPrinter()
-      x.server = server
+      val x = new RandomPrinter(server)
       x.i = i
       printers = x :: printers
     }
