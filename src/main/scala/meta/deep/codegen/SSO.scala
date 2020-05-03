@@ -51,48 +51,9 @@ class SSO(
     }
     graphs.foreach(g =>
       g.graph.foreach(edge => edge.positionStack = g.positionStack.head))
-    graphs.foreach(g => mtdToPosNodes(g.graph))
+    graphs.foreach(g => utilObj.mtdToPosNodes(g.graph))
     //    graphs.foreach(g => GraphDrawing.drawGraph(g.graph, g.name+" SSOmerged"))
     graphs
-  }
-
-  /** for each edge checks if it has a [[CodeNodeMtd]] as its to or from value,
-    *  and substitutes it for the right [[CodeNodePos]]
-    *
-    * @param graph buffer of edges to change
-    */
-  def mtdToPosNodes(graph: ArrayBuffer[EdgeInfo]): Unit = {
-    graph.foreach(edge => {
-      edge.from match {
-        case c: CodeNodeMtd =>
-          val id = c.id
-          val methodGraph = graph.filter(edge1 => edge1.methodId1 == id)
-          if (!c.end) {
-            edge.from =
-              CodeNodePos(methodGraph.head.from.asInstanceOf[CodeNodePos].pos)
-          }
-          //case of interest: jump from the end of the method
-          else {
-            edge.from =
-              CodeNodePos(methodGraph.last.to.asInstanceOf[CodeNodePos].pos)
-          }
-        case _ =>
-      }
-      edge.to match {
-        case c: CodeNodeMtd =>
-          val id = c.id
-          val methodGraph = graph.filter(edge1 => edge1.methodId1 == id)
-          //case of interest: jump to the beginning of the method
-          if (!c.end) {
-            edge.to =
-              CodeNodePos(methodGraph.head.from.asInstanceOf[CodeNodePos].pos)
-          } else {
-            edge.to =
-              CodeNodePos(methodGraph.last.to.asInstanceOf[CodeNodePos].pos)
-          }
-        case _ =>
-      }
-    })
   }
 
   /** checks if this element sends messages to a stateless server, and if it does,
@@ -121,28 +82,20 @@ class SSO(
       } else {
         //get the next available method id, and copy the states and variables of the other elements
         val newMethodId = Method.getNextMethodId
-        element.variables =
-          (element.variables ::: neededElement.variables).distinct
-        element.variables2 =
-          (element.variables2 ::: neededElement.variables2).distinct
+
+        val mergedVariables = utilObj.mergeVariables(element, neededElement)
+        element.parameterList = mergedVariables._1
+        element.variables = mergedVariables._2
+        element.variables2 = mergedVariables._3
         neededElement.actorTypes.foreach(at => {
           element.actorTypes.head.states =
             (element.actorTypes.head.states ::: at.states).distinct
         })
         //find the part of the graph that needs to be copied
-        val methodToCopyGraph = neededElement.graph
-          .filter(edge2 => edge2.methodId1 == methodId)
-          .map(edge2 => edge2.myCopy())
-        val oldPos = methodToCopyGraph.head.from.asInstanceOf[CodeNodePos].pos
-        var freePos =
-          element.graph
-            .flatMap(edge => edge.from :: edge.to :: Nil)
-            .maxBy(node =>
-              node match {
-                case c: CodeNodeMtd => -1
-                case c: CodeNodePos => c.pos
-            })
-            .getNativeId + 1
+        val methodToCopyGraph: ArrayBuffer[EdgeInfo] = utilObj.getEdgesByMtdId(neededElement.graph, methodId)
+        val oldPos: Int = methodToCopyGraph.head.from.asInstanceOf[CodeNodePos].pos
+        val freePos: Int = utilObj.getFreePos(element.graph)
+
         //moving the tos and froms to fit this graph,
         // fixing the method id,
         // fixing the reference from another actor to self,
@@ -168,27 +121,10 @@ class SSO(
                 .subs(otherResponseMessage)
                 .~>(selfResponseMessage.toCode)
             }
-            if (edge1.cond != null) {
-              edge1.cond = edge1.cond.subs(otherThis).~>(selfThis.toCode)
-              edge1.cond =
-                edge1.cond.subs(otherReturnValue).~>(selfReturnValue.toCode)
-              edge1.cond = edge1.cond
-                .subs(otherResponseMessage)
-                .~>(selfResponseMessage.toCode)
-            }
           })
-          //fitting the tos and froms to this graphs, puts them at the end
-          edge1.from match {
-            case c: CodeNodePos =>
-              edge1.from = CodeNodePos(c.pos - oldPos + freePos)
-            case _ =>
-          }
-          edge1.to match {
-            case c: CodeNodePos =>
-              edge1.to = CodeNodePos(c.pos - oldPos + freePos)
-            case _ =>
-          }
         })
+        utilObj.moveGraphPositions(methodToCopyGraph, freePos - oldPos, 0)
+
         //add the new method to the graph
         element.graph = element.graph ++ methodToCopyGraph
         //remember that the method was added. do it here, so in case of recursion it will not get copied again, just called
@@ -298,28 +234,6 @@ class SSO(
       utilObj.rewriteCallMethod(newEdges)
     }
 
-    /** used to translate the graph by a moveAmmount, after the moveThreshold
-      * for each edge that has a from or to above the moveThreshold, add moveAmmount to it
-      *
-      * @param moveAmmount how much to move the graph
-      * @param moveThreshold after which position to start moving
-      */
-    def moveGraphPositions(moveAmmount: Int, moveThreshold: Int): Unit = {
-      element.graph.foreach(edge2 => {
-        edge2.from match {
-          case c: CodeNodePos =>
-            if (c.pos > moveThreshold)
-              edge2.from = CodeNodePos(c.pos + moveAmmount)
-          case _ =>
-        }
-        edge2.to match {
-          case c: CodeNodePos =>
-            if (c.pos > moveThreshold)
-              edge2.to = CodeNodePos(c.pos + moveAmmount)
-          case _ =>
-        }
-      })
-    }
 
     //steps:
     //1. find the actorType which has this method
@@ -343,6 +257,7 @@ class SSO(
           optimizationDone = false
           val newMethodId = copyMethod(element, neededElement.get, methodId)
 
+          // TODO: remove two trailing edges, as done in actor merge
           if (send.blocking && !edge.sendInfo._2) { // remove non-leading send edges
             changes = changes + (edge -> List())
           } else {
@@ -354,7 +269,7 @@ class SSO(
               // TODO: doesn't work
               val moveThreshold = newEdges.head.from.asInstanceOf[CodeNodePos].pos
               val moveAmount = 1
-              moveGraphPositions(moveAmount, moveThreshold)
+              utilObj.moveGraphPositions(element.graph, moveAmount, moveThreshold)
               changes = changes + (edge -> newEdges.toList)
             }
           }

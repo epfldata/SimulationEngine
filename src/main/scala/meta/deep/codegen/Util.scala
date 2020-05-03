@@ -1,7 +1,7 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo, VarWrapper}
+import meta.deep.algo.AlgoInfo.{CodeNodeMtd, CodeNodePos, EdgeInfo, VarWrapper}
 import meta.deep.algo.{AlgoInfo, CallMethod, Send}
 import meta.deep.codegen.CreateActorGraphs._
 import meta.deep.member.ActorType
@@ -195,4 +195,141 @@ object utilObj {
     edges.append(w2)
     edges
   }
+
+  def mtdToPosNodes(graph: ArrayBuffer[EdgeInfo]): Unit = {
+    graph.foreach(edge => {
+      edge.from match {
+        case c: CodeNodeMtd =>
+          val id = c.id
+          val methodGraph = graph.filter(edge1 => edge1.methodId1 == id)
+          if (!c.end) {
+            edge.from =
+              CodeNodePos(methodGraph.head.from.asInstanceOf[CodeNodePos].pos)
+          }
+          //case of interest: jump from the end of the method
+          else {
+            edge.from =
+              CodeNodePos(methodGraph.last.to.asInstanceOf[CodeNodePos].pos)
+          }
+        case _ =>
+      }
+      edge.to match {
+        case c: CodeNodeMtd =>
+          val id = c.id
+          val methodGraph = graph.filter(edge1 => edge1.methodId1 == id)
+          //case of interest: jump to the beginning of the method
+          if (!c.end) {
+            edge.to =
+              CodeNodePos(methodGraph.head.from.asInstanceOf[CodeNodePos].pos)
+          } else {
+            edge.to =
+              CodeNodePos(methodGraph.last.to.asInstanceOf[CodeNodePos].pos)
+          }
+        case _ =>
+      }
+    })
+  }
+
+  def getFreePos(graph: ArrayBuffer[EdgeInfo]): Int = {
+    graph.flatMap(edge => edge.from :: edge.to :: Nil)
+      .maxBy(node =>
+        node match {
+          case c: CodeNodeMtd => -1
+          case c: CodeNodePos => c.pos
+        })
+      .getNativeId + 1
+  }
+
+  /** used to translate the graph by a moveAmmount, after the moveThreshold
+    * for each edge that has a from or to above the moveThreshold, add moveAmmount to it
+    *
+    * @param moveAmount how much to move the graph
+    * @param moveThreshold after which position to start moving
+    */
+  def moveGraphPositions(graph: ArrayBuffer[EdgeInfo], moveAmount: Int, moveThreshold: Int): Unit = {
+    graph.foreach(edge => {
+      edge.from match {
+        case c: CodeNodePos =>
+          if (c.pos > moveThreshold)
+            edge.from = CodeNodePos(c.pos + moveAmount)
+        case _ =>
+      }
+      edge.to match {
+        case c: CodeNodePos =>
+          if (c.pos > moveThreshold)
+            edge.to = CodeNodePos(c.pos + moveAmount)
+        case _ =>
+      }
+    })
+  }
+
+  /*
+  For two compiled actor graphs, remove instances of each other from all variables and keep a single mailbox
+   */
+  def mergeVariables(graph1: CompiledActorGraph, graph2: CompiledActorGraph): (List[(String, String)], List[VarWrapper[_]], List[VarValue[_]]) = {
+    val variables1: List[VarWrapper[_]] =
+      graph1.variables.filter(x => !(x.A <:< graph2.actorTypes.head.X)) :::
+        graph2.variables.filter(x => !(x.A <:< graph1.actorTypes.head.X))
+
+    val variables2: List[VarValue[_]] = graph1.variables2 :::
+      graph2.variables2.tail
+        .filter(x => x.A.rep.toString() != "squid.lib.package.MutVar[meta.deep.runtime.ResponseMessage]")
+        .filter(x => x.A.rep.toString() != "scala.collection.mutable.Map[String,meta.deep.runtime.ResponseMessage]")
+
+    val parameterList: List[(String, String)] = {
+      graph1.parameterList.filter(x => x._2!=graph2.actorTypes.head.X.rep.toString()) :::
+        graph2.parameterList.filter(x => x._2!=graph1.actorTypes.head.X.rep.toString())
+    }
+    (parameterList, variables1, variables2)
+  }
+
+  def newCallMethodEdges(methodId: Int,
+                         sendEdge: EdgeInfo): ArrayBuffer[EdgeInfo] = {
+    val newEdges: ArrayBuffer[EdgeInfo] = utilObj.createCallMethodEdges(methodId, sendEdge)
+    utilObj.rewriteCallMethod(newEdges)
+  }
+
+  /*
+    Replace edges related to the leading send edge with local method calls identified by method id in the leadingSendEdge in graph. Modify the original graph directly
+   */
+  def replaceSends(graph: ArrayBuffer[EdgeInfo], graphId: Int, leadingSendEdge: ArrayBuffer[(Int, EdgeInfo)]): Unit = {
+    /* ScalaCode (return value = receiver),
+    * LetBinding (resolve the type of the receiver and create and binding mutvar), (2)
+    * Send, Send, Send, Send, Send (leadsend, 4)
+     */
+    val firstOffset: Int = 2 // two edges precede the leading edge (setup the receiver and environment)
+    val lastOffset: Int = 4 // four edges after the leading edge (total four send edges)
+
+    var newEdgesMap: Map[Int, ArrayBuffer[EdgeInfo]] = Map[Int, ArrayBuffer[EdgeInfo]]()
+
+    graph --= leadingSendEdge
+      .map(methodId_sendEdge => {
+        val edgeIdx = graph.indexOf(methodId_sendEdge._2)
+        newEdgesMap = newEdgesMap + (edgeIdx -> {
+          val newEdges: ArrayBuffer[EdgeInfo] = newCallMethodEdges(methodId_sendEdge._1, methodId_sendEdge._2)
+          newEdges.head.from = graph(edgeIdx - firstOffset).from
+          newEdges.last.to = graph(edgeIdx + lastOffset).to
+          newEdges.foreach(x => {
+            x.positionStack = methodId_sendEdge._2.positionStack
+            x.graphId = graphId
+          })
+          newEdges
+        })
+        edgeIdx
+      })
+      .flatMap(x => Range(x-firstOffset, x + lastOffset + 1)) // Range exclude the last element
+      .map(x => graph(x))
+
+    newEdgesMap.values.foreach(x => graph++=x)
+    mtdToPosNodes(graph)
+  }
+
+  /*
+  Return a copy of the subgraph related to methodId.
+   */
+  def getEdgesByMtdId(graph: ArrayBuffer[EdgeInfo], methodId: Int): ArrayBuffer[EdgeInfo] = {
+    graph.filter(edge => edge.methodId1== methodId)
+      .map(edge => edge.myCopy())
+  }
 }
+
