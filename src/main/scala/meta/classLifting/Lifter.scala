@@ -72,7 +72,7 @@ class Lifter {
   private def liftActor[T <: Actor](clasz: Clasz[T]) = {
     val parentNames: List[String] = clasz.parents.map(parent => parent.rep.toString())
     val parameterList: List[(String, String)] = clasz.fields.filter(field => !field.init.isDefined)
-      .map(x => (s"${clasz.name.trim},${x.name.trim}", s"${x.A.rep}"))
+      .map(x => (s"${x.name.trim}", s"${x.A.rep}"))
 
     import clasz.C
     val actorSelfVariable: Variable[_ <: Actor] =
@@ -198,6 +198,7 @@ class Lifter {
           handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])
         f.asInstanceOf[Algo[T]]
 
+      // asynchronously call a remote method
       case code"SpecialInstructions.asyncMessage[$mt]((() => {val $nm: $nmt = $v; ${MethodApplication(msg)}}: mt))" =>
         val argss =
           msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
@@ -211,6 +212,7 @@ class Lifter {
               methodsIdMap(msg.symbol),
               argss))
 
+      // asynchronously call a local method
       case code"SpecialInstructions.asyncMessage[$mt]((() => ${MethodApplication(msg)}: mt))" =>
         val argss =
           msg.args.tail.map(_.toList.map(arg => code"$arg")).toList

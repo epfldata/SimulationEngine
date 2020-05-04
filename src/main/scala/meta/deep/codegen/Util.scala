@@ -299,23 +299,6 @@ object utilObj {
     var newEdgesMap: Map[Int, ArrayBuffer[EdgeInfo]] = Map[Int, ArrayBuffer[EdgeInfo]]()
 
     val leadingEdgesWithFirstOffset: ArrayBuffer[(Int, EdgeInfo, Int)] =
-//      leadingSendEdge.map(edge => {
-//        var firstOffset: Int = 0
-//        var found: Boolean = false
-//        var currentEdge: EdgeInfo = edge._2
-//        graph.splitAt(graph.indexOf(edge._2))._1.reverse.foreach(
-//          previousEdge => if (!found) {
-//            if (currentEdge.from == previousEdge.to){
-//              currentEdge = previousEdge
-//              firstOffset = firstOffset + 1 // count the number of edges, not nodes
-//            } else {
-//              found = true
-//            }
-//          }
-//        )
-//      (edge._1, edge._2, firstOffset)
-//      })
-
       leadingSendEdge.map(edge => {
         var firstOffset: Int = 0
         var found: Boolean = false
@@ -330,7 +313,7 @@ object utilObj {
             }
           }
         )
-        (edge._1, edge._2, 2)
+      (edge._1, edge._2, firstOffset)
       })
 
     graph --= leadingEdgesWithFirstOffset
@@ -366,17 +349,17 @@ object utilObj {
   /*
   Replace "this1" and "return1" for graph with "this2" and "return2". Modify the graph directly
    */
-  def resetThisReturn(graph: ArrayBuffer[EdgeInfo],
-                      this1: Variable[Actor],
-                      this2: Variable[Actor],
-                      return1: Variable[MutVar[Any]],
-                      return2: Variable[MutVar[Any]]): Unit ={
-    graph.foreach(edge =>
-      if (edge.code!= null){
-        edge.code = edge.code.subs(this1).~>(this2.toCode)
-        edge.code = edge.code.subs(return1).~>(return2.toCode)
-      })
-  }
+//  def resetThisReturn(graph: ArrayBuffer[EdgeInfo],
+//                      this1: Variable[Actor],
+//                      this2: Variable[Actor],
+//                      return1: Variable[MutVar[Any]],
+//                      return2: Variable[MutVar[Any]]): Unit ={
+//    graph.foreach(edge =>
+//      if (edge.code!= null){
+//        edge.code = edge.code.subs(this1).~>(this2.toCode)
+//        edge.code = edge.code.subs(return1).~>(return2.toCode)
+//      })
+//  }
 
   def copyRuntimeMtd(oldMtdId: Int): Int = {
     val newMtdId: Int = Method.getNextMethodId

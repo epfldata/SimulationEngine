@@ -1,9 +1,15 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
+import meta.deep.algo.AlgoInfo.{CodeNodePos, CodeNodeMtd, EdgeInfo}
+import meta.deep.algo.{AlgoInfo, CallMethod, Send}
+import meta.deep.codegen.CreateActorGraphs.MutVarType
+import meta.deep.member.ActorType
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import meta.classLifting.Lifter
+import meta.deep.runtime.Actor
 
 /**
   * Combines two actor types together and creates a new actor type. The original ones are still there, so the new one
@@ -34,35 +40,125 @@ class ActorMerge(mergeData: List[(String, String)])
       a1.graph.foreach(edge => edge.graphId = 1)
       a2.graph.foreach(edge => edge.graphId = 2)
 
-      val wa1 = waitGraph(a1.graph)
-      //GraphDrawing.drawGraph(wa1, a1.name + "_wait")
+      val a1This = a1.actorTypes.head.self.asInstanceOf[Variable[Actor]]
+      val a2This = a2.actorTypes.head.self.asInstanceOf[Variable[Actor]]
+      val a1Return = a1.returnValue.head
+      val a2Return = a2.returnValue.head
 
-      val wa2 = waitGraph(a2.graph)
-      //GraphDrawing.drawGraph(wa2, a2.name + "_wait")
+      var a1_updated_graph: ArrayBuffer[EdgeInfo] = a1.graph.clone()
+      var a2_updated_graph: ArrayBuffer[EdgeInfo] = a2.graph.clone()
+
+      val a1LeadSends: ArrayBuffer[EdgeInfo] = getLeadSends(a1_updated_graph, a2.name)
+      val a2LeadSends: ArrayBuffer[EdgeInfo] = getLeadSends(a2_updated_graph, a1.name)
+
+      val oldToNewMtdIds: mutable.Map[Int, Int] = mutable.Map()
+      val localizedMethodIdSend: ArrayBuffer[(Int, EdgeInfo)] = ArrayBuffer[(Int, EdgeInfo)]()
+
+      // TODO: fix the messaging behaviour when a blocking method to another SIM is present in a merged method
+      var freePos: Int = utilObj.getFreePos(a2_updated_graph)
+      a2LeadSends.flatMap(sendEdge =>{
+          val localizedIdSubgraph = copyMethod(sendEdge, a1_updated_graph, freePos, oldToNewMtdIds)
+          utilObj.resetThisReturn(localizedIdSubgraph._2, a1This, a2This, a1Return, a2Return)
+          localizedMethodIdSend.append((localizedIdSubgraph._1, sendEdge))
+
+          a2_updated_graph ++= localizedIdSubgraph._2
+        })
+
+      utilObj.replaceSends(a2_updated_graph, 2, localizedMethodIdSend)
+
+      val wa1 = waitGraph(a1_updated_graph)
+//      GraphDrawing.drawGraph(wa1, a1.name+ "_wait")
+
+      val wa2 = waitGraph(a2_updated_graph)
+//      GraphDrawing.drawGraph(wa2, a2.name + "_wait")
 
       val mg = generateMergedStateMachine(wa1, wa2)
-      //GraphDrawing.drawMergeGraph(mg, a1.name + "_" + a2.name + "_merge")
+//      GraphDrawing.drawMergeGraph(mg, a1.name + "_" + a2.name + "_merge")
 
-      val finalGraph = combineActors(mg, a1.graph, a2.graph)
-      //GraphDrawing.drawGraph(finalGraph, a1.name + "_" + a2.name + "_merged")
+      val finalGraph = combineActors(mg, a1_updated_graph, a2_updated_graph)
+//      GraphDrawing.drawGraph(finalGraph, a1.name + "_" + a2.name + "_merged")
+
+      val mergedVariables = utilObj.mergeVariables(a1, a2)
 
       newActorGraphs = CompiledActorGraph(
         a1.name + "_" + a2.name,
         (a1.parentNames ::: a2.parentNames).distinct,
-        (a1.parameterList ::: a2.parameterList),
+        mergedVariables._1,
         finalGraph,
-        a1.variables ::: a2.variables,
-        a1.variables2 ::: a2.variables2,
+        mergedVariables._2,
+        mergedVariables._3,
         a1.actorTypes ::: a2.actorTypes,
         a1.positionStack ::: a2.positionStack,
-        a1.returnValue ::: a2.returnValue,
-        a1.responseMessage ::: a2.responseMessage,
-        a1.responseMessagess ::: a2.responseMessagess,
+        a1.returnValue,
+        a1.responseMessage,
+        a1.responseMessagess
       ) :: newActorGraphs
     })
 
     newActorGraphs
   }
+
+  def getLeadSends(graph: ArrayBuffer[EdgeInfo], receiverName: String): ArrayBuffer[EdgeInfo] = {
+    def getReceiverName(msg: Send[_]): String = {
+      msg.actorRef.rep.dfn.typ.toString.split("\\.").last
+    }
+    graph.filter(edge => edge.sendInfo != null)
+      .filter(sendEdge => (getReceiverName(sendEdge.sendInfo._1) == receiverName && sendEdge.sendInfo._2))
+  }
+
+  /*
+   * Identify the part of the graph containing the method id in the Send edge
+   * Return the methodId
+   */
+  def copyMethod(sendEdge: EdgeInfo, graph: ArrayBuffer[EdgeInfo], freePos: Int, oldToNewMtdIds: mutable.Map[Int, Int]): (Int, ArrayBuffer[EdgeInfo]) = {
+
+    def copyIter(g: ArrayBuffer[EdgeInfo], freePos: Int, newId: Int): ArrayBuffer[EdgeInfo] = {
+      val oldPos: Int = g.head.from.asInstanceOf[CodeNodePos].pos
+      g.foreach(edge => {
+        edge.methodId1 = newId
+        edge.graphId = sendEdge.graphId
+        edge.positionStack = sendEdge.positionStack
+      })
+      utilObj.moveGraphPositions(g, freePos - oldPos, 0)
+      g
+    }
+
+    val methodId: Int = sendEdge.sendInfo._1.methodId
+    val methodGraph: ArrayBuffer[EdgeInfo] = utilObj.getEdgesByMtdId(graph, methodId)
+    val newMtdId: Int = utilObj.copyRuntimeMtd(methodId)
+
+    copyIter(methodGraph, freePos,  newMtdId)
+    oldToNewMtdIds += (methodId -> newMtdId)
+
+    // Copy, if any, call to local methods, to the merged sim as well
+    var methodCallIndex = 0
+    methodGraph.filter(edge => edge.methodCallInfo._1!=null)
+      .groupBy(_.methodCallInfo._1)
+      .foreach(group => {
+        val oldId: Int = group._1.methodId
+        var newId: Int = -1
+        if (!(oldToNewMtdIds.get(oldId).isDefined)) {
+          newId = utilObj.copyRuntimeMtd(oldId)
+          oldToNewMtdIds += (oldId -> newId)
+        } else {
+          newId = oldToNewMtdIds.get(group._1.methodId).get
+        }
+        group._2.foreach(edge => {
+          edge.label = edge.label.replaceFirst(group._1.methodId.toString(), newId.toString())
+          edge.methodCallInfo = (CallMethod[Any](newId, edge.methodCallInfo._1.argss), methodCallIndex)
+          methodCallIndex = (methodCallIndex + 1) % 3
+        })
+        methodGraph ++= copyIter(utilObj.getEdgesByMtdId(graph, oldId), utilObj.getFreePos(methodGraph), newId)
+        group._2.head.to = CodeNodeMtd(newId)
+        group._2.tail.head.from = CodeNodeMtd(newId, end = true)
+        utilObj.mtdToPosNodes(methodGraph)
+        group._2.head.storePosRef = List(List(group._2.tail.head))
+      })
+
+    (newMtdId, methodGraph)
+  }
+
+
 
   /**
     * This functions generates an abstract graph with only wait edges.
@@ -85,6 +181,7 @@ class ActorMerge(mergeData: List[(String, String)])
       if (visited.contains(currentNode)) {
         return
       }
+
       if (edgeInfo == null) {
         //Already handled that node as start node
         if (startNodes.contains(currentNode)) {
@@ -102,26 +199,33 @@ class ActorMerge(mergeData: List[(String, String)])
 
       startNode.foreach(edge => {
         //Remove all data about the node, make it as abstract as possible
-        val edgeTargetPos = edge.to.getNativeId
-        var newEdgeInfo = EdgeInfo(currentNode + "->" + edgeTargetPos,
-                                   edge.from,
-                                   edge.to,
-                                   null,
-                                   edge.waitEdge,
-                                   isMethod = false,
-                                   null,
-                                   List())
+        var edgeTargetPos = edge.to.getNativeId
+//        if (replaced.get(edgeTargetPos).isDefined){
+//          edgeTargetPos = replaced(edgeTargetPos)
+//        }
+        val edgeTargetCodeNode = CodeNodePos(edgeTargetPos)
+
+        var newEdgeInfo =
+          EdgeInfo(currentNode + "->" + edgeTargetPos,
+                   edge.from,
+                   edgeTargetCodeNode,
+                   null,
+                   edge.waitEdge,
+                   isMethod = false,
+                   null,
+                   List())
+
         if (edgeInfo != null) {
           newEdgeInfo =
             EdgeInfo(edgeInfo.from.getNativeId + "->" + edgeTargetPos,
                      edgeInfo.from,
-                     edge.to,
+                     edgeTargetCodeNode,
                      null,
                      edge.waitEdge,
                      isMethod = false,
                      null,
-                     List())
-        }
+                     List())}
+
         if (edge.waitEdge) {
           if (!edgeList.contains(
                 (newEdgeInfo.from.getNativeId, newEdgeInfo.to.getNativeId))) {
