@@ -1,4 +1,4 @@
-package meta.example.actor_merge_example
+package meta.example.actor_merge_example.no_communication
 
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.Actor

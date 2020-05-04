@@ -1,4 +1,4 @@
-This example demonstrates the behavior of stateless merged examples. 
+This example demonstrates merging non-communicating agents with parameter lists and identical local variable and method names.  
 
 Expected output: 
 ```

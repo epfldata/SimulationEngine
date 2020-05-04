@@ -46,10 +46,8 @@ class ActorMerge(mergeData: List[(String, String)])
       val a1Return = a1.returnValue.head
       val a2Return = a2.returnValue.head
 
-      // replace send messages with local message calls
       var a1_updated_graph: ArrayBuffer[EdgeInfo] = a1.graph.clone()
       var a2_updated_graph: ArrayBuffer[EdgeInfo] = a2.graph.clone()
-//      var a2_updated_graph: ArrayBuffer[EdgeInfo] = a2.graph
 
       val a1LeadSends: ArrayBuffer[EdgeInfo] = getLeadSends(a1_updated_graph, a2.name)
       val a2LeadSends: ArrayBuffer[EdgeInfo] = getLeadSends(a2_updated_graph, a1.name)
@@ -58,6 +56,7 @@ class ActorMerge(mergeData: List[(String, String)])
 
       val localizedMethodIdSend: ArrayBuffer[(Int, EdgeInfo)] = ArrayBuffer[(Int, EdgeInfo)]()
 
+      // TODO: fix the messaging behaviour when a blocking method to another SIM is present in a merged method
       // TODO: check for each copied method, whether it contains another method call or local call, and copy recursively
       a2_updated_graph ++= a2LeadSends.flatMap(sendEdge =>{
           val localizedIdSubgraph = copyMethod(sendEdge, a1_updated_graph, utilObj.getFreePos(a2_updated_graph))
@@ -101,7 +100,7 @@ class ActorMerge(mergeData: List[(String, String)])
         a1.positionStack ::: a2.positionStack,
         a1.returnValue,
         a1.responseMessage,
-        a1.responseMessagess,
+        a1.responseMessagess
       ) :: newActorGraphs
     })
 
