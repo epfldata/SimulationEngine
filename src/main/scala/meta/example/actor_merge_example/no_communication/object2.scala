@@ -5,18 +5,26 @@ import meta.deep.runtime.Actor
 import squid.quasi.lift
 
 @lift
-class object2(val name: String) extends Actor {
-//  val name: String = "object 2"
-  var age: Int = 5
+class object1(val name: String) extends Actor {
+  var deposit: Double = 1000
+  val daily_interest: Double =  0.0001
 
-  def introduction: Unit = {
-    println(s"My name is ${name}. I am ${age}")
+  def greeting: String = {
+    "Hello " + name
+  }
+
+  def checkBalance: Unit = {
+    println(greeting + " Your current balance is " + deposit)
+  }
+
+  def depositInterest(): Unit = {
+    deposit = deposit * (1 + daily_interest)
   }
 
   def main(): Unit = {
     while(true){
-      introduction
-      age = age + 5
+      checkBalance
+      depositInterest()
       waitTurns(1)
     }
   }
