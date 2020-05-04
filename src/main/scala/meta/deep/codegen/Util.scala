@@ -8,6 +8,7 @@ import meta.deep.member.ActorType
 import meta.deep.runtime.ResponseMessage
 import squid.lib.MutVar
 import meta.deep.runtime.Actor
+import meta.deep.member.Method
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map}
 
@@ -273,6 +274,9 @@ object utilObj {
         graph2.variables.filter(x => !(x.A <:< graph1.actorTypes.head.X))
 
     val variables2: List[VarValue[_]] = graph1.variables2 :::
+//      graph2.variables2
+//        .filter(x => x.A.rep.toString() != "squid.lib.package.MutVar[meta.deep.runtime.ResponseMessage]")
+//        .filter(x => x.A.rep.toString() != "scala.collection.mutable.Map[String,meta.deep.runtime.ResponseMessage]")
       graph2.variables2.tail
         .filter(x => x.A.rep.toString() != "squid.lib.package.MutVar[meta.deep.runtime.ResponseMessage]")
         .filter(x => x.A.rep.toString() != "scala.collection.mutable.Map[String,meta.deep.runtime.ResponseMessage]")
@@ -294,21 +298,52 @@ object utilObj {
     Replace edges related to the leading send edge with local method calls identified by method id in the leadingSendEdge in graph. Modify the original graph directly
    */
   def replaceSends(graph: ArrayBuffer[EdgeInfo], graphId: Int, leadingSendEdge: ArrayBuffer[(Int, EdgeInfo)]): Unit = {
-    /* ScalaCode (return value = receiver),
-    * LetBinding (resolve the type of the receiver and create and binding mutvar), (2)
-    * Send, Send, Send, Send, Send (leadsend, 4)
-     */
-    val firstOffset: Int = 2 // two edges precede the leading edge (setup the receiver and environment)
+
     val lastOffset: Int = 4 // four edges after the leading edge (total four send edges)
 
     var newEdgesMap: Map[Int, ArrayBuffer[EdgeInfo]] = Map[Int, ArrayBuffer[EdgeInfo]]()
 
-    graph --= leadingSendEdge
+    val leadingEdgesWithFirstOffset: ArrayBuffer[(Int, EdgeInfo, Int)] =
+//      leadingSendEdge.map(edge => {
+//        var firstOffset: Int = 0
+//        var found: Boolean = false
+//        var currentEdge: EdgeInfo = edge._2
+//        graph.splitAt(graph.indexOf(edge._2))._1.reverse.foreach(
+//          previousEdge => if (!found) {
+//            if (currentEdge.from == previousEdge.to){
+//              currentEdge = previousEdge
+//              firstOffset = firstOffset + 1 // count the number of edges, not nodes
+//            } else {
+//              found = true
+//            }
+//          }
+//        )
+//      (edge._1, edge._2, firstOffset)
+//      })
+
+      leadingSendEdge.map(edge => {
+        var firstOffset: Int = 0
+        var found: Boolean = false
+        var currentEdge: EdgeInfo = edge._2
+        graph.splitAt(graph.indexOf(edge._2))._1.reverse.foreach(
+          previousEdge => if (!found) {
+            if (currentEdge.from == previousEdge.to){
+              currentEdge = previousEdge
+              firstOffset = firstOffset + 1 // count the number of edges, not nodes
+            } else {
+              found = true
+            }
+          }
+        )
+        (edge._1, edge._2, 2)
+      })
+
+    graph --= leadingEdgesWithFirstOffset
       .map(methodId_sendEdge => {
         val edgeIdx = graph.indexOf(methodId_sendEdge._2)
         newEdgesMap = newEdgesMap + (edgeIdx -> {
           val newEdges: ArrayBuffer[EdgeInfo] = newCallMethodEdges(methodId_sendEdge._1, methodId_sendEdge._2)
-          newEdges.head.from = graph(edgeIdx - firstOffset).from
+          newEdges.head.from = graph(edgeIdx - methodId_sendEdge._3).from
           newEdges.last.to = graph(edgeIdx + lastOffset).to
           newEdges.foreach(x => {
             x.positionStack = methodId_sendEdge._2.positionStack
@@ -316,9 +351,9 @@ object utilObj {
           })
           newEdges
         })
-        edgeIdx
+        (edgeIdx, methodId_sendEdge._3)
       })
-      .flatMap(x => Range(x-firstOffset, x + lastOffset + 1)) // Range exclude the last element
+      .flatMap(x => Range(x._1-x._2, x._1 + lastOffset + 1)) // Range exclude the last element
       .map(x => graph(x))
 
     newEdgesMap.values.foreach(x => graph++=x)
@@ -346,6 +381,13 @@ object utilObj {
         edge.code = edge.code.subs(this1).~>(this2.toCode)
         edge.code = edge.code.subs(return1).~>(return2.toCode)
       })
+  }
+
+  def copyRuntimeMtd(oldMtdId: Int): Int = {
+    val newMtdId: Int = Method.getNextMethodId
+    CreateActorGraphs.methodVariableTableStack(newMtdId) = CreateActorGraphs.methodVariableTableStack(oldMtdId)
+    CreateActorGraphs.methodVariableTable(newMtdId) = CreateActorGraphs.methodVariableTable(oldMtdId)
+    newMtdId
   }
 }
 
