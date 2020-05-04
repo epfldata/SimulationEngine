@@ -14,8 +14,7 @@ class object2(val name: String) extends Actor {
   }
 
   def checkBalance: Unit = {
-    greeting
-    println("Your current balance is " + deposit)
+    println(s"${greeting}, Your current balance is " + deposit)
   }
 
   def isWeek(days: Int): Boolean = {
