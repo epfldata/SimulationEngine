@@ -1,10 +1,14 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.{EdgeInfo, VarWrapper}
-import meta.deep.member.{ActorType}
+import meta.deep.algo.AlgoInfo.{CodeNodeMtd, CodeNodePos, EdgeInfo, VarWrapper}
+import meta.deep.algo.{AlgoInfo, CallMethod, Send}
+import meta.deep.codegen.CreateActorGraphs._
+import meta.deep.member.ActorType
 import meta.deep.runtime.ResponseMessage
 import squid.lib.MutVar
+import meta.deep.runtime.Actor
+import meta.deep.member.Method
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map}
 
@@ -93,3 +97,275 @@ case class CompiledActorGraph(
   */
 case class VarValue[C](variable: Variable[C], init: OpenCode[C])(
     implicit val A: CodeType[C]) {}
+
+object utilObj {
+
+  def createCallMethodEdges(methodId: Int,
+                            sendEdge: EdgeInfo): ArrayBuffer[EdgeInfo] = {
+
+    AlgoInfo.resetData()
+    CallMethod[Any](methodId, sendEdge.sendInfo._1.argss).codegen()
+
+    val newEdges = AlgoInfo.stateGraph.map(edge1 => {
+      edge1.methodId1 = sendEdge.methodId1
+      edge1.from match {
+        case c: CodeNodePos =>
+          edge1.from =
+            CodeNodePos(c.pos + sendEdge.from.asInstanceOf[CodeNodePos].pos)
+        case _ =>
+      }
+      edge1.to match {
+        case c: CodeNodePos =>
+          edge1.to =
+            CodeNodePos(c.pos + sendEdge.from.asInstanceOf[CodeNodePos].pos)
+        case _ =>
+      }
+      edge1
+    })
+    AlgoInfo.resetData()
+    newEdges
+  }
+
+  def rewriteCallMethod(edges: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
+    edges.foreach(edge => {
+      edge.code = edge.code.rewrite({
+        case code"meta.deep.algo.Instructions.setMethodParam(${Const(a)}, ${Const(
+        b)}, $c) " =>
+          val variable: MutVarType[_] = methodVariableTable(a)(b)
+
+          variable match {
+            case v: MutVarType[a] =>
+              code"${v.variable} := $c.asInstanceOf[${v.codeType}]"
+            case _ => throw new RuntimeException("Illegal state")
+          }
+        case code"meta.deep.algo.Instructions.saveMethodParam(${Const(a)}, ${Const(
+        b)}, $c) " =>
+          val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
+            methodVariableTableStack(a)
+          val varstack: Variable[ListBuffer[Any]] = stack(b)
+          code"$varstack.prepend($c);"
+        case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)}) " =>
+          val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
+            methodVariableTableStack(a)
+          val initCode: OpenCode[Unit] = code"()"
+          stack.zipWithIndex.foldRight(initCode)((c, b) => {
+            val variable: MutVarType[_] = methodVariableTable(a)(c._2)
+            val ab = c._1
+            variable match {
+              case v: MutVarType[a] =>
+                code"$ab.remove(0); if(!$ab.isEmpty) {${v.variable} := $ab(0).asInstanceOf[${v.codeType}]}; $b; ()"
+              case _ => throw new RuntimeException("Illegal state")
+            }
+          })
+      })
+    })
+    edges
+  }
+
+  /*
+   Surround the graphs with 'wait edge' though there needs not to be latency penalty
+   */
+  def addGlue(edges: ArrayBuffer[EdgeInfo],
+                 methodId: Int,
+                 removeWait: Boolean = true): ArrayBuffer[EdgeInfo] = {
+    val firstFrom = edges.head.from
+    edges.foreach(edge1 => {
+      edge1.to match {
+        case c: CodeNodePos =>
+          edge1.to = CodeNodePos(c.pos + 1)
+        case _ =>
+      }
+      edge1.from match {
+        case c: CodeNodePos =>
+          edge1.from = CodeNodePos(c.pos + 1)
+        case _ =>
+      }
+    })
+    val w1 = AlgoInfo.EdgeInfo("wait",
+      firstFrom,
+      edges.head.from,
+      code"()",
+      waitEdge = !removeWait,
+      methodId1 = methodId)
+    val w2 = AlgoInfo.EdgeInfo("wait",
+      edges.last.to,
+      CodeNodePos(edges.last.to.asInstanceOf[CodeNodePos].pos + 1),
+      code"()",
+      waitEdge = !removeWait,
+      methodId1 = methodId)
+    edges.prepend(w1)
+    edges.append(w2)
+    edges
+  }
+
+  def mtdToPosNodes(graph: ArrayBuffer[EdgeInfo]): Unit = {
+    graph.foreach(edge => {
+      edge.from match {
+        case c: CodeNodeMtd =>
+          val id = c.id
+          val methodGraph = graph.filter(edge1 => edge1.methodId1 == id)
+          if (!c.end) {
+            edge.from =
+              CodeNodePos(methodGraph.head.from.asInstanceOf[CodeNodePos].pos)
+          }
+          //case of interest: jump from the end of the method
+          else {
+            edge.from =
+              CodeNodePos(methodGraph.last.to.asInstanceOf[CodeNodePos].pos)
+          }
+        case _ =>
+      }
+      edge.to match {
+        case c: CodeNodeMtd =>
+          val id = c.id
+          val methodGraph = graph.filter(edge1 => edge1.methodId1 == id)
+          //case of interest: jump to the beginning of the method
+          if (!c.end) {
+            edge.to =
+              CodeNodePos(methodGraph.head.from.asInstanceOf[CodeNodePos].pos)
+          } else {
+            edge.to =
+              CodeNodePos(methodGraph.last.to.asInstanceOf[CodeNodePos].pos)
+          }
+        case _ =>
+      }
+    })
+  }
+
+  def getFreePos(graph: ArrayBuffer[EdgeInfo]): Int = {
+    graph.flatMap(edge => edge.from :: edge.to :: Nil)
+      .maxBy(node =>
+        node match {
+          case c: CodeNodeMtd => -1
+          case c: CodeNodePos => c.pos
+        })
+      .getNativeId + 1
+  }
+
+  /** used to translate the graph by a moveAmmount, after the moveThreshold
+    * for each edge that has a from or to above the moveThreshold, add moveAmmount to it
+    *
+    * @param moveAmount how much to move the graph
+    * @param moveThreshold after which position to start moving
+    */
+  def moveGraphPositions(graph: ArrayBuffer[EdgeInfo], moveAmount: Int, moveThreshold: Int): Unit = {
+    graph.foreach(edge => {
+      edge.from match {
+        case c: CodeNodePos =>
+          if (c.pos > moveThreshold)
+            edge.from = CodeNodePos(c.pos + moveAmount)
+        case _ =>
+      }
+      edge.to match {
+        case c: CodeNodePos =>
+          if (c.pos > moveThreshold)
+            edge.to = CodeNodePos(c.pos + moveAmount)
+        case _ =>
+      }
+    })
+  }
+
+  /*
+  For two compiled actor graphs, remove instances of each other from all variables
+   */
+  def mergeVariables(graph1: CompiledActorGraph, graph2: CompiledActorGraph): (List[(String, String)], List[VarWrapper[_]], List[VarValue[_]]) = {
+    val variables1: List[VarWrapper[_]] =
+      graph1.variables.filter(x => !(x.A <:< graph2.actorTypes.head.X)) :::
+        graph2.variables.filter(x => !(x.A <:< graph1.actorTypes.head.X))
+
+    val variables2: List[VarValue[_]] = graph1.variables2 :::
+      graph2.variables2
+
+    val parameterList: List[(String, String)] = {
+      graph1.parameterList.filter(x => x._2!=graph2.actorTypes.head.X.rep.toString()) :::
+        graph2.parameterList.filter(x => x._2!=graph1.actorTypes.head.X.rep.toString())
+    }
+    (parameterList, variables1, variables2)
+  }
+
+  def newCallMethodEdges(methodId: Int,
+                         sendEdge: EdgeInfo): ArrayBuffer[EdgeInfo] = {
+    val newEdges: ArrayBuffer[EdgeInfo] = utilObj.createCallMethodEdges(methodId, sendEdge)
+    utilObj.rewriteCallMethod(newEdges)
+  }
+
+  /*
+    Replace edges related to the leading send edge with local method calls identified by method id in the leadingSendEdge in graph. Modify the original graph directly
+   */
+  def replaceSends(graph: ArrayBuffer[EdgeInfo], graphId: Int, leadingSendEdge: ArrayBuffer[(Int, EdgeInfo)]): Unit = {
+
+    val lastOffset: Int = 4 // four edges after the leading edge (total four send edges)
+
+    var newEdgesMap: Map[Int, ArrayBuffer[EdgeInfo]] = Map[Int, ArrayBuffer[EdgeInfo]]()
+
+    val leadingEdgesWithFirstOffset: ArrayBuffer[(Int, EdgeInfo, Int)] =
+      leadingSendEdge.map(edge => {
+        var firstOffset: Int = 0
+        var found: Boolean = false
+        var currentEdge: EdgeInfo = edge._2
+        graph.splitAt(graph.indexOf(edge._2))._1.reverse.foreach(
+          previousEdge => if (!found) {
+            if (currentEdge.from == previousEdge.to){
+              currentEdge = previousEdge
+              firstOffset = firstOffset + 1 // count the number of edges, not nodes
+            } else {
+              found = true
+            }
+          }
+        )
+      (edge._1, edge._2, firstOffset)
+      })
+
+    graph --= leadingEdgesWithFirstOffset
+      .map(methodId_sendEdge => {
+        val edgeIdx = graph.indexOf(methodId_sendEdge._2)
+        newEdgesMap = newEdgesMap + (edgeIdx -> {
+          val newEdges: ArrayBuffer[EdgeInfo] = newCallMethodEdges(methodId_sendEdge._1, methodId_sendEdge._2)
+          newEdges.head.from = graph(edgeIdx - methodId_sendEdge._3).from
+          newEdges.last.to = graph(edgeIdx + lastOffset).to
+          newEdges.foreach(x => {
+            x.positionStack = methodId_sendEdge._2.positionStack
+            x.graphId = graphId
+          })
+          newEdges
+        })
+        (edgeIdx, methodId_sendEdge._3)
+      })
+      .flatMap(x => Range(x._1-x._2, x._1 + lastOffset + 1)) // Range exclude the last element
+      .map(x => graph(x))
+
+    newEdgesMap.values.foreach(x => graph++=x)
+    mtdToPosNodes(graph)
+  }
+
+  /*
+  Return a copy of the subgraph related to methodId.
+   */
+  def getEdgesByMtdId(graph: ArrayBuffer[EdgeInfo], methodId: Int): ArrayBuffer[EdgeInfo] = {
+    graph.filter(edge => edge.methodId1== methodId)
+      .map(edge => edge.myCopy())
+  }
+
+  /*
+  Replace "this1" and "return1" for graph with "this2" and "return2". Modify the graph directly
+   */
+  def resetThisReturn(graph: ArrayBuffer[EdgeInfo],
+                      this1: Variable[Actor],
+                      this2: Variable[Actor],
+                      return1: Variable[MutVar[Any]],
+                      return2: Variable[MutVar[Any]]): Unit ={
+    graph.foreach(edge =>
+      if (edge.code!= null){
+        edge.code = edge.code.subs(this1).~>(this2.toCode)
+        edge.code = edge.code.subs(return1).~>(return2.toCode)
+      })
+  }
+
+  def copyRuntimeMtd(oldMtdId: Int): Int = {
+    val newMtdId: Int = Method.getNextMethodId
+    CreateActorGraphs.methodVariableTableStack(newMtdId) = CreateActorGraphs.methodVariableTableStack(oldMtdId)
+    CreateActorGraphs.methodVariableTable(newMtdId) = CreateActorGraphs.methodVariableTable(oldMtdId)
+    newMtdId
+  }
+}
+

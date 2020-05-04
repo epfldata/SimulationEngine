@@ -41,7 +41,7 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
       Send[R](actorFrom, actorRef, methodId, argss, false).codegen()
     } else {
       AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo("Send nb f1",
+        AlgoInfo.EdgeInfo("Async with_reply f1",
           AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
           AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
           f1,

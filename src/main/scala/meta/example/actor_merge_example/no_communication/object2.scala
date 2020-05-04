@@ -1,4 +1,4 @@
-package meta.example.actor_merge_example
+package meta.example.actor_merge_example.no_communication
 
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.Actor
@@ -10,12 +10,11 @@ class object1(val name: String) extends Actor {
   val daily_interest: Double =  0.0001
 
   def greeting: String = {
-    "Hello " + name + "!"
+    "Hello " + name
   }
 
   def checkBalance: Unit = {
-//    println(greeting)
-    println(s"Hi ${name}, Your current balance is " + deposit)
+    println(greeting + " Your current balance is " + deposit)
   }
 
   def depositInterest(): Unit = {

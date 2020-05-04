@@ -1,4 +1,4 @@
-package meta.example.actor_merge_example
+package meta.example.actor_merge_example.no_communication
 
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.Actor
@@ -14,7 +14,7 @@ class object2(val name: String) extends Actor {
   }
 
   def checkBalance: Unit = {
-    println(s"${greeting}, Your current balance is " + deposit)
+    println(greeting + " Your current balance is " + deposit)
   }
 
   def isWeek(days: Int): Boolean = {
