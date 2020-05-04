@@ -1,10 +1,9 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
+import meta.deep.algo.AlgoInfo.{CodeNodePos, CodeNodeMtd, EdgeInfo}
 import meta.deep.algo.{AlgoInfo, CallMethod, Send}
 import meta.deep.codegen.CreateActorGraphs.MutVarType
-import meta.deep.member.Method
 import meta.deep.member.ActorType
 
 import scala.collection.mutable
@@ -52,19 +51,17 @@ class ActorMerge(mergeData: List[(String, String)])
       val a1LeadSends: ArrayBuffer[EdgeInfo] = getLeadSends(a1_updated_graph, a2.name)
       val a2LeadSends: ArrayBuffer[EdgeInfo] = getLeadSends(a2_updated_graph, a1.name)
 
-      val newToOldMtdIds: mutable.Map[Int, Int] = mutable.Map()
-
+      val oldToNewMtdIds: mutable.Map[Int, Int] = mutable.Map()
       val localizedMethodIdSend: ArrayBuffer[(Int, EdgeInfo)] = ArrayBuffer[(Int, EdgeInfo)]()
 
       // TODO: fix the messaging behaviour when a blocking method to another SIM is present in a merged method
       // TODO: check for each copied method, whether it contains another method call or local call, and copy recursively
+      var freePos: Int = utilObj.getFreePos(a2_updated_graph)
       a2LeadSends.flatMap(sendEdge =>{
-          val localizedIdSubgraph = copyMethod(sendEdge, a1_updated_graph, utilObj.getFreePos(a2_updated_graph))
+          val localizedIdSubgraph = copyMethod(sendEdge, a1_updated_graph, freePos, oldToNewMtdIds)
           utilObj.resetThisReturn(localizedIdSubgraph._2, a1This, a2This, a1Return, a2Return)
-          newToOldMtdIds += localizedIdSubgraph._1 -> sendEdge.sendInfo._1.methodId
           localizedMethodIdSend.append((localizedIdSubgraph._1, sendEdge))
-          CreateActorGraphs.methodVariableTableStack(localizedIdSubgraph._1) = CreateActorGraphs.methodVariableTableStack(sendEdge.sendInfo._1.methodId)
-          CreateActorGraphs.methodVariableTable(localizedIdSubgraph._1) = CreateActorGraphs.methodVariableTable(sendEdge.sendInfo._1.methodId)
+
           a2_updated_graph ++= localizedIdSubgraph._2
         })
 
@@ -119,21 +116,52 @@ class ActorMerge(mergeData: List[(String, String)])
    * Identify the part of the graph containing the method id in the Send edge
    * Return the methodId
    */
-  def copyMethod(sendEdge: EdgeInfo, graph: ArrayBuffer[EdgeInfo], freePos: Int): (Int, ArrayBuffer[EdgeInfo]) = {
+  def copyMethod(sendEdge: EdgeInfo, graph: ArrayBuffer[EdgeInfo], freePos: Int, oldToNewMtdIds: mutable.Map[Int, Int]): (Int, ArrayBuffer[EdgeInfo]) = {
+
+    def copyIter(g: ArrayBuffer[EdgeInfo], freePos: Int, newId: Int): ArrayBuffer[EdgeInfo] = {
+      val oldPos: Int = g.head.from.asInstanceOf[CodeNodePos].pos
+      g.foreach(edge => {
+        edge.methodId1 = newId
+        edge.graphId = sendEdge.graphId
+        edge.positionStack = sendEdge.positionStack
+      })
+      utilObj.moveGraphPositions(g, freePos - oldPos, 0)
+      g
+    }
+
     val methodId: Int = sendEdge.sendInfo._1.methodId
-    val newMtdId: Int = Method.getNextMethodId
     val methodGraph: ArrayBuffer[EdgeInfo] = utilObj.getEdgesByMtdId(graph, methodId)
+    val newMtdId: Int = utilObj.copyRuntimeMtd(methodId)
 
-    val oldPos: Int = methodGraph.head.from.asInstanceOf[CodeNodePos].pos
+    copyIter(methodGraph, freePos,  newMtdId)
+    oldToNewMtdIds += (methodId -> newMtdId)
 
-    methodGraph.foreach(edge => {
-      edge.methodId1 = newMtdId
-      edge.graphId = sendEdge.graphId
-      edge.positionStack = sendEdge.positionStack
-    })
 
-    // Move (freePos - oldPos) for all edges in methodGraph
-    utilObj.moveGraphPositions(methodGraph, freePos - oldPos, 0)
+    // Copy, if any, call to local methods, to the merged sim as well
+    var methodCallIndex = 0
+    methodGraph.filter(edge => edge.methodCallInfo._1!=null)
+      .groupBy(_.methodCallInfo._1)
+      .foreach(group => {
+        val oldId: Int = group._1.methodId
+        var newId: Int = -1
+        if (!(oldToNewMtdIds.get(oldId).isDefined)) {
+          newId = utilObj.copyRuntimeMtd(oldId)
+          oldToNewMtdIds += (oldId -> newId)
+        } else {
+          println("Methods have been replaced previously!")
+          newId = oldToNewMtdIds.get(group._1.methodId).get
+        }
+        group._2.foreach(edge => {
+          edge.label = edge.label.replaceFirst(group._1.methodId.toString(), newId.toString())
+          edge.methodCallInfo = (CallMethod[Any](newId, edge.methodCallInfo._1.argss), methodCallIndex)
+          methodCallIndex = (methodCallIndex + 1) % 3
+        })
+        methodGraph ++= copyIter(utilObj.getEdgesByMtdId(graph, oldId), utilObj.getFreePos(methodGraph), newId)
+        group._2.head.to = CodeNodeMtd(newId)
+        group._2.tail.head.from = CodeNodeMtd(newId, end = true)
+        utilObj.mtdToPosNodes(methodGraph)
+        group._2.head.storePosRef = List(List(group._2.tail.head))
+      })
 
     (newMtdId, methodGraph)
   }
