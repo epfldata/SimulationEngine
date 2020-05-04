@@ -7,10 +7,12 @@ import squid.quasi.lift
 @lift
 class object2(val bank: object1) extends Actor {
 
+// passing variable doesn't work
+//  val dailySaving: Double = 50
+
   def main(): Unit = {
     while(true){
-      bank.check_balance
-      bank.deposit(10)
+      bank.deposit(50)
       waitTurns(1)
     }
   }

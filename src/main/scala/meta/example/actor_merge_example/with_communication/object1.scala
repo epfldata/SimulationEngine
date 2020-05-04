@@ -8,7 +8,7 @@ import squid.quasi.lift
 class object1() extends Actor {
 
   var savings: Double = 800
-  val interestRate: Double = 0.01
+  val interestRate: Double = 0.000002
 
   def check_balance: Unit = {
     println("Your current saving is " + savings)
@@ -17,6 +17,7 @@ class object1() extends Actor {
   def deposit(amount: Double): Unit = {
     println("Deposit amount: " + amount)
     savings = savings + amount
+    print_receipt()
   }
 
   def print_receipt(): Unit = {
@@ -30,7 +31,6 @@ class object1() extends Actor {
   def main(): Unit = {
     while(true){
       deposit(interest())
-      print_receipt()
       waitTurns(1)
     }
   }
