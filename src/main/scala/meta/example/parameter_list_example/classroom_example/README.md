@@ -5,15 +5,14 @@ Expected output:
 ```
 (TIMER,0)
 Professor: Moi, c'est Church et Je travaille à Princeton
-Student: My name is Turing and my advisor is Church
-Q: What is 萕횪ꍟ퍼騻?
 (TIMER,1)
 (TIMER,2)
-A: 萕횪ꍟ퍼騻 is 萕횪ꍟ퍼騻
+Student: My name is Turing and my advisor is Church
+Q: What is 䎈ꨧ짐甩䘊?
 (TIMER,3)
-Q: What is 萕횪ꍟ퍼騻?
 (TIMER,4)
+A: 䎈ꨧ짐甩䘊 is 䎈ꨧ짐甩䘊
 (TIMER,5)
-A: 萕횪ꍟ퍼騻 is 萕횪ꍟ퍼騻
-...
+Q: What is 䎈ꨧ짐甩䘊?
+(TIMER,6)
 ```
