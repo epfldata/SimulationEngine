@@ -58,14 +58,14 @@ class ActorMerge(mergeData: List[(String, String)])
 
       // TODO: fix the messaging behaviour when a blocking method to another SIM is present in a merged method
       // TODO: check for each copied method, whether it contains another method call or local call, and copy recursively
-      a2_updated_graph ++= a2LeadSends.flatMap(sendEdge =>{
+      a2LeadSends.flatMap(sendEdge =>{
           val localizedIdSubgraph = copyMethod(sendEdge, a1_updated_graph, utilObj.getFreePos(a2_updated_graph))
           utilObj.resetThisReturn(localizedIdSubgraph._2, a1This, a2This, a1Return, a2Return)
           newToOldMtdIds += localizedIdSubgraph._1 -> sendEdge.sendInfo._1.methodId
           localizedMethodIdSend.append((localizedIdSubgraph._1, sendEdge))
           CreateActorGraphs.methodVariableTableStack(localizedIdSubgraph._1) = CreateActorGraphs.methodVariableTableStack(sendEdge.sendInfo._1.methodId)
           CreateActorGraphs.methodVariableTable(localizedIdSubgraph._1) = CreateActorGraphs.methodVariableTable(sendEdge.sendInfo._1.methodId)
-          localizedIdSubgraph._2
+          a2_updated_graph ++= localizedIdSubgraph._2
         })
 
       utilObj.replaceSends(a2_updated_graph, 2, localizedMethodIdSend)

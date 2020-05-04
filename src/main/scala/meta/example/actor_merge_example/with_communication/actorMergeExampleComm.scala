@@ -12,6 +12,8 @@ object actorMergeExampleComm extends App{
 //  val cls3: ClassWithObject[object3] = object3.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
   val startClasses: List[Clasz[_ <: Actor]] = List(cls1, cls2)
+  //  val startClasses: List[Clasz[_ <: Actor]] = List(cls1, cls2, cls3)
+
   val lifter = new Lifter()
   val simulationData = lifter(startClasses, mainClass)
 

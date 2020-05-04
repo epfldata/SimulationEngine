@@ -5,11 +5,12 @@ import meta.deep.runtime.Actor
 import squid.quasi.lift
 
 @lift
-class object2(val neighbor: object1) extends Actor {
+class object2(val bank: object1) extends Actor {
 
   def main(): Unit = {
     while(true){
-      println(neighbor.introduction)
+      bank.check_balance
+      bank.deposit(10)
       waitTurns(1)
     }
   }

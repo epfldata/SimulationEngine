@@ -6,7 +6,6 @@ import squid.quasi.lift
 @lift
 class MainInit extends Actor {
   def main(): List[Actor] = {
-//    val ob3: object3 = new object3()
     val ob1: object1 = new object1()
 //    val ob1: object1 = new object1(ob3)
     val ob2: object2 = new object2(ob1)
