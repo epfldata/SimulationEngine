@@ -6,6 +6,7 @@ import meta.deep.IR
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
 import meta.deep.algo.AlgoInfo.EdgeInfo
+import meta.deep.member.{ActorType}
 import meta.deep.runtime.Actor
 
 import scala.collection.mutable.ArrayBuffer
@@ -109,14 +110,14 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
         s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
       })}).mkString("\n")
 
-    val parameters: String = compiledActorGraph.parameterList.map(x => {
-      val namess: Array[String] = x._1.split(",")
-      self_name.keys.foreach(self => {
-        initVars = initVars.replace(s"${self}.${namess(1)};", s"this.${namess(0)}_${namess(1)};")
-        initVars = initVars.replace(s"${self}.`${namess(1)}_=`", s"this.`${namess(0)}_${namess(1)}_=`")
-      })
-      s"var ${namess(0)}_${namess(1)}: ${changeTypes(x._2, false)}"
-    }).mkString(", ")
+    val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
+      actorType.parameterList.map(x => {
+        self_name.keys.foreach(self => {
+          initVars = initVars.replace(s"${self}.${x._1};", s"this.${self_name(self)}_${x._1};")
+          initVars = initVars.replace(s"${self}.`${x._1}_=`", s"this.`${self_name(self)}_${x._1}_=`")
+        })
+        s"var ${actorType.name}_${x._1}: ${changeTypes(x._2, false)}"
+      })}).mkString(", ")
 
     self_name.keys.foreach(self => {
       initParams = initParams.replace(self, "this")
@@ -323,13 +324,10 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
                   initVars: String,
                   run_until: String,
                   parents: String): Unit = {
-
-    // zt. Remove the parents for now, as it may contain abstract methods
     val classString =
       s"""package ${packageName}
 
-class ${className} (${parameters}) extends meta.deep.runtime.Actor {
-
+class ${className} (${parameters}) extends ${parents} {
 $initParams
 $initVars
 $run_until
@@ -440,54 +438,16 @@ $run_until
     * @param code init code of the simulation
     */
   def createInit(code: String): Unit = {
-
-    var modifiedCode: String = code
-
-    if (hasDirectAccess(code)){
-//      println("Direct attribute access from MainInit is supported for backward compatibility only. Please use parameter list instead")
-      val agentMap: Map[String, String] = buildAgentNameMap(modifiedCode)
-      modifiedCode = code.split("\n").map(statement =>
-        // keep the compiler happy about unreachable cases
-        statement.replace(".`", s".`${agentMap.getOrElse(getObjectName(statement), "ERROR")}_")
-      ).mkString("\n")
-    }
-
     val classString =
       s"""package ${packageName}
 
 object InitData  {
-  def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(modifiedCode, init = true)}}
+  def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(code, init = true)}}
 }"""
     val file = new File(storagePath + "/generated/InitData.scala")
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(classString)
     bw.close()
-  }
-
-  def hasDirectAccess(code: String): Boolean = {
-    code.contains("_=`")
-  }
-
-  def buildAgentNameMap(code: String): Map[String, String] = {
-    var tokens: Array[String] = Array()
-    var agentNameMap: Map[String, String] = Map[String, String]()
-    code.split(";").filter(_.contains("new ")).foreach(
-      line => {
-        tokens = line.split("\\s+")
-        agentNameMap += (tokens(tokens.indexOf("val") + 1) -> shortenPathName(tokens(tokens.indexOf("new") + 1)))
-      })
-    agentNameMap
-  }
-
-  def shortenPathName(fullPathName: String): String = {
-    fullPathName.slice(
-      ((a: Int, b: Int) => (if (a > 0) a else b)) (fullPathName.lastIndexOf(".")+1, 0),
-      ((a: Int, b: Int) => (if (a > -1) a else b)) (fullPathName.indexOf("("), fullPathName.size)
-    )
-  }
-
-  def getObjectName(statement: String): String = {
-    (statement.split("\\s+").filterNot(_=="")).head.split("\\.").head
   }
 
   /**
