@@ -266,7 +266,7 @@ object utilObj {
   }
 
   /*
-  For two compiled actor graphs, remove instances of each other from all variables and keep a single mailbox
+  For two compiled actor graphs, remove instances of each other from all variables
    */
   def mergeVariables(graph1: CompiledActorGraph, graph2: CompiledActorGraph): (List[(String, String)], List[VarWrapper[_]], List[VarValue[_]]) = {
     val variables1: List[VarWrapper[_]] =
@@ -274,12 +274,7 @@ object utilObj {
         graph2.variables.filter(x => !(x.A <:< graph1.actorTypes.head.X))
 
     val variables2: List[VarValue[_]] = graph1.variables2 :::
-//      graph2.variables2
-//        .filter(x => x.A.rep.toString() != "squid.lib.package.MutVar[meta.deep.runtime.ResponseMessage]")
-//        .filter(x => x.A.rep.toString() != "scala.collection.mutable.Map[String,meta.deep.runtime.ResponseMessage]")
-      graph2.variables2.tail
-        .filter(x => x.A.rep.toString() != "squid.lib.package.MutVar[meta.deep.runtime.ResponseMessage]")
-        .filter(x => x.A.rep.toString() != "scala.collection.mutable.Map[String,meta.deep.runtime.ResponseMessage]")
+      graph2.variables2
 
     val parameterList: List[(String, String)] = {
       graph1.parameterList.filter(x => x._2!=graph2.actorTypes.head.X.rep.toString()) :::
