@@ -349,17 +349,17 @@ object utilObj {
   /*
   Replace "this1" and "return1" for graph with "this2" and "return2". Modify the graph directly
    */
-//  def resetThisReturn(graph: ArrayBuffer[EdgeInfo],
-//                      this1: Variable[Actor],
-//                      this2: Variable[Actor],
-//                      return1: Variable[MutVar[Any]],
-//                      return2: Variable[MutVar[Any]]): Unit ={
-//    graph.foreach(edge =>
-//      if (edge.code!= null){
-//        edge.code = edge.code.subs(this1).~>(this2.toCode)
-//        edge.code = edge.code.subs(return1).~>(return2.toCode)
-//      })
-//  }
+  def resetThisReturn(graph: ArrayBuffer[EdgeInfo],
+                      this1: Variable[Actor],
+                      this2: Variable[Actor],
+                      return1: Variable[MutVar[Any]],
+                      return2: Variable[MutVar[Any]]): Unit ={
+    graph.foreach(edge =>
+      if (edge.code!= null){
+        edge.code = edge.code.subs(this1).~>(this2.toCode)
+        edge.code = edge.code.subs(return1).~>(return2.toCode)
+      })
+  }
 
   def copyRuntimeMtd(oldMtdId: Int): Int = {
     val newMtdId: Int = Method.getNextMethodId
