@@ -6,17 +6,32 @@ import squid.quasi.lift
 
 @lift
 class object2(val name: String) extends Actor {
-//  val name: String = "object 2"
-  var age: Int = 5
+  var deposit: Double = 1000
+  val weekly_interest: Double = 0.0007
 
-  def introduction: Unit = {
-    println(s"My name is ${name}. I am ${age}")
+  def greeting: String = {
+    "Hello " + name
+  }
+
+  def checkBalance: Unit = {
+    greeting
+    println("Your current balance is " + deposit)
+  }
+
+  def isWeek(days: Int): Boolean = {
+    days % 7 == 0
+  }
+
+  def depositInterest(): Unit = {
+    deposit = deposit * (1 + weekly_interest)
   }
 
   def main(): Unit = {
     while(true){
-      introduction
-      age = age + 5
+      checkBalance
+      if (isWeek(timer)){
+        depositInterest()
+      }
       waitTurns(1)
     }
   }
