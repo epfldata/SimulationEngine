@@ -7,11 +7,12 @@ import squid.quasi.lift
 @lift
 class object2(val bank: object1) extends Actor {
 
-// passing variable doesn't work
-//  val dailySaving: Double = 50
+  val dailySaving: Double = 50
 
   def main(): Unit = {
     while(true){
+      // fail case, fix the first offset for leadingEdges in replaceSends
+//      bank.deposit(dailySaving)
       bank.deposit(50)
       waitTurns(1)
     }

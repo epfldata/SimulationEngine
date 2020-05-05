@@ -298,6 +298,7 @@ object utilObj {
 
     var newEdgesMap: Map[Int, ArrayBuffer[EdgeInfo]] = Map[Int, ArrayBuffer[EdgeInfo]]()
 
+    // TODO: add support for analysing whether the lead edges to be removed are truly redundant or bind variable arguments. See example in merge with comm for such case
     val leadingEdgesWithFirstOffset: ArrayBuffer[(Int, EdgeInfo, Int)] =
       leadingSendEdge.map(edge => {
         var firstOffset: Int = 0
@@ -356,7 +357,7 @@ object utilObj {
                       return2: Variable[MutVar[Any]]): Unit ={
     graph.foreach(edge =>
       if (edge.code!= null){
-        edge.code = edge.code.subs(this1).~>(this2.toCode)
+//        edge.code = edge.code.subs(this1).~>(this2.toCode)
         edge.code = edge.code.subs(return1).~>(return2.toCode)
       })
   }
