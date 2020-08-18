@@ -186,6 +186,15 @@ class Lifter {
         f.asInstanceOf[Algo[T]]
       case code"SpecialInstructions.waitTurns($x)" =>
         val waitCounter = Variable[Int]
+
+        x match {
+          case code"${Const(n)}: Int" =>
+            if (n < 1) {
+              throw new Exception("The waitTurn takes a positive integer value!")
+            }
+          case _ =>   //  If variable turn number, skip the check
+        }
+
         val f =
           LetBinding(None,
             LetBinding(
