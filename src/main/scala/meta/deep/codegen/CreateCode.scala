@@ -101,23 +101,30 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
       .trim
       .dropRight(1)
 
+    // "classname_" is for merging optimization
     var initParams: String = compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.map(s =>{
         self_name.keys.foreach(self => {
-          initVars = initVars.replace(s"${self}.${s.sym.name};", s"this.${self_name(self)}_${s.sym.name};")
-          initVars = initVars.replace(s"${self}.`${s.sym.name}_=`", s"this.`${self_name(self)}_${s.sym.name}_=`")
+          initVars = initVars.replace(s"${self}.${s.sym.name};", s"this.${s.sym.name};")
+          initVars = initVars.replace(s"${self}.`${s.sym.name}_=`", s"this.`${s.sym.name}_=`")
+//          initVars = initVars.replace(s"${self}.${s.sym.name};", s"this.${self_name(self)}_${s.sym.name};")
+//          initVars = initVars.replace(s"${self}.`${s.sym.name}_=`", s"this.`${self_name(self)}_${s.sym.name}_=`")
         })
-        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
+        s"  var ${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
+        //        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
       })}).mkString("\n")
 
     val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.parameterList.map(x => {
         if (compiledActorGraph.parameterList.indexOf(x) != -1) {
           self_name.keys.foreach(self => {
-            initVars = initVars.replace(s"${self}.${x._1};", s"this.${self_name(self)}_${x._1};")
-            initVars = initVars.replace(s"${self}.`${x._1}_=`", s"this.`${self_name(self)}_${x._1}_=`")
+            initVars = initVars.replace(s"${self}.${x._1};", s"this.${x._1};")
+            initVars = initVars.replace(s"${self}.`${x._1}_=`", s"this.`${x._1}_=`")
+//            initVars = initVars.replace(s"${self}.${x._1};", s"this.${self_name(self)}_${x._1};")
+//            initVars = initVars.replace(s"${self}.`${x._1}_=`", s"this.`${self_name(self)}_${x._1}_=`")
           })
-          s"var ${actorType.name}_${x._1}: ${changeTypes(x._2, false)}"
+          s"var ${x._1}: ${changeTypes(x._2, false)}"
+//          s"var ${actorType.name}_${x._1}: ${changeTypes(x._2, false)}"
         } else {
           ""
         }})
@@ -444,14 +451,15 @@ $run_until
   def createInit(code: String): Unit = {
     var modifiedCode: String = code
 
-    if (hasDirectAccess(code)){
-      println("Direct attribute access from MainInit is supported for backward compatibility only. Please use parameter list instead")
-      val agentMap: Map[String, String] = buildAgentNameMap(modifiedCode)
-      modifiedCode = code.split("\n").map(statement =>
-        // keep the compiler happy about unreachable cases
-        statement.replace(".`", s".`${agentMap.getOrElse(getObjectName(statement), "ERROR")}_")
-      ).mkString("\n")
-    }
+    // to support merge; break traits
+//    if (hasDirectAccess(code)){
+//      println("Direct attribute access from MainInit is supported for backward compatibility only. Please use parameter list instead")
+//      val agentMap: Map[String, String] = buildAgentNameMap(modifiedCode)
+//      modifiedCode = code.split("\n").map(statement =>
+//        // keep the compiler happy about unreachable cases
+//        statement.replace(".`", s".`${agentMap.getOrElse(getObjectName(statement), "ERROR")}_")
+//      ).mkString("\n")
+//    }
 
     val classString =
       s"""package ${packageName}
