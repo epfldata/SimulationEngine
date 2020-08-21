@@ -17,13 +17,19 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
   var future_obj1: Option[Future[Int]]= None
   var future_obj2: Option[Future[String]] = None
 
+  val secretToken: Double = 0.5
+  val secretToken2: Double = 1.5
+//  val mtdId: List[Int] = List(1, 2, 3, 4)
+  val mtdId: Int = 1
+
   def main(): Unit = {
 
     while (true) {
-      val msg1 = ()=> n1.get(1)
-      val msg2 = ()=> n2.get(2)
-      val msg3 = ()=> hello(3)
-      val msg4 = ()=> n2.getWR(4)
+//      val msg1 = ()=> n1.get(1, .5)
+      val msg1 = ()=> n1.get(mtdId, secretToken, secretToken2)
+      val msg2 = ()=> n2.get(mtdId)
+      val msg3 = ()=> hello(mtdId)
+      val msg4 = ()=> n2.getWR(mtdId)
 
       if (future_obj1 == None){
         println("Send async msg1: with response")

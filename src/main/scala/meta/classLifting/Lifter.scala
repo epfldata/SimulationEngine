@@ -7,6 +7,7 @@ import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
 import meta.deep.runtime.{Actor, RequestMessage}
+import scala.collection.mutable.ListBuffer
 
 /** Code lifter
   *
@@ -208,18 +209,33 @@ class Lifter {
         f.asInstanceOf[Algo[T]]
 
       // asynchronously call a remote method
+        // arguments to an async call needs to be passed as variables instead of constants.
       case code"SpecialInstructions.asyncMessage[$mt]((() => {val $nm: $nmt = $v; ${MethodApplication(msg)}}: mt))" =>
-        val argss =
-          msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
-        val recipientActorVariable =
-          msg.args.head.head.asInstanceOf[OpenCode[Actor]]
-          LetBinding(Some(nm),
-            liftCode(v, actorSelfVariable, clasz),
-            AsyncSend[T, mt.Typ](
-              actorSelfVariable.toCode,
-              recipientActorVariable,
-              methodsIdMap(msg.symbol),
-              argss))
+        val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
+        var mtd: IR.MtdSymbol = msg.symbol
+        var innerMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
+        var recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
+
+        argss.append(msg.args.tail.head.head)
+        while (mtd.toString() == "Function1.apply") {
+          innerMtd match {
+            case code"($sa: $st) => ${MethodApplication(msg2)}: Any" =>
+              mtd = msg2.symbol
+              innerMtd = msg2.args.head.head
+              recipientActorVariable = msg2.args.head.head.asInstanceOf[OpenCode[Actor]]
+              argss.append(msg2.args.tail.head.head)
+          }
+        }
+
+        argss.remove(argss.length-1)
+
+        LetBinding(Some(nm),
+          liftCode(v, actorSelfVariable, clasz),
+          AsyncSend[T, mt.Typ](
+            actorSelfVariable.toCode,
+            recipientActorVariable,
+            methodsIdMap(mtd),
+            List(argss.toList)))
 
       // asynchronously call a local method
       case code"SpecialInstructions.asyncMessage[$mt]((() => ${MethodApplication(msg)}: mt))" =>

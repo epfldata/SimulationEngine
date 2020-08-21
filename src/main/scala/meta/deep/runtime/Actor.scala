@@ -28,24 +28,25 @@ object Actor {
 }
 
 object Monitor {
-  val aggregates: Map[String, Int] = Map[String, Int]()
-  val timeseries: Map[String, ListBuffer[Int]] = Map[String, ListBuffer[Int]]()
+  type eventType = Double
+  val aggregates: Map[String, eventType] = Map[String, eventType]()
+  val timeseries: Map[String, ListBuffer[eventType]] = Map[String, ListBuffer[eventType]]()
 
-  private var daily_aggregate: Map[String, Int] = Map[String, Int]()
+  private var daily_aggregate: Map[String, eventType] = Map[String, eventType]()
 
-  def logAggregate(attr: String, num: Int = 1): Unit = {
+  def logAggregate(attr: String, num: eventType = 1): Unit = {
     if (!aggregates.get(attr).isDefined){
       aggregates += (attr -> num)
     } else {
-      aggregates += (attr -> (aggregates.get(attr).get+num))
+      aggregates += (attr -> List(aggregates.get(attr).get, num).sum)
     }
   }
 
-  def logTimeseries(attr: String, num: Int = 1): Unit = {
+  def logTimeseries(attr: String, num: eventType = 1): Unit = {
     if (!daily_aggregate.get(attr).isDefined){
       daily_aggregate += (attr -> num)
     } else {
-      daily_aggregate += (attr -> (daily_aggregate.get(attr).get+num))
+      daily_aggregate += (attr -> List(daily_aggregate.get(attr).get, num).sum)
     }
   }
 

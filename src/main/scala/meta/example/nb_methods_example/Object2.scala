@@ -9,8 +9,9 @@ class Object2 extends Actor{
 
   val deposit: Int = 500
 
-  def get(msgId: Int): Int = {
-    println("Async msg" + msgId + ": remote method with wait 1")
+  def get(msgId: Int, randArg: Double, randArg2: Double): Int = {
+    println("Async msg" + msgId + ": remote method with wait 1 " +
+      " arg: " + randArg +  " arg: " + randArg2)
     waitTurns(1)
     deposit
   }
