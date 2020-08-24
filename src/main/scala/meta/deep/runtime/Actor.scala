@@ -25,6 +25,16 @@ object Actor {
   }
 
   val newActors: ListBuffer[Actor] = ListBuffer[Actor]()
+
+  val waitTurnList: ListBuffer[Int] = ListBuffer[Int]()
+
+  def minTurn(): Int = {
+    if (waitTurnList.length > 0){
+      waitTurnList.min
+    } else {
+      1
+    }
+  }
 }
 
 object Monitor {

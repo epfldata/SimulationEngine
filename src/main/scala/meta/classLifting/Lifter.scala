@@ -7,6 +7,7 @@ import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
 import meta.deep.runtime.{Actor, RequestMessage}
+import meta.deep.runtime.Actor.waitTurnList
 
 /** Code lifter
   *
@@ -197,13 +198,16 @@ class Lifter {
 
         val f =
           LetBinding(None,
-            LetBinding(
-              Some(waitCounter),
-              ScalaCode(code"0"),
-              DoWhile(code"$waitCounter < $x",
-                LetBinding(Some(waitCounter),
-                  ScalaCode(code"$waitCounter + 1"),
-                  Wait()))),
+              LetBinding(
+                Some(waitCounter),
+                ScalaCode(code"0"),
+                DoWhile(code"$waitCounter < $x",
+                  LetBinding(None,
+                    ScalaCode(code"meta.deep.runtime.Actor.waitTurnList.append($x - $waitCounter)"),
+                  LetBinding(Some(waitCounter),
+                    ScalaCode(code"$waitCounter + meta.deep.runtime.Actor.minTurn()"),
+                    Wait()))),
+            ),
           handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])
         f.asInstanceOf[Algo[T]]
 

@@ -1,5 +1,5 @@
 import meta.deep.runtime.{Actor, Message, Monitor}
-
+import meta.deep.runtime.Actor.{newActors, minTurn, waitTurnList}
 import scala.util.Random
 
 object Simulation extends App {
@@ -7,7 +7,7 @@ object Simulation extends App {
   var actors: List[Actor] = List()
   var messages: List[Message] = List()
   var timer: Int = 0
-  var until: Int = 10
+  var until: Int = 20
   var monitor_enabled: Boolean = false
 
   def init(): Unit = {
@@ -15,9 +15,9 @@ object Simulation extends App {
   }
 
   def collect(current_time: Int): Unit = {
-    meta.deep.runtime.Actor.newActors.map(i => i.timer = current_time)
-    actors = actors ::: meta.deep.runtime.Actor.newActors.toList
-    meta.deep.runtime.Actor.newActors.clear()
+    newActors.map(i => i.timer = current_time)
+    actors = actors ::: newActors.toList
+    newActors.clear()
   }
 
   def main(): Unit = {
@@ -38,7 +38,8 @@ object Simulation extends App {
       }
       messages = actors.flatMap(_.getSendMessages).toList
       if (monitor_enabled) Monitor.eachIteration()
-      timer += 1
+      timer += minTurn()
+      waitTurnList.clear()
     }
 
     val end = System.nanoTime()
