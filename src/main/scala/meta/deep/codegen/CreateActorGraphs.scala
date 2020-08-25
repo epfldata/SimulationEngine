@@ -84,7 +84,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
 
       val varList = ListBuffer[MutVarType[_]]()
 
-      method.mtd.vparamss.foreach(paramList => {
+      method.mtd.vparams.foreach(paramList => {
         paramList.foreach({
           case param: Variable[v] =>
             //To be honest, dont know why this is working now (Type)
