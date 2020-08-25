@@ -39,6 +39,7 @@ object Simulation extends App {
       messages = actors.flatMap(_.getSendMessages).toList
       if (monitor_enabled) Monitor.eachIteration()
       timer += minTurn()
+      actors.map(i => i.timer = timer)
       waitTurnList.clear()
     }
 
