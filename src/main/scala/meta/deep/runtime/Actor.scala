@@ -2,7 +2,7 @@ package meta.deep.runtime
 
 import java.util.UUID
 
-import meta.deep.runtime.Actor.AgentId
+import meta.deep.runtime.Actor.{AgentId, minTime}
 
 import scala.collection.mutable.{ListBuffer, Map}
 
@@ -13,6 +13,7 @@ import scala.collection.mutable.{ListBuffer, Map}
 object Actor {
   type AgentId = Long
   var lastAgentId: AgentId = 0
+  // totalSims is updated at runtime by simulation (Sims length)
   var totalSims: Int = 0
 
   /**
@@ -176,7 +177,8 @@ case class Future[+T](var isCompleted: Boolean = false,
 class Actor {
 
   var id: AgentId = Actor.getNextAgentId
-  var timer: Int = 0
+  var currentTurn: Int = 0
+  var currentTime: Double = 0
   var current_pos: Int = 0
   var monitor = Monitor
 
@@ -310,11 +312,11 @@ class Actor {
     * @return the actor itself
     */
   def run_until(until: Int): Actor = {
-    while (timer <= until) {
-      println(this.getClass.getSimpleName, timer, until, current_pos)
+    while (currentTurn <= until) {
+      println(this.getClass.getSimpleName, currentTurn, until, current_pos)
       val (a, b) = stepFunction
       current_pos = a
-      timer = b
+      currentTurn = b
     }
     this
   }
@@ -326,5 +328,5 @@ class Actor {
     *         returns the next position and timer which should be passed again
     *         when calling this function the next time.
     */
-  def stepFunction: (Int, Int) = (current_pos, timer + 1)
+  def stepFunction: (Int, Int) = (current_pos, currentTurn + Actor.minTurn())
 }

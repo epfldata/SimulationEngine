@@ -9,9 +9,9 @@ object Simulation extends App {
   var messages: List[Message] = List()
   // Consider just have time, and remove total turn
   var currentTurn: Int = 0
-  var totalTurn: Int = 20
+  var totalTurn: Int = 100
   var currentTime: Double = 0
-  var totalTime: Double = 20
+  var totalTime: Double = 10
 
   var monitor_enabled: Boolean = false
 
@@ -19,8 +19,8 @@ object Simulation extends App {
     actors = generated.InitData.initActors
   }
 
-  def collect(currentTur: Int): Unit = {
-    newActors.map(i => i.timer = currentTurn)
+  def collect(currentTurn: Int): Unit = {
+    newActors.map(i => i.currentTurn = currentTurn)
     actors = actors ::: newActors.toList
     newActors.clear()
   }
@@ -32,7 +32,11 @@ object Simulation extends App {
     proceedTime = minTime()
 //    println("wait time" + waitTimeList)
     // update the turn counter for Sims
-    actors.map(i => i.timer = currentTurn)
+    actors.map(i => {
+      i.currentTime = currentTime
+      i.currentTurn = currentTurn
+    })
+//    actors.map(i => i.currentTurn = currentTurn)
     waitTurnList.clear()
     waitTimeList.clear()
   }

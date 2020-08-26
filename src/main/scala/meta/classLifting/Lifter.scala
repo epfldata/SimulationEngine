@@ -186,6 +186,7 @@ class Lifter {
                            liftCode(elseBody, actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
 
+        // wait real-time
       case code"SpecialInstructions.waitTime($x)" =>
         val waitCounter = Variable[Double]
 
@@ -212,6 +213,7 @@ class Lifter {
             handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])
         f.asInstanceOf[Algo[T]]
 
+      // wait turn, each turn performs msg sync
       case code"SpecialInstructions.waitTurns($x)" =>
         val waitCounter = Variable[Int]
 
