@@ -6,54 +6,34 @@ import squid.quasi.{dbg_lift, lift}
 
 import scala.collection.mutable.ListBuffer
 
-@lift
-class Object1(var n1: Object2, var n2: Object3) extends Actor {
+object expSetup {
+  val someVal: Double = 10.7
+}
 
-  def hello(msgId: Int): Unit = {
-    println("Async msg" + msgId + ": local method with wait 1")
-    waitTurns(1)
-  }
+@lift
+class Object1(var n1: Object2) extends Actor {
 
   var future_obj1: Option[Future[Int]]= None
-  var future_obj2: Option[Future[String]] = None
+
+  // The arguments for asynchronous message need to be a local variable of the Sim. constant won't work
+  val secretToken: Double = 0.5
+  var mtdId: Int = 1
+  var secretToken2: Double = expSetup.someVal // if need any global var
 
   def main(): Unit = {
-
     while (true) {
-      val msg1 = ()=> n1.get(1)
-      val msg2 = ()=> n2.get(2)
-      val msg3 = ()=> hello(3)
-      val msg4 = ()=> n2.getWR(4)
+      val msg1 = ()=> n1.get(mtdId, secretToken, secretToken2)
 
       if (future_obj1 == None){
         println("Send async msg1: with response")
         future_obj1 = asyncMessage(msg1)
+        println("The line after async call")
       } else {
         if (isCompleted(future_obj1.get)){
           println("Receive response from msg1!")
-//          println("msg1 value is " + getFutureValue[Int](future_obj1.get))
           future_obj1 = clearFutureObj(future_obj1.get)
         } else {
           println("msg1 not completed!")
-        }
-      }
-
-      // async call without returning values
-      println("Send async msg2: w/o response")
-      asyncMessage(msg2)
-      println("Send async msg3: w/o response")
-      asyncMessage(msg3)
-
-      // multiple async calls that return at the same iteration
-      if (future_obj2 == None){
-        println("Send async msg4: with response")
-        future_obj2 = asyncMessage(msg4)
-      } else {
-        if (isCompleted(future_obj2.get)){
-          println("Receive response from msg4!")
-          future_obj2 = clearFutureObj(future_obj2.get)
-        } else {
-          println("msg4 not completed!")
         }
       }
 
@@ -67,7 +47,6 @@ class Object1(var n1: Object2, var n2: Object3) extends Actor {
 //        future_obj3 = clearFutureObj(future_obj3.get)
 //      }
 
-      assert(async_messages.size == 0)
       waitTurns(1)
     }
   }

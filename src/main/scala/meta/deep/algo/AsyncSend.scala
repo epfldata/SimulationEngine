@@ -13,7 +13,7 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
   override def codegen(): Unit = {
     val methodIdC = Const(methodId)
 
-    // Convert arguments to opencode, so hat the can be used as argument inside of OpenCode
+    // Convert arguments to opencode, so that can be used as argument inside of OpenCode
     val initCodeO: OpenCode[List[List[Any]]] = code"Nil"
     val convertedArgs: OpenCode[List[List[Any]]] =
       argss.foldRight(initCodeO)((x, y) => {
