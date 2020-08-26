@@ -13,6 +13,7 @@ import scala.collection.mutable.{ListBuffer, Map}
 object Actor {
   type AgentId = Long
   var lastAgentId: AgentId = 0
+  var totalSims: Int = 0
 
   /**
     * Generates a new id for an agent and returns it
@@ -27,12 +28,23 @@ object Actor {
   val newActors: ListBuffer[Actor] = ListBuffer[Actor]()
 
   val waitTurnList: ListBuffer[Int] = ListBuffer[Int]()
+  val waitTimeList: ListBuffer[Double] = ListBuffer[Double]()
+
+  var proceedTime: Double = 0
 
   def minTurn(): Int = {
     if (waitTurnList.length > 0){
       waitTurnList.min
     } else {
       1
+    }
+  }
+
+  def minTime(): Double = {
+    if (waitTimeList.length == totalSims){
+      waitTimeList.min
+    } else {
+      0
     }
   }
 }

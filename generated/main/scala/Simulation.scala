@@ -1,46 +1,63 @@
 import meta.deep.runtime.{Actor, Message, Monitor}
-import meta.deep.runtime.Actor.{newActors, minTurn, waitTurnList}
+import meta.deep.runtime.Actor.{minTime, minTurn, newActors, totalSims, waitTimeList, waitTurnList, proceedTime}
+
 import scala.util.Random
 
 object Simulation extends App {
 
   var actors: List[Actor] = List()
   var messages: List[Message] = List()
-  var timer: Int = 0
-  var until: Int = 20
+  // Consider just have time, and remove total turn
+  var currentTurn: Int = 0
+  var totalTurn: Int = 20
+  var currentTime: Double = 0
+  var totalTime: Double = 20
+
   var monitor_enabled: Boolean = false
 
   def init(): Unit = {
     actors = generated.InitData.initActors
   }
 
-  def collect(current_time: Int): Unit = {
-    newActors.map(i => i.timer = current_time)
+  def collect(currentTur: Int): Unit = {
+    newActors.map(i => i.timer = currentTurn)
     actors = actors ::: newActors.toList
     newActors.clear()
+  }
+
+  def proceed(): Unit = {
+    currentTurn += minTurn()
+    currentTime += minTime()
+    // update the proceed time for Sims
+    proceedTime = minTime()
+//    println("wait time" + waitTimeList)
+    // update the turn counter for Sims
+    actors.map(i => i.timer = currentTurn)
+    waitTurnList.clear()
+    waitTimeList.clear()
   }
 
   def main(): Unit = {
     init()
     val start = System.nanoTime()
     println("Monitor is enabled: " + monitor_enabled)
-    while (timer <= until) {
-      println("TIMER", timer)
-      collect(timer)
+    while (currentTurn <= totalTurn && currentTime <= totalTime) {
+      println("(Time " + currentTime + " Turn " + currentTurn + ")" )
+      collect(currentTurn)
+
+      totalSims = actors.length
       val mx = messages.groupBy(_.receiverId)
 
       actors = actors.map { a =>
         {
           a.cleanSendMessage
             .addReceiveMessages(Random.shuffle(mx.getOrElse(a.id, List())))
-            .run_until(timer)
+            .run_until(currentTurn)
         }
       }
       messages = actors.flatMap(_.getSendMessages).toList
-      if (monitor_enabled) Monitor.eachIteration()
-      timer += minTurn()
-      actors.map(i => i.timer = timer)
-      waitTurnList.clear()
+      if (monitor_enabled) Monitor.eachIteration(()=>())
+      proceed()
     }
 
     val end = System.nanoTime()
