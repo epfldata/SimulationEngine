@@ -51,7 +51,7 @@ class Lifter {
         methodsMap = methodsMap + (method.symbol -> new MethodInfo[method.A](
           method.symbol,
           method.tparams,
-          method.vparams,
+          method.vparamss,
           blocking))
         counter += 1
         Method.getNextMethodId
