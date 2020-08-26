@@ -76,7 +76,7 @@ class WorldMap() extends Actor with Torus2D {
   // segregation is measured as the average similarities
   def segregationMeasure(): Double = {
     if (similarities.size > 0) {
-      monitor.logTimeseries("Segregation", similarities.values.sum / similarities.size)
+//      monitor.logTimeseries("Segregation", similarities.values.sum / similarities.size)
       println(similarities.values.sum / similarities.size)
       similarities.values.sum / similarities.size
     } else {
@@ -93,10 +93,10 @@ class WorldMap() extends Actor with Torus2D {
   def main(): Unit ={
     while(true){
       segregationMeasure()
-      if (totalReports == (Actor.totalSims - 1)){
-        totalReports = 0
-        waitTime(1)
-      }
+//      if (totalReports == (Actor.totalSims - 1)){
+//        totalReports = 0
+//        waitTime(1)
+//      }
 //      printWorld()
       waitTurns(1)
     }

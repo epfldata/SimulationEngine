@@ -206,9 +206,35 @@ class Lifter {
               ScalaCode(code"0.0"),
               DoWhile(code"$waitCounter < $x",
                 LetBinding(Some(waitCounter),
-                  ScalaCode(code"$waitCounter + meta.deep.runtime.Actor.proceedTime"),
+                  ScalaCode(code"""$waitCounter + meta.deep.runtime.Actor.proceedLabel("time")"""),
                 LetBinding(None,
-                  ScalaCode(code"meta.deep.runtime.Actor.waitTimeList.append($x - $waitCounter)"),
+                  ScalaCode(code"""meta.deep.runtime.Actor.labelVals("time").append($x - $waitCounter)"""),
+                    Wait()))),
+            ),
+            handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])
+        f.asInstanceOf[Algo[T]]
+
+      case code"SpecialInstructions.waitLabel($x: String, $y: Double)" =>
+        val waitCounter = Variable[Double]
+
+        y match {
+          case code"${Const(n)}: Double" =>
+            if (n <= 0) {
+              throw new Exception("The waitLabel takes a positive value!")
+            }
+          case _ =>   //  If variable turn number, skip the check
+        }
+
+        val f =
+          LetBinding(None,
+            LetBinding(
+              Some(waitCounter),
+              ScalaCode(code"0.0"),
+              DoWhile(code"$waitCounter < $y",
+                LetBinding(Some(waitCounter),
+                  ScalaCode(code"$waitCounter + meta.deep.runtime.Actor.proceedLabel($x)"),
+                  LetBinding(None,
+                    ScalaCode(code"meta.deep.runtime.Actor.labelVals($x).append($y - $waitCounter)"),
                     Wait()))),
             ),
             handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])

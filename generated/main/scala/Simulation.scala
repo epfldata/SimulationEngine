@@ -1,5 +1,5 @@
 import meta.deep.runtime.{Actor, Message, Monitor}
-import meta.deep.runtime.Actor.{minTime, minTurn, newActors, totalSims, waitTimeList, waitTurnList, proceedTime}
+import meta.deep.runtime.Actor._
 
 import scala.util.Random
 
@@ -17,6 +17,7 @@ object Simulation extends App {
 
   def init(): Unit = {
     actors = generated.InitData.initActors
+    initLabelVals()
   }
 
   def collect(currentTurn: Int): Unit = {
@@ -26,19 +27,17 @@ object Simulation extends App {
   }
 
   def proceed(): Unit = {
+    proceedGroups()
     currentTurn += minTurn()
-    currentTime += minTime()
-    // update the proceed time for Sims
-    proceedTime = minTime()
-//    println("wait time" + waitTimeList)
+    currentTime += proceedLabel("time")
+
     // update the turn counter for Sims
     actors.map(i => {
       i.currentTime = currentTime
       i.currentTurn = currentTurn
     })
-//    actors.map(i => i.currentTurn = currentTurn)
+
     waitTurnList.clear()
-    waitTimeList.clear()
   }
 
   def main(): Unit = {
@@ -48,8 +47,8 @@ object Simulation extends App {
     while (currentTurn <= totalTurn && currentTime <= totalTime) {
       println("(Time " + currentTime + " Turn " + currentTurn + ")" )
       collect(currentTurn)
+      waitLabels("time") = actors.length
 
-      totalSims = actors.length
       val mx = messages.groupBy(_.receiverId)
 
       actors = actors.map { a =>

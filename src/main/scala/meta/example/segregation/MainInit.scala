@@ -11,13 +11,18 @@ class MainInit extends Actor {
 
     val worldMap = new WorldMap()
     foo.append(worldMap)
-    (1 to 1150).foreach(i => {
+    val populationSize: Int = 1125
+
+    (1 to populationSize).foreach(i => {
       val p1 = new Person(worldMap, 0)
       val p2 = new Person(worldMap, 1)
       foo.append(p1, p2)
     })
 
-    worldMap.monitor.initTimeseries("Segregation")
+    // Setup the wait label
+    Actor.waitLabels("People") = populationSize*2
+    // Setup the monitor, if desired
+//    worldMap.monitor.initTimeseries("Segregation")
     foo.toList
   }
 }
