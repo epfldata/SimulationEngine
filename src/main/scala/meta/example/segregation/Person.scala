@@ -46,8 +46,9 @@ class Person(var world: WorldMap, var view: Int) extends Actor {
 //          println(id + " I want to move! " + location)
           location = world.move(location)
         }
+        waitTime(1)
       }
-      waitTurns(1)
+//      waitTurns(1)
     }
   }
 }

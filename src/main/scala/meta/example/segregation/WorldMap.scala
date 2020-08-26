@@ -19,6 +19,8 @@ class WorldMap() extends Actor with Torus2D {
   val similarities: Map[Loc, Double] = Map[Loc, Double]()
   val world: Map[Loc, Person] = Map[Loc, Person]()
 
+  var totalReports: Int = 0
+
   // Return a free location
   private def getPlacement(): Loc = {
     val freeLoc: Loc = emptyLoc(Random.nextInt(emptyLoc.length))
@@ -67,6 +69,7 @@ class WorldMap() extends Actor with Torus2D {
 
   // record the similarity report from Sims
   def report(loc: Loc, similarity: Double): Unit = {
+    totalReports = totalReports + 1
     similarities(loc) = similarity
   }
 
@@ -90,6 +93,10 @@ class WorldMap() extends Actor with Torus2D {
   def main(): Unit ={
     while(true){
       segregationMeasure()
+      if (totalReports == (Actor.totalSims - 1)){
+        totalReports = 0
+        waitTime(1)
+      }
 //      printWorld()
       waitTurns(1)
     }
