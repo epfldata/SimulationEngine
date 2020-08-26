@@ -38,9 +38,13 @@ trait Person extends Actor {
 class TimidPerson(var name: String) extends Person{
   var outgoing: Boolean = false
 
+  def isTimid(): Unit = {
+      println("My name is " + name + " and I am shy")
+  }
+
   def main(): Unit = {
     while(true){
-      waitTurns(1)
+      waitTurns(3)
     }
   }
 }
@@ -52,12 +56,22 @@ class OutgoingPerson(var name: String) extends Person{
 
   def main(): Unit = {
     while(true){
-      val sa: Person = friendList(rand.nextInt(friendList.length))
-      val sb: Person = friendList(rand.nextInt(friendList.length))
+//      val sa: Person = friendList(rand.nextInt(friendList.length))
+//      val sb: Person = friendList(rand.nextInt(friendList.length))
+      // Change it to deterministic for reproducibility
+      val sa: Person = friendList(0)
+      val sb: Person = friendList(1)
+
+      // blocking call
+      if (sa.isInstanceOf[TimidPerson]){
+        sa.asInstanceOf[TimidPerson].isTimid()
+      }
+
+      // methods defined in trait outside of the lifter classes return instantaneously
       if (sa != sb){
         introduce(sa, sb)
       }
-      waitTurns(1)
+      waitTurns(2)
     }
   }
 }

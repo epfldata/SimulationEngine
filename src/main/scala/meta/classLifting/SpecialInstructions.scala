@@ -11,4 +11,7 @@ object SpecialInstructions {
   def waitTurns(numTurns: Int): Unit = ???
 
   def asyncMessage[T](message: (()=>T)): Option[Future[T]] = ???
+
+  // A blocking call that proceeds only when all Sims are waiting on time
+  def waitTime(time: Double): Unit = ???
 }

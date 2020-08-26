@@ -83,7 +83,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
 
     val timerPattern = "timeVar_[0-9]*".r
     val timeVarGenerated: String = timerPattern.findFirstIn(parts(0)).get
-    val timeVarReplaceWith: String = "timer" // timer as defined by actor class
+    val timeVarReplaceWith: String = "currentTurn" // timer as defined by actor class
 
     var initVars: String = parts(0).substring(2)
       .replace(" var "," private var ")

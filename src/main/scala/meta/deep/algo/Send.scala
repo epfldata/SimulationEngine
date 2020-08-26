@@ -39,8 +39,14 @@ case class Send[R](actorFrom: OpenCode[Actor],
           })
           ${AlgoInfo.returnValue} := null
           ()"""
+
       val f2: OpenCode[Unit] = code"""()"""
-      val f3: OpenCode[Unit] = code"""()"""
+
+      // add 1 to the min turn calculation so that responses are received in the next turn
+      val f3: OpenCode[Unit] =
+        code"""meta.deep.runtime.Actor.waitTurnList.append(1);
+              ()"""
+
       val f4: OpenCode[Unit] =
         code"""
          ${AlgoInfo.returnValue} := (${AlgoInfo.responseMessage}!).arg;
@@ -65,7 +71,7 @@ case class Send[R](actorFrom: OpenCode[Actor],
         AlgoInfo.EdgeInfo("Send b f3 result",
                           AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
                           AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
-                          f3,
+                          code"()",
                           cond = code"(${AlgoInfo.responseMessage}!) != null",
                           sendInfo = (this, false)))
       AlgoInfo.stateGraph.append(

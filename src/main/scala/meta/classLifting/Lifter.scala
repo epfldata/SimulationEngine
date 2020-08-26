@@ -8,6 +8,7 @@ import meta.deep.algo._
 import meta.deep.member._
 import meta.deep.runtime.{Actor, RequestMessage}
 import scala.collection.mutable.ListBuffer
+import meta.deep.runtime.Actor.waitTurnList
 
 /** Code lifter
   *
@@ -185,6 +186,35 @@ class Lifter {
                            liftCode(ifBody, actorSelfVariable, clasz),
                            liftCode(elseBody, actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
+
+        // wait real-time
+      case code"SpecialInstructions.waitTime($x)" =>
+        val waitCounter = Variable[Double]
+
+        x match {
+          case code"${Const(n)}: Double" =>
+            if (n <= 0) {
+              throw new Exception("The waitTime takes a positive value!")
+            }
+          case _ =>   //  If variable turn number, skip the check
+        }
+
+        val f =
+          LetBinding(None,
+            LetBinding(
+              Some(waitCounter),
+              ScalaCode(code"0.0"),
+              DoWhile(code"$waitCounter < $x",
+                LetBinding(Some(waitCounter),
+                  ScalaCode(code"$waitCounter + meta.deep.runtime.Actor.proceedTime"),
+                LetBinding(None,
+                  ScalaCode(code"meta.deep.runtime.Actor.waitTimeList.append($x - $waitCounter)"),
+                    Wait()))),
+            ),
+            handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])
+        f.asInstanceOf[Algo[T]]
+
+      // wait turn, each turn performs msg sync
       case code"SpecialInstructions.waitTurns($x)" =>
         val waitCounter = Variable[Int]
 
@@ -198,18 +228,21 @@ class Lifter {
 
         val f =
           LetBinding(None,
-            LetBinding(
-              Some(waitCounter),
-              ScalaCode(code"0"),
-              DoWhile(code"$waitCounter < $x",
-                LetBinding(Some(waitCounter),
-                  ScalaCode(code"$waitCounter + 1"),
-                  Wait()))),
+              LetBinding(
+                Some(waitCounter),
+                ScalaCode(code"0"),
+                DoWhile(code"$waitCounter < $x",
+                  LetBinding(None,
+                    ScalaCode(code"meta.deep.runtime.Actor.waitTurnList.append($x - $waitCounter)"),
+                  LetBinding(Some(waitCounter),
+                    ScalaCode(code"$waitCounter + meta.deep.runtime.Actor.minTurn()"),
+                    Wait()))),
+            ),
           handleMsg(actorSelfVariable, clasz).asInstanceOf[Algo[T]])
         f.asInstanceOf[Algo[T]]
 
       // asynchronously call a remote method
-        // arguments to an async call needs to be passed as variables instead of constants.
+      // arguments to an async call needs to be passed as variables instead of constants.
       case code"SpecialInstructions.asyncMessage[$mt]((() => {val $nm: $nmt = $v; ${MethodApplication(msg)}}: mt))" =>
         val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
         var mtd: IR.MtdSymbol = msg.symbol
@@ -228,7 +261,7 @@ class Lifter {
         }
 
         argss.remove(argss.length-1)
-        println("argss are: " + argss)
+//         println("argss are: " + argss)
 
         LetBinding(Some(nm),
           liftCode(v, actorSelfVariable, clasz),

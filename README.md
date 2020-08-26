@@ -4,9 +4,9 @@
 * Do not use val parameters, they can't be lifted.  Use var instead
 * The optimzations created work for specific use-cases:
   * ActorMerge takes a pair of ActorType Names to specify which one to merge.  
-  Take care, that the class variables are named differently in the two actors
+  Take care, that the class variables are named differently in the two Sims
   * Stateless Server Optimization has following rules:
-    * A stateless server here means a class whose methods don't change any of its attributes, because then those methods can be copied to other actors.
+    * A stateless server here means a class whose methods don't change any of its attributes, because then those methods can be copied to other Sims.
     * A stateless server class should not have a wait in a non-blocking method, otherwise the program will not behave as the original
     * A stateless server cannot call a method from a non-stateless Server
     * An object can have only one reference to a (unique) specific stateless server class.
@@ -26,9 +26,10 @@
   and handle there your created algos.
 * You can call following additional functions:
   * asyncMessage(message) ... send a nonblocking message. Please checkout the example in folder nb_methods_example/ for how it is used 
-  * waitTurns(x) ... the actor waits for x steps
+  * waitTurns(x: Int) ... the Sim waits for x turns
+  * waitTime(x: Double) ... the Sim waits for x unit of time. Time advances only when all Sims are waiting for time.
 * It is required to use waitTurns at least once in a loop, like while(true),
-  otherwise this actor will not stop its step
+  otherwise this Sim will not stop its step
 * To lift a class annotate it with @lift and extend from runtime.Actor
  
 ### Run Classlifting-Examples
@@ -36,8 +37,14 @@ Make sure to run the code with enough stack size, otherwise you will get a Stack
 You can set this parameter for example in Intellij by putting -Xss128m (128MB Stack size) at VM configuration in the 
 configuration settings.
 
-At the moment it is important to build squid locally before using this code. Since there is no public release with
-the bug fixes.
+At the moment it is important to build squid locally (branch: class-lifting) before using this code. Since there is no public release for certain features.
+```
+// clone the squid repo: https://github.com/epfldata/squid.git
+git checkout class-lifting
+// inside the squid folder
+bin/publishLocal.sh
+// you should see "build 0.4.1-SNAPSHOT"
+```
  
 Please note that `/src/main/scala/ecosim` contains a standalone copy of the project in current master branch, which is the initial version that doesn't include message passing or relying on Squid. 
 
