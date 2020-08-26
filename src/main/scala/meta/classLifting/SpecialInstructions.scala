@@ -14,4 +14,7 @@ object SpecialInstructions {
 
   // A blocking call that proceeds only when all Sims are waiting on time
   def waitTime(time: Double): Unit = ???
+
+  // Create a synchronization label for the selected Sims.
+  def waitLabel(label: String, waitValue: Double): Unit = ???
 }

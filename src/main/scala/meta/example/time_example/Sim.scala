@@ -11,7 +11,7 @@ class Sim(var time: Double) extends Actor {
 
   def interrupt(targetTime: Double): Unit = {
     if (targetTime == currentTime){
-      println("Alert! " + targetTime + " elapsed")
+      println("Alert! " + targetTime + " time elapsed")
     }
   }
 
@@ -20,9 +20,10 @@ class Sim(var time: Double) extends Actor {
       interrupt(5)
       if (nextBoolean()){
         println("Wait turn!")
+        //        println("Wait turn! " + " Id " + id)
         waitTurns(1)
       } else {
-        println("Wait time! " + id)
+        println("Wait time " + time + " Id " + id)
         waitTime(time)
         println("Wait time finished " + id)
       }

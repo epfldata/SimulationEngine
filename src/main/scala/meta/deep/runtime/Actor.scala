@@ -1,8 +1,7 @@
 package meta.deep.runtime
 
 import java.util.UUID
-
-import meta.deep.runtime.Actor.{AgentId, minTime}
+import meta.deep.runtime.Actor.{AgentId}
 
 import scala.collection.mutable.{ListBuffer, Map}
 
@@ -13,8 +12,6 @@ import scala.collection.mutable.{ListBuffer, Map}
 object Actor {
   type AgentId = Long
   var lastAgentId: AgentId = 0
-  // totalSims is updated at runtime by simulation (Sims length)
-  var totalSims: Int = 0
 
   /**
     * Generates a new id for an agent and returns it
@@ -29,23 +26,46 @@ object Actor {
   val newActors: ListBuffer[Actor] = ListBuffer[Actor]()
 
   val waitTurnList: ListBuffer[Int] = ListBuffer[Int]()
-  val waitTimeList: ListBuffer[Double] = ListBuffer[Double]()
 
-  var proceedTime: Double = 0
+  // track the number of Sims waiting for each label at each iteration. Set once
+  val waitLabels: Map[String, Int] = Map[String, Int]()
+
+  // track the min value that each label group should advance by
+  val labelVals: Map[String, ListBuffer[Double]] = Map[String, ListBuffer[Double]]()
+  var proceedLabel: Map[String, Double] = Map[String, Double]()
+
+  def initLabelVals(): Unit = {
+    waitLabels("time") = 0
+    waitLabels.keys.foreach(k => {
+      labelVals(k) = ListBuffer[Double]()
+      proceedLabel(k) = 0
+    })
+  }
+
+  private def minWaits(l: ListBuffer[Double], total: Int): Double = {
+    if (l.length == total) {
+      l.min
+    } else {
+      0
+    }
+  }
+
+  def proceedGroups(): Unit = {
+//    println("labels: ", waitLabels)
+//    println("label vals: ", labelVals)
+//    println("proceed label: ", proceedLabel)
+
+    waitLabels.keys.foreach(k => {
+      proceedLabel(k) = minWaits(labelVals(k), waitLabels(k))
+      labelVals(k).clear()
+    })
+  }
 
   def minTurn(): Int = {
     if (waitTurnList.length > 0){
       waitTurnList.min
     } else {
       1
-    }
-  }
-
-  def minTime(): Double = {
-    if (waitTimeList.length == totalSims){
-      waitTimeList.min
-    } else {
-      0
     }
   }
 }
