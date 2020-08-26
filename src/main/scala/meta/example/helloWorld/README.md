@@ -3,11 +3,12 @@ This helloWorld example demonstrats how one can dynamically change the topology 
 Expected output: 
 ```
 (TIMER,0)
-(TIMER,1)
-Hello! Eve My name is Alice
-Hello! Alice My name is Eve
-(TIMER,2)
 (TIMER,3)
+My name is Alice and I am shy
 (TIMER,4)
-...
+Hello! Alice My name is Eve
+Hello! Eve My name is Alice
+(TIMER,6)
+(TIMER,9)
+My name is Alice and I am shy
 ```
