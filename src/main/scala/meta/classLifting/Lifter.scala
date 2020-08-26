@@ -228,6 +228,7 @@ class Lifter {
         }
 
         argss.remove(argss.length-1)
+        println("argss are: " + argss)
 
         LetBinding(Some(nm),
           liftCode(v, actorSelfVariable, clasz),
@@ -236,16 +237,6 @@ class Lifter {
             recipientActorVariable,
             methodsIdMap(mtd),
             List(argss.toList)))
-
-      // asynchronously call a local method
-      case code"SpecialInstructions.asyncMessage[$mt]((() => ${MethodApplication(msg)}: mt))" =>
-        val argss =
-          msg.args.tail.map(_.toList.map(arg => code"$arg")).toList
-        AsyncSend[T, mt.Typ](
-            actorSelfVariable.toCode,
-            actorSelfVariable.toCode,
-            methodsIdMap(msg.symbol),
-            argss)
 
       case code"${MethodApplication(ma)}:Any "
         if methodsIdMap.get(ma.symbol).isDefined =>

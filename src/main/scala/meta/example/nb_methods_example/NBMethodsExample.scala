@@ -9,9 +9,8 @@ import meta.deep.IR.TopLevel._
 object NBMethodsExample extends App {
   val cls1: ClassWithObject[Object1] = Object1.reflect(IR)
   val cls2: ClassWithObject[Object2] = Object2.reflect(IR)
-  val cls3: ClassWithObject[Object3] = Object3.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
-  val startClasses: List[Clasz[_ <: Actor]] = List(cls1, cls2, cls3)
+  val startClasses: List[Clasz[_ <: Actor]] = List(cls1, cls2)
   val lifter = new Lifter()
   val simulationData = lifter(startClasses, mainClass)
 
