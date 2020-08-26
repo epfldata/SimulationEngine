@@ -41,7 +41,7 @@ object CodegenExample extends App {
 
     val marketSell: LiftedMethod[Unit] = new LiftedMethod[Unit](
       m,
-      ScalaCode(code"""println("Market sells: " + ${mS.vparams.head.head})"""),
+      ScalaCode(code"""println("Market sells: " + ${mS.vparamss.head.head})"""),
       false,
       1) {
       override val mtd: cls.Method[Unit, cls.Scp] =
@@ -50,7 +50,7 @@ object CodegenExample extends App {
     val marketSellB: LiftedMethod[Int] = new LiftedMethod[Int](
       m,
       ScalaCode[Int](
-        code"""println("Market sells: " + ${mSB.vparams.head.head}); 42"""),
+        code"""println("Market sells: " + ${mSB.vparamss.head.head}); 42"""),
       true,
       2) {
       override val mtd: cls.Method[Int, cls.Scp] =
@@ -58,7 +58,7 @@ object CodegenExample extends App {
     }
     val marketSelf = Variable[Market]
 
-    val rFParam1: Variable[_] = rF.vparams.head.head
+    val rFParam1: Variable[_] = rF.vparamss.head.head
     val recursiveFunction: LiftedMethod[Unit] = new LiftedMethod[Unit](
       m,
       LetBinding(
@@ -89,7 +89,7 @@ object CodegenExample extends App {
     val algo: Algo[Any] = NoOp()
     val callCode = marketFunctions.zipWithIndex.foldRight(algo)((a, b) => {
       val argss: List[List[OpenCode[_]]] =
-        a._1.mtd.vparams.zipWithIndex.map(x => {
+        a._1.mtd.vparamss.zipWithIndex.map(x => {
           x._1.zipWithIndex.map(y => {
             code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
           })
@@ -161,7 +161,7 @@ object CodegenExample extends App {
     val testResult = Variable[Int]
 
     val tellP2: Variable[Int] =
-      te.vparams.head.tail.head.asInstanceOf[Variable[Int]]
+      te.vparamss.head.tail.head.asInstanceOf[Variable[Int]]
     val tell: LiftedMethod[Unit] = new LiftedMethod[Unit](
       f,
       ScalaCode(
@@ -199,7 +199,7 @@ object CodegenExample extends App {
     val algo: Algo[Any] = NoOp()
     val callCode = farmerFunctions.zipWithIndex.foldRight(algo)((a, b) => {
       val argss: List[List[OpenCode[_]]] =
-        a._1.mtd.vparams.zipWithIndex.map(x => {
+        a._1.mtd.vparamss.zipWithIndex.map(x => {
           x._1.zipWithIndex.map(y => {
             code"$p1F.argss(${Const(x._2)})(${Const(y._2)})"
           })
