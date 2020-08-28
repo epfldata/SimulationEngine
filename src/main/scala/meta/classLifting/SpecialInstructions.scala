@@ -17,4 +17,7 @@ object SpecialInstructions {
 
   // Create a synchronization label for the selected Sims.
   def waitLabel(label: String, waitValue: Double): Unit = ???
+
+  // Handle incoming messages
+  def handleMessages(): Unit = ???
 }
