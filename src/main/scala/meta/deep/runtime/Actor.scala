@@ -34,6 +34,9 @@ object Actor {
   val labelVals: Map[String, ListBuffer[Double]] = Map[String, ListBuffer[Double]]()
   var proceedLabel: Map[String, Double] = Map[String, Double]()
 
+  // global interrupt table
+//  val interrupts: Map[Double, ListBuffer[Message]] = Map[Double, ListBuffer[Message]]()
+
   def initLabelVals(): Unit = {
     waitLabels("time") = 0
     waitLabels.keys.foreach(k => {
@@ -234,6 +237,8 @@ class Actor {
   protected var responseListeners
     : Map[String, Message => Unit] = Map()
 
+  protected var interrupts: Map[Double, ListBuffer[Message]] = Map()
+
   /**
     * Adds one message to the sendActions list, which will be collected and distributed at the end of the step
     *
@@ -246,6 +251,40 @@ class Actor {
       sendMessages = message :: sendMessages
     }
   }
+
+  // localized interrupts
+  final def registerInterrupt(time: Double, message: Message): Unit = {
+    if (interrupts.get(time).isDefined){
+      interrupts(time).append(message)
+    } else {
+      interrupts(time) = ListBuffer(message)
+    }
+  }
+
+  final def checkInterrupts(time: Double): Actor = {
+    val registeredInterrupts: Option[ListBuffer[Message]] = interrupts.remove(time)
+    if (registeredInterrupts.isDefined){
+      receivedMessages = receivedMessages ::: registeredInterrupts.get.toList
+    }
+    this
+  }
+
+  // global interrupts
+//  final def registerInterrupts(time: Double, message: Message): Unit = {
+//    if (Actor.interrupts.get(time).isDefined){
+//        Actor.interrupts(time).append(message)
+//      } else {
+//        Actor.interrupts(time) = ListBuffer(message)
+//      }
+//  }
+//
+//  final def callInterrupt(time: Double): Actor = {
+//    val registeredInterrupts: Option[ListBuffer[Message]] = Actor.interrupts.remove(time)
+//    if (registeredInterrupts.isDefined){
+//      receivedMessages = receivedMessages ::: registeredInterrupts.get.toList
+//    }
+//    this
+//  }
 
   /**
     * Adds a list of messages to the agent

@@ -20,4 +20,7 @@ object SpecialInstructions {
 
   // Handle incoming messages
   def handleMessages(): Unit = ???
+
+  // Interrupt for time
+  def interrupt(interval: Double, method: (()=>Any)): Unit = ???
 }

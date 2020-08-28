@@ -187,7 +187,7 @@ class Lifter {
                            liftCode(elseBody, actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
 
-      case code"SpecialInstructions.handleMessages()  " =>
+      case code"SpecialInstructions.handleMessages()" =>
         //generates an IfThenElse for each of this class' methods, which checks if the called method id is the same
         //as any of this class' methods, and calls the method if it is
         val resultMessageCall = Variable[Any]
@@ -238,7 +238,6 @@ class Lifter {
         }
 
         val f =
-//          LetBinding(None,
             LetBinding(
               Some(waitCounter),
               ScalaCode(code"0.0"),
@@ -263,7 +262,6 @@ class Lifter {
         }
 
         val f =
-//          LetBinding(None,
             LetBinding(
               Some(waitCounter),
               ScalaCode(code"0.0"),
@@ -289,7 +287,6 @@ class Lifter {
         }
 
         val f =
-//          LetBinding(None,
               LetBinding(
                 Some(waitCounter),
                 ScalaCode(code"0"),
@@ -301,6 +298,29 @@ class Lifter {
                     Wait()))),
             )
         f.asInstanceOf[Algo[T]]
+
+      case code"SpecialInstructions.interrupt($interval: Double, (() => ${MethodApplication(msg)}))" =>
+        val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
+        var mtd: IR.MtdSymbol = msg.symbol
+
+//        var innerMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
+
+//        argss.append(msg.args.tail.head.head)
+//        while (mtd.toString() == "Function1.apply") {
+//          innerMtd match {
+//            case code"($sa: $st) => ${MethodApplication(msg2)}: Any" =>
+//              mtd = msg2.symbol
+//              innerMtd = msg2.args.head.head
+//              argss.append(msg2.args.tail.head.head)
+//          }
+//        }
+//
+//        argss.remove(argss.length-1)
+
+        Interrupt(actorSelfVariable.toCode,
+                  interval,
+                  methodsIdMap(mtd),
+                  List(argss.toList))
 
       // asynchronously call a remote method
       // arguments to an async call needs to be passed as variables instead of constants.
