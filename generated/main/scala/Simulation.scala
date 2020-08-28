@@ -11,7 +11,7 @@ object Simulation extends App {
   var currentTurn: Int = 0
   var totalTurn: Int = 100
   var currentTime: Double = 0
-  var totalTime: Double = 10
+  var totalTime: Double = 4
 
   var monitor_enabled: Boolean = false
 
@@ -45,7 +45,7 @@ object Simulation extends App {
     val start = System.nanoTime()
     println("Monitor is enabled: " + monitor_enabled)
     while (currentTurn <= totalTurn && currentTime <= totalTime) {
-      println("(Time " + currentTime + " Turn " + currentTurn + ")" )
+      println("(Time " + BigDecimal(currentTime).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble + " Turn " + currentTurn + ")" )
       collect(currentTurn)
       waitLabels("time") = actors.length
 
@@ -61,6 +61,10 @@ object Simulation extends App {
       messages = actors.flatMap(_.getSendMessages).toList
       if (monitor_enabled) Monitor.eachIteration(()=>())
       proceed()
+//      currentTurn = currentTurn + 1
+//      actors.map(i => {
+//        i.currentTurn = currentTurn
+//      })
     }
 
     val end = System.nanoTime()
