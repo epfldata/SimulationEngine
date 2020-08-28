@@ -1,6 +1,6 @@
 package meta.example.server_communication
 
-import meta.classLifting.SpecialInstructions
+import meta.classLifting.SpecialInstructions.{handleMessages, waitTurns}
 import meta.deep.runtime.Actor
 import squid.quasi.lift
 
@@ -17,7 +17,8 @@ class FrontendServer() extends Actor {
     while(true) {
       requestPage()
       println("requestPage content is " + requestPage())
-      SpecialInstructions.waitTurns(1)
+      waitTurns(1)
+      handleMessages()
     }
   }
 

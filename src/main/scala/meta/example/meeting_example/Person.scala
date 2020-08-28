@@ -1,7 +1,7 @@
 package meta.example.meeting_example
 
 import meta.deep.runtime.Actor
-import meta.classLifting.SpecialInstructions.{waitLabel, waitTime, waitTurns}
+import meta.classLifting.SpecialInstructions.{handleMessages, waitLabel, waitTime, waitTurns}
 import squid.quasi.lift
 
 @lift
@@ -15,6 +15,7 @@ class Person(var isBoss: Boolean) extends Actor {
       } else {
         waitLabel("MeetingGroup", 1)
       }
+      handleMessages()
     }
   }
 }

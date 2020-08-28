@@ -14,6 +14,7 @@ class object1(var own_monitor: monitorSim) extends Actor {
         own_monitor.logAggregate()
       }
       waitTurns(1)
+      handleMessages()
     }
   }
 }

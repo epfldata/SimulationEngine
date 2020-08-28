@@ -1,7 +1,7 @@
 package meta.example.time_example
 
 import meta.deep.runtime.Actor
-import meta.classLifting.SpecialInstructions.{waitTime, waitTurns}
+import meta.classLifting.SpecialInstructions.{handleMessages, waitTime, waitTurns}
 import squid.quasi.lift
 
 import scala.util.Random.nextBoolean
@@ -27,6 +27,7 @@ class Sim(var time: Double) extends Actor {
         waitTime(time)
         println("Wait time finished " + id)
       }
+      handleMessages()
     }
   }
 }

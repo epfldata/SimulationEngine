@@ -1,24 +1,27 @@
 package meta.example.lock_example
 
-import meta.classLifting.SpecialInstructions
+import meta.classLifting.SpecialInstructions.{waitTurns}
 import meta.deep.runtime.Actor
-import meta.deep.runtime.Actor.AgentId
 import squid.quasi.lift
 
 @lift
-class Voter() extends Actor {
+class Voter(var consensus_object: Consensus) extends Actor {
 
-  var consensus_object: Consensus = null
+  private var won: Boolean = false
 
-  def vote(): String = {
-    println("Voter proposes! " + id.toString)
-    consensus_object.propose(id.toString)
+  def vote(): Unit = {
+    if (id == consensus_object.propose(id)){
+      println("I win! " + id + " No more propose")
+      won = true
+    } else {
+      println("I lost. Try again! " + id)
+    }
   }
 
   def main(): Unit = {
-    while(true) {
-      println("winner is " + vote())
-      SpecialInstructions.waitTurns(1)
+    while(!won) {
+      vote()
+      waitTurns(1)
     }
   }
 }

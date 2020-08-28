@@ -45,6 +45,7 @@ class TimidPerson(var name: String) extends Person{
   def main(): Unit = {
     while(true){
       waitTurns(3)
+      handleMessages()
     }
   }
 }
@@ -72,6 +73,7 @@ class OutgoingPerson(var name: String) extends Person{
         introduce(sa, sb)
       }
       waitTurns(2)
+      handleMessages()
     }
   }
 }

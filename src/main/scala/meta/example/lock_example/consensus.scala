@@ -1,9 +1,9 @@
 package meta.example.lock_example
 
-import meta.classLifting.SpecialInstructions
+import meta.classLifting.SpecialInstructions.{handleMessages, waitTurns}
 import meta.deep.runtime.Actor
 import meta.deep.runtime.Actor.AgentId
-import squid.quasi.{lift, dbg_lift}
+import squid.quasi.lift
 
 /**
   * Consensus object has one operation, propose()
@@ -16,21 +16,21 @@ import squid.quasi.{lift, dbg_lift}
 class Consensus() extends Actor {
 
   private var isLocked: Boolean = false
-  private var winner: String = ""
+  private var winner: AgentId = -1
 
-  def propose(name: String): String = {
-    println("Vote received for " + name)
+  def propose(simId: AgentId): AgentId = {
     if (!isLocked) {
       isLocked = true
-      winner = name
+      winner = simId
     }
     winner
   }
 
   def main(): Unit = {
     while(true) {
+      handleMessages()
       isLocked = false
-      SpecialInstructions.waitTurns(1)
+      waitTurns(1)
     }
   }
 }

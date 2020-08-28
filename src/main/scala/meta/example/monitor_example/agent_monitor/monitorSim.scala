@@ -22,6 +22,7 @@ class monitorSim() extends Actor {
     while(true){
       printAggregate()
       waitTurns(1)
+      handleMessages()
     }
   }
 }

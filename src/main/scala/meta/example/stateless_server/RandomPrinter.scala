@@ -26,6 +26,7 @@ class RandomPrinter(val server: RandomNumberServer) extends Actor {
 //      sendAsyncMsg()
 
       waitTurns(1)
+      handleMessages()
     }
   }
 }

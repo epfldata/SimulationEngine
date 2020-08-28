@@ -18,6 +18,7 @@ class object1 extends Actor {
         monitor.logTimeseries("Infectious")
       }
       waitTurns(1)
+      handleMessages()
     }
   }
 }

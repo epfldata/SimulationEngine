@@ -50,6 +50,7 @@ class Person(var world: WorldMap, var view: Int) extends Actor {
 //        waitTime(1)
       }
 //      waitTurns(1)
+      handleMessages()
     }
   }
 }

@@ -92,6 +92,7 @@ class WorldMap() extends Actor with Torus2D {
 
   def main(): Unit ={
     while(true){
+      handleMessages()
       segregationMeasure()
 //      if (totalReports == (Actor.totalSims - 1)){
 //        totalReports = 0

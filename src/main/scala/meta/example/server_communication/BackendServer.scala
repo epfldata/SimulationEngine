@@ -1,6 +1,6 @@
 package meta.example.server_communication
 
-import meta.classLifting.SpecialInstructions
+import meta.classLifting.SpecialInstructions.{waitTurns, handleMessages}
 import meta.deep.runtime.Actor
 import squid.quasi.lift
 
@@ -14,7 +14,8 @@ class BackendServer() extends Actor {
 
   def main(): Unit = {
     while(true) {
-      SpecialInstructions.waitTurns(1)
+      waitTurns(1)
+      handleMessages()
     }
   }
 }

@@ -21,6 +21,7 @@ class object2 extends Actor {
         monitor.logTimeseries("Recovered")
       }
       waitTurns(1)
+      handleMessages()
     }
   }
 }

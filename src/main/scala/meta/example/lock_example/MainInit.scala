@@ -9,17 +9,14 @@ import scala.collection.mutable.ListBuffer
 class MainInit {
   def main(): List[Actor] = {
     val l = ListBuffer[Actor]()
+    val totalVoters: Int = 5
 
     val consensus_object: Consensus = new Consensus()
-
-    (1 to 5).foreach(i => {
-      val voter: Voter = new Voter()
-      voter.consensus_object = consensus_object
-      l.append(voter)
-    })
-
     l.append(consensus_object)
-    l.toList
 
+    (1 to totalVoters).foreach(i => {
+      l.append(new Voter(consensus_object))
+    })
+    l.toList
   }
 }
