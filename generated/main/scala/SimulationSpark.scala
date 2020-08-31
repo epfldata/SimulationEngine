@@ -1,4 +1,5 @@
-import meta.deep.runtime.Actor.AgentId
+import Simulation.{actors, currentTime, currentTurn}
+import meta.deep.runtime.Actor.{AgentId, initLabelVals, minTurn, proceedGroups, proceedLabel, waitLabels, waitTurnList}
 import meta.deep.runtime.{Actor, Message}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
@@ -10,11 +11,30 @@ object SimulationSpark extends App {
   @transient lazy val sc: SparkContext = new SparkContext(conf)
 
   var actors: RDD[(AgentId, Actor)] = _
-  var timer = 0
-  var until = 100
+  var currentTurn: Int = 0
+  var totalTurn: Int = 100
+  var currentTime: Double = 0
+  var totalTime: Double = 10
+//  var timer = 0
+//  var until = 100
 
   def init(): Unit = {
     actors = sc.parallelize(generated.InitData.initActors).map(x => (x.id, x))
+    initLabelVals()
+  }
+
+  def proceed(): Unit = {
+    proceedGroups()
+    currentTurn += minTurn()
+    currentTime += proceedLabel("time")
+
+    // update the turn counter for Sims
+    actors.mapValues(i => {
+      i.currentTime = currentTime
+      i.currentTurn = currentTurn
+    })
+
+    waitTurnList.clear()
   }
 
   def main(): Unit = {
@@ -24,18 +44,20 @@ object SimulationSpark extends App {
     init()
     val start = System.nanoTime()
 
-    while (timer <= until) {
+    while (currentTurn <= totalTurn) {
 
       // Checkpoint actors object, so that it does not get too big
       // see: https://stackoverflow.com/questions/36421373/java-lang-stackoverflowerror-and-checkpointing-on-spark
-      println("TIMER", timer)
-      if (timer % 50 == 0) {
+      println("TIMER", currentTurn)
+      if (currentTurn % 50 == 0) {
         actors.checkpoint()
       }
 
+      waitLabels("time") = actors.count().toInt
+
       //Execute all actors
       actors = actors.mapValues(a => {
-        a.cleanSendMessage.run_until(timer)
+        a.cleanSendMessage.run_until(currentTurn)
       })
 
       //Collect all messages from the round
@@ -59,12 +81,14 @@ object SimulationSpark extends App {
       actors = actors
         .leftOuterJoin(dMessages)
         .mapValues { x =>
-          x._1.addReceiveMessages(x._2.getOrElse(List()))
+          x._1.checkInterrupts(currentTime).addReceiveMessages(x._2.getOrElse(List()))
+//                    x._1.addReceiveMessages(x._2.getOrElse(List()))
           x._1
         }
         .cache()
 
-      timer += 1
+      proceedGroups()
+//      timer += 1
     }
 
     val end = System.nanoTime()
