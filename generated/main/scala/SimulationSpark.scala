@@ -1,7 +1,7 @@
-import meta.deep.runtime.Actor.AgentId
-import meta.deep.runtime.{Actor, Message}
+import meta.deep.runtime.Actor.{AgentId, initLabelVals, minTurn, proceedGroups, proceedLabel, waitLabels, waitTurnList}
+import meta.deep.runtime.{Actor, Message, SparkSims}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.{SparkConf, SparkContext, broadcast}
 
 object SimulationSpark extends App {
 
@@ -9,12 +9,29 @@ object SimulationSpark extends App {
     new SparkConf().setMaster("local").setAppName("ECONOMIC_SIMULATION")
   @transient lazy val sc: SparkContext = new SparkContext(conf)
 
-  var actors: RDD[(AgentId, Actor)] = _
-  var timer = 0
-  var until = 100
+  var actors: RDD[Actor] = _
+  var currentTurn: Int = 0
+  var totalTurns: Int = 100
+  var currentTime: Double = 0
+  var totalTime: Double = 10
 
   def init(): Unit = {
-    actors = sc.parallelize(generated.InitData.initActors).map(x => (x.id, x))
+    actors = sc.parallelize(generated.InitData.initActors)
+    initLabelVals()
+  }
+
+  def proceed(): Unit = {
+    proceedGroups()
+    currentTurn += minTurn()
+    currentTime += proceedLabel("time")
+
+    actors = actors.map(i => {
+      i.currentTime = currentTime
+      i.currentTurn = currentTurn
+      i
+    })
+
+    waitTurnList.clear()
   }
 
   def main(): Unit = {
@@ -23,24 +40,32 @@ object SimulationSpark extends App {
 
     init()
     val start = System.nanoTime()
+    waitLabels("time") = actors.count().toInt
 
-    while (timer <= until) {
+    while (currentTurn <= totalTurns && currentTime <= totalTime) {
+
+      println("(Time " + BigDecimal(currentTime).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+        + " Turn " + currentTurn + ")" )
 
       // Checkpoint actors object, so that it does not get too big
       // see: https://stackoverflow.com/questions/36421373/java-lang-stackoverflowerror-and-checkpointing-on-spark
-      println("TIMER", timer)
-      if (timer % 50 == 0) {
-        actors.checkpoint()
-      }
+      // Result in non-serializable error
+
+//      if (currentTurn % 50 == 0) {
+//        actors.checkpoint()
+//      }
 
       //Execute all actors
-      actors = actors.mapValues(a => {
-        a.cleanSendMessage.run_until(timer)
-      })
+      actors = actors.map(x => SparkSims.cleanSendMessage(x))
+          .map(x => SparkSims.checkInterrupts(x, currentTime))
+          .map(x => SparkSims.run_until(x, currentTurn))
+          .cache()    // cache to persist it, otherwise Sims get different ids across runs
 
-      //Collect all messages from the round
-      val dMessages: RDD[(AgentId, List[Message])] = actors
-        .flatMap(_._2.getSendMessages)
+      // Collect all messages from the round
+      // leftOuterJoin results in closure bug: it captures agentId as a class variable, not an object variable
+      // Use broadcast variable to share read-only collected messages. Can't have transformations within a transformation
+      val messageMap: scala.collection.Map[AgentId, List[Message]] = actors
+        .flatMap(SparkSims.getSendMessages)
         .map(x => (x.receiverId, x))
         .combineByKey(
           (message: Message) => {
@@ -51,20 +76,15 @@ object SimulationSpark extends App {
           },
           (l1: List[Message], l2: List[Message]) => {
             l1 ::: l2
-          }
-        )
-        .cache()
+          }).collectAsMap()
 
-      //Distribute messages for the next round
-      actors = actors
-        .leftOuterJoin(dMessages)
-        .mapValues { x =>
-          x._1.addReceiveMessages(x._2.getOrElse(List()))
-          x._1
-        }
-        .cache()
+      val dMessages = sc.broadcast(messageMap)
 
-      timer += 1
+      actors = actors.map(actor => {
+        SparkSims.addReceiveMessages(actor, dMessages)
+      })
+
+      proceed()
     }
 
     val end = System.nanoTime()

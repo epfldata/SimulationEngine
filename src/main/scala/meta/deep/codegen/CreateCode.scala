@@ -136,7 +136,15 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
       run_until = run_until.replace(self, "this")
     })
 
-    def parents: String = s"${compiledActorGraph.parentNames.head}${compiledActorGraph.parentNames.tail.foldLeft("")((a,b) => a + " with " + b)}"
+    // Add Serializable to keep Spark happy
+    def parents: String = {
+      val ans: String = s"${compiledActorGraph.parentNames.head}${compiledActorGraph.parentNames.tail.foldLeft("")((a,b) => a + " with " + b)}"
+      if (compiledActorGraph.parentNames.contains("Serializable")){
+        ans
+      } else {
+        ans + " with Serializable"
+      }
+    }
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars, run_until, parents);
   }
