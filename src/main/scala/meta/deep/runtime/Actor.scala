@@ -4,7 +4,7 @@ import java.util.UUID
 import meta.deep.runtime.Actor.{AgentId}
 
 import scala.collection.mutable.{ListBuffer, Map}
-
+import org.apache.spark.broadcast.Broadcast
 /**
   * This object handles the unique id generation of an actor
   * as long as all ids are generated on a single instance
@@ -70,6 +70,53 @@ object Actor {
     } else {
       1
     }
+  }
+}
+
+object SparkSims {
+  def cleanSendMessage(sim: Actor): Actor = {
+    sim.sendMessages = List()
+    sim
+  }
+
+  def run_until(sim: Actor, step: Int): Actor = {
+    sim.run_until(step)
+  }
+
+  def updateTime(sim: Actor, updatedStep: Int): Actor = {
+    sim.currentTurn = updatedStep
+    sim
+  }
+
+  def addReceiveMessages(sim: Actor, messages: Broadcast[scala.collection.Map[AgentId, List[Message]]]): Actor = {
+    sim.receivedMessages = sim.receivedMessages ::: messages.value.getOrElse(sim.id, List()).filter(
+      x =>
+        x.isInstanceOf[RequestMessage] || sim.responseListeners
+          .get(x.sessionId)
+          .isEmpty)
+    messages.value.getOrElse(sim.id, List())
+      .filter(
+        x =>
+          sim.responseListeners.get(x.sessionId).isDefined && x
+            .isInstanceOf[ResponseMessage])
+      .foreach(x => {
+        val handler = sim.responseListeners(x.sessionId)
+        sim.responseListeners.remove(x.sessionId)
+        handler(x)
+      })
+    sim
+  }
+
+  def getSendMessages(sim: Actor): List[Message] = {
+    sim.sendMessages
+  }
+
+  def checkInterrupts(sim: Actor, time: Double): Actor = {
+    val registeredInterrupts: Option[ListBuffer[Message]] = sim.interrupts.remove(time)
+    if (registeredInterrupts.isDefined){
+      sim.receivedMessages = sim.receivedMessages ::: registeredInterrupts.get.toList
+    }
+    sim
   }
 }
 
@@ -198,15 +245,28 @@ case class Future[+T](var isCompleted: Boolean = false,
   * It contains the logic for message handling and defines the
   * functions for a step-wise simulation
   */
-class Actor {
+class Actor() {
 
   var id: AgentId = Actor.getNextAgentId
+
+//  def apply(id: AgentId): Actor = {
+//    this.id = id
+//    this
+//  }
+
+  //  override var id: AgentId = Actor.getNextAgentId
   var currentTurn: Int = 0
   var currentTime: Double = 0
   var current_pos: Int = 0
   var monitor = Monitor
 
   var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
+
+  final def copy(id: AgentId): Actor = {
+    this.id = id
+    this
+//    this(this.id)
+  }
 
   final def isCompleted(future_obj: Future[Any]): Boolean = {
     async_messages.get(future_obj.id).isDefined
@@ -224,20 +284,21 @@ class Actor {
   /**
     * Contains the received messages from the previous step
     */
-  protected var receivedMessages: List[Message] = List()
+//  protected var receivedMessages: List[Message] = List()
+  var receivedMessages: List[Message] = List()
 
   /**
     * Contains the messages, which should be sent to other actors in the next step
     */
-  protected var sendMessages: List[Message] = List()
+  var sendMessages: List[Message] = List()
 
   /**
     * A map of listeners, which is required to register a listener for a response of a request message
     */
-  protected var responseListeners
+  var responseListeners
     : Map[String, Message => Unit] = Map()
 
-  protected var interrupts: Map[Double, ListBuffer[Message]] = Map()
+  var interrupts: Map[Double, ListBuffer[Message]] = Map()
 
   /**
     * Adds one message to the sendActions list, which will be collected and distributed at the end of the step
@@ -315,6 +376,8 @@ class Actor {
     * @return the actor itself
     */
   final def getSendMessages: List[Message] = {
+//    val sendMessages_ = this.sendMessages
+//    sendMessages_
     sendMessages
   }
 
@@ -372,6 +435,7 @@ class Actor {
     * @return the actor itself
     */
   def run_until(until: Int): Actor = {
+    println("run_until from the actor!")
     while (currentTurn <= until) {
       println(this.getClass.getSimpleName, currentTurn, until, current_pos)
       val (a, b) = stepFunction
