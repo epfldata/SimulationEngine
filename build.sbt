@@ -44,19 +44,16 @@ lazy val no_messaging_example = (project in file("ecosim"))
   .settings(name := "no_messaging_example")
   .settings(commonSettings: _*)
 
-lazy val sims_generated = (project in file("generated"))
-  .settings(
-    name := "sims_generated",
-    scalaSource in Compile := baseDirectory.value / "main/scala")
-  //  .settings(commonSettings: _*)
-  .settings(sparkSettings: _*)
-  .dependsOn(root)
-
 lazy val example = (project in file("example"))
   .settings(name := "example")
   .settings(commonSettings: _*)
   .settings(squidSettings: _*)
+  .settings(sparkSettings: _*)
   .dependsOn(root)
-  .dependsOn(sims_generated)
 
-
+//lazy val sims_generated = (project in file("generated"))
+//  .settings(
+//    name := "sims_generated",
+//    scalaSource in Compile := baseDirectory.value / "main/scala")
+//  .settings(sparkSettings: _*)
+//  .dependsOn(example)

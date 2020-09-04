@@ -12,7 +12,7 @@ object vanillaCompile {
 
     val pipeline = Pipeline(new CreateActorGraphs(simulationData._1), List(
       new EdgeMerge(),
-      new CreateCode(simulationData._2, "generated/main/scala/" + packageName, "generated." + packageName),
+      new CreateCode(simulationData._2, "example/src/main/scala/generated/" + packageName, "generated." + packageName),
     ))
 
     pipeline.run()
