@@ -1,12 +1,12 @@
 package meta.example.codegen_example
 
-import meta.deep.IR
-import meta.deep.IR.Predef._
-import meta.deep.IR.TopLevel._
-import meta.deep.algo._
-import meta.deep.codegen._
-import meta.deep.member.{ActorType, LiftedMethod, State}
-import meta.deep.runtime.RequestMessage
+import _root_.meta.deep.IR
+import _root_.meta.deep.IR.Predef._
+import _root_.meta.deep.IR.TopLevel._
+import _root_.meta.deep.algo._
+import _root_.meta.deep.codegen._
+import _root_.meta.deep.member.{ActorType, LiftedMethod, State}
+import _root_.meta.deep.runtime.RequestMessage
 
 object CodegenExample extends App {
 

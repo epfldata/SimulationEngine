@@ -34,19 +34,27 @@ lazy val graphSettings = Seq(
   libraryDependencies += "guru.nidi" % "graphviz-java" % graphVizVersion
 )
 
-lazy val sims_engine = (project in file("."))
+lazy val root = (project in file("."))
   .settings(name := "sims_engine")
   .settings(commonSettings: _*)
-  .settings(sparkSettings: _*)
   .settings(squidSettings: _*)
   .settings(graphSettings: _*)
 
-lazy val no_messaging_examples = (project in file("ecosim"))
-  .settings(name := "no_messaging_examples")
+lazy val no_messaging_example = (project in file("ecosim"))
+  .settings(name := "no_messaging_example")
   .settings(commonSettings: _*)
+
+lazy val example = (project in file("example"))
+  .settings(name := "example")
+  .settings(commonSettings: _*)
+  .settings(squidSettings: _*)
+  .dependsOn(root)
 
 lazy val sims_generated = (project in file("generated"))
   .settings(
     name := "sims_generated",
     scalaSource in Compile := baseDirectory.value / "main/scala")
-  .dependsOn(sims_engine)
+  .settings(sparkSettings: _*)
+  .dependsOn(root)
+
+//mainClass in example in Compile := (mainClass in root in Compile).value

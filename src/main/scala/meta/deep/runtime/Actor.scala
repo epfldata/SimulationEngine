@@ -4,7 +4,7 @@ import java.util.UUID
 import meta.deep.runtime.Actor.{AgentId}
 
 import scala.collection.mutable.{ListBuffer, Map}
-import org.apache.spark.broadcast.Broadcast
+
 /**
   * This object handles the unique id generation of an actor
   * as long as all ids are generated on a single instance
@@ -70,103 +70,6 @@ object Actor {
     } else {
       1
     }
-  }
-}
-
-object SparkSims {
-  def cleanSendMessage(sim: Actor): Actor = {
-    sim.sendMessages = List()
-    sim
-  }
-
-  def run_until(sim: Actor, step: Int): Actor = {
-    sim.run_until(step)
-  }
-
-  def updateTime(sim: Actor, updatedStep: Int): Actor = {
-    sim.currentTurn = updatedStep
-    sim
-  }
-
-  def addReceiveMessages(sim: Actor, messages: Broadcast[scala.collection.Map[AgentId, List[Message]]]): Actor = {
-    sim.receivedMessages = sim.receivedMessages ::: messages.value.getOrElse(sim.id, List()).filter(
-      x =>
-        x.isInstanceOf[RequestMessage] || sim.responseListeners
-          .get(x.sessionId)
-          .isEmpty)
-    messages.value.getOrElse(sim.id, List())
-      .filter(
-        x =>
-          sim.responseListeners.get(x.sessionId).isDefined && x
-            .isInstanceOf[ResponseMessage])
-      .foreach(x => {
-        val handler = sim.responseListeners(x.sessionId)
-        sim.responseListeners.remove(x.sessionId)
-        handler(x)
-      })
-    sim
-  }
-
-  def getSendMessages(sim: Actor): List[Message] = {
-    sim.sendMessages
-  }
-
-  def checkInterrupts(sim: Actor, time: Double): Actor = {
-    val registeredInterrupts: Option[ListBuffer[Message]] = sim.interrupts.remove(time)
-    if (registeredInterrupts.isDefined){
-      sim.receivedMessages = sim.receivedMessages ::: registeredInterrupts.get.toList
-    }
-    sim
-  }
-}
-
-object Monitor {
-  type eventType = Double
-  val aggregates: Map[String, eventType] = Map[String, eventType]()
-  val timeseries: Map[String, ListBuffer[eventType]] = Map[String, ListBuffer[eventType]]()
-
-  private var daily_aggregate: Map[String, eventType] = Map[String, eventType]()
-
-  def logAggregate(attr: String, num: eventType = 1): Unit = {
-    if (!aggregates.get(attr).isDefined){
-      aggregates += (attr -> num)
-    } else {
-      aggregates += (attr -> List(aggregates.get(attr).get, num).sum)
-    }
-  }
-
-  def logTimeseries(attr: String, num: eventType = 1): Unit = {
-    if (!daily_aggregate.get(attr).isDefined){
-      daily_aggregate += (attr -> num)
-    } else {
-      daily_aggregate += (attr -> List(daily_aggregate.get(attr).get, num).sum)
-    }
-  }
-
-  def initTimeseries(attr: String *): Unit = {
-    attr.foreach(x =>
-      timeseries += (x -> ListBuffer())
-    )
-  }
-
-  // consider handling aggregates at different granularity
-  private def timeElapse(): Unit = {
-    timeseries.foreach(x =>
-      x._2.append(daily_aggregate.getOrElse(x._1, 0))
-    )
-    daily_aggregate.clear()
-  }
-
-  def eachIteration(action:()=>Unit =
-                    ()=>{println("Monitor stats: " + aggregates)}): Unit = {
-    (action())
-    timeElapse()
-  }
-
-  def onCompletion(action:()=>Unit =
-                    ()=>println("Summary: \n" + aggregates
-                    + "\nTimeseries:\n" + timeseries)): Unit = {
-    (action())
   }
 }
 

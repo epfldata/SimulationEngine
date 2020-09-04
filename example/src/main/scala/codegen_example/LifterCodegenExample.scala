@@ -1,10 +1,10 @@
 package meta.example.codegen_example
 
-import meta.classLifting.Lifter
-import meta.deep.IR
-import meta.deep.IR.TopLevel._
-import meta.deep.codegen.{CreateActorGraphs, CreateCode, EdgeMerge, Pipeline}
-import meta.deep.runtime.Actor
+import _root_.meta.classLifting.Lifter
+import _root_.meta.deep.IR
+import _root_.meta.deep.IR.TopLevel._
+import _root_.meta.deep.codegen.{CreateActorGraphs, CreateCode, EdgeMerge, Pipeline}
+import _root_.meta.deep.runtime.Actor
 
 object LifterCodegenExample extends App {
   val cls1: ClassWithObject[Market] = Market.reflect(IR)

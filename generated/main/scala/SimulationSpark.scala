@@ -1,5 +1,5 @@
 import meta.deep.runtime.Actor.{AgentId, initLabelVals, minTurn, proceedGroups, proceedLabel, waitLabels, waitTurnList}
-import meta.deep.runtime.{Actor, Message, SparkSims}
+import meta.deep.runtime.{Actor, Message}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext, broadcast}
 
