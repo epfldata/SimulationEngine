@@ -1,25 +1,14 @@
 package meta.example.meeting_example
 
-import meta.classLifting.Lifter
-import meta.deep.IR
-import meta.deep.codegen.{CreateActorGraphs, CreateCode, EdgeMerge, Pipeline}
-import meta.deep.runtime.Actor
-import IR.TopLevel._
-
 object meetingExample extends App {
+  import meta.deep.IR
+  import meta.deep.IR.TopLevel.ClassWithObject
+  import meta.example.vanillaCompile
 
   val cls1: ClassWithObject[Person] = Person.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
-  val startClasses: List[Clasz[_ <: Actor]] = List(cls1)
-  val lifter = new Lifter()
-  val simulationData = lifter(startClasses, mainClass)
 
-  val pipeline = Pipeline(
-    new CreateActorGraphs(simulationData._1),
-    List(
-      new EdgeMerge(),
-      new CreateCode(simulationData._2, "generated/main/scala"),
-    ))
+  val packageName: String = this.getClass.getPackage.getName()
 
-  pipeline.run()
+  vanillaCompile(List(cls1), mainClass, packageName)
 }

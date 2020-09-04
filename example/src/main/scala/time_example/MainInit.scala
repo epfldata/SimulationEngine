@@ -1,7 +1,6 @@
 package meta.example.time_example
 
 import meta.deep.runtime.Actor
-import meta.classLifting.SpecialInstructions.{waitTurns, waitTime}
 import squid.quasi.lift
 
 @lift
@@ -12,3 +11,4 @@ class MainInit extends Actor {
     List(Sim1, Sim2)
   }
 }
+

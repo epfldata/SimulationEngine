@@ -1,31 +1,16 @@
 package meta.example.stateless_server
 
-import meta.classLifting.Lifter
-import meta.deep.IR
-import meta.deep.codegen.{CreateActorGraphs, CreateCode, EdgeMerge, Pipeline}
-import meta.deep.runtime.Actor
-import IR.TopLevel._
-
 object StatelessServerExample extends App {
+  import meta.deep.IR
+  import IR.TopLevel.ClassWithObject
+  import meta.example.vanillaCompile
 
   val cls1: ClassWithObject[RandomPrinter] = RandomPrinter.reflect(IR)
   val cls2: ClassWithObject[RandomNumberServer] = RandomNumberServer.reflect(IR)
   val cls3: ClassWithObject[InitActors] = InitActors.reflect(IR)
 
-  val startClasses: List[Clasz[_ <: Actor]] = List(cls1, cls2)
-  val mainClass = cls3
-
-  val lifter = new Lifter()
-  val simulationData = lifter(startClasses, mainClass)
-
-  val pipeline = Pipeline(
-    new CreateActorGraphs(simulationData._1),
-    List(
-      new EdgeMerge(),
-      new CreateCode(simulationData._2, "generated/main/scala"),
-    ))
-
-  pipeline.run()
+  val packageName = this.getClass.getPackage.getName()
+  vanillaCompile(List(cls1, cls2), cls3, packageName)
 }
 
 //Evaluation with 3 runs:

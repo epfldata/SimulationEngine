@@ -2,8 +2,8 @@ import org.scalatest.FlatSpec
 
 class serverCommunicationTest extends FlatSpec {
 
-  import generated.serverCommunication._
-  import generated.simulation.{Simulation, SimulationSpark, SimulationConfig => Config}
+    import generated.meta.example.server_communication._
+    import generated.simulation.{Simulation, SimulationSpark, SimulationConfig => Config}
 
   "Backend server's heartbeat message" should "appear at each turn" in {
     Simulation.run(Config(InitData.initActors, totalTurn = 5))
