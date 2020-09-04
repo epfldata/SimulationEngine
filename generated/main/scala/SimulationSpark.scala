@@ -21,7 +21,7 @@ object SimulationSpark extends App {
     val monitor_enabled: Boolean = config.monitor_enabled
 
     sc.setLogLevel("ERROR")
-    sc.setCheckpointDir("checkpoint/")
+//    sc.setCheckpointDir("checkpoint/")
 
     def proceed(): Unit = {
       proceedGroups()
