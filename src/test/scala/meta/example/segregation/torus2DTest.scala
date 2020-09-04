@@ -1,6 +1,7 @@
-package meta.example.segregation
+//package meta.example.segregation
 
 import org.scalatest.{FlatSpec, Matchers}
+import meta.example.segregation.Torus2D
 
 class torus2DTest extends FlatSpec with Matchers {
 

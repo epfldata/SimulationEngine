@@ -1,38 +1,52 @@
-lazy val root = (project in file(".")).settings(
-  name := "economic_simulations",
-  organization := "ch.epfl.data",
-  version := "1.0",
-  scalaVersion := "2.12.8"
-)
+ThisBuild / organization := "ch.epfl.data"
+ThisBuild / scalaVersion := "2.12.8"
+ThisBuild / version := "1.0"
 
-lazy val generated = (project in file("generated")).settings(
-  name := "economic_simulations_generated",
-  scalaSource in Compile := baseDirectory.value / "main/scala",
-  organization := "ch.epfl.data",
-  version := "1.0",
-  scalaVersion := "2.12.8"
-).dependsOn(root)
-
-// libraryDependencies += "com.quantifind" %% "wisp" % "0.0.4"
-
-libraryDependencies ++= Seq(
-//  "com.github.fommil.netlib" % "all" % "1.1.2",
-  "org.scalanlp" %% "breeze" % "0.13.2",
-//  "org.scalanlp" %% "breeze-natives" % "0.12",
-  "org.scalanlp" %% "breeze-viz" % "0.13.2",
-  "org.scalatest" %% "scalatest" % "3.0.0" % "test",
-  "org.apache.spark" %% "spark-core" % "2.4.3"
-)
-
-resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
-
-resolvers += Resolver.sonatypeRepo("snapshots")
-libraryDependencies += "ch.epfl.data" %% "squid" % "0.4.1-SNAPSHOT"
 val paradiseVersion = "2.1.0"
-autoCompilerPlugins := true
-addCompilerPlugin(
-  "org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full
+val breezeVersion = "0.13.2"
+val scalaTestVersion = "3.0.0"
+val squidVersion = "0.4.1-SNAPSHOT"
+val sparkVersion = "2.4.3"
+val graphVizVersion = "0.10.0"
+
+lazy val commonSettings = Seq(
+  libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+  libraryDependencies += "org.scalanlp" %% "breeze" % breezeVersion,
+  libraryDependencies += "org.scalanlp" %% "breeze-viz" % breezeVersion,
+  resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
 )
 
-// Graph drawing lib
-libraryDependencies += "guru.nidi" % "graphviz-java" % "0.10.0"
+lazy val squidSettings = Seq(
+  libraryDependencies += "ch.epfl.data" %% "squid" % squidVersion,
+  resolvers += Resolver.sonatypeRepo("snapshots"),
+  autoCompilerPlugins := true,
+  addCompilerPlugin(
+    "org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full
+  )
+)
+
+lazy val sparkSettings = Seq(
+  libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion
+)
+
+// Enable graph drawing when debugging
+lazy val graphSettings = Seq(
+  libraryDependencies += "guru.nidi" % "graphviz-java" % graphVizVersion
+)
+
+lazy val sims_engine = (project in file("."))
+  .settings(name := "sims_engine")
+  .settings(commonSettings: _*)
+  .settings(sparkSettings: _*)
+  .settings(squidSettings: _*)
+  .settings(graphSettings: _*)
+
+lazy val no_messaging_examples = (project in file("ecosim"))
+  .settings(name := "no_messaging_examples")
+  .settings(commonSettings: _*)
+
+lazy val sims_generated = (project in file("generated"))
+  .settings(
+    name := "sims_generated",
+    scalaSource in Compile := baseDirectory.value / "main/scala")
+  .dependsOn(sims_engine)

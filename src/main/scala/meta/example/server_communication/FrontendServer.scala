@@ -15,7 +15,8 @@ class FrontendServer() extends Actor {
 
   def main(): Unit = {
     while(true) {
-      requestPage()
+//      requestPage()
+//      println("Hello world! Frontend " + id + " Turn " + currentTurn)
       println("requestPage content is " + requestPage())
       waitTurns(1)
       handleMessages()

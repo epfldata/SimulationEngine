@@ -28,8 +28,8 @@ class Sim(var time: Double) extends Actor {
 //      interrupt(5)
 
       if (nextBoolean()){
-        println("Wait turn!")
-        //        println("Wait turn! " + " Id " + id)
+//        println("Wait turn!")
+          println("Wait turn! " + " Id " + id)
         waitTurns(1)
       } else {
         println("Wait time " + time + " Id " + id)
