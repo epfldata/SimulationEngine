@@ -1,47 +1,42 @@
+package generated.simulation
+
 import meta.deep.runtime.{Actor, Message, Monitor}
 import meta.deep.runtime.Actor._
-
 import scala.util.Random
 
 object Simulation extends App {
 
-  var actors: List[Actor] = List()
-  var messages: List[Message] = List()
-  // Consider just have time, and remove total turn
-  var currentTurn: Int = 0
-  var totalTurn: Int = 100
-  var currentTime: Double = 0
-  var totalTime: Double = 10
+  def run(config: SimulationConfig): Unit = {
 
-  var monitor_enabled: Boolean = false
+    var actors: List[Actor] = config.actors
+    var messages: List[Message] = List()
+    var currentTurn: Int = config.startTurn
+    var currentTime: Double = config.startTime
+    val totalTurn: Int = config.totalTurn
+    val totalTime: Double = config.totalTime
+    val monitor_enabled: Boolean = config.monitor_enabled
 
-  def init(): Unit = {
-    actors = generated.InitData.initActors
+    def collect(currentTurn: Int): Unit = {
+      newActors.map(i => i.currentTurn = currentTurn)
+      actors = actors ::: newActors.toList
+      newActors.clear()
+    }
+
+    def proceed(): Unit = {
+      proceedGroups()
+      currentTurn += minTurn()
+      currentTime += proceedLabel("time")
+
+      // update the turn counter for Sims
+      actors.map(i => {
+        i.currentTime = currentTime
+        i.currentTurn = currentTurn
+      })
+      waitTurnList.clear()
+    }
+
     initLabelVals()
-  }
 
-  def collect(currentTurn: Int): Unit = {
-    newActors.map(i => i.currentTurn = currentTurn)
-    actors = actors ::: newActors.toList
-    newActors.clear()
-  }
-
-  def proceed(): Unit = {
-    proceedGroups()
-    currentTurn += minTurn()
-    currentTime += proceedLabel("time")
-
-    // update the turn counter for Sims
-    actors.map(i => {
-      i.currentTime = currentTime
-      i.currentTurn = currentTurn
-    })
-
-    waitTurnList.clear()
-  }
-
-  def main(): Unit = {
-    init()
     val start = System.nanoTime()
     println("Monitor is enabled: " + monitor_enabled)
     while (currentTurn <= totalTurn && currentTime <= totalTime) {
@@ -63,10 +58,6 @@ object Simulation extends App {
       messages = actors.flatMap(_.getSendMessages).toList
       if (monitor_enabled) Monitor.eachIteration(()=>())
       proceed()
-//      currentTurn = currentTurn + 1
-//      actors.map(i => {
-//        i.currentTurn = currentTurn
-//      })
     }
 
     val end = System.nanoTime()
@@ -74,7 +65,4 @@ object Simulation extends App {
     if (monitor_enabled) Monitor.onCompletion()
     println("Time consumed", consumed)
   }
-
-  main()
-
 }

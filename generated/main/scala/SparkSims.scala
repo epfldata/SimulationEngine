@@ -1,3 +1,5 @@
+package generated.simulation
+
 import meta.deep.runtime.Actor.AgentId
 import meta.deep.runtime.{Actor, Message, RequestMessage, ResponseMessage}
 import org.apache.spark.broadcast.Broadcast

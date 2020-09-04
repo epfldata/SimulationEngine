@@ -1,9 +1,7 @@
-//package meta.example.segregation
-
 import org.scalatest.{FlatSpec, Matchers}
 import meta.example.segregation.Torus2D
 
-class torus2DTest extends FlatSpec with Matchers {
+class segregationTest extends FlatSpec with Matchers {
 
   case class torusTest(var width: Int, var height: Int) extends Torus2D
 
@@ -19,6 +17,5 @@ class torus2DTest extends FlatSpec with Matchers {
 //    torusTest(5, 3).neighborCells(7, 2) shouldBe Set(2, 6, 7, 8, 12, 1, 5, 11, 13, 3, 9)
       torusTest(w1, h1).neighborCells(0, 1) shouldBe Set(1, 2, 3, 4, 5, 6, 7, 8)
       torusTest(w1, h1).neighborCells(4, 1) shouldBe Set(0, 1, 2, 3, 5, 6, 7, 8)
-//      torusTest(5, 3).neighborCells(7, 2) shouldBe Set(2, 6, 7, 8, 12, 1, 5, 11, 13, 3, 9)
   }
 }

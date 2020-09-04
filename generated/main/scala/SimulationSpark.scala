@@ -1,49 +1,48 @@
+package generated.simulation
+
 import meta.deep.runtime.Actor.{AgentId, initLabelVals, minTurn, proceedGroups, proceedLabel, waitLabels, waitTurnList}
-import meta.deep.runtime.{Actor, Message}
+import meta.deep.runtime.{Actor, Message, Monitor}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext, broadcast}
 
 object SimulationSpark extends App {
 
-  @transient lazy val conf: SparkConf =
-    new SparkConf().setMaster("local").setAppName("ECONOMIC_SIMULATION")
-  @transient lazy val sc: SparkContext = new SparkContext(conf)
+  def run(config: SimulationConfig): Unit = {
 
-  var actors: RDD[Actor] = _
-  var currentTurn: Int = 0
-  var totalTurns: Int = 100
-  var currentTime: Double = 0
-  var totalTime: Double = 10
+    @transient lazy val conf: SparkConf =
+      new SparkConf().setMaster("local").setAppName("ECONOMIC_SIMULATION")
+    @transient lazy val sc: SparkContext = new SparkContext(conf)
 
-  def init(): Unit = {
-    actors = sc.parallelize(generated.InitData.initActors)
-    initLabelVals()
-  }
+    var actors: RDD[Actor] = sc.parallelize(config.actors)
+    var currentTurn: Int = config.startTurn
+    var currentTime: Double = config.startTime
+    val totalTurn: Int = config.totalTurn
+    val totalTime: Double = config.totalTime
+    val monitor_enabled: Boolean = config.monitor_enabled
 
-  def proceed(): Unit = {
-    proceedGroups()
-    currentTurn += minTurn()
-    currentTime += proceedLabel("time")
-
-    actors = actors.map(i => {
-      i.currentTime = currentTime
-      i.currentTurn = currentTurn
-      i
-    })
-
-    waitTurnList.clear()
-  }
-
-  def main(): Unit = {
     sc.setLogLevel("ERROR")
     sc.setCheckpointDir("checkpoint/")
 
-    init()
+    def proceed(): Unit = {
+      proceedGroups()
+      currentTurn += minTurn()
+      currentTime += proceedLabel("time")
+
+      actors = actors.map(i => {
+        i.currentTime = currentTime
+        i.currentTurn = currentTurn
+        i
+      })
+
+      waitTurnList.clear()
+    }
+
+    initLabelVals()
     val start = System.nanoTime()
     waitLabels("time") = actors.count().toInt
 
-    while (currentTurn <= totalTurns && currentTime <= totalTime) {
-
+    println("Monitor is enabled: " + monitor_enabled)
+    while (currentTurn <= totalTurn && currentTime <= totalTime) {
       println("(Time " + BigDecimal(currentTime).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
         + " Turn " + currentTurn + ")" )
 
@@ -84,6 +83,7 @@ object SimulationSpark extends App {
         SparkSims.addReceiveMessages(actor, dMessages)
       })
 
+      if (monitor_enabled) Monitor.eachIteration(()=>())
       proceed()
     }
 
@@ -91,7 +91,4 @@ object SimulationSpark extends App {
     val consumed = end - start
     println("Time consumed", consumed)
   }
-
-  main()
-
 }
