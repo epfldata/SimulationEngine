@@ -1,6 +1,7 @@
 package generated.meta.example.stateless_server
 
-class RandomPrinter (var server: generated.meta.example.stateless_server.RandomNumberServer) extends meta.deep.runtime.Actor with Serializable {
+class RandomPrinter () extends meta.deep.runtime.Actor with Serializable {
+  var server: generated.meta.example.stateless_server.RandomNumberServer = null
   var i: Int = 0
   private var resetData_0: scala.Any = null;
   private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();

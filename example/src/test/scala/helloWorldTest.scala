@@ -10,7 +10,7 @@ class helloWorldTest extends FlatSpec {
   }
 
   "Spark simulation" should "work fine" in {
-    SimulationSpark.run(Config(InitData.initActors, totalTurn = 6))
+    SimulationSpark.run(Config(InitData.initActors, totalTurn = 10, totalTime = 1))
   }
 }
 

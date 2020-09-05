@@ -10,7 +10,10 @@ object SimulationSpark {
   def run(config: SimulationConfig): Unit = {
 
     @transient lazy val conf: SparkConf =
-      new SparkConf().setMaster("local").setAppName("ECONOMIC_SIMULATION")
+      new SparkConf().setMaster("local")
+        .setAppName("ECONOMIC_SIMULATION")
+//        .set("spark.driver.allowMultipleContexts", "true")
+
     @transient lazy val sc: SparkContext = new SparkContext(conf)
 
     var actors: RDD[Actor] = sc.parallelize(config.actors)
@@ -88,6 +91,7 @@ object SimulationSpark {
     }
 
     val end = System.nanoTime()
+    if (monitor_enabled) Monitor.onCompletion()
     val consumed = end - start
     println("Time consumed", consumed)
   }
