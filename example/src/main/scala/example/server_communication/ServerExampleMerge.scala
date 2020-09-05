@@ -1,28 +1,15 @@
 package meta.example.server_communication
 
-import meta.classLifting.Lifter
-import meta.deep.IR
-import meta.deep.IR.TopLevel._
-import meta.deep.codegen._
-import meta.deep.runtime.Actor
-
 object ServerExampleMerge extends App {
+  import meta.deep.IR
+  import meta.deep.IR.TopLevel._
+  import meta.example.{compileSims, SimsMerge}
+
   val cls1: ClassWithObject[BackendServer] = BackendServer.reflect(IR)
   val cls2: ClassWithObject[FrontendServer] = FrontendServer.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
-  val startClasses: List[Clasz[_ <: Actor]] = List(cls1, cls2)
-  val lifter = new Lifter()
-  val simulationData = lifter(startClasses, mainClass)
 
-  val pipeline = Pipeline(
-    new CreateActorGraphs(simulationData._1),
-    List(
-      new ActorMerge(List(("BackendServer", "FrontendServer"))),
-      new EdgeMerge(),
-      new CreateCode(simulationData._2, "generated/main/scala"),
-    ))
-
-  pipeline.run()
+  compileSims(List(cls1, cls2), mainClass, this.getClass.getPackage.getName + "_merged", SimsMerge(List(("BackendServer", "FrontendServer"))))
 }
 
 /*

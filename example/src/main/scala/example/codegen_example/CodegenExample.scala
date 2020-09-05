@@ -25,7 +25,7 @@ object CodegenExample extends App {
       new EdgeMerge(),
       new CreateCode(
         code"""val m = new Market; val f = new Farmer(); f.market = m; List(m, f)""",
-        "generated/main/scala/meta.example.codegen_example", this.getClass.getPackage.getName),
+        "example/src/main/scala/generated/meta.example.codegen_example_barebone", this.getClass.getPackage.getName),
     )
   )
 

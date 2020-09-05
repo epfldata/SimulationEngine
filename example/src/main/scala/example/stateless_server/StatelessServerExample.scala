@@ -3,14 +3,14 @@ package meta.example.stateless_server
 object StatelessServerExample extends App {
   import meta.deep.IR
   import IR.TopLevel.ClassWithObject
-  import meta.example.vanillaCompile
+  import meta.example.compileSims
 
   val cls1: ClassWithObject[RandomPrinter] = RandomPrinter.reflect(IR)
   val cls2: ClassWithObject[RandomNumberServer] = RandomNumberServer.reflect(IR)
   val cls3: ClassWithObject[InitActors] = InitActors.reflect(IR)
 
   val packageName = this.getClass.getPackage.getName()
-  vanillaCompile(List(cls1, cls2), cls3, packageName)
+  compileSims(List(cls1, cls2), cls3, packageName)
 }
 
 //Evaluation with 3 runs:

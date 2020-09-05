@@ -5,7 +5,9 @@ import meta.deep.runtime.{Actor, Future}
 import squid.quasi.lift
 
 @lift
-class RandomPrinter(val server: RandomNumberServer) extends Actor {
+class RandomPrinter() extends Actor {
+
+  var server: RandomNumberServer = null
   var i: Int = 0
 
   def printNum(): Unit = {

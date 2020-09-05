@@ -3,7 +3,7 @@ package meta.example.helloWorld
 object helloWorldExample extends App{
   import meta.deep.IR
   import meta.deep.IR.TopLevel.ClassWithObject
-  import meta.example.vanillaCompile
+  import meta.example.compileSims
 
   val cls1: ClassWithObject[TimidPerson] = TimidPerson.reflect(IR)
   val cls2: ClassWithObject[OutgoingPerson] = OutgoingPerson.reflect(IR)
@@ -11,5 +11,5 @@ object helloWorldExample extends App{
 
   val packageName: String = this.getClass.getPackage.getName()
 
-  vanillaCompile(List(cls1, cls2), mainClass, packageName)
+  compileSims(List(cls1, cls2), mainClass, packageName)
 }
