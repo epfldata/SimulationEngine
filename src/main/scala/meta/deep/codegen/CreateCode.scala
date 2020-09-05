@@ -20,7 +20,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
     : List[CompiledActorGraph] = {
 
     //Create dir folders to save class
-    val f = new File(storagePath + "/generated")
+    val f = new File(storagePath)
     if (!f.exists()) {
       f.mkdirs()
     }
@@ -353,7 +353,7 @@ $run_until
 }
 """
 
-    val file = new File(storagePath + "/generated/" + className + ".scala")
+    val file = new File(storagePath + "/" + className + ".scala")
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(classString)
     bw.close()
@@ -475,7 +475,7 @@ $run_until
 object InitData  {
   def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(modifiedCode, init = true)}}
 }"""
-    val file = new File(storagePath + "/generated/InitData.scala")
+    val file = new File(storagePath + "/InitData.scala")
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(classString)
     bw.close()
