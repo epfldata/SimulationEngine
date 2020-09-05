@@ -4,7 +4,7 @@ import meta.deep.runtime.{Actor, Message, Monitor}
 import meta.deep.runtime.Actor._
 import scala.util.Random
 
-object Simulation extends App {
+object Simulation {
 
   def run(config: SimulationConfig): Unit = {
 

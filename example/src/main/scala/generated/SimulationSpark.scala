@@ -5,7 +5,7 @@ import meta.deep.runtime.{Actor, Message, Monitor}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext, broadcast}
 
-object SimulationSpark extends App {
+object SimulationSpark {
 
   def run(config: SimulationConfig): Unit = {
 
