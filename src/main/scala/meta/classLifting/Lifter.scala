@@ -227,28 +227,7 @@ class Lifter {
 
         // wait real-time
       case code"SpecialInstructions.waitTime($x)" =>
-        val waitCounter = Variable[Double]
-
-        x match {
-          case code"${Const(n)}: Double" =>
-            if (n <= 0) {
-              throw new Exception("The waitTime takes a positive value!")
-            }
-          case _ =>   //  If variable turn number, skip the check
-        }
-
-        val f =
-            LetBinding(
-              Some(waitCounter),
-              ScalaCode(code"0.0"),
-              DoWhile(code"$waitCounter < $x",
-                LetBinding(Some(waitCounter),
-                  ScalaCode(code"""$waitCounter + meta.deep.runtime.Actor.proceedLabel("time")"""),
-                LetBinding(None,
-                  ScalaCode(code"""meta.deep.runtime.Actor.labelVals("time").append($x - $waitCounter)"""),
-                    Wait()))),
-            )
-        f.asInstanceOf[Algo[T]]
+        liftCode(code"""SpecialInstructions.waitLabel("time", $x)""".asInstanceOf[OpenCode[T]], actorSelfVariable, clasz)
 
       case code"SpecialInstructions.waitLabel($x: String, $y: Double)" =>
         val waitCounter = Variable[Double]
