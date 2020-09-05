@@ -36,24 +36,24 @@ lazy val graphSettings = Seq(
 
 lazy val root = (project in file("."))
   .settings(name := "root")
-  .settings(commonSettings: _*)
-  .settings(squidSettings: _*)
-  .settings(graphSettings: _*)
+  .settings(commonSettings, squidSettings, graphSettings)
 
 lazy val no_messaging_example = (project in file("ecosim"))
   .settings(name := "no_messaging_example")
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
+
+lazy val runAll = TaskKey[Unit]("run-all, for compiling all meta examples")
+
+def runAllIn(config: Configuration) = Def.task {
+    val s = streams.value
+    val cp = (fullClasspath in config).value
+    val r = (runner in run).value
+    (discoveredMainClasses in config).value.foreach(c =>
+      r.run(c, cp.files, Seq(), s.log))
+}
 
 lazy val example = (project in file("example"))
   .settings(name := "example")
-  .settings(commonSettings: _*)
-  .settings(squidSettings: _*)
-  .settings(sparkSettings: _*)
+  .settings(commonSettings, squidSettings, sparkSettings)
   .dependsOn(root)
-
-//lazy val sims_generated = (project in file("generated"))
-//  .settings(
-//    name := "sims_generated",
-//    scalaSource in Compile := baseDirectory.value / "main/scala")
-//  .settings(sparkSettings: _*)
-//  .dependsOn(example)
+  .settings(runAll := runAllIn(Compile).value)
