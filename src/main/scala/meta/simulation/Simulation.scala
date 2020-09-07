@@ -14,7 +14,7 @@ object Simulation {
     var currentTime: Double = config.startTime
     val totalTurn: Int = config.totalTurn
     val totalTime: Double = config.totalTime
-    val monitor_enabled: Boolean = config.monitor_enabled
+    val monitor_enabled: Boolean = config.monitorEnabled
 
     def collect(currentTurn: Int): Unit = {
       newActors.map(i => i.currentTurn = currentTurn)

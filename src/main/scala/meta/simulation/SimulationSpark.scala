@@ -21,7 +21,7 @@ object SimulationSpark {
     var currentTime: Double = config.startTime
     val totalTurn: Int = config.totalTurn
     val totalTime: Double = config.totalTime
-    val monitor_enabled: Boolean = config.monitor_enabled
+    val monitor_enabled: Boolean = config.monitorEnabled
 
     sc.setLogLevel("ERROR")
 //    sc.setCheckpointDir("checkpoint/")

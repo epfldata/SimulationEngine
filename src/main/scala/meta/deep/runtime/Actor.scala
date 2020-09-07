@@ -151,13 +151,6 @@ case class Future[+T](var isCompleted: Boolean = false,
 class Actor() {
 
   var id: AgentId = Actor.getNextAgentId
-
-//  def apply(id: AgentId): Actor = {
-//    this.id = id
-//    this
-//  }
-
-  //  override var id: AgentId = Actor.getNextAgentId
   var currentTurn: Int = 0
   var currentTime: Double = 0
   var current_pos: Int = 0
@@ -168,7 +161,6 @@ class Actor() {
   final def copy(id: AgentId): Actor = {
     this.id = id
     this
-//    this(this.id)
   }
 
   final def isCompleted(future_obj: Future[Any]): Boolean = {
@@ -279,8 +271,6 @@ class Actor() {
     * @return the actor itself
     */
   final def getSendMessages: List[Message] = {
-//    val sendMessages_ = this.sendMessages
-//    sendMessages_
     sendMessages
   }
 

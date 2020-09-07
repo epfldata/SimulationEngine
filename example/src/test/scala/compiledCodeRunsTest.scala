@@ -7,7 +7,7 @@ class compiledCodeRunsTest extends FlatSpec {
   import generated.meta.example._
 
   def runBoth(l: List[Actor], totalTurn: Int, totalTime: Double, monitorEnabled: Boolean = false): Unit = {
-    Simulation.run(Config(l, totalTurn = totalTurn, totalTime = totalTime, monitor_enabled = monitorEnabled))
+    Simulation.run(Config(l, totalTurn = totalTurn, totalTime = totalTime, monitorEnabled = monitorEnabled))
     // Comment out Spark for now. Multiple spark context result in non-serializable
 //    SimulationSpark.run(Config(l, totalTurn = totalTurn, totalTime = totalTime, monitor_enabled = monitorEnabled))
   }

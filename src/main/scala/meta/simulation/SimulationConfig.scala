@@ -6,4 +6,4 @@ case class SimulationConfig(var actors: List[Actor],
                               val totalTurn: Int = 100,
                               var startTime: Double = 0,
                               val totalTime: Double = 10,
-                              val monitor_enabled: Boolean = false)
+                              val monitorEnabled: Boolean = false)
