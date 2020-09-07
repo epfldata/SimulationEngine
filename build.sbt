@@ -36,7 +36,7 @@ lazy val graphSettings = Seq(
 
 lazy val root = (project in file("."))
   .settings(name := "root")
-  .settings(commonSettings, squidSettings, graphSettings)
+  .settings(commonSettings, squidSettings, graphSettings, sparkSettings)
 
 lazy val no_messaging_example = (project in file("ecosim"))
   .settings(name := "no_messaging_example")
@@ -54,6 +54,6 @@ def runAllIn(config: Configuration) = Def.task {
 
 lazy val example = (project in file("example"))
   .settings(name := "example")
-  .settings(commonSettings, squidSettings, sparkSettings)
+  .settings(commonSettings, squidSettings)
   .dependsOn(root)
   .settings(runAll := runAllIn(Compile).value)
