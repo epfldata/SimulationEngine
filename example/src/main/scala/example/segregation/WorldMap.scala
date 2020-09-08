@@ -77,7 +77,7 @@ class WorldMap() extends Actor with Torus2D {
   def segregationMeasure(): Double = {
     if (similarities.size > 0) {
 //      monitor.logTimeseries("Segregation", similarities.values.sum / similarities.size)
-      println(similarities.values.sum / similarities.size)
+      logger.info("{}", similarities.values.sum / similarities.size)
       similarities.values.sum / similarities.size
     } else {
       0

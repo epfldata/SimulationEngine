@@ -1,7 +1,9 @@
 package meta.deep.runtime
 
 import java.util.UUID
-import meta.deep.runtime.Actor.{AgentId}
+
+import meta.deep.runtime.Actor.AgentId
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.{ListBuffer, Map}
 
@@ -158,10 +160,8 @@ class Actor() {
 
   var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
 
-  final def copy(id: AgentId): Actor = {
-    this.id = id
-    this
-  }
+//  val logger = LoggerFactory.getLogger("Sims")
+  val logger = LoggerFactory.getLogger(this.getClass.getName)
 
   final def isCompleted(future_obj: Future[Any]): Boolean = {
     async_messages.get(future_obj.id).isDefined

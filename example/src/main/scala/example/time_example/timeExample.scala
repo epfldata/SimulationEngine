@@ -8,6 +8,5 @@ object timeExample extends App {
   val cls1: ClassWithObject[Sim] = Sim.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-
   compileSims(List(cls1), mainClass)
 }

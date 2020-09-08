@@ -1,10 +1,21 @@
 package meta.example.helloWorld
 
+import ch.qos.logback.classic.Logger
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.Actor
+import org.slf4j.LoggerFactory
 import squid.quasi.lift
+
 import scala.collection.mutable
 import scala.util.Random
+
+object Person {
+  def greetMessage = (friend: String, me: String) =>
+    "Hello, " + friend + "! My name is " + me
+
+  def selfIntroduction = (me: String) =>
+    "My name is " + me
+}
 
 trait Person extends Actor {
   var name: String
@@ -23,7 +34,7 @@ trait Person extends Actor {
   }
 
   def greet(nm: String): Unit = {
-    println("Hello! " + nm + " My name is " + name)
+    logger.info(Person.greetMessage(nm, name))
   }
 
   def introduce(sa: Person, sb: Person): Unit = {
@@ -39,7 +50,7 @@ class TimidPerson(var name: String) extends Person{
   var outgoing: Boolean = false
 
   def isTimid(): Unit = {
-      println("My name is " + name + " and I am shy")
+      logger.info(Person.selfIntroduction(name))
   }
 
   def main(): Unit = {

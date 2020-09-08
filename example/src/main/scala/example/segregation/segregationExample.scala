@@ -9,7 +9,5 @@ object segregationExample extends App {
   val cls2: ClassWithObject[WorldMap] = WorldMap.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-
-
   compileSims(List(cls1, cls2), mainClass)
 }

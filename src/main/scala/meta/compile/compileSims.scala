@@ -4,14 +4,6 @@ import meta.deep.codegen.StateMachineElement
 import meta.deep.codegen.ActorMerge
 import meta.deep.codegen.SSO
 
-sealed trait CompilationMode
-// no optimization
-case object Vanilla extends CompilationMode
-// merged Sims.
-case class SimsMerge(namePairs: List[(String, String)]) extends CompilationMode
-// stateless-server optimization
-case class SimsStateless(statelessServers: List[String]) extends CompilationMode
-
 object compileSims {
   import meta.classLifting.Lifter
   import meta.deep.IR.TopLevel._
