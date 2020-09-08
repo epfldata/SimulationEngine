@@ -9,6 +9,8 @@ import ch.qos.logback.classic.Level._
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 
+// source: https://gist.github.com/richdougherty/91649b8efd6304376ed4187cc427a6d0
+
 object recordLogEvents {
   def record[T](block: => T): immutable.Seq[ILoggingEvent] = {
 
