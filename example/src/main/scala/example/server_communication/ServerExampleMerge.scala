@@ -9,7 +9,7 @@ object ServerExampleMerge extends App {
   val cls2: ClassWithObject[FrontendServer] = FrontendServer.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  compileSims(List(cls1, cls2), mainClass, this.getClass.getPackage.getName + "_merged", SimsMerge(List(("BackendServer", "FrontendServer"))))
+  compileSims(List(cls1, cls2), mainClass, SimsMerge(List(("BackendServer", "FrontendServer"))))
 }
 
 /*

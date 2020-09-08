@@ -9,8 +9,7 @@ object StatelessServerExample extends App {
   val cls2: ClassWithObject[RandomNumberServer] = RandomNumberServer.reflect(IR)
   val cls3: ClassWithObject[InitActors] = InitActors.reflect(IR)
 
-  val packageName = this.getClass.getPackage.getName()
-  compileSims(List(cls1, cls2), cls3, packageName)
+  compileSims(List(cls1, cls2), cls3)
 }
 
 //Evaluation with 3 runs:

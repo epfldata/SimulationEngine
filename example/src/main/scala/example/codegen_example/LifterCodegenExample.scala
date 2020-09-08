@@ -9,5 +9,5 @@ object LifterCodegenExample extends App {
   val cls2: ClassWithObject[Farmer] = Farmer.reflect(IR)
   val cls3: ClassWithObject[InitClass] = InitClass.reflect(IR)
 
-  compileSims(List(cls1, cls2), cls3, this.getClass.getPackage.getName)
+  compileSims(List(cls1, cls2), cls3)
 }

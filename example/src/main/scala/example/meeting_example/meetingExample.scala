@@ -8,7 +8,7 @@ object meetingExample extends App {
   val cls1: ClassWithObject[Person] = Person.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  val packageName: String = this.getClass.getPackage.getName()
 
-  compileSims(List(cls1), mainClass, packageName)
+
+  compileSims(List(cls1), mainClass)
 }

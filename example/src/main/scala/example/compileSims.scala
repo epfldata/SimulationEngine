@@ -6,7 +6,7 @@ import meta.deep.codegen.SSO
 
 sealed trait CompilationMode
 // no optimization
-case class Vanilla() extends CompilationMode
+case object Vanilla extends CompilationMode
 // merged Sims.
 case class SimsMerge(namePairs: List[(String, String)]) extends CompilationMode
 // stateless-server optimization
@@ -18,17 +18,23 @@ object compileSims {
   import meta.deep.codegen.{CreateActorGraphs, CreateCode, EdgeMerge, Pipeline}
   import meta.deep.runtime.Actor
 
-  def apply(startClasses: List[Clasz[_ <: Actor]], mainClass: Clasz[_], packageName: String, mode: CompilationMode = Vanilla()): Unit = {
+  def apply(startClasses: List[Clasz[_ <: Actor]], mainClass: Clasz[_], mode: CompilationMode = Vanilla): Unit = {
 
     val lifter = new Lifter()
     val simulationData = lifter(startClasses, mainClass)
 
     var statemachineElements: List[StateMachineElement] = List(new EdgeMerge())
 
+    var packageName: String = mainClass.getClass.getPackage.getName()
+
     statemachineElements = mode match {
-      case Vanilla() => statemachineElements
-      case SimsMerge(namePairs) => new ActorMerge(namePairs) :: statemachineElements
-      case SimsStateless(statelessServers) => new SSO(statelessServers) :: statemachineElements
+      case Vanilla => statemachineElements
+      case SimsMerge(namePairs) =>
+        packageName += "_merged"
+        new ActorMerge(namePairs) :: statemachineElements
+      case SimsStateless(statelessServers) =>
+        packageName += "_sso"
+        new SSO(statelessServers) :: statemachineElements
     }
 
     statemachineElements = statemachineElements :+ new CreateCode(simulationData._2,

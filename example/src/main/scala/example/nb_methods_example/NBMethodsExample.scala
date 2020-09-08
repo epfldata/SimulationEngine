@@ -9,7 +9,7 @@ object NBMethodsExample extends App {
   val cls2: ClassWithObject[Object2] = Object2.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  val packageName: String = this.getClass.getPackage.getName()
 
-  compileSims(List(cls2, cls1), mainClass, packageName)
+
+  compileSims(List(cls2, cls1), mainClass)
 }
