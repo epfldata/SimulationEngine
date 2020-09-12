@@ -46,7 +46,7 @@ lazy val no_messaging_example = (project in file("ecosim"))
   .settings(name := "no_messaging_example")
   .settings(commonSettings)
 
-lazy val runAll = TaskKey[Unit]("run-all, for compiling all meta examples")
+lazy val runAll = taskKey[Unit]("run-all, for compiling all meta examples")
 
 def runAllIn(config: Configuration) = Def.task {
     val s = streams.value
