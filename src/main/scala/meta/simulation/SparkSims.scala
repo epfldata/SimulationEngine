@@ -45,7 +45,7 @@ object SparkSims {
   }
 
   def checkInterrupts(sim: Actor, time: Double): Actor = {
-    val registeredInterrupts: Option[ListBuffer[Message]] = sim.interrupts.remove(time)
+    val registeredInterrupts: Option[List[Message]] = sim.interrupts.remove(time)
     if (registeredInterrupts.isDefined){
       sim.receivedMessages = sim.receivedMessages ::: registeredInterrupts.get.toList
     }

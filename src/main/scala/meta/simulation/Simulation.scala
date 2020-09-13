@@ -1,20 +1,19 @@
 package generated.simulation
 
-import meta.deep.runtime.{Actor, Message, Monitor}
+import meta.deep.runtime.{Actor, Monitor}
 import meta.deep.runtime.Actor._
 import scala.util.Random
 
 object Simulation {
 
-  def run(config: SimulationConfig): Unit = {
+  def run(config: SimulationConfig): SimulationSnapshot = {
 
     var actors: List[Actor] = config.actors
-    var messages: List[Message] = List()
     var currentTurn: Int = config.startTurn
     var currentTime: Double = config.startTime
     val totalTurn: Int = config.totalTurn
     val totalTime: Double = config.totalTime
-    val monitor_enabled: Boolean = config.monitorEnabled
+    val monitorEnabled: Boolean = config.monitorEnabled
 
     def collect(currentTurn: Int): Unit = {
       newActors.map(i => i.currentTurn = currentTurn)
@@ -38,31 +37,32 @@ object Simulation {
     initLabelVals()
 
     val start = System.nanoTime()
-    println("Monitor is enabled: " + monitor_enabled)
+    println("Monitor is enabled: " + monitorEnabled)
     while (currentTurn <= totalTurn && currentTime <= totalTime) {
       println("(Time " + BigDecimal(currentTime).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
         + " Turn " + currentTurn + ")" )
       collect(currentTurn)
       waitLabels("time") = actors.length
 
-      val mx = messages.groupBy(_.receiverId)
+      val mx = actors.flatMap(_.getSendMessages).groupBy(_.receiverId)
 
       actors = actors.map { a =>
         {
           a.cleanSendMessage
-            .checkInterrupts(currentTime)
+            .addInterrupts(currentTime)
             .addReceiveMessages(Random.shuffle(mx.getOrElse(a.id, List())))
             .run_until(currentTurn)
         }
       }
-      messages = actors.flatMap(_.getSendMessages).toList
-      if (monitor_enabled) Monitor.eachIteration(()=>())
+
+      if (monitorEnabled) Monitor.eachIteration(()=>())
       proceed()
     }
 
     val end = System.nanoTime()
     val consumed = end - start
-    if (monitor_enabled) Monitor.onCompletion()
+    if (monitorEnabled) Monitor.onCompletion()
     println("Time consumed", consumed)
+    SimulationSnapshot(actors, currentTurn, currentTime, monitorEnabled)
   }
 }
