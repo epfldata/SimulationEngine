@@ -8,10 +8,11 @@ import meta.deep.algo.AlgoInfo
 import meta.deep.algo.AlgoInfo.EdgeInfo
 import meta.deep.member.{ActorType}
 import meta.deep.runtime.Actor
+import meta.compile.GeneratedPackage._
 
 import scala.collection.mutable.ArrayBuffer
 
-class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageName: String = "generated")
+class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, generatedPackage: GeneratedPackage)
     extends StateMachineElement() {
 
   var compiledActorGraphs: List[CompiledActorGraph] = Nil
@@ -344,7 +345,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, packageNa
                   run_until: String,
                   parents: String): Unit = {
     val classString =
-      s"""package ${packageName}
+      s"""package ${generatedPackage}
 
 class ${className} (${parameters}) extends ${parents} {
 $initParams
@@ -371,8 +372,15 @@ $run_until
       //We only replace compiledActorGraphs with 1 actor type, otherwise it is a merged one
       if (cAG.actorTypes.length == 1) {
 
-        val actorNamePattern = s"${cAG.actorTypes.head.X.runtimeClass.getCanonicalName}".r.unanchored
-        val pattern1 = "((?s).*)"+s"(${cAG.actorTypes.head.X.runtimeClass.getCanonicalName})"+"((?s).*)"
+        val canonicalName = 
+          List(generatedPackage match {
+            case vanillaPackage(pkgName) => pkgName  
+            case mergedPackage(pkgName) => pkgName 
+            case ssoPackage(pkgName) => pkgName 
+          }, cAG.actorTypes.head.name).mkString(".")
+
+        val actorNamePattern = s"${canonicalName}".r  
+        val pattern1 = "((?s).*)"+s"(${canonicalName})"+"((?s).*)"
         val pattern2 = "([^a-zA-Z0-9_])" // the first letter following actor name shouldn't be an alphanumeric type
 
         var bar = ""
@@ -387,10 +395,10 @@ $run_until
                     if (mtch.group(3).size == 0 || pattern2.r.findFirstIn(mtch.group(3)(0).toString()) != None) {
                       if (mtch.group(1).endsWith(" new ") && !init) {
                           val generatedValName: String = mtch.group(1).split(" ").filter(x => x!="")(1) // val x = new className
-                          bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name ) +
+                          bar = line.replace(canonicalName, s"${generatedPackage}." + cAG.name ) +
                             s"\n  meta.deep.runtime.Actor.newActors.append(${generatedValName})"
                       } else {
-                        bar = line.replace(cAG.actorTypes.head.X.runtimeClass.getCanonicalName, s"${packageName}." + cAG.name)
+                        bar = line.replace(canonicalName, s"${generatedPackage}." + cAG.name)
                       }
                     } else {
                       bar = line
@@ -470,7 +478,7 @@ $run_until
 //    }
 
     val classString =
-      s"""package ${packageName}
+      s"""package ${generatedPackage}
 
 object InitData  {
   def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(modifiedCode, init = true)}}

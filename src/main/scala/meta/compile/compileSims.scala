@@ -1,14 +1,11 @@
-package meta.example
-
-import meta.deep.codegen.StateMachineElement
-import meta.deep.codegen.ActorMerge
-import meta.deep.codegen.SSO
+package meta.compile 
 
 object compileSims {
   import meta.classLifting.Lifter
   import meta.deep.IR.TopLevel._
-  import meta.deep.codegen.{CreateActorGraphs, CreateCode, EdgeMerge, Pipeline}
+  import meta.deep.codegen.{CreateActorGraphs, CreateCode, EdgeMerge, Pipeline, StateMachineElement, ActorMerge, SSO}
   import meta.deep.runtime.Actor
+  import meta.compile.GeneratedPackage._
 
   def apply(startClasses: List[Clasz[_ <: Actor]], mainClass: Clasz[_], mode: CompilationMode = Vanilla): Unit = {
 
@@ -17,21 +14,24 @@ object compileSims {
 
     var statemachineElements: List[StateMachineElement] = List(new EdgeMerge())
 
-    var packageName: String = mainClass.getClass.getPackage.getName()
+    var canonicalName: String = mainClass.getClass.getPackage.getName()
+
+    var pkgName: GeneratedPackage = vanillaPackage(canonicalName)
 
     statemachineElements = mode match {
-      case Vanilla => statemachineElements
+      case Vanilla => 
+        statemachineElements
       case SimsMerge(namePairs) =>
-        packageName += "_merged"
+        pkgName = mergedPackage(canonicalName)
         new ActorMerge(namePairs) :: statemachineElements
       case SimsStateless(statelessServers) =>
-        packageName += "_sso"
+        pkgName = ssoPackage(canonicalName)
         new SSO(statelessServers) :: statemachineElements
     }
 
     statemachineElements = statemachineElements :+ new CreateCode(simulationData._2,
-      "example/src/main/scala/generated/" + packageName,
-      "generated." + packageName)
+      "example/src/main/scala/generated/" + canonicalName,
+      pkgName)
 
     val pipeline = Pipeline(new CreateActorGraphs(simulationData._1), statemachineElements)
 
