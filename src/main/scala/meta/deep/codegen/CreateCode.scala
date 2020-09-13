@@ -366,53 +366,35 @@ $run_until
     * @return code with replaced variable types
     */
   def changeTypes(code: String, init: Boolean = false): String = {
+
     var result = code
 
     for (cAG <- this.compiledActorGraphs) {
       //We only replace compiledActorGraphs with 1 actor type, otherwise it is a merged one
       if (cAG.actorTypes.length == 1) {
-
-        val canonicalName = 
-          List(generatedPackage match {
+        // canonical name of the actor, including full path and the actor name 
+        // actorTypes.head.name is needed for merging 
+        val canonicalSimName: String = 
+          (generatedPackage match {
             case vanillaPackage(pkgName) => pkgName  
             case mergedPackage(pkgName) => pkgName 
             case ssoPackage(pkgName) => pkgName 
-          }, cAG.actorTypes.head.name).mkString(".")
+          }) + "." + cAG.actorTypes.head.name
 
-        val actorNamePattern = s"${canonicalName}".r  
-        val pattern1 = "((?s).*)"+s"(${canonicalName})"+"((?s).*)"
-        val pattern2 = "([^a-zA-Z0-9_])" // the first letter following actor name shouldn't be an alphanumeric type
-
-        var bar = ""
-        actorNamePattern.findFirstIn(result) match {
-          case Some(_) => {
-            result = result.split("\n").map(
-              line => {
-                val pattern1_list = pattern1.r.findAllMatchIn(line).toList
-                pattern1_list.isEmpty match {
-                  case true => line
-                  case false => pattern1_list.foreach(mtch => {
-                    if (mtch.group(3).size == 0 || pattern2.r.findFirstIn(mtch.group(3)(0).toString()) != None) {
-                      if (mtch.group(1).endsWith(" new ") && !init) {
-                          val generatedValName: String = mtch.group(1).split(" ").filter(x => x!="")(1) // val x = new className
-                          bar = line.replace(canonicalName, s"${generatedPackage}." + cAG.name ) +
-                            s"\n  meta.deep.runtime.Actor.newActors.append(${generatedValName})"
-                      } else {
-                        bar = line.replace(canonicalName, s"${generatedPackage}." + cAG.name)
-                      }
-                    } else {
-                      bar = line
-                    }
-                  }); bar
-                }
-              }
-            ).mkString("\n")
-          }
-          case None =>
-        }
+        // replace the package of canonical Sim name with the generated one. Respect word boundary
+        result = result.replaceAll("\\b"+canonicalSimName+"\\b", generatedPackage + "." + cAG.name)
       }
     }
-    result
+
+    // new Sims are added to newActors at runtime 
+    init match {
+      case true => result 
+      case _ => {
+        val newSimPattern = s"(\\s+)val (\\S*) = new generated.(\\S*);".r
+        newSimPattern.replaceAllIn(result, 
+          m=>{(m + s"${m.group(1)}meta.deep.runtime.Actor.newActors.append(${m.group(2)})")})
+      }
+    }
   }
 
   /**
