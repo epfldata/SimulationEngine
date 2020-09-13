@@ -3,6 +3,8 @@ package meta.example.helloWorld
 import ch.qos.logback.classic.Logger
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.Actor
+import meta.deep.runtime.Actor.AgentId
+
 import org.slf4j.LoggerFactory
 import squid.quasi.lift
 
@@ -49,12 +51,17 @@ trait Person extends Actor {
 class TimidPerson(var name: String) extends Person{
   var outgoing: Boolean = false
 
-  def isTimid(): Unit = {
+  def isTimid(name: String): Unit = {
       logger.info(Person.selfIntroduction(name))
+  }
+
+  def someDumb(): Unit = {
+    println("Some dumb thing")
   }
 
   def main(): Unit = {
     while(true){
+      someDumb()
       waitTurns(3)
       handleMessages()
     }
@@ -76,7 +83,7 @@ class OutgoingPerson(var name: String) extends Person{
 
       // blocking call
       if (sa.isInstanceOf[TimidPerson]){
-        sa.asInstanceOf[TimidPerson].isTimid()
+        sa.asInstanceOf[TimidPerson].isTimid(sa.name)
       }
 
       // methods defined in trait outside of the lifter classes return instantaneously

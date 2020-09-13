@@ -1,7 +1,7 @@
 package meta.example.codegen_example
 
-import _root_.meta.classLifting.SpecialInstructions._
-import _root_.meta.deep.runtime.Actor
+import meta.classLifting.SpecialInstructions._
+import meta.deep.runtime.Actor
 import squid.quasi.lift
 
 @lift

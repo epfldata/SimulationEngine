@@ -3,7 +3,7 @@ package meta.example.server_communication
 object ServerExample extends App {
   import meta.deep.IR
   import meta.deep.IR.TopLevel.ClassWithObject
-  import meta.example.compileSims
+  import meta.compile.compileSims
 
   val cls1: ClassWithObject[BackendServer] = BackendServer.reflect(IR)
   val cls2: ClassWithObject[FrontendServer] = FrontendServer.reflect(IR)

@@ -3,7 +3,7 @@ package meta.example.helloWorld
 object helloWorldExample extends App{
   import meta.deep.IR
   import meta.deep.IR.TopLevel.ClassWithObject
-  import meta.example.compileSims
+  import meta.compile.compileSims
 
   val cls1: ClassWithObject[TimidPerson] = TimidPerson.reflect(IR)
   val cls2: ClassWithObject[OutgoingPerson] = OutgoingPerson.reflect(IR)

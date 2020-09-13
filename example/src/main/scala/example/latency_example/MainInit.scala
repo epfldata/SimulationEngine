@@ -10,7 +10,7 @@ class MainInit extends Actor {
     val foo: ListBuffer[Actor] = ListBuffer()
     val server: Server = new Server(0.5)
     foo.append(server)
-    (1 to 5).foreach(i => {
+    (1 to 1).foreach(i => {
       val client: Client = new Client(server, 0.2, 0.4)
       foo.append(client)
     })

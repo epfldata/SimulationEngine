@@ -1,6 +1,6 @@
 package meta.example.codegen_example
 
-import _root_.meta.deep.runtime.Actor
+import meta.deep.runtime.Actor
 import squid.quasi.lift
 
 @lift

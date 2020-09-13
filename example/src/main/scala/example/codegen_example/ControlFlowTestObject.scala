@@ -1,7 +1,7 @@
 package meta.example.codegen_example
 
-import _root_.meta.classLifting.SpecialInstructions.waitTurns
-import _root_.meta.deep.runtime.Actor
+import meta.classLifting.SpecialInstructions.waitTurns
+import meta.deep.runtime.Actor
 import squid.quasi.lift
 
 @lift

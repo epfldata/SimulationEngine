@@ -1,12 +1,13 @@
 package meta.example.codegen_example
 
-import _root_.meta.deep.IR
-import _root_.meta.deep.IR.Predef._
-import _root_.meta.deep.IR.TopLevel._
-import _root_.meta.deep.algo._
-import _root_.meta.deep.codegen._
-import _root_.meta.deep.member.{ActorType, LiftedMethod, State}
-import _root_.meta.deep.runtime.RequestMessage
+import meta.deep.IR
+import meta.deep.IR.Predef._
+import meta.deep.IR.TopLevel._
+import meta.deep.algo._
+import meta.deep.codegen._
+import meta.deep.member.{ActorType, LiftedMethod, State}
+import meta.deep.runtime.RequestMessage
+import meta.compile.GeneratedPackage._ 
 
 object CodegenExample extends App {
 
@@ -25,7 +26,8 @@ object CodegenExample extends App {
       new EdgeMerge(),
       new CreateCode(
         code"""val m = new Market; val f = new Farmer(); f.market = m; List(m, f)""",
-        "example/src/main/scala/generated/meta.example.codegen_example_barebone", this.getClass.getPackage.getName),
+        "example/src/main/scala/generated/meta.example.codegen_example", 
+        vanillaPackage(this.getClass.getPackage.getName)),
     )
   )
 
