@@ -17,11 +17,11 @@ lazy val commonSettings = Seq(
 )
 
 lazy val logSetting = Seq(
-  libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
+  libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3", 
 )
 
 lazy val squidSettings = Seq(
-  libraryDependencies += "ch.epfl.data" %% "squid" % squidVersion,
+  libraryDependencies += "ch.epfl.data" %% "squid" % squidVersion, 
   resolvers += Resolver.sonatypeRepo("snapshots"),
   autoCompilerPlugins := true,
   addCompilerPlugin(
@@ -40,7 +40,13 @@ lazy val graphSettings = Seq(
 
 lazy val root = (project in file("."))
   .settings(name := "root")
-  .settings(commonSettings, squidSettings, graphSettings, sparkSettings, logSetting)
+  .settings(commonSettings, squidSettings, graphSettings, sparkSettings)
+  .settings(
+    excludeDependencies += "org.slf4j" % "slf4j-log4j12"
+  )
+  .settings(logSetting)
+
+
 
 lazy val no_messaging_example = (project in file("ecosim"))
   .settings(name := "no_messaging_example")
@@ -58,6 +64,10 @@ def runAllIn(config: Configuration) = Def.task {
 
 lazy val example = (project in file("example"))
   .settings(name := "example")
-  .settings(commonSettings, squidSettings, logSetting)
+  .settings(commonSettings, squidSettings)
   .dependsOn(root)
   .settings(runAll := runAllIn(Compile).value)
+  .settings(
+    excludeDependencies += "org.slf4j" % "slf4j-log4j12"
+  )
+  .settings(logSetting)
