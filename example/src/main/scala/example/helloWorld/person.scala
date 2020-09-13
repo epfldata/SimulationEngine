@@ -55,13 +55,8 @@ class TimidPerson(var name: String) extends Person{
       logger.info(Person.selfIntroduction(name))
   }
 
-  def someDumb(): Unit = {
-    println("Some dumb thing")
-  }
-
   def main(): Unit = {
     while(true){
-      someDumb()
       waitTurns(3)
       handleMessages()
     }
@@ -75,16 +70,20 @@ class OutgoingPerson(var name: String) extends Person{
 
   def main(): Unit = {
     while(true){
-//      val sa: Person = friendList(rand.nextInt(friendList.length))
-//      val sb: Person = friendList(rand.nextInt(friendList.length))
+     val sa: Person = friendList(rand.nextInt(friendList.length))
+     val sb: Person = friendList(rand.nextInt(friendList.length))
       // Change it to deterministic for reproducibility
-      val sa: Person = friendList(0)
-      val sb: Person = friendList(1)
+      // val sa: Person = friendList(0)
+      // val sb: Person = friendList(1)
 
       // blocking call
       if (sa.isInstanceOf[TimidPerson]){
         sa.asInstanceOf[TimidPerson].isTimid(sa.name)
       }
+
+      // generate new Sims 
+      val someoneNew = new TimidPerson(Random.nextString(5))
+      friendList.append(someoneNew)
 
       // methods defined in trait outside of the lifter classes return instantaneously
       if (sa != sb){
