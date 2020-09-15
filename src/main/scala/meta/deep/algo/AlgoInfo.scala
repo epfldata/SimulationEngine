@@ -50,7 +50,10 @@ object AlgoInfo {
   var responseMessage: Variable[MutVar[ResponseMessage]] =
     Variable[MutVar[ResponseMessage]]
 
-  var responseMessagess: Variable[mutable.Map[String, ResponseMessage]] = Variable[mutable.Map[String, ResponseMessage]]
+//  /**
+//    * This variables saves data about the wait status of the blocking call
+//    */
+//  var waitMessage: Variable[MutVar[WaitMessage]] = Variable[MutVar[WaitMessage]]
 
   /**
     * List, saving all variables, which should be defined at the beginning
@@ -83,7 +86,6 @@ object AlgoInfo {
     this.positionStack = Variable[ListBuffer[List[((Int, Int), Int)]]]
     this.returnValue = Variable[MutVar[Any]]
     this.responseMessage = Variable[MutVar[ResponseMessage]]
-    this.responseMessagess = Variable[mutable.Map[String, ResponseMessage]]
   }
 
   /**

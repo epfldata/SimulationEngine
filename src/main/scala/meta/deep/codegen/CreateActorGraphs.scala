@@ -118,9 +118,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
       AlgoInfo.positionStack,
       code"ListBuffer[List[((Int,Int),Int)]]()") :: VarValue(
       AlgoInfo.responseMessage,
-      code"MutVar[meta.deep.runtime.ResponseMessage](null)") :: VarValue(
-      AlgoInfo.responseMessagess,
-      code"collection.mutable.Map[String, meta.deep.runtime.ResponseMessage]()") :: variables
+      code"MutVar[meta.deep.runtime.ResponseMessage](null)") :: variables
 
     CompiledActorGraph(
       actorType.name,
@@ -133,8 +131,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
       List[Variable[ListBuffer[List[((Int, Int), Int)]]]](
         AlgoInfo.positionStack),
       List(AlgoInfo.returnValue),
-      List(AlgoInfo.responseMessage),
-      List(AlgoInfo.responseMessagess)
+      List(AlgoInfo.responseMessage)
     )
   }
 
