@@ -27,8 +27,10 @@ case class Interrupt[R](actor: OpenCode[Actor],
       code"""
         val sender = $actor;
         val receiver = $actor;
-        val requestMessage = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
-        sender.registerInterrupt($delay, requestMessage);
+        val interruptRequest = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
+        // register the interrupt
+        val interrupts = sender.interrupts.getOrElse($delay, List());
+        sender.interrupts($delay) = interrupts ::: List(interruptRequest)
         ${AlgoInfo.returnValue} := null
         ()"""
 
