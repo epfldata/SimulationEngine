@@ -1,7 +1,7 @@
 package meta.deep.algo
 
 import meta.deep.IR.Predef._
-import meta.deep.runtime.{Actor, Future}
+import meta.deep.runtime.Actor
 
 case class Send[R](actorFrom: OpenCode[Actor],
                    actorRef: OpenCode[Actor],
@@ -42,16 +42,21 @@ case class Send[R](actorFrom: OpenCode[Actor],
 
       val f2: OpenCode[Unit] = code"""()"""
 
+      val f3: OpenCode[Unit] = code"""()"""
+
       // add 1 to the min turn calculation so that responses are received in the next turn
-      val f3: OpenCode[Unit] =
-        code"""meta.deep.runtime.Actor.waitTurnList.append(1);
+      // Check for any waitMessage, in addition to waiting
+
+      lazy val f4: OpenCode[Unit] =
+        code"""meta.deep.runtime.Actor.labelVals("turn").append(1);
               ()"""
 
-      val f4: OpenCode[Unit] =
+      val f5: OpenCode[Unit] =
         code"""
          ${AlgoInfo.returnValue} := (${AlgoInfo.responseMessage}!).arg;
          ${AlgoInfo.responseMessage} := null;
          ()"""
+
       AlgoInfo.stateGraph.append(
         AlgoInfo.EdgeInfo("Send b f1",
                           AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
@@ -66,27 +71,34 @@ case class Send[R](actorFrom: OpenCode[Actor],
                           f2,
                           waitEdge = true,
                           sendInfo = (this, false)))
+      // while waiting for reply, if received a wait message, wait instead
+      // val waitPos = AlgoInfo.posCounter
+      // AlgoInfo.nextPos()
+      // val p1 = Variable[WaitMessage]
+      // val fwait = WaitLabel(code"$p1.label", code"$p1.value")
+      // Foreach(code"$actorFrom.popWaitMessage", p1, fwait).codegen()
       AlgoInfo.nextPos()
       AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo("Send b f3 result",
+        AlgoInfo.EdgeInfo("Send b f3 get response",
                           AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
                           AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
-                          code"()",
+                          f3,
                           cond = code"(${AlgoInfo.responseMessage}!) != null",
                           sendInfo = (this, false)))
       AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo("Send b f3 no result",
+        AlgoInfo.EdgeInfo("Send b f4 no response",
                           AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
                           AlgoInfo.CodeNodePos(AlgoInfo.posCounter - 1),
-                          f3,
+                          f4,
                           cond = code"(${AlgoInfo.responseMessage}!) == null",
                           sendInfo = (this, false)))
       AlgoInfo.nextPos()
+
       AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo("Send b f4",
+        AlgoInfo.EdgeInfo("Send b f5",
                           AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
                           AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
-                          f4,
+                          f5,
                           sendInfo = (this, false)))
       AlgoInfo.nextPos()
     } else {

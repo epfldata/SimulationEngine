@@ -23,7 +23,7 @@ object Simulation {
 
     def proceed(): Unit = {
       proceedGroups()
-      currentTurn += minTurn()
+      currentTurn += proceedLabel("turn").asInstanceOf[Int]
       currentTime += proceedLabel("time")
 
       // update the turn counter for Sims
@@ -31,7 +31,6 @@ object Simulation {
         i.currentTime = currentTime
         i.currentTurn = currentTurn
       })
-      waitTurnList.clear()
     }
 
     initLabelVals()

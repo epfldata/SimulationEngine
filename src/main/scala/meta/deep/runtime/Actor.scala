@@ -14,7 +14,7 @@ import scala.collection.mutable.{ListBuffer, Map}
 object Actor {
   type AgentId = Long
   var lastAgentId: AgentId = 0
-
+  
   /**
     * Generates a new id for an agent and returns it
     *
@@ -27,8 +27,6 @@ object Actor {
 
   val newActors: ListBuffer[Actor] = ListBuffer[Actor]()
 
-  val waitTurnList: ListBuffer[Int] = ListBuffer[Int]()
-
   // track the number of Sims waiting for each label at each iteration. Set once
   val waitLabels: Map[String, Int] = Map[String, Int]()
 
@@ -36,42 +34,32 @@ object Actor {
   val labelVals: Map[String, ListBuffer[Double]] = Map[String, ListBuffer[Double]]()
   var proceedLabel: Map[String, Double] = Map[String, Double]()
 
-  // global interrupt table
-//  val interrupts: Map[Double, ListBuffer[Message]] = Map[Double, ListBuffer[Message]]()
-
   def initLabelVals(): Unit = {
     waitLabels("time") = 0
+    waitLabels("turn") = 0
     waitLabels.keys.foreach(k => {
       labelVals(k) = ListBuffer[Double]()
       proceedLabel(k) = 0
     })
   }
 
-  private def minWaits(l: ListBuffer[Double], total: Int): Double = {
-    if (l.length == total) {
-      l.min
-    } else {
-      0
-    }
-  }
-
   def proceedGroups(): Unit = {
-//    println("labels: ", waitLabels)
-//    println("label vals: ", labelVals)
-//    println("proceed label: ", proceedLabel)
-
     waitLabels.keys.foreach(k => {
-      proceedLabel(k) = minWaits(labelVals(k), waitLabels(k))
+      proceedLabel(k) = k match {
+        case "turn" => {
+          labelVals(k).min
+        }
+        case _ => {
+          val foo = labelVals(k)
+            if (foo.length == waitLabels(k)) {
+              foo.min
+            } else {
+              0
+            }
+        }
+      }
       labelVals(k).clear()
     })
-  }
-
-  def minTurn(): Int = {
-    if (waitTurnList.length > 0){
-      waitTurnList.min
-    } else {
-      1
-    }
   }
 }
 
@@ -99,6 +87,7 @@ abstract class Message extends Serializable {
     "Message: " + senderId + " -> " + receiverId + "(" + sessionId + ")"
   }
 }
+
 
 /**
   * This represents a message, which is used for sending something to another actor
@@ -137,6 +126,14 @@ case class ResponseMessage(override val senderId: Actor.AgentId,
                            arg: Any)
     extends Message
 
+
+/**
+  * Future is the return type of an asynchronous call
+  * @param isCompleted: whether the previous call has completed
+  * @param value: the return value of the future object, when completed
+  * @param id: a unique id, used to distinguish different future obj in the same turn
+  * @tparam T: the return type
+  */
 case class Future[+T](var isCompleted: Boolean = false,
                       val value: Option[T] = None,
                       val id: String = UUID.randomUUID().toString){
@@ -150,19 +147,17 @@ case class Future[+T](var isCompleted: Boolean = false,
   * It contains the logic for message handling and defines the
   * functions for a step-wise simulation
   */
-class Actor() {
+class Actor extends Serializable {
 
   var id: AgentId = Actor.getNextAgentId
   var currentTurn: Int = 0
   var currentTime: Double = 0
   var current_pos: Int = 0
   var monitor = Monitor
+  val logger = LoggerFactory.getLogger(this.getClass.getName())
 
   var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
-
-//  val logger = LoggerFactory.getLogger("Sims")
-  val logger = LoggerFactory.getLogger(this.getClass.getName)
-
+  
   final def isCompleted(future_obj: Future[Any]): Boolean = {
     async_messages.get(future_obj.id).isDefined
   }
@@ -193,7 +188,7 @@ class Actor() {
   var responseListeners
     : Map[String, Message => Unit] = Map()
 
-  var interrupts: Map[Double, ListBuffer[Message]] = Map()
+  var interrupts: Map[Double, List[Message]] = Map()
 
   /**
     * Adds one message to the sendActions list, which will be collected and distributed at the end of the step
@@ -207,40 +202,6 @@ class Actor() {
       sendMessages = message :: sendMessages
     }
   }
-
-  // localized interrupts
-  final def registerInterrupt(time: Double, message: Message): Unit = {
-    if (interrupts.get(time).isDefined){
-      interrupts(time).append(message)
-    } else {
-      interrupts(time) = ListBuffer(message)
-    }
-  }
-
-  final def checkInterrupts(time: Double): Actor = {
-    val registeredInterrupts: Option[ListBuffer[Message]] = interrupts.remove(time)
-    if (registeredInterrupts.isDefined){
-      receivedMessages = receivedMessages ::: registeredInterrupts.get.toList
-    }
-    this
-  }
-
-  // global interrupts
-//  final def registerInterrupts(time: Double, message: Message): Unit = {
-//    if (Actor.interrupts.get(time).isDefined){
-//        Actor.interrupts(time).append(message)
-//      } else {
-//        Actor.interrupts(time) = ListBuffer(message)
-//      }
-//  }
-//
-//  final def callInterrupt(time: Double): Actor = {
-//    val registeredInterrupts: Option[ListBuffer[Message]] = Actor.interrupts.remove(time)
-//    if (registeredInterrupts.isDefined){
-//      receivedMessages = receivedMessages ::: registeredInterrupts.get.toList
-//    }
-//    this
-//  }
 
   /**
     * Adds a list of messages to the agent
@@ -263,6 +224,19 @@ class Actor() {
         responseListeners.remove(x.sessionId)
         handler(x)
       })
+    this
+  }
+
+  /**
+    * Add registered interrupts to receivedMessages if time is up
+    * @param time
+    * @return
+    */
+  final def addInterrupts(time: Double): Actor = {
+    val registeredInterrupts: Option[List[Message]] = interrupts.remove(time)
+    if (registeredInterrupts.isDefined){
+      receivedMessages = receivedMessages ::: registeredInterrupts.get
+    }
     this
   }
 
@@ -345,5 +319,5 @@ class Actor() {
     *         returns the next position and timer which should be passed again
     *         when calling this function the next time.
     */
-  def stepFunction: (Int, Int) = (current_pos, currentTurn + Actor.minTurn())
+  def stepFunction: (Int, Int) = (current_pos, currentTurn + Actor.proceedLabel("turn").asInstanceOf[Int])
 }

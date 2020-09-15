@@ -6,9 +6,9 @@ import meta.deep.IR.Predef.base.MethodApplication
 import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
-import meta.deep.runtime.{Actor, RequestMessage}
+import meta.deep.runtime.{Actor, Message, RequestMessage}
+
 import scala.collection.mutable.ListBuffer
-import meta.deep.runtime.Actor.waitTurnList
 
 /** Code lifter
   *
@@ -49,11 +49,17 @@ class Lifter {
         //the method is only nonblocking if its return type is a subtype of NBUnit
         var blocking = true
         if (method.A <:< codeTypeOf[NBUnit]) blocking = false
+
         methodsMap = methodsMap + (method.symbol -> new MethodInfo[method.A](
-          method.symbol,
-          method.tparams,
-          method.vparamss,
-          blocking))
+              method.symbol,
+              method.tparams,
+              method.vparamss,
+              blocking))
+              
+        // method.symbol.asMethodSymbol.name match {
+        //   case "main" => {}
+        //   case _ => {}
+        // }
         counter += 1
         Method.getNextMethodId
       })
@@ -88,10 +94,21 @@ class Lifter {
 
     var endMethods: List[LiftedMethod[_]] = List()
     var mainAlgo: Algo[_] = DoWhile(code"true", Wait())
+
+    // clasz.methods.foreach(
+    //   method => {
+    //     method.symbol.asMethodSymbol.name match {
+    //       case "main" =>
+    //       case _ => method.vparamss = scala.List(_callerId :: method.vparamss.head)
+    //     }
+    //   }
+    // )
+
     //lifting methods - with main method as special case
     clasz.methods.foreach({
       case method: clasz.Method[a, b] =>
         import method.A
+
         val cde: OpenCode[method.A] = method.body.asOpenCode
         val mtdBody = liftCode[method.A](cde, actorSelfVariable, clasz)
 
@@ -191,20 +208,25 @@ class Lifter {
         //generates an IfThenElse for each of this class' methods, which checks if the called method id is the same
         //as any of this class' methods, and calls the method if it is
         val resultMessageCall = Variable[Any]
+
         val p1 = Variable[RequestMessage]
+
         //Default, add back, if message is not for my message handler, it its for a merged actor
-        val algo: Algo[Any] = ScalaCode(
+        val reqAlgo: Algo[Any] = ScalaCode(
           code"$actorSelfVariable.addReceiveMessages(List($p1))")
-        val callCode = clasz.methods.foldRight(algo)((method, rest) => {
+
+        val callRequest = clasz.methods.foldRight(reqAlgo)((method, rest) => {
           val methodId = methodsIdMap(method.symbol)
           val methodInfo = methodsMap(method.symbol)
           //map method parameters correctly
+
           val argss: List[List[OpenCode[_]]] =
             methodInfo.vparams.zipWithIndex.map(x => {
               x._1.zipWithIndex.map(y => {
                 code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
               })
             })
+
           IfThenElse(
             code"$p1.methodId==${Const(methodId)}",
             LetBinding(
@@ -212,17 +234,15 @@ class Lifter {
               CallMethod[Any](methodId, argss),
               ScalaCode(
                 code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")),
-            rest
-          )
-
-        })
+            rest)})
 
         //for each received message, use callCode
-        val handleMessage = Foreach(
-          code"$actorSelfVariable.popRequestMessages",
-          p1,
-          callCode
-        )
+        val handleMessage =
+            Foreach(
+              code"$actorSelfVariable.popRequestMessages",
+              p1,
+              callRequest
+            )
         handleMessage.asInstanceOf[Algo[T]]
 
         // wait real-time
@@ -230,72 +250,15 @@ class Lifter {
         liftCode(code"""SpecialInstructions.waitLabel("time", $x)""".asInstanceOf[OpenCode[T]], actorSelfVariable, clasz)
 
       case code"SpecialInstructions.waitLabel($x: String, $y: Double)" =>
-        val waitCounter = Variable[Double]
-
-        y match {
-          case code"${Const(n)}: Double" =>
-            if (n <= 0) {
-              throw new Exception("The waitLabel takes a positive value!")
-            }
-          case _ =>   //  If variable turn number, skip the check
-        }
-
-        val f =
-            LetBinding(
-              Some(waitCounter),
-              ScalaCode(code"0.0"),
-              DoWhile(code"$waitCounter < $y",
-                LetBinding(Some(waitCounter),
-                  ScalaCode(code"$waitCounter + meta.deep.runtime.Actor.proceedLabel($x)"),
-                  LetBinding(None,
-                    ScalaCode(code"meta.deep.runtime.Actor.labelVals($x).append($y - $waitCounter)"),
-                    Wait()))),
-            )
-        f.asInstanceOf[Algo[T]]
+        WaitLabel(x, y).asInstanceOf[Algo[T]]
 
       // wait turn, each turn performs msg sync
       case code"SpecialInstructions.waitTurns($x)" =>
-        val waitCounter = Variable[Int]
-
-        x match {
-          case code"${Const(n)}: Int" =>
-            if (n < 1) {
-              throw new Exception("The waitTurn takes a positive integer value!")
-            }
-          case _ =>   //  If variable turn number, skip the check
-        }
-
-        val f =
-              LetBinding(
-                Some(waitCounter),
-                ScalaCode(code"0"),
-                DoWhile(code"$waitCounter < $x",
-                  LetBinding(None,
-                    ScalaCode(code"meta.deep.runtime.Actor.waitTurnList.append($x - $waitCounter)"),
-                  LetBinding(Some(waitCounter),
-                    ScalaCode(code"$waitCounter + meta.deep.runtime.Actor.minTurn()"),
-                    Wait()))),
-            )
-        f.asInstanceOf[Algo[T]]
+        liftCode(code"""SpecialInstructions.waitLabel("turn", $x)""".asInstanceOf[OpenCode[T]], actorSelfVariable, clasz)
 
       case code"SpecialInstructions.interrupt($interval: Double, (() => ${MethodApplication(msg)}))" =>
         val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
         var mtd: IR.MtdSymbol = msg.symbol
-
-//        var innerMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
-
-//        argss.append(msg.args.tail.head.head)
-//        while (mtd.toString() == "Function1.apply") {
-//          innerMtd match {
-//            case code"($sa: $st) => ${MethodApplication(msg2)}: Any" =>
-//              mtd = msg2.symbol
-//              innerMtd = msg2.args.head.head
-//              argss.append(msg2.args.tail.head.head)
-//          }
-//        }
-//
-//        argss.remove(argss.length-1)
-
         Interrupt(actorSelfVariable.toCode,
                   interval,
                   methodsIdMap(mtd),
@@ -321,7 +284,6 @@ class Lifter {
         }
 
         argss.remove(argss.length-1)
-//         println("argss are: " + argss)
 
         LetBinding(Some(nm),
           liftCode(v, actorSelfVariable, clasz),
@@ -334,8 +296,8 @@ class Lifter {
       case code"${MethodApplication(ma)}:Any "
         if methodsIdMap.get(ma.symbol).isDefined =>
           //extracting arguments and formatting them
-          val argss =
-            ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+          var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+
           //method is local - method recipient is this(self)
           val recipientActorVariable =
             ma.args.head.head.asInstanceOf[OpenCode[Actor]]

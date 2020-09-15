@@ -2,7 +2,7 @@ package meta.deep.runtime
 
 import scala.collection.mutable.{ListBuffer, Map}
 
-object Monitor {
+object Monitor extends Serializable{
   type eventType = Double
   val aggregates: Map[String, eventType] = Map[String, eventType]()
   val timeseries: Map[String, ListBuffer[eventType]] = Map[String, ListBuffer[eventType]]()
