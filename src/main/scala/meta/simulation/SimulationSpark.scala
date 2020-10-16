@@ -1,6 +1,6 @@
 package generated.simulation
 
-import meta.deep.runtime.Actor.{AgentId, initLabelVals, minTurn, proceedGroups, proceedLabel, waitLabels, waitTurnList}
+import meta.deep.runtime.Actor._
 import meta.deep.runtime.{Actor, Message, Monitor}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext, broadcast}
@@ -28,7 +28,7 @@ object SimulationSpark {
 
     def proceed(): Unit = {
       proceedGroups()
-      currentTurn += minTurn()
+      currentTurn += proceedLabel("turn").asInstanceOf[Int]
       currentTime += proceedLabel("time")
 
       actors = actors.map(i => {
@@ -36,8 +36,6 @@ object SimulationSpark {
         i.currentTurn = currentTurn
         i
       })
-
-      waitTurnList.clear()
     }
 
     initLabelVals()
