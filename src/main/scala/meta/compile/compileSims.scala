@@ -15,8 +15,6 @@ object compileSims {
 
     val canonicalName: String = mainClass.getClass.getPackage.getName()
 
-    val pkgName: String = mode.pkgName(canonicalName) 
-
     statemachineElements = mode match {
       case Vanilla => 
         statemachineElements
@@ -32,7 +30,7 @@ object compileSims {
     }
     statemachineElements = statemachineElements :+ new CreateCode(simulationData._2,
       destFolderName, 
-      pkgName)
+      mode.pkgName(canonicalName))
 
     val pipeline = Pipeline(new CreateActorGraphs(simulationData._1), statemachineElements)
 

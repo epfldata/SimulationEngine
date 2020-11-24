@@ -7,7 +7,7 @@ import meta.deep.algo._
 import meta.deep.codegen._
 import meta.deep.member.{ActorType, LiftedMethod, State}
 import meta.deep.runtime.RequestMessage
-import meta.compile.GeneratedPackage._ 
+import meta.compile.Vanilla
 
 object CodegenExample extends App {
 
@@ -27,7 +27,7 @@ object CodegenExample extends App {
       new CreateCode(
         code"""val m = new Market; val f = new Farmer(); f.market = m; List(m, f)""",
         "example/src/main/scala/generated/meta.example.codegen_example", 
-        vanillaPackage(this.getClass.getPackage.getName)),
+        Vanilla.pkgName(this.getClass.getPackage.getName)),
     )
   )
 
