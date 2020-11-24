@@ -8,11 +8,10 @@ import meta.deep.algo.AlgoInfo
 import meta.deep.algo.AlgoInfo.EdgeInfo
 import meta.deep.member.{ActorType}
 import meta.deep.runtime.Actor
-import meta.compile.GeneratedPackage._
 
 import scala.collection.mutable.ArrayBuffer
 
-class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, generatedPackage: GeneratedPackage)
+class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, generatedPackage: String)
     extends StateMachineElement() {
 
   var compiledActorGraphs: List[CompiledActorGraph] = Nil
@@ -369,11 +368,7 @@ $run_until
         // canonical name of the actor, including full path and the actor name 
         // actorTypes.head.name is needed for merging 
         val canonicalSimName: String = 
-          (generatedPackage match {
-            case vanillaPackage(pkgName) => pkgName  
-            case mergedPackage(pkgName) => pkgName 
-            case ssoPackage(pkgName) => pkgName 
-          }) + "." + cAG.actorTypes.head.name
+          generatedPackage + "." + cAG.actorTypes.head.name
 
         // replace the package of canonical Sim name with the generated one. Respect word boundary
         result = result.replaceAll("\\b"+canonicalSimName+"\\b", generatedPackage + "." + cAG.name)
