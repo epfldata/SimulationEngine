@@ -17,10 +17,6 @@ class compiledCodeRunsTest extends FlatSpec {
    runBoth(codegen_example.InitData.initActors, 10, 1)
  }
 
- "helloWorld example" should "run for both Simulation and SparkSimulation" in {
-   runBoth(helloWorld.InitData.initActors, 10, 1)
- }
-
  "latency example" should "run for both Simulation and SparkSimulation" in {
    runBoth(latency.InitData.initActors, 100, 10)
  }
