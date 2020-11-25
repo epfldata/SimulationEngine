@@ -7,7 +7,7 @@ import meta.deep.algo._
 import meta.deep.codegen._
 import meta.deep.member.{ActorType, LiftedMethod, State}
 import meta.deep.runtime.RequestMessage
-import meta.compile.Vanilla
+import meta.compile.{CompilationMode, Vanilla}
 
 object CodegenExample extends App {
 
@@ -19,6 +19,9 @@ object CodegenExample extends App {
       .get)
   val actorTypes
     : List[ActorType[_]] = marketActorType :: farmerActorType :: controlFlowTest :: Nil
+  val optimization: CompilationMode = Vanilla 
+  optimization.setPackage(this.getClass.getPackage.getName)
+
   val pipeline = Pipeline(
     new CreateActorGraphs(actorTypes),
     List(
@@ -27,7 +30,7 @@ object CodegenExample extends App {
       new CreateCode(
         code"""val m = new Market; val f = new Farmer(); f.market = m; List(m, f)""",
         "example/src/main/scala/generated/meta.example.codegen_example", 
-        Vanilla.pkgName(this.getClass.getPackage.getName)),
+        optimization),
     )
   )
 

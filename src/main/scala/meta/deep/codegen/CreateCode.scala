@@ -10,11 +10,14 @@ import meta.deep.member.{ActorType}
 import meta.deep.runtime.Actor
 
 import scala.collection.mutable.ArrayBuffer
+import meta.compile.CompilationMode
 
-class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, generatedPackage: String)
+class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimization: CompilationMode)
     extends StateMachineElement() {
 
   var compiledActorGraphs: List[CompiledActorGraph] = Nil
+
+  val generatedPackage: String = optimization.pkgName 
 
   override def run(compiledActorGraphs: List[CompiledActorGraph])
     : List[CompiledActorGraph] = {
@@ -368,7 +371,7 @@ $run_until
         // canonical name of the actor, including full path and the actor name 
         // actorTypes.head.name is needed for merging 
         val canonicalSimName: String = 
-          generatedPackage + "." + cAG.actorTypes.head.name
+          optimization.canonicalName + "." + cAG.actorTypes.head.name
 
         // replace the package of canonical Sim name with the generated one. Respect word boundary
         result = result.replaceAll("\\b"+canonicalSimName+"\\b", generatedPackage + "." + cAG.name)

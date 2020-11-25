@@ -28,9 +28,12 @@ object compileSims {
       case "" => "example/src/main/scala/generated/" + canonicalName
       case s => s 
     }
+
+    mode.setPackage(canonicalName)
+    
     statemachineElements = statemachineElements :+ new CreateCode(simulationData._2,
       destFolderName, 
-      mode.pkgName(canonicalName))
+      mode)
 
     val pipeline = Pipeline(new CreateActorGraphs(simulationData._1), statemachineElements)
 
