@@ -16,7 +16,6 @@ trait Child extends Actor{
 @lift
 class MuddyChild(val isMuddy: Boolean) extends Child {
 
-    // env does other children
     var env: List[MuddyChild] = Nil
     var counter = 0
     var shouldMove: Boolean = false
@@ -24,19 +23,11 @@ class MuddyChild(val isMuddy: Boolean) extends Child {
     // children inspect whether they have mud when called on by parents 
     def reflect(): Unit = {
         counter = counter + 1
-        var totalMuddy: Int = 0
 
-        for (y <- env) {
-            if (y.isMuddy) {
-                if (!y.isForward)
-                    totalMuddy = totalMuddy + 1
-            }
-        }
+        val totalMuddy: Int = env.foldLeft(0)((x, y) => if (y.isMuddy && !y.isForward) x+1 else x)
 
-        if (totalMuddy < counter) {
-            if (!isForward){
-                shouldMove = true
-            }
+        if (totalMuddy < counter && !isForward) {
+            shouldMove = true
         }
     }
 
