@@ -355,8 +355,13 @@ class Lifter {
                                  clasz: Clasz[_ <: Actor]): Option[Algo[T]] = {
     cde match {
       case code"($x: List[$tb]).forall(($y: tb) => $body): Boolean" =>
+        // todo
         Some(ScalaCode(cde))
       case code"($x: List[$tb]).exists(($y: tb) => $body): Boolean" =>
+        // todo
+        Some(ScalaCode(cde))
+      case code"($x: List[$tb]).foldLeft($a: $ta)(($y: ta, $z: tb) => $body): ta" =>
+        // todo
         Some(ScalaCode(cde))
       case code"($v: Boolean).&& $y" =>
         val f = IfThenElse(v,
