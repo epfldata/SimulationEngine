@@ -8,15 +8,7 @@ import squid.quasi.lift
 class Parent(val env: List[MuddyChild]) extends Actor{
 
     def remark(): Boolean = {
-        var ans: Boolean = false
-        for (y <- env) {
-            if (y.isMuddy) {
-                if (!y.isForward) {
-                    ans = true
-                }
-            }
-        }
-        ans
+        env.exists(e => (e.isMuddy && !e.isForward))
     }
 
     def command(): Unit = {

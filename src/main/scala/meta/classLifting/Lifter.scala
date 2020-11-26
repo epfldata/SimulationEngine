@@ -353,6 +353,12 @@ class Lifter {
   def liftCodeOther[T: CodeType](cde: OpenCode[T],
                                  actorSelfVariable: Variable[_ <: Actor],
                                  clasz: Clasz[_ <: Actor]): Option[Algo[T]] = {
-    None
+    cde match {
+      case code"($x: List[$tb]).forall(($y: tb) => $body): Boolean" =>
+        Some(ScalaCode(cde))
+      case code"($x: List[$tb]).exists(($y: tb) => $body): Boolean" =>
+        Some(ScalaCode(cde))
+      case _ => None
+    }
   }
 }
