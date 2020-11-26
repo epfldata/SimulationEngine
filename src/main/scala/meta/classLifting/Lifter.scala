@@ -55,11 +55,7 @@ class Lifter {
               method.tparams,
               method.vparamss,
               blocking))
-              
-        // method.symbol.asMethodSymbol.name match {
-        //   case "main" => {}
-        //   case _ => {}
-        // }
+
         counter += 1
         Method.getNextMethodId
       })
@@ -79,8 +75,9 @@ class Lifter {
     */
   private def liftActor[T <: Actor](clasz: Clasz[T]) = {
     val parentNames: List[String] = clasz.parents.map(parent => parent.rep.toString())
+
     val parameterList: List[(String, String)] = clasz.fields.filter(field => !field.init.isDefined)
-      .map(x => (s"${x.name.trim}", s"${x.A.rep}"))
+      .map(x => (s"${x.symbol.asMethodSymbol}", s"${x.A.rep}"))
 
     import clasz.C
     val actorSelfVariable: Variable[_ <: Actor] =
@@ -94,15 +91,6 @@ class Lifter {
 
     var endMethods: List[LiftedMethod[_]] = List()
     var mainAlgo: Algo[_] = DoWhile(code"true", Wait())
-
-    // clasz.methods.foreach(
-    //   method => {
-    //     method.symbol.asMethodSymbol.name match {
-    //       case "main" =>
-    //       case _ => method.vparamss = scala.List(_callerId :: method.vparamss.head)
-    //     }
-    //   }
-    // )
 
     //lifting methods - with main method as special case
     clasz.methods.foreach({
@@ -203,7 +191,6 @@ class Lifter {
                            liftCode(ifBody, actorSelfVariable, clasz),
                            liftCode(elseBody, actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
-
       case code"SpecialInstructions.handleMessages()" =>
         //generates an IfThenElse for each of this class' methods, which checks if the called method id is the same
         //as any of this class' methods, and calls the method if it is
@@ -263,6 +250,22 @@ class Lifter {
                   interval,
                   methodsIdMap(mtd),
                   List(argss.toList))
+
+      case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" =>
+        if (methodsIdMap.get(msg.symbol).isDefined){
+          val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
+//          val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
+          val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+
+          AsyncSend[T, mt.Typ](
+            actorSelfVariable.toCode,
+            recipientActorVariable,
+            methodsIdMap(msg.symbol),
+            argss)
+        } else {
+          // todo
+          NoOp.asInstanceOf[Algo[T]]
+        }
 
       // asynchronously call a remote method
       // arguments to an async call needs to be passed as variables instead of constants.

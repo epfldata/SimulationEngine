@@ -120,13 +120,16 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.parameterList.map(x => {
         if (compiledActorGraph.parameterList.indexOf(x) != -1) {
+          val mutability: String = x._1.split(" ").head.substring(0, 3)
+          val varName: String = x._1.split(" ").last
+
           self_name.keys.foreach(self => {
-            initVars = initVars.replace(s"${self}.${x._1};", s"this.${x._1};")
-            initVars = initVars.replace(s"${self}.`${x._1}_=`", s"this.`${x._1}_=`")
+            initVars = initVars.replace(s"${self}.${varName};", s"this.${varName};")
+            initVars = initVars.replace(s"${self}.`${varName}_=`", s"this.`${varName}_=`")
 //            initVars = initVars.replace(s"${self}.${x._1};", s"this.${self_name(self)}_${x._1};")
 //            initVars = initVars.replace(s"${self}.`${x._1}_=`", s"this.`${self_name(self)}_${x._1}_=`")
           })
-          s"var ${x._1}: ${changeTypes(x._2, false)}"
+          s"${mutability} ${varName}: ${changeTypes(x._2, false)}"
 //          s"var ${actorType.name}_${x._1}: ${changeTypes(x._2, false)}"
         } else {
           ""
