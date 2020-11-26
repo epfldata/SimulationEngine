@@ -358,6 +358,16 @@ class Lifter {
         Some(ScalaCode(cde))
       case code"($x: List[$tb]).exists(($y: tb) => $body): Boolean" =>
         Some(ScalaCode(cde))
+      case code"($v: Boolean).&& $y" =>
+        val f = IfThenElse(v,
+          liftCode(y, actorSelfVariable, clasz),
+          ScalaCode(code"false"))
+        Some(f.asInstanceOf[Algo[T]])
+      case code"($v: Boolean).|| $y" =>
+        val f = IfThenElse(v,
+          ScalaCode(code"true"),
+          liftCode(y, actorSelfVariable, clasz))
+        Some(f.asInstanceOf[Algo[T]])
       case _ => None
     }
   }
