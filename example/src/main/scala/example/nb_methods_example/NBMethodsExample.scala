@@ -1,4 +1,4 @@
-package meta.example.nb_methods_example
+package example.nb_methods_example
 
 object NBMethodsExample extends App {
   import meta.deep.IR

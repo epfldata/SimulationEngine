@@ -37,10 +37,6 @@ class compiledCodeRunsTest extends FlatSpec {
    runBoth(monitor_example.builtin_monitor.InitData.initActors, 10, 1, true)
  }
 
- "non-blocking method example" should "run for both Simulation and SparkSimulation" in {
-   runBoth(nb_methods_example.InitData.initActors, 30, 5)
- }
-
  "segregation example" should "run for both Simulation and SparkSimulation" in {
    runBoth(segregation.InitData.initActors, 50, 5)
  }

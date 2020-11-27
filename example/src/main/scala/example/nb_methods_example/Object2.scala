@@ -1,4 +1,4 @@
-package meta.example.nb_methods_example
+package example.nb_methods_example
 
 import meta.classLifting.SpecialInstructions.{handleMessages, waitTurns}
 import meta.deep.runtime.Actor

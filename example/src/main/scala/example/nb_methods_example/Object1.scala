@@ -1,4 +1,4 @@
-package meta.example.nb_methods_example
+package example.nb_methods_example
 
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.{Actor, Future}
