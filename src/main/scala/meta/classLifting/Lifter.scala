@@ -276,9 +276,10 @@ class Lifter {
                 if (methodsIdMap.get(mtd).isDefined){
                   recipientActorVariable = mtd2.args.head.head.asInstanceOf[OpenCode[Actor]]
                   if (mtd2.args.last.length != argss.length){
-                    if (mtd2.args.last.length == 0) {
+                    // Due to closure, foreach(c => async(c.abc())) is different from async(c.abc()) the first var is the recipient
+                    if (mtd2.args.last.length + 1 == argss.length ) {
                       recipientActorVariable = argss(0).asInstanceOf[OpenCode[Actor]]
-                      argss.clear()
+                      argss.remove(0)
                     } else {
                       throw new Exception("Async msg does't support local variables yet. Please make it a Sim variable instead")
                     }
