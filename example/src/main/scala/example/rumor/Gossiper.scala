@@ -17,8 +17,7 @@
    var reported: Boolean = false
 
    def spreadRumor: Boolean = {
-     val stochastic: Boolean = Random.nextDouble() > spreadProb
-     heardRumor && stochastic
+     heardRumor && (Random.nextDouble() > spreadProb)
    }
 
    def hearRumor(): Unit = {
@@ -26,17 +25,14 @@
    }
 
    def report(): Unit = {
-     // todo fix unsupported code inside code
-     if (heardRumor) {
-       if (!reported) {
-         env.reportRumor()
-         reported = true
-       }
+     if (heardRumor && !reported) {
+       asyncMessage(() => env.reportRumor())
+       reported = true
      }
    }
 
    def gossipRumor(p: Gossiper): Unit = {
-     p.hearRumor()
+     asyncMessage(() => p.hearRumor())
    }
 
    def main(): Unit = {
