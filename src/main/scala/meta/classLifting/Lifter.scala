@@ -251,10 +251,10 @@ class Lifter {
                   methodsIdMap(mtd),
                   List(argss.toList))
 
+      // asynchronously call a remote method
       case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" =>
         if (methodsIdMap.get(msg.symbol).isDefined){
           val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
-//          val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
           val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
 
           AsyncSend[T, mt.Typ](
@@ -263,38 +263,41 @@ class Lifter {
             methodsIdMap(msg.symbol),
             argss)
         } else {
-          // todo
-          NoOp.asInstanceOf[Algo[T]]
-        }
+          var recipientActorVariable: OpenCode[Actor] = msg.args.last.head.asInstanceOf[OpenCode[Actor]]
+          val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
+          var mtd = msg.symbol
+          var curriedMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
+          argss.append(msg.args.last.head)
 
-      // asynchronously call a remote method
-      // arguments to an async call needs to be passed as variables instead of constants.
-      case code"SpecialInstructions.asyncMessage[$mt]((() => {val $nm: $nmt = $v; ${MethodApplication(msg)}}: mt))" =>
-        val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
-        var mtd: IR.MtdSymbol = msg.symbol
-        var innerMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
-        var recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
-
-        argss.append(msg.args.tail.head.head)
-        while (mtd.toString() == "Function1.apply") {
-          innerMtd match {
-            case code"($sa: $st) => ${MethodApplication(msg2)}: Any" =>
-              mtd = msg2.symbol
-              innerMtd = msg2.args.head.head
-              recipientActorVariable = msg2.args.head.head.asInstanceOf[OpenCode[Actor]]
-              argss.append(msg2.args.tail.head.head)
+          while (!methodsIdMap.get(mtd).isDefined) {
+            curriedMtd match {
+              case code"($sa: $st) => ${MethodApplication(mtd2)}: Any" => {
+                mtd = mtd2.symbol
+                if (methodsIdMap.get(mtd).isDefined){
+                  recipientActorVariable = mtd2.args.head.head.asInstanceOf[OpenCode[Actor]]
+                  if (mtd2.args.last.length != argss.length){
+                    if (mtd2.args.last.length == 0) {
+                      recipientActorVariable = argss(0).asInstanceOf[OpenCode[Actor]]
+                      argss.clear()
+                    } else {
+                      throw new Exception("Async msg does't support local variables yet. Please make it a Sim variable instead")
+                    }
+                  }
+                } else {
+                  argss.append(mtd2.args.last.head)
+                }
+                curriedMtd = mtd2.args.head.head
+              }
+              case _ => throw new Exception("Error state in asyncMessage!")
+            }
           }
-        }
 
-        argss.remove(argss.length-1)
-
-        LetBinding(Some(nm),
-          liftCode(v, actorSelfVariable, clasz),
           AsyncSend[T, mt.Typ](
             actorSelfVariable.toCode,
             recipientActorVariable,
             methodsIdMap(mtd),
-            List(argss.toList)))
+            List(argss.toList))
+        }
 
       case code"${MethodApplication(ma)}:Any "
         if methodsIdMap.get(ma.symbol).isDefined =>
