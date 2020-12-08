@@ -46,7 +46,9 @@ lazy val root = (project in file("."))
   )
   .settings(logSetting)
 
-
+lazy val library = (project in file("library"))
+  .settings(name := "library")
+  .settings(commonSettings)
 
 lazy val no_messaging_example = (project in file("ecosim"))
   .settings(name := "no_messaging_example")
@@ -66,6 +68,7 @@ lazy val example = (project in file("example"))
   .settings(name := "example")
   .settings(commonSettings, squidSettings)
   .dependsOn(root)
+  .dependsOn(library)
   .settings(runAll := runAllIn(Compile).value)
   .settings(
     excludeDependencies += "org.slf4j" % "slf4j-log4j12"

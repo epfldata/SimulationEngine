@@ -4,7 +4,6 @@ import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.Actor
 import squid.quasi.lift
 import scala.collection.mutable.ListBuffer
-import scala.util.Random
 
 @lift
 class MainInit extends Actor {

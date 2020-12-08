@@ -7,9 +7,9 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.Set
 
 import squid.quasi.lift
-import epistemicLogic._
+import library.EpistemicLogic.Sentence._
+import library.EpistemicLogic.Solver._
 import MCHelper._
-import Solver._
 
 class ChildT extends Actor {
 
@@ -49,14 +49,14 @@ class ChildT extends Actor {
     val neighborKnows: Set[EpistemicSentence] = observations.flatMap(x => {
       observations.flatMap(y => {
         if (getNeighborId(x.toString) != getNeighborId(y.toString)) {
-          Set[Ka](
+          Set[EpistemicSentence](
             Ka(id, Ka(getNeighborId(x.toString), y)),
             Ka(id, Ka(getNeighborId(y.toString), x)),
 //            Ka(id, Ka(getNeighborId(x.toString), Ka(id, y))),
 //            Ka(id, Ka(getNeighborId(y.toString), Ka(id, x))),
           )
         } else {
-          Set[Ka]()
+          Set[EpistemicSentence]()
         }
       })
     })

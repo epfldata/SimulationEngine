@@ -1,9 +1,9 @@
-package example.epistemicLogicMC
+package library.EpistemicLogic
 
 import scala.collection.Set
+import Sentence._
 
 object Solver {
-  import epistemicLogic._
 
   // add to the set knowledge base new inferred knowledge axioms
   private def applyKnowledgeAxiom(kb: Set[EpistemicSentence]): Set[EpistemicSentence] = {
@@ -12,7 +12,8 @@ object Solver {
       x match {
         case Ka(id, e1) => Set[EpistemicSentence](e1)
         case _ => Set[EpistemicSentence]()
-      }})
+      }
+    })
 
     inferredKB.toList match {
       case Nil => kb
@@ -30,7 +31,8 @@ object Solver {
         case Ka(i, NotE(ImpE(e1, NotE(e2)))) => Set[EpistemicSentence](Ka(i, NotE(ImpE(NotE(e2), e1))))
         case NotE(ImpE(e1, NotE(e2))) => Set[EpistemicSentence](NotE(ImpE(NotE(e2), e1)))
         case _ => Set[EpistemicSentence]()
-      }})
+      }
+    })
 
     kb ++ inferredKB
   }

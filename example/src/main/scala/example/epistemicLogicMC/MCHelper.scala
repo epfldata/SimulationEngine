@@ -1,10 +1,9 @@
 package example.epistemicLogicMC
 
 import meta.deep.runtime.Actor.AgentId
-
+import library.EpistemicLogic.Sentence._
 
 object MCHelper {
-  import epistemicLogic._
 
   def pTemplate(id: AgentId): EpistemicSentence = {
     P("Child " + id + " is muddy")

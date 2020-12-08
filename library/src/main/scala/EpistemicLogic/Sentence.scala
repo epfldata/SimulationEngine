@@ -1,10 +1,6 @@
-package example.epistemicLogicMC
+package library.EpistemicLogic
 
-import scala.collection.mutable.ListBuffer
-import scala.collection.Set
-import meta.deep.runtime.Actor.AgentId
-
-object epistemicLogic {
+object Sentence {
 
   trait EpistemicSentence
 
@@ -40,11 +36,12 @@ object epistemicLogic {
     }
   }
 
-  case class Ka(agentId: AgentId, e: EpistemicSentence) extends EpistemicSentence {
+  case class Ka[T](agentId: T, e: EpistemicSentence) extends EpistemicSentence {
     override def toString(): String = {
       "(Agent " + agentId + " knows " + e.toString() + ")"
     }
   }
+
   //  case class Ba(agentId: Int, e: EpistemicSentence) extends EpistemicSentence
 
   def ors(es: List[EpistemicSentence]): EpistemicSentence = {
