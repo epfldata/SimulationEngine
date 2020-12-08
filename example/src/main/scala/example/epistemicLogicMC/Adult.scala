@@ -8,10 +8,11 @@ import squid.quasi.lift
 @lift
 class Adult(val children: List[Child]) extends Actor {
 
-  var future_objs: ListBuffer[Option[Future[Boolean]]] = new ListBuffer[Option[Future[Boolean]]]()
+  var future_objs: ListBuffer[Option[Future[Unit]]] = new ListBuffer[Option[Future[Unit]]]()
 
   def observe(): Boolean = {
-    children.exists(c => !c.isAware)
+     children.exists(c => !c.isAware)
+//     !children.forall(c => c.isAware)
   }
 
   // Ask all children simultaneously, and wait for all children to answer

@@ -28,7 +28,7 @@ class ChildT extends Actor {
   def isAware: Boolean = {
     val fact: EpistemicSentence = state()
     val ans: Boolean = knowledgeBase.contains(Ka(id, fact)) || knowledgeBase.contains(fact)
-    println("Child " + id + " is aware: " + ans)
+    if (ans) println("Child " + id + " is aware: " + ans)
     ans
   }
 
@@ -98,12 +98,11 @@ class Child(override val isMuddy: Boolean) extends ChildT {
   var neighborIds: ListBuffer[AgentId] = new ListBuffer[AgentId]()
   var epoch: Int = 0
 
-  def answer(): Boolean = {
+  def answer(): Unit = {
     println("Child " + id + " hears the parent!")
     epoch = epoch + 1
     learn(Set(announce((neighborIds ++ List(id)).toList)))
     neighbors.foreach(n => asyncMessage(() => n.hear(id, isMuddy, isAware, epoch)))
-    isAware
   }
 
   // map method results in List.Coll in generated code
