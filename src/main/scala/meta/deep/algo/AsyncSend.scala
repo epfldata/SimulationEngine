@@ -37,9 +37,6 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
         ${AlgoInfo.returnValue} := Some(requestMessage.future)
         ()"""
 
-    if (T <:< codeTypeOf[Unit]){
-      Send[R](actorFrom, actorRef, methodId, argss, false).codegen()
-    } else {
       AlgoInfo.stateGraph.append(
         AlgoInfo.EdgeInfo("Async with_reply f1",
           AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
@@ -49,6 +46,5 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
         ))
 
       AlgoInfo.nextPos()
-    }
   }
 }
