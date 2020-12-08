@@ -2,6 +2,7 @@ package example.epistemicLogicMC
 
 import meta.deep.runtime.Actor.AgentId
 import library.EpistemicLogic.Sentence._
+import library.EpistemicLogic.Utils._
 
 object MCHelper {
 

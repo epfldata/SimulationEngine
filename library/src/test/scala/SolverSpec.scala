@@ -3,8 +3,6 @@ import library.EpistemicLogic.Solver._
 
 import org.scalatest.FlatSpec
 
-import scala.collection.Set
-
 class SolverSpec extends FlatSpec {
 
   val p1: EpistemicSentence = P("Child 1 is muddy")

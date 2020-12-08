@@ -1,19 +1,20 @@
 package example.epistemicLogicMC
 
 import meta.classLifting.SpecialInstructions._
-import meta.deep.runtime.{Actor, Future}
+import meta.deep.runtime.{Actor}
 import meta.deep.runtime.Actor.AgentId
 import scala.collection.mutable.ListBuffer
-import scala.collection.Set
 
 import squid.quasi.lift
 import library.EpistemicLogic.Sentence._
 import library.EpistemicLogic.Solver._
+import library.EpistemicLogic.KnowledgeBase
+
 import MCHelper._
 
 class ChildT extends Actor {
 
-  var knowledgeBase: Set[EpistemicSentence] = Set[EpistemicSentence]()
+  var knowledgeBase: KnowledgeBase = new KnowledgeBase()
   val isMuddy: Boolean = false
 
   // other agents are able to see the real state of the agent
@@ -27,14 +28,14 @@ class ChildT extends Actor {
 
   def isAware: Boolean = {
     val fact: EpistemicSentence = state()
-    val ans: Boolean = knowledgeBase.contains(Ka(id, fact)) || knowledgeBase.contains(fact)
+    val ans: Boolean = knowledgeBase.know(fact)  || knowledgeBase.know(Ka(id, fact))
     if (ans) println("Child " + id + " is aware: " + ans)
     ans
   }
 
   def learn(e: Set[EpistemicSentence]): Unit = {
     println("Child " + id + " learns " + e)
-    knowledgeBase =  deduction(knowledgeBase.union(e))
+    knowledgeBase.learn(e)
   }
 
   def lookAround(neighbors: List[ChildT]): Unit = {
@@ -78,8 +79,7 @@ class ChildT extends Actor {
         inferOtherAgent(i, neighbors.filterNot(x => x == i) ++ List(id), it)
       case (i, _, true) =>
         learn(Set(Ka(i, fact)))
-        inferOtherAgent(i, neighbors.filterNot(x => x == i) ++ List(id), it-1)
-        speculate(Set(Ka(i, NotE(fact))), knowledgeBase).map(x => x match {
+        knowledgeBase.speculate(Set(Ka(i, NotE(fact)))).map(x => x match {
           case Ka(i, e) =>
 //                        println("Learned forward case 1" + e);
             Ka(i, NotE(e))

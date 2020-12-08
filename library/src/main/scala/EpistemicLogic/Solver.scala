@@ -1,6 +1,5 @@
 package library.EpistemicLogic
 
-import scala.collection.Set
 import Sentence._
 
 object Solver {
@@ -93,7 +92,7 @@ object Solver {
     base
   }
 
-  def speculate(hypothesis: Set[EpistemicSentence], kb: Set[EpistemicSentence]): Set[EpistemicSentence] = {
-    deduction(hypothesis ++ kb).diff(kb)
+  def speculate(hypothesis: Set[EpistemicSentence], knowledgeBase: Set[EpistemicSentence]): Set[EpistemicSentence] = {
+    deduction(hypothesis ++ knowledgeBase).diff(knowledgeBase)
   }
 }
