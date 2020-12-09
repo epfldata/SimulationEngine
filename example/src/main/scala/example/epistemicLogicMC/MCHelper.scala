@@ -43,4 +43,21 @@ object MCHelper {
       case x => Set(Ka(i, ors(x.map(cs => ands(cs.map(c => pTemplate(c)))))))
     }
   }
+
+  def whatNeighborSees(id: AgentId, observations: Set[EpistemicSentence]): Set[EpistemicSentence] = {
+    val neighborKnows: Set[EpistemicSentence] = observations.flatMap(x => {
+      observations.flatMap(y => {
+        if (getNeighborId(x.toString) != getNeighborId(y.toString)) {
+          Set[EpistemicSentence](
+            Ka(id, Ka(getNeighborId(x.toString), y)),
+            Ka(id, Ka(getNeighborId(y.toString), x)),
+            //            Ka(id, Ka(getNeighborId(x.toString), Ka(id, y))),
+            //            Ka(id, Ka(getNeighborId(y.toString), Ka(id, x))),
+          )
+        } else {
+          Set[EpistemicSentence]()
+        }
+      })
+    })
+  }
 }

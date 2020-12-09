@@ -26,13 +26,6 @@ class ChildT extends Actor {
     }
   }
 
-  def isAware: Boolean = {
-    val fact: EpistemicSentence = state()
-    val ans: Boolean = knowledgeBase.know(fact)  || knowledgeBase.know(Ka(id, fact))
-    if (ans) println("Child " + id + " is aware: " + ans)
-    ans
-  }
-
   def learn(e: Set[EpistemicSentence]): Unit = {
     println("Child " + id + " learns " + e)
     knowledgeBase.learn(e)
@@ -46,23 +39,7 @@ class ChildT extends Actor {
     })
 
     learn(observations)
-
-    val neighborKnows: Set[EpistemicSentence] = observations.flatMap(x => {
-      observations.flatMap(y => {
-        if (getNeighborId(x.toString) != getNeighborId(y.toString)) {
-          Set[EpistemicSentence](
-            Ka(id, Ka(getNeighborId(x.toString), y)),
-            Ka(id, Ka(getNeighborId(y.toString), x)),
-//            Ka(id, Ka(getNeighborId(x.toString), Ka(id, y))),
-//            Ka(id, Ka(getNeighborId(y.toString), Ka(id, x))),
-          )
-        } else {
-          Set[EpistemicSentence]()
-        }
-      })
-    })
-
-    learn(neighborKnows)
+    learn(whatNeighborSees(id, observations))
   }
 
   // child speculates what-if based on observing others' actions
@@ -98,20 +75,38 @@ class Child(override val isMuddy: Boolean) extends ChildT {
   var neighborIds: ListBuffer[AgentId] = new ListBuffer[AgentId]()
   var epoch: Int = 0
 
+  knowledgeBase.default()
+
+  var stepForward: Boolean = false
+
+  def isAware(): Boolean = {
+    val fact: EpistemicSentence = state()
+    knowledgeBase.know(fact)  || knowledgeBase.know(Ka(id, fact))
+  }
+
+  def seen(): (Boolean, Boolean) = {
+    (isMuddy, stepForward)
+  }
+
   def answer(): Unit = {
-    println("Child " + id + " hears the parent!")
+//    println("Child " + id + " hears the parent!")
     epoch = epoch + 1
-    learn(Set(announce((neighborIds ++ List(id)).toList)))
-    neighbors.foreach(n => asyncMessage(() => n.hear(id, isMuddy, isAware, epoch)))
+    if (!stepForward) {
+      if (isAware()) {
+        stepForward = true
+        println("Child " + id + " steps forward!")
+      }
+      learn(Set(announce((neighborIds ++ List(id)).toList)))
+      neighbors.foreach(n => asyncMessage(() => n.see(id, isMuddy, stepForward, epoch)))
+    }
   }
 
   // map method results in List.Coll in generated code
-  def hear(nid: AgentId, nIsMuddy: Boolean, nIsAware: Boolean, it: Int): Unit = {
+  def see(nid: AgentId, nIsMuddy: Boolean, nIsAware: Boolean, it: Int): Unit = {
     learn(inspect((nid, nIsMuddy, nIsAware), it, neighborIds.toList))
   }
 
   def main(): Unit = {
-    // setIsMuddy()
     neighbors.foreach(n => neighborIds.append(n.id))
     lookAround(neighbors)
     while (true) {
