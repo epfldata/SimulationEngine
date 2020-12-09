@@ -5,12 +5,26 @@ import Sentence._
 class KnowledgeBase {
   var knowledgeBase: Set[EpistemicSentence] = Set()
 
+  var constraints: List[EpistemicSentence => Boolean] = List()
+
   def getKnowledgeBase: Set[EpistemicSentence] = knowledgeBase
+
+  def addConstraints(x: => EpistemicSentence => Boolean): Unit = {
+    constraints = x :: constraints
+  }
+
+  def default(): Unit = {
+    // consistent
+    addConstraints((x) => (!know(Solver.deduce(NotE(x), knowledgeBase))))
+  }
 
   // assume the knowledge has been checked consistency
   def learn(newKnowledge: Set[EpistemicSentence]): Unit = {
-    val consistentKnowledge: Set[EpistemicSentence] = newKnowledge.filterNot(k => know(NotE(k)))
-    knowledgeBase = Solver.deduction(consistentKnowledge.union(knowledgeBase))
+    var filteredKnowledge: Set[EpistemicSentence] = newKnowledge
+    for (c <- constraints) {
+      filteredKnowledge = filteredKnowledge.filter(k => c(k))
+    }
+    knowledgeBase = Solver.deduction(filteredKnowledge.union(knowledgeBase))
   }
 
   def know(sentence: EpistemicSentence): Boolean = {
