@@ -2,7 +2,7 @@ package library.EpistemicLogic
 
 object Sentence {
 
-  trait EpistemicSentence
+  sealed trait EpistemicSentence extends Product with Serializable
 
   case class P(proposition: String) extends EpistemicSentence {
     override def toString(): String = {
