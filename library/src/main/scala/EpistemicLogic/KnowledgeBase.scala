@@ -1,10 +1,17 @@
 package library.EpistemicLogic
 import Sentence._
 
+object KnowledgeBase {
+  type Rule = EpistemicSentence => Boolean
+//  def genKnowledge[T](variable: T, schema: => T => EpistemicSentence): EpistemicSentence = {
+//    schema(variable)
+//  }
+}
+
 // Consider making EpistemicSentence a type parameter
 class KnowledgeBase {
+  import KnowledgeBase._
   var knowledgeBase: Set[EpistemicSentence] = Set()
-
   var constraints: List[EpistemicSentence => Boolean] = List()
 
   def getKnowledgeBase: Set[EpistemicSentence] = knowledgeBase
@@ -20,11 +27,17 @@ class KnowledgeBase {
 
   // assume the knowledge has been checked consistency
   def learn(newKnowledge: Set[EpistemicSentence]): Unit = {
+//    println("Learn " + newKnowledge)
     var filteredKnowledge: Set[EpistemicSentence] = newKnowledge
     for (c <- constraints) {
       filteredKnowledge = filteredKnowledge.filter(k => c(k))
     }
     knowledgeBase = Solver.deduction(filteredKnowledge.union(knowledgeBase))
+  }
+
+  // learn with a specified rule
+  def ruleBasedLearn(newKnowledge: Set[EpistemicSentence], rule: Rule): Unit = {
+    learn(newKnowledge.filter(k => rule(k)))
   }
 
   def know(sentence: EpistemicSentence): Boolean = {

@@ -5,21 +5,38 @@ import library.EpistemicLogic.Sentence._
 import library.EpistemicLogic.Utils._
 
 object MCHelper {
-  case class StepForward(f: EpistemicSentence)
+//  case class StepForward(f: EpistemicSentence)
+  case class ChildStatus(id: AgentId, isMuddy: Boolean, isForward: Boolean, epoch: Int)
 
-  def pTemplate(id: AgentId): EpistemicSentence = {
-    P("Child " + id + " is muddy")
+  def schema(id: AgentId, isMuddy: Boolean = true): EpistemicSentence = {
+    if (isMuddy)
+      P("Child " + id + " is muddy")
+    else
+      NotE(P("Child " + id + " is muddy"))
+  }
+
+  def getChildId(e: EpistemicSentence): AgentId = {
+    val s: String = e.toString
+    val prefix: String = "Child "
+    val posfix: String = " is muddy"
+    s.slice(s.indexOf(prefix) + prefix.length, s.indexOf(posfix)).toInt
+  }
+
+  // knowledge for hearing the parent
+  def hearParent(epoch: Int): EpistemicSentence = {
+    P("Child hears the parent at " + epoch + " round")
+  }
+
+  def getEpoch(e: EpistemicSentence): Int = {
+    val s: String = e.toString
+    val prefix: String = "Child hears the parent at "
+    val posfix: String = " round"
+    s.slice(s.indexOf(prefix) + prefix.length, s.indexOf(posfix)).toInt
   }
 
   // at least one muddy child
   def announce(ids: List[AgentId]): EpistemicSentence = {
-    ors(ids.map(i => pTemplate(i)))
-  }
-
-  def getNeighborId(s: String): AgentId = {
-    val prefix: String = "Child "
-    val posfix: String = " is muddy"
-    s.slice(s.indexOf(prefix) + prefix.length, s.indexOf(posfix)).toInt
+    ors(ids.map(i => schema(i)))
   }
 
   // speculate: agent i hasn't stepped up in the past n round => agent i knows there are at least n muddy children
@@ -40,21 +57,21 @@ object MCHelper {
     val ans: List[List[AgentId]] = helper(neighbor.map(i => List(i)), mChildren)
 
     if (ans.isEmpty) {
-      Set(Ka(i, pTemplate(i)))
+      Set(Ka(i, schema(i)))
     } else {
-      Set(Ka(i, ors(ans.map(cs => ands(cs.map(c => pTemplate(c)))))))
+      Set(Ka(i, ors(ans.map(cs => ands(cs.map(c => schema(c)))))))
     }
   }
 
   def whatNeighborSees(id: AgentId, observations: Set[EpistemicSentence]): Set[EpistemicSentence] = {
     observations.flatMap(x => {
       observations.flatMap(y => {
-        if (getNeighborId(x.toString) != getNeighborId(y.toString)) {
+        if (getChildId(x) != getChildId(y)) {
           Set[EpistemicSentence](
-            Ka(id, Ka(getNeighborId(x.toString), y)),
-            Ka(id, Ka(getNeighborId(y.toString), x)),
-            //            Ka(id, Ka(getNeighborId(x.toString), Ka(id, y))),
-            //            Ka(id, Ka(getNeighborId(y.toString), Ka(id, x))),
+            Ka(id, Ka(getChildId(x), y)),
+            Ka(id, Ka(getChildId(y), x)),
+            //            Ka(id, Ka(getChildId(x), Ka(id, y))),
+            //            Ka(id, Ka(getChildId(y), Ka(id, x))),
           )
         } else {
           Set[EpistemicSentence]()
