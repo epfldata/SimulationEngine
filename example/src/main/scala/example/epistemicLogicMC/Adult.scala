@@ -2,15 +2,16 @@ package example.epistemicLogicMC
 
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.{Actor, Future}
+
 import scala.collection.mutable.ListBuffer
-import squid.quasi.lift
+import squid.quasi.{lift}
+import library.Broadcast._
 
 @lift
 class Adult(val children: List[Child]) extends Actor {
 
   var future_objs: ListBuffer[Option[Future[Unit]]] = new ListBuffer[Option[Future[Unit]]]()
   var future_objs1: ListBuffer[Option[Future[(Boolean, Boolean)]]] = new ListBuffer[Option[Future[(Boolean, Boolean)]]]()
-
 
   def observe(): List[(Boolean, Boolean)] = {
     children.foreach(c => future_objs1.append(asyncMessage(() => c.seen())))
@@ -35,6 +36,9 @@ class Adult(val children: List[Child]) extends Actor {
 
   // Ask all children simultaneously, and wait for all children to answer
   def ask(): Unit = {
+//    val broadcast: Broadcast[Child, Unit] = new Broadcast[Child, Unit](this, children, child => child.answer())
+//    broadcast.setMode(1)
+
     children.foreach(c => future_objs.append(asyncMessage(() => c.answer())))
     while (!(future_objs.nonEmpty && future_objs.toList.forall(x => isCompleted(x.get)))) {
       waitTurns(1)
@@ -54,6 +58,7 @@ class Adult(val children: List[Child]) extends Actor {
           ask()
           unaware = atLeastOneUnaware(observe())
         }
+        observations = observe()
       }
       waitTurns(1)
     }

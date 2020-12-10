@@ -5,6 +5,7 @@ import library.EpistemicLogic.Sentence._
 import library.EpistemicLogic.Utils._
 
 object MCHelper {
+  case class StepForward(f: EpistemicSentence)
 
   def pTemplate(id: AgentId): EpistemicSentence = {
     P("Child " + id + " is muddy")
@@ -38,14 +39,15 @@ object MCHelper {
 
     val ans: List[List[AgentId]] = helper(neighbor.map(i => List(i)), mChildren)
 
-    ans match {
-      case Nil => Set(Ka(i, pTemplate(i)))
-      case x => Set(Ka(i, ors(x.map(cs => ands(cs.map(c => pTemplate(c)))))))
+    if (ans.isEmpty) {
+      Set(Ka(i, pTemplate(i)))
+    } else {
+      Set(Ka(i, ors(ans.map(cs => ands(cs.map(c => pTemplate(c)))))))
     }
   }
 
   def whatNeighborSees(id: AgentId, observations: Set[EpistemicSentence]): Set[EpistemicSentence] = {
-    val neighborKnows: Set[EpistemicSentence] = observations.flatMap(x => {
+    observations.flatMap(x => {
       observations.flatMap(y => {
         if (getNeighborId(x.toString) != getNeighborId(y.toString)) {
           Set[EpistemicSentence](
@@ -58,6 +60,17 @@ object MCHelper {
           Set[EpistemicSentence]()
         }
       })
+    })
+  }
+
+  def counterExampleLearning(es: Set[EpistemicSentence]): Set[EpistemicSentence] = {
+    es.map(x => x match {
+      case Ka(i, e) =>
+        //                        println("Learned forward case 1" + e);
+        Ka(i, NotE(e))
+      case _ => {
+        //                        println("Learned forward case 2 " + x);
+        NotE(x)}
     })
   }
 }

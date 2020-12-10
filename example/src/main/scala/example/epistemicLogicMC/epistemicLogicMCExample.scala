@@ -40,9 +40,9 @@ object epistemicLogicMCExample extends App {
   import meta.deep.IR.TopLevel.ClassWithObject
   import meta.compile.compileSims
 
-  val cls1: ClassWithObject[Child] = Child.reflect(IR)
   val cls2: ClassWithObject[Adult] = Adult.reflect(IR)
+  val cls1: ClassWithObject[Child] = Child.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  compileSims(List(cls1, cls2), mainClass)
+  compileSims(List(cls2, cls1), mainClass)
 }
