@@ -3,9 +3,6 @@ import Sentence._
 
 object KnowledgeBase {
   type Rule = EpistemicSentence => Boolean
-//  def genKnowledge[T](variable: T, schema: => T => EpistemicSentence): EpistemicSentence = {
-//    schema(variable)
-//  }
 }
 
 // Consider making EpistemicSentence a type parameter
@@ -29,7 +26,6 @@ class KnowledgeBase {
 
   def recordLearning(epoch: Int, knowledge: Set[EpistemicSentence]): Unit = {
     val learnedKnowledge: Set[EpistemicSentence] = learn(knowledge)
-//    println("Actual learned knowledge: " + learnedKnowledge)
     val learnt: Set[EpistemicSentence] = learningProcess.getOrElse(epoch, Set())
     learningProcess += (epoch -> learnt.union(learnedKnowledge))
     remember(learnedKnowledge)
@@ -37,7 +33,6 @@ class KnowledgeBase {
 
   // return what can be learned from the input
   def learn(newKnowledge: Set[EpistemicSentence]): Set[EpistemicSentence] = {
-//    println("Asked to learn " + newKnowledge)
     var filteredKnowledge: Set[EpistemicSentence] = newKnowledge
     for (c <- constraints) {
       filteredKnowledge = filteredKnowledge.filter(k => c(k))
@@ -54,7 +49,6 @@ class KnowledgeBase {
   def ruleBasedLearn(newKnowledge: Set[EpistemicSentence], rule: Rule): Unit = {
     learn(newKnowledge.filter(k => rule(k)))
   }
-
 
   def know(sentence: EpistemicSentence): Boolean = {
     knowledgeBase.contains(sentence)

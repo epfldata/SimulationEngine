@@ -12,8 +12,10 @@ class KnowledgeBaseSpec extends FlatSpec {
 
   "No constraint" should "return a knowledgeBase without consistency guarantee" in {
     val kb: KnowledgeBase = new KnowledgeBase()
-    kb.learn(Set(p1, p3))
-    kb.learn(Set(NotE(p1), p2))
+    val k1 = kb.learn(Set(p1, p3))
+    kb.remember(k1)
+    val k2 = kb.learn(Set(NotE(p1), p2))
+    kb.remember(k2)
 
     assert(kb.know(NotE(p1)))
     assert(kb.know(p1))
@@ -25,22 +27,28 @@ class KnowledgeBaseSpec extends FlatSpec {
     val kb: KnowledgeBase = new KnowledgeBase()
     kb.default()
 
-    kb.learn(Set(p1, p3))
-    kb.learn(Set(NotE(p1), p2))
+    val k1 = kb.learn(Set(p1, p3))
+    kb.remember(k1)
+    val k2 = kb.learn(Set(NotE(p1), p2))
+    kb.remember(k2)
 
     assert(!kb.know(NotE(p1)))
     assert(!kb.know(p2))
   }
 
+  def whatIKnowAboutAnother(id: Int)(e: EpistemicSentence): Boolean = {
+    e.isInstanceOf[Ka[Int]] && e.asInstanceOf[Ka[Int]].agentId == id
+  }
+
   "knowledgeAboutAnother" should "return the known propositions about another agent" in {
-    val e1: EpistemicSentence = Ka(1, P("Time 5"))
-    val e2: EpistemicSentence = Ka(1, P("Time 6"))
+    val e1: EpistemicSentence = Ka[Int](1, P("Time 5"))
+    val e2: EpistemicSentence = Ka[Int](1, P("Time 6"))
 
     val kb: KnowledgeBase = new KnowledgeBase()
     kb.default()
     kb.learn(Set(e1, e2))
 
-    assert(kb.knowledgeAboutAnother(1).size == 2)
+    assert(kb.ruleBasedKnow(whatIKnowAboutAnother(1)).size == 2)
   }
 
   "Add new constraint" should "apply the new constraints over the knowledge base" in {
@@ -61,7 +69,7 @@ class KnowledgeBaseSpec extends FlatSpec {
 
     kb.addConstraints(x => {
       x match {
-        case Ka(i, p) => kb.knowledgeAboutAnother(i).toList match {
+        case Ka(i, p) => kb.ruleBasedKnow(whatIKnowAboutAnother(i.asInstanceOf[Int])).toList match {
           case Nil => true
           case y :: l =>
             getTime(y.toString) < getTime(x.toString)
@@ -72,10 +80,12 @@ class KnowledgeBaseSpec extends FlatSpec {
 
     assert(kb.constraints.length == 2)
 
-    kb.learn(Set(e2))
-    kb.learn(Set(e1))   // should not modify the state of the knowledge
-
-    kb.learn(Set(e3, e4))
+    val k1 = kb.learn(Set(e2))
+    kb.remember(k1)
+    val k2 = kb.learn(Set(e1))   // should not modify the state of the knowledge
+    kb.remember(k2)
+    val k3 = kb.learn(Set(e3, e4))
+    kb.remember(k3)
 
     assert(!kb.know(e1))
     assert(kb.know(e3))
