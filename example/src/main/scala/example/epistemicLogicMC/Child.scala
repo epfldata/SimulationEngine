@@ -23,25 +23,21 @@ class Child(val isMuddy: Boolean) extends Actor {
   val knowledgeBase: KnowledgeBase = new KnowledgeBase()
   knowledgeBase.default()
 
-  // other agents are able to see the real state of the agent
-  def state(): EpistemicSentence = {
-    schema(id, isMuddy)
-  }
 
-  // What others see. Don't modify its own state
-  def seen(): ChildStatus = {
+  // RPC
+  def tell(): ChildStatus = {
     ChildStatus(id, isMuddy, isForward, epoch)
   }
 
   // Child won't answer if there are neighbors they haven't seen
   // Children answers simultaneously; can't change one's answer based on observing the same round behaviour
-
+  // RPC
   def answer(): Unit = {
     epoch = epoch + 1
     knowledgeBase.learn(Set(hearParent(epoch)))
     if (!isForward) {        // child only answers once
       knowledgeBase.learn(Set(announce((neighborIds ++ List(id)).toList)))
-      val fact: EpistemicSentence = state()
+      val fact: EpistemicSentence = schema(id, isMuddy)
       if (knowledgeBase.know(fact)  || knowledgeBase.know(Ka(id, fact))) {
         isForward = true
         println("Child " + id + " steps forward!")
@@ -49,6 +45,7 @@ class Child(val isMuddy: Boolean) extends Actor {
     }
   }
 
+  // non-RPC
   def think(c: ChildStatus): Unit = {
     val announce: EpistemicSentence = hearParent(epoch)
     // A child thinks only after hearing from the parent in this epoch
@@ -60,20 +57,20 @@ class Child(val isMuddy: Boolean) extends Actor {
       } else {
         inferOtherAgent(c.id, (id :: neighborIds.toList).filterNot(x => x == c.id), epoch)
       }
-//      println("Agent " + id + " learns from seeing " + c + " knowledge " + ans)
       knowledgeBase.learn(ans)
     }
   }
 
   val future_objs: ListBuffer[Option[Future[ChildStatus]]] = new ListBuffer[Option[Future[ChildStatus]]]()
 
-  def lookAround(): List[ChildStatus] = {
+  // non-RPC
+  def see(): List[ChildStatus] = {
     neighbors.foreach(n =>
-      future_objs.append(asyncMessage(() => n.seen())))
+      future_objs.append(asyncMessage(() => n.tell())))
     waitTurns(1)
     handleMessages()
     // see all neighbors
-    while (!(future_objs.nonEmpty && future_objs.toList.forall(x => isCompleted(x.get)))) {
+    while (!future_objs.toList.forall(x => isCompleted(x.get))) {
       waitTurns(1)
       handleMessages()
     }
@@ -84,19 +81,20 @@ class Child(val isMuddy: Boolean) extends Actor {
     future_objs.clear()
 
     assert(ans.size == neighbors.size)
-    ans.toList
-  }
 
-  def see(c: ChildStatus): Unit = {
-    val f: EpistemicSentence = schema(c.id, c.isMuddy)
-    knowledgeBase.learn(Set(Ka(id, f)))
+    // remember what they see
+    ans.toList.foreach(c => {
+      val f: EpistemicSentence = schema(c.id, c.isMuddy)
+      knowledgeBase.learn(Set(Ka(id, f)))
+    })
+
+    ans.toList
   }
 
   def main(): Unit = {
     neighbors.foreach(n => neighborIds.append(n.id))
     while (true) {
-      lookAround().foreach(s => {
-        see(s)
+      see().foreach(s => {
         think(s)
       })
       handleMessages()

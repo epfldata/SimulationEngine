@@ -13,6 +13,7 @@ class KnowledgeBase {
   import KnowledgeBase._
   var knowledgeBase: Set[EpistemicSentence] = Set()
   var constraints: List[EpistemicSentence => Boolean] = List()
+  var thoughtProcess: Map[Int, Set[EpistemicSentence]] = Map[Int, Set[EpistemicSentence]]()
 
   def getKnowledgeBase: Set[EpistemicSentence] = knowledgeBase
 
@@ -22,7 +23,11 @@ class KnowledgeBase {
 
   def default(): Unit = {
     // consistent
-    addConstraints((x) => (!know(Solver.deduce(NotE(x), knowledgeBase))))
+    addConstraints(x => !know(Solver.deduce(NotE(x), knowledgeBase)))
+  }
+
+  def recordThoughtProcess(epoch: Int, knowledge: Set[EpistemicSentence]): Unit = {
+    thoughtProcess += (epoch -> knowledge)
   }
 
   // assume the knowledge has been checked consistency
@@ -44,6 +49,10 @@ class KnowledgeBase {
     knowledgeBase.contains(sentence)
   }
 
+  def knowAny(sentences: Set[EpistemicSentence]): Boolean = {
+    knowledgeBase.diff(sentences) != knowledgeBase
+  }
+
   // return inferred knowledge from the counterFacts without actually modifying the knowledge base
   def speculate(counterFacts: Set[EpistemicSentence]): Set[EpistemicSentence] = {
     Solver.speculate(counterFacts, knowledgeBase)
@@ -54,6 +63,10 @@ class KnowledgeBase {
     knowledgeBase = knowledgeBase.diff(oldKnowledge)
   }
 
+  def forgetAll(): Unit = {
+    knowledgeBase = Set[EpistemicSentence]()
+  }
+
   def replace(oldKnowledge: EpistemicSentence, newKnowledge: EpistemicSentence): Unit = {
     forget(Set(oldKnowledge))
     learn(Set(newKnowledge))
@@ -61,6 +74,6 @@ class KnowledgeBase {
 
   def knowledgeAboutAnother[T](another: T): Set[EpistemicSentence] = {
     knowledgeBase.filter(e =>
-      (e.isInstanceOf[Ka[T]] && e.asInstanceOf[Ka[T]].agentId == another))
+      e.isInstanceOf[Ka[T]] && e.asInstanceOf[Ka[T]].agentId == another)
   }
 }
