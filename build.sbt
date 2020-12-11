@@ -48,6 +48,7 @@ lazy val root = (project in file("."))
 
 lazy val library = (project in file("library"))
   .settings(name := "library")
+  .dependsOn(root)
   .settings(commonSettings)
 
 lazy val no_messaging_example = (project in file("ecosim"))
