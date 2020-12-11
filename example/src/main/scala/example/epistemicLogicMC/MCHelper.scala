@@ -5,7 +5,6 @@ import library.EpistemicLogic.Sentence._
 import library.EpistemicLogic.Utils._
 
 object MCHelper {
-//  case class StepForward(f: EpistemicSentence)
   case class ChildStatus(id: AgentId, isMuddy: Boolean, isForward: Boolean, epoch: Int)
 
   def schema(id: AgentId, isMuddy: Boolean = true): EpistemicSentence = {
@@ -13,6 +12,10 @@ object MCHelper {
       P("Child " + id + " is muddy")
     else
       NotE(P("Child " + id + " is muddy"))
+  }
+
+  def seenNeighbor(id: AgentId)(e: EpistemicSentence): Boolean = {
+    getChildId(e) == id
   }
 
   def getChildId(e: EpistemicSentence): AgentId = {
@@ -25,6 +28,10 @@ object MCHelper {
   // knowledge for hearing the parent
   def hearParent(epoch: Int): EpistemicSentence = {
     P("Child hears the parent at " + epoch + " round")
+  }
+
+  def seeAllNeighbor(): EpistemicSentence = {
+    P("Child sees all neighbors")
   }
 
   def getEpoch(e: EpistemicSentence): Int = {
@@ -81,6 +88,7 @@ object MCHelper {
   }
 
   def counterExampleLearning(es: Set[EpistemicSentence]): Set[EpistemicSentence] = {
+//    Set()
     es.map(x => x match {
       case Ka(i, e) =>
         //                        println("Learned forward case 1" + e);

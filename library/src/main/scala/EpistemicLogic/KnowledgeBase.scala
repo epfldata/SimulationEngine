@@ -13,7 +13,8 @@ class KnowledgeBase {
   import KnowledgeBase._
   var knowledgeBase: Set[EpistemicSentence] = Set()
   var constraints: List[EpistemicSentence => Boolean] = List()
-  var thoughtProcess: Map[Int, Set[EpistemicSentence]] = Map[Int, Set[EpistemicSentence]]()
+
+  var learningProcess: Map[Int, Set[EpistemicSentence]] = Map[Int, Set[EpistemicSentence]]()
 
   def getKnowledgeBase: Set[EpistemicSentence] = knowledgeBase
 
@@ -26,18 +27,27 @@ class KnowledgeBase {
     addConstraints(x => !know(Solver.deduce(NotE(x), knowledgeBase)))
   }
 
-  def recordThoughtProcess(epoch: Int, knowledge: Set[EpistemicSentence]): Unit = {
-    thoughtProcess += (epoch -> knowledge)
+  def recordLearning(epoch: Int, knowledge: Set[EpistemicSentence]): Unit = {
+    val learnedKnowledge: Set[EpistemicSentence] = learn(knowledge)
+//    println("Actual learned knowledge: " + learnedKnowledge)
+    val learnt: Set[EpistemicSentence] = learningProcess.getOrElse(epoch, Set())
+    learningProcess += (epoch -> learnt.union(learnedKnowledge))
+    remember(learnedKnowledge)
   }
 
-  // assume the knowledge has been checked consistency
-  def learn(newKnowledge: Set[EpistemicSentence]): Unit = {
-//    println("Learn " + newKnowledge)
+  // return what can be learned from the input
+  def learn(newKnowledge: Set[EpistemicSentence]): Set[EpistemicSentence] = {
+//    println("Asked to learn " + newKnowledge)
     var filteredKnowledge: Set[EpistemicSentence] = newKnowledge
     for (c <- constraints) {
       filteredKnowledge = filteredKnowledge.filter(k => c(k))
     }
-    knowledgeBase = Solver.deduction(filteredKnowledge.union(knowledgeBase))
+    Solver.deduction(filteredKnowledge.union(knowledgeBase)).diff(knowledgeBase)
+  }
+
+  // remember records the new knowledge to the knowledgeBase
+  def remember(newKnowledge: Set[EpistemicSentence]): Unit = {
+    knowledgeBase = newKnowledge.union(knowledgeBase)
   }
 
   // learn with a specified rule
@@ -45,8 +55,14 @@ class KnowledgeBase {
     learn(newKnowledge.filter(k => rule(k)))
   }
 
+
   def know(sentence: EpistemicSentence): Boolean = {
     knowledgeBase.contains(sentence)
+  }
+
+  def ruleBasedKnow(rule: Rule): Set[EpistemicSentence] = {
+    knowledgeBase.filter(e =>
+      rule(e))
   }
 
   def knowAny(sentences: Set[EpistemicSentence]): Boolean = {
@@ -72,8 +88,10 @@ class KnowledgeBase {
     learn(Set(newKnowledge))
   }
 
-  def knowledgeAboutAnother[T](another: T): Set[EpistemicSentence] = {
-    knowledgeBase.filter(e =>
-      e.isInstanceOf[Ka[T]] && e.asInstanceOf[Ka[T]].agentId == another)
+  def printLearningProcess(epoch: Int): Unit = {
+    println("Epoch " + epoch + " learned: ")
+    learningProcess.getOrElse(epoch, Set()).foreach(e =>
+      println(e)
+    )
   }
 }

@@ -23,7 +23,6 @@ class Child(val isMuddy: Boolean) extends Actor {
   val knowledgeBase: KnowledgeBase = new KnowledgeBase()
   knowledgeBase.default()
 
-
   // RPC
   def tell(): ChildStatus = {
     ChildStatus(id, isMuddy, isForward, epoch)
@@ -33,31 +32,37 @@ class Child(val isMuddy: Boolean) extends Actor {
   // Children answers simultaneously; can't change one's answer based on observing the same round behaviour
   // RPC
   def answer(): Unit = {
-    epoch = epoch + 1
-    knowledgeBase.learn(Set(hearParent(epoch)))
-    if (!isForward) {        // child only answers once
-      knowledgeBase.learn(Set(announce((neighborIds ++ List(id)).toList)))
-      val fact: EpistemicSentence = schema(id, isMuddy)
-      if (knowledgeBase.know(fact)  || knowledgeBase.know(Ka(id, fact))) {
-        isForward = true
-        println("Child " + id + " steps forward!")
+    if (knowledgeBase.know(seeAllNeighbor())) {
+      epoch = epoch + 1
+      knowledgeBase.recordLearning(epoch, Set(hearParent(epoch)))
+      if (!isForward) {        // child only answers once
+        knowledgeBase.recordLearning(epoch, Set(announce((neighborIds ++ List(id)).toList)))
+        val fact: EpistemicSentence = schema(id, isMuddy)
+        if (knowledgeBase.know(fact)  || knowledgeBase.know(Ka(id, fact))) {
+          isForward = true
+          println("Child " + id + " steps forward!")
+        } else {
+          println("Child " + id + " stays still!")
+        }
       }
     }
   }
 
   // non-RPC
   def think(c: ChildStatus): Unit = {
+//      println("Child thinks " + c + " epoch " + epoch)
     val announce: EpistemicSentence = hearParent(epoch)
     // A child thinks only after hearing from the parent in this epoch
-    if (knowledgeBase.know(announce) && !isForward) {
+    // If the observation has an earlier epoch, than ignore it because already seen it
+    if (knowledgeBase.know(announce) && !isForward && c.epoch == epoch) {
       val ans: Set[EpistemicSentence] = if (c.isForward) {
         val f: EpistemicSentence = schema(c.id, c.isMuddy)
-        knowledgeBase.learn(Set(Ka(c.id, f)))
+        knowledgeBase.recordLearning(epoch, Set(Ka(c.id, f)))
         counterExampleLearning(knowledgeBase.speculate(Set(Ka(c.id, NotE(f)))))
       } else {
         inferOtherAgent(c.id, (id :: neighborIds.toList).filterNot(x => x == c.id), epoch)
       }
-      knowledgeBase.learn(ans)
+      knowledgeBase.recordLearning(epoch, ans)
     }
   }
 
@@ -75,6 +80,8 @@ class Child(val isMuddy: Boolean) extends Actor {
       handleMessages()
     }
 
+    knowledgeBase.remember(Set(seeAllNeighbor()))
+
     val ans: ListBuffer[ChildStatus] = new ListBuffer[ChildStatus]()
     future_objs.toList.foreach(o => ans.append(getFutureValue[ChildStatus](o.get)))
     future_objs.toList.foreach(o => clearFutureObj(o.get))
@@ -85,7 +92,7 @@ class Child(val isMuddy: Boolean) extends Actor {
     // remember what they see
     ans.toList.foreach(c => {
       val f: EpistemicSentence = schema(c.id, c.isMuddy)
-      knowledgeBase.learn(Set(Ka(id, f)))
+      knowledgeBase.recordLearning(epoch, Set(Ka(id, f)))
     })
 
     ans.toList
@@ -97,6 +104,8 @@ class Child(val isMuddy: Boolean) extends Actor {
       see().foreach(s => {
         think(s)
       })
+//      println("==== Agent " + id + " knows epochs " + knowledgeBase.learningProcess.keys + " ==== ")
+//      knowledgeBase.printLearningProcess(epoch)
       handleMessages()
     }
   }

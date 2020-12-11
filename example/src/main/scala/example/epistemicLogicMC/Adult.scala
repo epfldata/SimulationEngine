@@ -39,9 +39,9 @@ class Adult(val children: List[Child]) extends Actor {
     ans.toList.foreach(c => {
       val f: EpistemicSentence = schema(c.id, c.isMuddy)
       if (c.isForward){
-        knowledgeBase.learn(Set(f, Ka(c.id, f)))
+        knowledgeBase.remember(Set(f, Ka(c.id, f)))
       } else {
-        knowledgeBase.learn(Set(f, NotE(Ka(c.id, f))))
+        knowledgeBase.remember(Set(f, NotE(Ka(c.id, f))))
       }
     })
   }
