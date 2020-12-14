@@ -1,4 +1,4 @@
-package meta.example.rumor
+package example.rumor
 
 import meta.deep.runtime.Actor
 import squid.quasi.lift

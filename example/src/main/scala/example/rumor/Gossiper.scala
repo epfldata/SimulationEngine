@@ -1,4 +1,4 @@
- package meta.example.rumor
+ package example.rumor
 
  import meta.classLifting.SpecialInstructions._
  import meta.deep.runtime.Actor
