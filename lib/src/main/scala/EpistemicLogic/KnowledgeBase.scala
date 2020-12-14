@@ -40,14 +40,14 @@ class KnowledgeBase {
     Solver.deduction(filteredKnowledge.union(knowledgeBase)).diff(knowledgeBase)
   }
 
+  // learn with a specified rule
+  def ruleBasedLearn(newKnowledge: Set[EpistemicSentence], rule: Rule): Set[EpistemicSentence] = {
+    learn(newKnowledge.filter(k => rule(k)))
+  }
+
   // remember records the new knowledge to the knowledgeBase
   def remember(newKnowledge: Set[EpistemicSentence]): Unit = {
     knowledgeBase = newKnowledge.union(knowledgeBase)
-  }
-
-  // learn with a specified rule
-  def ruleBasedLearn(newKnowledge: Set[EpistemicSentence], rule: Rule): Unit = {
-    learn(newKnowledge.filter(k => rule(k)))
   }
 
   def know(sentence: EpistemicSentence): Boolean = {
