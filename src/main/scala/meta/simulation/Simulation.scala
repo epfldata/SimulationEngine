@@ -38,8 +38,7 @@ object Simulation {
     val start = System.nanoTime()
     println("Monitor is enabled: " + monitorEnabled)
     while (currentTurn <= totalTurn && currentTime <= totalTime) {
-      println("(Time " + BigDecimal(currentTime).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
-        + " Turn " + currentTurn + ")" )
+      util.displayTime(currentTurn, currentTime)
       collect(currentTurn)
       waitLabels("time") = actors.length
 
