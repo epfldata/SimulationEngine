@@ -51,11 +51,11 @@ object Actor {
         }
         case _ => {
           val foo = labelVals(k)
-            if (foo.length == waitLabels(k)) {
-              foo.min
-            } else {
-              0
-            }
+          if (foo.length == waitLabels(k)) {
+            foo.min
+          } else {
+            0
+          }
         }
       }
       labelVals(k).clear()
@@ -153,7 +153,7 @@ class Actor extends Serializable {
   var currentTurn: Int = 0
   var currentTime: Double = 0
   var current_pos: Int = 0
-  var monitor = Monitor
+//  var monitor = Monitor
   val logger = LoggerFactory.getLogger(this.getClass.getName())
 
   var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()

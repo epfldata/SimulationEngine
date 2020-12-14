@@ -5,10 +5,8 @@ case class SimulationConfig(var actors: List[Actor],
                             var startTurn: Int = 0,
                             val totalTurn: Int = 100,
                             var startTime: Double = 0,
-                            val totalTime: Double = 10,
-                            val monitorEnabled: Boolean = false)
+                            val totalTime: Double = 10)
 
 case class SimulationSnapshot(var actors: List[Actor] = List(),
                               var currentTurn: Int = 0,
-                              var currentTime: Double = 0,
-                              val monitorEnabled: Boolean = false)
+                              var currentTime: Double = 0)
