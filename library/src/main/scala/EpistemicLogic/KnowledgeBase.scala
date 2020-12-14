@@ -79,7 +79,7 @@ class KnowledgeBase {
 
   def replace(oldKnowledge: EpistemicSentence, newKnowledge: EpistemicSentence): Unit = {
     forget(Set(oldKnowledge))
-    learn(Set(newKnowledge))
+    remember(learn(Set(newKnowledge)))
   }
 
   def printLearningProcess(epoch: Int): Unit = {
