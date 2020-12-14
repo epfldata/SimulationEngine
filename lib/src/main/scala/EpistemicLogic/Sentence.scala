@@ -1,4 +1,4 @@
-package library.EpistemicLogic
+package lib.EpistemicLogic
 
 object Sentence {
 

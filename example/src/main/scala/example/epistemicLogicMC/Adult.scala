@@ -6,9 +6,9 @@ import meta.deep.runtime.{Actor, Future}
 import scala.collection.mutable.ListBuffer
 import squid.quasi.lift
 import MCHelper._
-//import library.Broadcast._
-import library.EpistemicLogic.KnowledgeBase
-import library.EpistemicLogic.Sentence._
+//import lib.Broadcast._
+import lib.EpistemicLogic.KnowledgeBase
+import lib.EpistemicLogic.Sentence._
 
 @lift
 class Adult(val children: List[Child]) extends Actor {

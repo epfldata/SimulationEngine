@@ -1,8 +1,8 @@
 package example.epistemicLogicMC
 
 import meta.deep.runtime.Actor.AgentId
-import library.EpistemicLogic.Sentence._
-import library.EpistemicLogic.Utils._
+import lib.EpistemicLogic.Sentence._
+import lib.EpistemicLogic.Utils._
 
 object MCHelper {
   case class ChildStatus(id: AgentId, isMuddy: Boolean, isForward: Boolean, epoch: Int)

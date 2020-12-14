@@ -1,5 +1,5 @@
-import library.EpistemicLogic.Sentence._
-import library.EpistemicLogic.KnowledgeBase
+import lib.EpistemicLogic.Sentence._
+import lib.EpistemicLogic.KnowledgeBase
 
 import org.scalatest.FlatSpec
 

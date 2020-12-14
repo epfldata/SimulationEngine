@@ -1,6 +1,6 @@
-package library.EpistemicLogic
+package lib.EpistemicLogic
 
-import library.EpistemicLogic.Sentence._
+import lib.EpistemicLogic.Sentence._
 
 object Utils {
   def ors(es: List[EpistemicSentence]): EpistemicSentence = {

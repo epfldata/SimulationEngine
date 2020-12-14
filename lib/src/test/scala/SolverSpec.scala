@@ -1,5 +1,5 @@
-import library.EpistemicLogic.Sentence._
-import library.EpistemicLogic.Solver._
+import lib.EpistemicLogic.Sentence._
+import lib.EpistemicLogic.Solver._
 
 import org.scalatest.FlatSpec
 

@@ -6,8 +6,8 @@ import meta.deep.runtime.Actor.AgentId
 import scala.collection.mutable.ListBuffer
 
 import squid.quasi.lift
-import library.EpistemicLogic.Sentence._
-import library.EpistemicLogic.KnowledgeBase
+import lib.EpistemicLogic.Sentence._
+import lib.EpistemicLogic.KnowledgeBase
 
 import MCHelper._
 
