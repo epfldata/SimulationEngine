@@ -7,7 +7,8 @@ import library.EpistemicLogic.Utils._
 object MCHelper {
   case class ChildStatus(id: AgentId, isMuddy: Boolean, isForward: Boolean, epoch: Int)
 
-  def schema(id: AgentId, isMuddy: Boolean = true): EpistemicSentence = {
+  // todo: consider making the following types instead
+  def childMuddy(id: AgentId, isMuddy: Boolean = true): EpistemicSentence = {
     if (isMuddy)
       P("Child " + id + " is muddy")
     else
@@ -43,7 +44,7 @@ object MCHelper {
 
   // at least one muddy child
   def announce(ids: List[AgentId]): EpistemicSentence = {
-    ors(ids.map(i => schema(i)))
+    ors(ids.map(i => childMuddy(i)))
   }
 
   // speculate: agent i hasn't stepped up in the past n round => agent i knows there are at least n muddy children
@@ -64,9 +65,9 @@ object MCHelper {
     val ans: List[List[AgentId]] = helper(neighbor.map(i => List(i)), mChildren)
 
     if (ans.isEmpty) {
-      Set(Ka(i, schema(i)))
+      Set(Ka(i, childMuddy(i)))
     } else {
-      Set(Ka(i, ors(ans.map(cs => ands(cs.map(c => schema(c)))))))
+      Set(Ka(i, ors(ans.map(cs => ands(cs.map(c => childMuddy(c)))))))
     }
   }
 

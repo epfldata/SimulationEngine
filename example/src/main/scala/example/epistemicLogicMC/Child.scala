@@ -37,7 +37,7 @@ class Child(val isMuddy: Boolean) extends Actor {
       knowledgeBase.recordLearning(epoch, Set(hearParent(epoch)))
       if (!isForward) {        // child only answers once
         knowledgeBase.recordLearning(epoch, Set(announce((neighborIds ++ List(id)).toList)))
-        val fact: EpistemicSentence = schema(id, isMuddy)
+        val fact: EpistemicSentence = childMuddy(id, isMuddy)
         if (knowledgeBase.know(fact)  || knowledgeBase.know(Ka(id, fact))) {
           isForward = true
           println("Child " + id + " steps forward!")
@@ -56,7 +56,7 @@ class Child(val isMuddy: Boolean) extends Actor {
     // If the observation has an earlier epoch, than ignore it because already seen it
     if (knowledgeBase.know(announce) && !isForward && c.epoch == epoch) {
       val ans: Set[EpistemicSentence] = if (c.isForward) {
-        val f: EpistemicSentence = schema(c.id, c.isMuddy)
+        val f: EpistemicSentence = childMuddy(c.id, c.isMuddy)
         knowledgeBase.recordLearning(epoch, Set(Ka(c.id, f)))
         counterExampleLearning(knowledgeBase.speculate(Set(Ka(c.id, NotE(f)))))
       } else {
@@ -91,7 +91,7 @@ class Child(val isMuddy: Boolean) extends Actor {
 
     // remember what they see
     ans.toList.foreach(c => {
-      val f: EpistemicSentence = schema(c.id, c.isMuddy)
+      val f: EpistemicSentence = childMuddy(c.id, c.isMuddy)
       knowledgeBase.recordLearning(epoch, Set(Ka(id, f)))
     })
 

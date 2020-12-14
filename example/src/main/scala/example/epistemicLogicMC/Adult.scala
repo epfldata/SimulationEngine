@@ -6,7 +6,7 @@ import meta.deep.runtime.{Actor, Future}
 import scala.collection.mutable.ListBuffer
 import squid.quasi.lift
 import MCHelper._
-import library.Broadcast._
+//import library.Broadcast._
 import library.EpistemicLogic.KnowledgeBase
 import library.EpistemicLogic.Sentence._
 
@@ -37,7 +37,7 @@ class Adult(val children: List[Child]) extends Actor {
     future_objs1.clear()
 
     ans.toList.foreach(c => {
-      val f: EpistemicSentence = schema(c.id, c.isMuddy)
+      val f: EpistemicSentence = childMuddy(c.id, c.isMuddy)
       if (c.isForward){
         knowledgeBase.remember(Set(f, Ka(c.id, f)))
       } else {
@@ -61,8 +61,8 @@ class Adult(val children: List[Child]) extends Actor {
 
   def main(): Unit = {
     children.foreach(c => {
-      allChildrenMuddy.append(schema(c.id))
-      allChildrenUnaware.append(NotE(Ka(c.id, schema(c.id, c.isMuddy))))
+      allChildrenMuddy.append(childMuddy(c.id))
+      allChildrenUnaware.append(NotE(Ka(c.id, childMuddy(c.id, c.isMuddy))))
     })
 
     while (true) {
