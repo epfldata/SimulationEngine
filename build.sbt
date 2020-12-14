@@ -46,7 +46,7 @@ lazy val root = (project in file("."))
   )
   .settings(logSetting)
 
-lazy val library = (project in file("library"))
+lazy val library = (project in file("lib"))
   .settings(name := "library")
   .dependsOn(root)
   .settings(commonSettings)
