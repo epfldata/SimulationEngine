@@ -6,45 +6,16 @@ import library.EpistemicLogic.Utils._
 
 object MCHelper {
   case class ChildStatus(id: AgentId, isMuddy: Boolean, isForward: Boolean, epoch: Int)
-
-  // todo: consider making the following types instead
-  def childMuddy(id: AgentId, isMuddy: Boolean = true): EpistemicSentence = {
-    if (isMuddy)
-      P("Child " + id + " is muddy")
-    else
-      NotE(P("Child " + id + " is muddy"))
-  }
-
-  def seenNeighbor(id: AgentId)(e: EpistemicSentence): Boolean = {
-    getChildId(e) == id
-  }
-
-  def getChildId(e: EpistemicSentence): AgentId = {
-    val s: String = e.toString
-    val prefix: String = "Child "
-    val posfix: String = " is muddy"
-    s.slice(s.indexOf(prefix) + prefix.length, s.indexOf(posfix)).toInt
-  }
-
-  // knowledge for hearing the parent
-  def hearParent(epoch: Int): EpistemicSentence = {
-    P("Child hears the parent at " + epoch + " round")
-  }
+  case class HearParent(epoch: Int)
+  case class ChildMuddy(id: AgentId, isMuddy: Boolean = true)
 
   def seeAllNeighbor(): EpistemicSentence = {
     P("Child sees all neighbors")
   }
 
-  def getEpoch(e: EpistemicSentence): Int = {
-    val s: String = e.toString
-    val prefix: String = "Child hears the parent at "
-    val posfix: String = " round"
-    s.slice(s.indexOf(prefix) + prefix.length, s.indexOf(posfix)).toInt
-  }
-
   // at least one muddy child
   def announce(ids: List[AgentId]): EpistemicSentence = {
-    ors(ids.map(i => childMuddy(i)))
+    ors(ids.map(i => P(ChildMuddy(i))))
   }
 
   // speculate: agent i hasn't stepped up in the past n round => agent i knows there are at least n muddy children
@@ -65,31 +36,13 @@ object MCHelper {
     val ans: List[List[AgentId]] = helper(neighbor.map(i => List(i)), mChildren)
 
     if (ans.isEmpty) {
-      Set(Ka(i, childMuddy(i)))
+      Set(Ka(i, P(ChildMuddy(i))))
     } else {
-      Set(Ka(i, ors(ans.map(cs => ands(cs.map(c => childMuddy(c)))))))
+      Set(Ka(i, ors(ans.map(cs => ands(cs.map(c => P(ChildMuddy(c))))))))
     }
   }
 
-  def whatNeighborSees(id: AgentId, observations: Set[EpistemicSentence]): Set[EpistemicSentence] = {
-    observations.flatMap(x => {
-      observations.flatMap(y => {
-        if (getChildId(x) != getChildId(y)) {
-          Set[EpistemicSentence](
-            Ka(id, Ka(getChildId(x), y)),
-            Ka(id, Ka(getChildId(y), x)),
-            //            Ka(id, Ka(getChildId(x), Ka(id, y))),
-            //            Ka(id, Ka(getChildId(y), Ka(id, x))),
-          )
-        } else {
-          Set[EpistemicSentence]()
-        }
-      })
-    })
-  }
-
   def counterExampleLearning(es: Set[EpistemicSentence]): Set[EpistemicSentence] = {
-//    Set()
     es.map(x => x match {
       case Ka(i, e) =>
         //                        println("Learned forward case 1" + e);

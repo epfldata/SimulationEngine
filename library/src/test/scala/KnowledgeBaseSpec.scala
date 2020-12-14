@@ -1,13 +1,14 @@
 import library.EpistemicLogic.Sentence._
-import library.EpistemicLogic.Solver._
 import library.EpistemicLogic.KnowledgeBase
 
 import org.scalatest.FlatSpec
 
 class KnowledgeBaseSpec extends FlatSpec {
 
-  val p1: EpistemicSentence = P("Sun rises from the East")
-  val p2: EpistemicSentence = P("Earth is flat")
+  case class fact(s: String)
+
+  val p1: EpistemicSentence = P[fact](fact("Sun rises from the East"))
+  val p2: EpistemicSentence = P[fact](fact("Earth is flat"))
   val p3: EpistemicSentence = NotE(p2)
 
   "No constraint" should "return a knowledgeBase without consistency guarantee" in {
@@ -46,7 +47,7 @@ class KnowledgeBaseSpec extends FlatSpec {
 
     val kb: KnowledgeBase = new KnowledgeBase()
     kb.default()
-    kb.learn(Set(e1, e2))
+    kb.remember(kb.learn(Set(e1, e2)))
 
     assert(kb.ruleBasedKnow(whatIKnowAboutAnother(1)).size == 2)
   }

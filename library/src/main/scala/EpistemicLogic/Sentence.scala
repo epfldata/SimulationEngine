@@ -4,7 +4,7 @@ object Sentence {
 
   sealed trait EpistemicSentence extends Product with Serializable
 
-  case class P(proposition: String) extends EpistemicSentence {
+  case class P[T](proposition: T) extends EpistemicSentence {
     override def toString(): String = {
       "(Proposition '" + proposition + "')"
     }

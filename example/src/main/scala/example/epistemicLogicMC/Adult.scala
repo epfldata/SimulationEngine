@@ -17,7 +17,7 @@ class Adult(val children: List[Child]) extends Actor {
   knowledgeBase.default()
 
   var future_objs: ListBuffer[Option[Future[Unit]]] = new ListBuffer[Option[Future[Unit]]]()
-  var future_objs1: ListBuffer[Option[Future[ChildStatus]]] = new ListBuffer[Option[Future[ChildStatus]]]()
+  var future_objs1: ListBuffer[Option[Future[P[ChildStatus]]]] = new ListBuffer[Option[Future[P[ChildStatus]]]]()
 
   val allChildrenMuddy: ListBuffer[EpistemicSentence] = new ListBuffer[EpistemicSentence]()
   val allChildrenUnaware: ListBuffer[EpistemicSentence] = new ListBuffer[EpistemicSentence]()
@@ -30,18 +30,18 @@ class Adult(val children: List[Child]) extends Actor {
     while (!future_objs1.toList.forall(x => isCompleted(x.get))) {
       waitTurns(1)
     }
-    val ans: ListBuffer[ChildStatus] = new ListBuffer[ChildStatus]()
+    val ans: ListBuffer[P[ChildStatus]] = new ListBuffer[P[ChildStatus]]()
 
-    future_objs1.toList.foreach(o => ans.append(getFutureValue[ChildStatus](o.get)))
+    future_objs1.toList.foreach(o => ans.append(getFutureValue[P[ChildStatus]](o.get)))
     future_objs1.toList.foreach(o => clearFutureObj(o.get))
     future_objs1.clear()
 
     ans.toList.foreach(c => {
-      val f: EpistemicSentence = childMuddy(c.id, c.isMuddy)
-      if (c.isForward){
-        knowledgeBase.remember(Set(f, Ka(c.id, f)))
+      val f: EpistemicSentence = P(ChildMuddy(c.proposition.id, c.proposition.isMuddy))
+      if (c.proposition.isForward){
+        knowledgeBase.remember(Set(f, Ka(c.proposition.id, f)))
       } else {
-        knowledgeBase.remember(Set(f, NotE(Ka(c.id, f))))
+        knowledgeBase.remember(Set(f, NotE(Ka(c.proposition.id, f))))
       }
     })
   }
@@ -61,8 +61,8 @@ class Adult(val children: List[Child]) extends Actor {
 
   def main(): Unit = {
     children.foreach(c => {
-      allChildrenMuddy.append(childMuddy(c.id))
-      allChildrenUnaware.append(NotE(Ka(c.id, childMuddy(c.id, c.isMuddy))))
+      allChildrenMuddy.append(P(ChildMuddy(c.id)))
+      allChildrenUnaware.append(NotE(Ka(c.id, P(ChildMuddy(c.id, c.isMuddy)))))
     })
 
     while (true) {

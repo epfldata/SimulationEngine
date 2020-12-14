@@ -77,11 +77,6 @@ class KnowledgeBase {
     knowledgeBase = Set[EpistemicSentence]()
   }
 
-  def replace(oldKnowledge: EpistemicSentence, newKnowledge: EpistemicSentence): Unit = {
-    forget(Set(oldKnowledge))
-    remember(learn(Set(newKnowledge)))
-  }
-
   def printLearningProcess(epoch: Int): Unit = {
     println("Epoch " + epoch + " learned: ")
     learningProcess.getOrElse(epoch, Set()).foreach(e =>
