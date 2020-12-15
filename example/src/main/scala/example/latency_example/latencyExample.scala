@@ -1,4 +1,4 @@
-package meta.example.latency
+package example.latency
 
 object latencyExample extends App{
   import meta.deep.IR

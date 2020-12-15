@@ -1,4 +1,4 @@
-package meta.example.segregation
+package example.segregation
 
 object segregationModel {
   val neighborhoodRadius: Int = 1

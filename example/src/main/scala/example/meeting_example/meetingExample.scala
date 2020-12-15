@@ -1,4 +1,4 @@
-package meta.example.meeting_example
+package example.meeting_example
 
 object meetingExample extends App {
   import meta.deep.IR

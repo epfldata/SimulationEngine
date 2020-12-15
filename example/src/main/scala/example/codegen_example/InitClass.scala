@@ -1,4 +1,4 @@
-package meta.example.codegen_example
+package example.codegen_example
 
 import meta.deep.runtime.Actor
 import squid.quasi.lift

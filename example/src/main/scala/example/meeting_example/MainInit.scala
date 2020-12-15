@@ -1,4 +1,4 @@
-package meta.example.meeting_example
+package example.meeting_example
 
 import meta.deep.runtime.Actor
 import squid.quasi.lift

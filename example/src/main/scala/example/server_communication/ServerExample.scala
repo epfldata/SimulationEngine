@@ -1,4 +1,4 @@
-package meta.example.server_communication
+package example.server_communication
 
 object ServerExample extends App {
   import meta.deep.IR

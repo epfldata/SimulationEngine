@@ -1,4 +1,4 @@
-package meta.example.segregation
+package example.segregation
 
 object segregationExample extends App {
   import meta.deep.IR

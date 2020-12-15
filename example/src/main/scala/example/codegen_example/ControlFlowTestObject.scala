@@ -1,4 +1,4 @@
-package meta.example.codegen_example
+package example.codegen_example
 
 import meta.classLifting.SpecialInstructions.waitTurns
 import meta.deep.runtime.Actor

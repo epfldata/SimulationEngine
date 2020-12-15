@@ -1,4 +1,4 @@
-package meta.example.stateless_server
+package example.stateless_server
 
 object StatelessServerExample extends App {
   import meta.deep.IR

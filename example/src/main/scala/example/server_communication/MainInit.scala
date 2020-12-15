@@ -1,4 +1,4 @@
-package meta.example.server_communication
+package example.server_communication
 
 import meta.deep.runtime.Actor
 import squid.quasi.lift

@@ -1,4 +1,4 @@
-package meta.example.latency
+package example.latency
 
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.Actor

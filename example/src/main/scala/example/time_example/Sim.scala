@@ -1,4 +1,4 @@
-package meta.example.time_example
+package example.time_example
 
 import meta.deep.runtime.Actor
 import meta.classLifting.SpecialInstructions._

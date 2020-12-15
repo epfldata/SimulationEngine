@@ -1,4 +1,4 @@
-package meta.example.segregation
+package example.segregation
 
 trait Torus2D {
 

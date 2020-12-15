@@ -1,4 +1,4 @@
-package meta.example.stateless_server
+package example.stateless_server
 
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.{Actor, Future}

@@ -1,4 +1,4 @@
-package meta.example.lock_example
+package example.lock_example
 
 object lockExample extends App {
   import meta.deep.IR

@@ -1,4 +1,4 @@
-package meta.example.stateless_server
+package example.stateless_server
 
 import meta.deep.runtime.Actor
 import squid.quasi.lift

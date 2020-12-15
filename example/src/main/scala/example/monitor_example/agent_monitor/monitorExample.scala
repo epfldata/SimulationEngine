@@ -1,4 +1,4 @@
-package meta.example.monitor_example.agent_monitor
+package example.monitor_example.agent_monitor
 
 object monitorExample extends App {
   import meta.deep.IR

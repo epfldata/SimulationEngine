@@ -1,10 +1,10 @@
-// package meta.example.stateless_server
+// package example.stateless_server
 
 
 // To fix, the compiled code doesn't work right now
 
 //object StatelessServerExampleSSO extends App {
-//  import meta.example.{compileSims, SimsStateless}
+//  import example.{compileSims, SimsStateless}
 //  import meta.deep.IR
 //  import IR.TopLevel.ClassWithObject
 //

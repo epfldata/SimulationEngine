@@ -1,4 +1,4 @@
-package meta.example.segregation
+package example.segregation
 
 import meta.classLifting.SpecialInstructions._
 import meta.deep.runtime.{Actor}

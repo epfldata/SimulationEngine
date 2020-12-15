@@ -1,4 +1,4 @@
-package meta.example.server_communication
+package example.server_communication
 
 import meta.classLifting.SpecialInstructions.{waitTurns, handleMessages}
 import meta.deep.runtime.Actor

@@ -1,4 +1,4 @@
-package meta.example.lock_example
+package example.lock_example
 
 import meta.deep.runtime.Actor
 import squid.quasi.lift
