@@ -1,4 +1,4 @@
-package generated.meta.example.codegen_example
+package generated.example.codegen_example
 
 class ControlFlowTestObject () extends meta.deep.runtime.Actor {
   var x: Int = 0

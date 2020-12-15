@@ -1,4 +1,4 @@
-package generated.meta.example.codegen_example
+package generated.example.codegen_example
 
 class Market () extends meta.deep.runtime.Actor {
   var goods: List[String] = scala.collection.immutable.Nil

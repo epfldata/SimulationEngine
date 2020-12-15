@@ -1,16 +1,16 @@
-package generated.meta.example.codegen_example
+package generated.example.codegen_example
 
 class Farmer () extends meta.deep.runtime.Actor {
-  var market: generated.meta.example.codegen_example.Market = null
+  var market: generated.example.codegen_example.Market = null
   var happiness: Int = 0
-  var peers: List[generated.meta.example.codegen_example.Farmer] = scala.collection.immutable.Nil
+  var peers: List[generated.example.codegen_example.Farmer] = scala.collection.immutable.Nil
   private var resetData_0: scala.Any = null;
   private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
   private var resetData_2: meta.deep.runtime.ResponseMessage = null;
   private val x_3 = scala.collection.mutable.ListBuffer.apply[scala.Any]();
   private val x_4 = scala.collection.mutable.ListBuffer.apply[scala.Any]();
-  private var listValMut_5: generated.meta.example.codegen_example.Farmer = null;
-  private var iterMut_6: scala.collection.Iterator[generated.meta.example.codegen_example.Farmer] = null;
+  private var listValMut_5: generated.example.codegen_example.Farmer = null;
+  private var iterMut_6: scala.collection.Iterator[generated.example.codegen_example.Farmer] = null;
   private var methodArgsMut_7: scala.Int = 0;
   private var methodArgsMut_8: meta.deep.runtime.Actor = null;
   private var bindingMut_9: scala.Int = 0;
