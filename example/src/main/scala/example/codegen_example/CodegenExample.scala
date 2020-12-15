@@ -1,4 +1,4 @@
-package meta.example.codegen_example
+package example.codegen_example
 
 import meta.deep.IR
 import meta.deep.IR.Predef._
@@ -29,7 +29,7 @@ object CodegenExample extends App {
       new EdgeMerge(),
       new CreateCode(
         code"""val m = new Market; val f = new Farmer(); f.market = m; List(m, f)""",
-        "example/src/main/scala/generated/meta.example.codegen_example", 
+        "example/src/main/scala/generated/src/main/scala/example.codegen_example",
         optimization),
     )
   )

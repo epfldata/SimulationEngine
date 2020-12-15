@@ -75,3 +75,14 @@ lazy val example = (project in file("example"))
     excludeDependencies += "org.slf4j" % "slf4j-log4j12"
   )
   .settings(logSetting)
+
+lazy val genExample = (project in file("example/src/main/scala/generated/"))
+  .settings(name := "genExample")
+  .settings(commonSettings, squidSettings)
+  .dependsOn(root)
+  .dependsOn(example)
+  .dependsOn(library)
+  .settings(
+    excludeDependencies += "org.slf4j" % "slf4j-log4j12"
+  )
+  .settings(logSetting)

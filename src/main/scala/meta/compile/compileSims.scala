@@ -25,7 +25,7 @@ object compileSims {
     }
 
     val destFolderName = destFolder match {
-      case "" => "example/src/main/scala/generated/" + canonicalName
+      case "" => "example/src/main/scala/generated/src/main/scala/" + canonicalName
       case s => s 
     }
 
