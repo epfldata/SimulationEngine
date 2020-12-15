@@ -1,22 +1,19 @@
 package generated.simulation
 
-import meta.deep.runtime.{Actor, Monitor}
+import meta.deep.runtime.Actor
 import meta.deep.runtime.Actor._
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
-object Simulation {
-  val eachIteration: ListBuffer[()=> Unit] = new ListBuffer()
-}
-
 class Simulation(config: SimulationConfig) {
-  import Simulation._
   var actors: List[Actor] = config.actors
   var currentTurn: Int = config.startTurn
   var currentTime: Double = config.startTime
   val totalTurn: Int = config.totalTurn
   val totalTime: Double = config.totalTime
+
+  private var lastTurn: Int = -1
 
   def collect(currentTurn: Int): Unit = {
     newActors.map(i => i.currentTurn = currentTurn)
@@ -36,29 +33,24 @@ class Simulation(config: SimulationConfig) {
     })
   }
 
-  // register events
-  def addEvent(e: => ()=> Unit): Unit = {
-    eachIteration.append(e)
-  }
-
   // Can be overridden in an inherited class. Same for scheduleEvents
-  def init(): Unit = {
+  def init(): List[()=> Unit] = {
     initLabelVals()
     scheduleEvents()
   }
 
-  private var lastTurn: Int = -1
-
-  def scheduleEvents(): Unit = {
-    addEvent(() => {
+  def scheduleEvents(): List[()=> Unit] = {
+    val events: ListBuffer[()=> Unit] = new ListBuffer()
+    events.append(
+      () => {
       if (lastTurn != currentTurn) {
         println(util.displayTime(currentTurn, currentTime))
         lastTurn = currentTurn
-      }
-    })
-    addEvent(() => collect(currentTurn))
-    addEvent(() => waitLabels("time") = actors.length)
-    addEvent(() => {
+      }}
+    )
+    events.append(() => collect(currentTurn))
+    events.append(() => waitLabels("time") = actors.length)
+    events.append(() => {
       val mx = actors.flatMap(_.getSendMessages).groupBy(_.receiverId)
       actors = actors.map { a =>
       {
@@ -67,14 +59,15 @@ class Simulation(config: SimulationConfig) {
           .addReceiveMessages(Random.shuffle(mx.getOrElse(a.id, List())))
           .run_until(currentTurn)
       }}})
-    addEvent(() => proceed())
+    events.append(() => proceed())
+    events.toList
   }
 
   def run(): SimulationSnapshot = {
-    init()
+    val events: List[()=> Unit] = init()
     val start = System.nanoTime()
     while (currentTurn <= totalTurn && currentTime <= totalTime) {
-      eachIteration.foreach(m => m())
+      events.foreach(_())
     }
 
     val end = System.nanoTime()
