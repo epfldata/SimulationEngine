@@ -12,12 +12,12 @@ val graphVizVersion = "0.10.0"
 lazy val commonSettings = Seq(
   libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
   libraryDependencies += "org.scalanlp" %% "breeze" % breezeVersion,
-  libraryDependencies += "org.scalanlp" %% "breeze-viz" % breezeVersion,
-  resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
+  libraryDependencies += "org.scalanlp" %% "breeze-viz" % breezeVersion
 )
 
 lazy val logSetting = Seq(
-  libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3", 
+  excludeDependencies += "org.slf4j" % "slf4j-log4j12",
+  libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3",
 )
 
 lazy val squidSettings = Seq(
@@ -39,21 +39,17 @@ lazy val graphSettings = Seq(
 )
 
 lazy val root = (project in file("."))
-  .settings(name := "root")
-  .settings(commonSettings, squidSettings, graphSettings, sparkSettings)
   .settings(
-    excludeDependencies += "org.slf4j" % "slf4j-log4j12"
+    name := "root",
+    commonSettings, squidSettings, graphSettings, sparkSettings, logSetting
   )
-  .settings(logSetting)
 
 lazy val library = (project in file("lib"))
-  .settings(name := "library")
+  .settings(
+    name := "library",
+    commonSettings
+  )
   .dependsOn(root)
-  .settings(commonSettings)
-
-lazy val no_messaging_example = (project in file("ecosim"))
-  .settings(name := "no_messaging_example")
-  .settings(commonSettings)
 
 lazy val runAll = taskKey[Unit]("run-all, for compiling all meta examples")
 
@@ -66,23 +62,18 @@ def runAllIn(config: Configuration) = Def.task {
 }
 
 lazy val example = (project in file("example"))
-  .settings(name := "example")
-  .settings(commonSettings, squidSettings)
-  .dependsOn(root)
-  .dependsOn(library)
-  .settings(runAll := runAllIn(Compile).value)
   .settings(
-    excludeDependencies += "org.slf4j" % "slf4j-log4j12"
+    name := "example",
+    commonSettings, squidSettings, logSetting,
+    runAll := runAllIn(Compile).value
   )
-  .settings(logSetting)
+  .dependsOn(root, library)
 
-lazy val genExample = (project in file("example/src/main/scala/generated/"))
-  .settings(name := "genExample")
-  .settings(commonSettings, squidSettings)
-  .dependsOn(root)
-  .dependsOn(example)
-  .dependsOn(library)
+lazy val genExample = (project in file("generated"))
   .settings(
-    excludeDependencies += "org.slf4j" % "slf4j-log4j12"
+    name := "genExample",
+    commonSettings, logSetting
   )
-  .settings(logSetting)
+  .dependsOn(root, library, example)
+
+
