@@ -380,33 +380,26 @@ class Lifter {
         Some(f.asInstanceOf[Algo[T]])
 
       case code"($x: List[$tb]).forall(($y: tb) => $body): Boolean" =>
-        // todo
-        Some(ScalaCode(cde))
+        val res = Variable[Boolean]
+        val f = LetBinding(Some(res),
+          Exists[tb.Typ](x, y,
+            liftCode(code"!$body", actorSelfVariable, clasz)),
+          IfThenElse(code"$res",
+            ScalaCode(code"false"),
+            ScalaCode(code"true")
+          )
+        )
+        Some(f.asInstanceOf[Algo[T]])
 
       case code"($x: List[$tb]).exists(($y: tb) => $body): Boolean" =>
-        val res = Variable[Boolean]
-        val el = Variable[Boolean]
-
-        val f = LetBinding(Some(res),
-          ScalaCode(code"false"),
-          LetBinding(Some(el),
-            ScalaCode(code"false"),
-            LetBinding(None,
-              Foreach[tb.Typ, Unit](x, y,
-                LetBinding(
-                  Some(el),
-                  liftCode(code"$body", actorSelfVariable, clasz),
-                  IfThenElse(code"$el",
-                    LetBinding(Some(res),
-                      ScalaCode(code"true"), NoOp()),
-                    NoOp()))),
-              ScalaCode(code"$res"))))
-
+        val f = Exists[tb.Typ](x, y,
+          liftCode(code"$body", actorSelfVariable, clasz))
         Some(f.asInstanceOf[Algo[T]])
 
       case code"($x: List[$tb]).foldLeft($a: $ta)(($y: ta, $z: tb) => $body): ta" =>
         // todo
         Some(ScalaCode(cde))
+
       case code"($v: Boolean).&& $y" =>
         val f = IfThenElse(v,
           liftCode(y, actorSelfVariable, clasz),
