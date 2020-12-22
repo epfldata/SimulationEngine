@@ -42,13 +42,10 @@ class Simulation(config: SimulationConfig) {
   def scheduleEvents(): List[()=> Unit] = {
     val events: ListBuffer[()=> Unit] = new ListBuffer()
     events.append(
-      () => {
-      if (lastTurn != currentTurn) {
-        println(util.displayTime(currentTurn, currentTime))
-        lastTurn = currentTurn
-      }}
+      () => { println(util.displayTime(currentTurn, currentTime)) }
     )
     events.append(() => collect(currentTurn))
+    // If new actors are added, time takes them into account as well
     events.append(() => waitLabels("time") = actors.length)
     events.append(() => {
       val mx = actors.flatMap(_.getSendMessages).groupBy(_.receiverId)

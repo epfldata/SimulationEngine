@@ -19,17 +19,17 @@ case class WaitLabel[R](label: OpenCode[String],
     }
 
     val f =
-      LetBinding(
-        Some(waitCounter),
-        ScalaCode(code"0.0"),
-        DoWhile(code"$waitCounter < $value",
-          LetBinding(Some(waitCounter),
-            ScalaCode(code"$waitCounter + meta.deep.runtime.Actor.proceedLabel($label)"),
-            LetBinding(None,
-              ScalaCode(code"meta.deep.runtime.Actor.labelVals($label).append($value - $waitCounter)"),
-              Wait()))),
-      )
-      
+          LetBinding(
+            Some(waitCounter),
+            ScalaCode(code"0.0"),
+            DoWhile(code"$waitCounter < $value",
+              LetBinding(None,
+                        LetBinding(None,      // push the waitValue to the stack
+                                  ScalaCode(code"meta.deep.runtime.Actor.labelVals($label).append($value - $waitCounter)"),
+                                  Wait()),
+                        LetBinding(Some(waitCounter),
+                                  ScalaCode(code"$waitCounter + meta.deep.runtime.Actor.proceedLabel($label)"),
+                                  NoOp()))))
     f.codegen()
   }
 }
