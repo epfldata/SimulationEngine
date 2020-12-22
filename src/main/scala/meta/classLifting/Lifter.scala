@@ -7,6 +7,7 @@ import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
 import meta.deep.runtime.{Actor, Message, RequestMessage}
+import squid.lib.MutVar
 
 import scala.collection.mutable.ListBuffer
 
@@ -180,6 +181,7 @@ class Lifter {
           y,
           liftCode(code"$foreachbody; ()", actorSelfVariable, clasz))
         f.asInstanceOf[Algo[T]]
+
       case code"while($cond) $body" =>
         val f = IfThenElse(
           cond,
@@ -263,7 +265,12 @@ class Lifter {
             methodsIdMap(msg.symbol),
             argss)
         } else {
+          // code"meta.classLifting.SpecialInstructions.asyncMessage[example.epistemicLogicMC.epistemicLogic.EpistemicSentence]((() => n@61f39bb.state()))"
+
           var recipientActorVariable: OpenCode[Actor] = msg.args.last.head.asInstanceOf[OpenCode[Actor]]
+//          msg.args.last match {
+//            case Nil => msg.args.head.head.rep
+//          }
           val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
           var mtd = msg.symbol
           var curriedMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
@@ -321,6 +328,10 @@ class Lifter {
                          methodsMap(ma.symbol).blocking)
             f.asInstanceOf[Algo[T]]
           }
+      // call by name argument
+//      case code"(($x: $xt) => $body: $yt)" => {
+//        ScalaCode(cde)
+//      }
       case _ =>
         //here there is space for some more code patterns to be lifted, by using the liftCodeOther method which can be overriden
         val liftedCode = liftCodeOther(cde, actorSelfVariable, clasz)
@@ -358,12 +369,41 @@ class Lifter {
                                  actorSelfVariable: Variable[_ <: Actor],
                                  clasz: Clasz[_ <: Actor]): Option[Algo[T]] = {
     cde match {
+      case code"($x: List[$tb]).map[$a1, List[a1]](($y: tb) => $body: a1)($z): List[a1] " =>
+        val f = FlatMap[tb.Typ, a1.Typ](x, y,
+          liftCode(code"List($body)", actorSelfVariable, clasz))
+        Some(f.asInstanceOf[Algo[T]])
+
+      case code"($x: List[$tb]).flatMap[$a1, List[a1]](($y: tb) => $body: List[a1])($z): List[a1] " =>
+        val f = FlatMap[tb.Typ, a1.Typ](x, y,
+          liftCode(code"$body", actorSelfVariable, clasz))
+        Some(f.asInstanceOf[Algo[T]])
+
       case code"($x: List[$tb]).forall(($y: tb) => $body): Boolean" =>
         // todo
         Some(ScalaCode(cde))
+
       case code"($x: List[$tb]).exists(($y: tb) => $body): Boolean" =>
-        // todo
-        Some(ScalaCode(cde))
+        val res = Variable[Boolean]
+        val el = Variable[Boolean]
+
+        val f = LetBinding(Some(res),
+          ScalaCode(code"false"),
+          LetBinding(Some(el),
+            ScalaCode(code"false"),
+            LetBinding(None,
+              Foreach[tb.Typ, Unit](x, y,
+                LetBinding(
+                  Some(el),
+                  liftCode(code"$body", actorSelfVariable, clasz),
+                  IfThenElse(code"$el",
+                    LetBinding(Some(res),
+                      ScalaCode(code"true"), NoOp()),
+                    NoOp()))),
+              ScalaCode(code"$res"))))
+
+        Some(f.asInstanceOf[Algo[T]])
+
       case code"($x: List[$tb]).foldLeft($a: $ta)(($y: ta, $z: tb) => $body): ta" =>
         // todo
         Some(ScalaCode(cde))
