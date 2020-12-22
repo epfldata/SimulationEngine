@@ -302,7 +302,6 @@ class Actor extends Serializable {
     * @return the actor itself
     */
   def run_until(until: Int): Actor = {
-    println("run_until from the actor!")
     while (currentTurn <= until) {
       println(this.getClass.getSimpleName, currentTurn, until, current_pos)
       val (a, b) = stepFunction
