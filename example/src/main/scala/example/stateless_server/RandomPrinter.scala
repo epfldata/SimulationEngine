@@ -1,8 +1,10 @@
-package example.stateless_server
+package example
+package stateless_server
 
-import meta.classLifting.SpecialInstructions._
+
 import meta.deep.runtime.{Actor, Future}
 import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class RandomPrinter() extends Actor {
@@ -17,7 +19,7 @@ class RandomPrinter() extends Actor {
   def main(): Unit = {
     while (true) {
       printNum()
-      waitTurns(1)
+      waitLabel("turn",1)
       handleMessages()
     }
   }

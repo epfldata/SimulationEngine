@@ -1,13 +1,12 @@
-package example.segregation
+package example
+package segregation
 
-import meta.deep.runtime.Actor
 import squid.quasi.lift
-import scala.collection.mutable.ListBuffer
 
 @lift
-class MainInit extends Actor {
+class MainInit {
   def main(): List[Actor] = {
-    val foo: ListBuffer[Actor] = ListBuffer()
+    val foo: ListBuffer[Actor] = new ListBuffer()
 
     val worldMap = new WorldMap()
     foo.append(worldMap)

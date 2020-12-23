@@ -1,9 +1,10 @@
-package example.segregation
+package example
+package segregation
 
-import meta.classLifting.SpecialInstructions._
-import meta.deep.runtime.{Actor}
-import squid.quasi.lift
 import segregationModel.Loc
+
+import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class Person(var world: WorldMap, var view: Int) extends Actor {
@@ -47,9 +48,9 @@ class Person(var world: WorldMap, var view: Int) extends Actor {
           location = world.move(location)
         }
         waitLabel("People", 1)
-//        waitTime(1)
+//        waitLabel("time",1)
       }
-//      waitTurns(1)
+//      waitLabel("turn",1)
       handleMessages()
     }
   }

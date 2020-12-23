@@ -1,9 +1,11 @@
-//package example.monitor_example.builtin_monitor
+//package example
+//package monitor_example.builtin_monitor
 //
-//import meta.classLifting.SpecialInstructions._
-//import meta.deep.runtime.Actor
+//
+//////
 //import squid.quasi.lift
-//
+import meta.classLifting.SpecialInstructions._
+
 //@lift
 //class object1 extends Actor {
 //  val name: String = "object 1"
@@ -17,7 +19,7 @@
 //        monitor.logAggregate("Infectious")
 //        monitor.logTimeseries("Infectious")
 //      }
-//      waitTurns(1)
+//      waitLabel("turn",1)
 //      handleMessages()
 //    }
 //  }

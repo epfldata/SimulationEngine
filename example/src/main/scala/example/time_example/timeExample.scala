@@ -1,4 +1,5 @@
-package example.time_example
+package example
+package time_example
 
 object timeExample extends App {
   import meta.deep.IR

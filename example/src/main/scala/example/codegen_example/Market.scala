@@ -1,8 +1,8 @@
-package example.codegen_example
+package example
+package codegen_example
 
-import meta.classLifting.SpecialInstructions._
-import meta.deep.runtime.Actor
 import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class Market extends Actor {
@@ -37,7 +37,7 @@ class Market extends Actor {
       //println("Binding test:", x)
       sell(10)
       recursiveTest(List(10, 20, 30))
-      waitTurns(1)
+      waitLabel("turn",1)
     }
   }
 

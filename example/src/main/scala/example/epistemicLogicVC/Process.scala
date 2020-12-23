@@ -1,15 +1,12 @@
-package example.epistemicLogicVC
+package example
+package epistemicLogicVC
 
 import lib.EpistemicLogic.Sentence._
-import meta.classLifting.SpecialInstructions._
-import meta.deep.runtime.Actor
-import meta.deep.runtime.Actor.AgentId
 
-import scala.collection.mutable.ListBuffer
-import squid.quasi.lift
 import VCHelper._
 
-import scala.util.Random
+import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class Process extends Actor {
@@ -19,10 +16,10 @@ class Process extends Actor {
   val initTime: Int = 0
 
   var others: List[Process] = Nil
-  var neighborIds: List[AgentId] = Nil
+  var neighborIds: List[Actor.AgentId] = Nil
 
   def init(): Unit = {
-    val nIds: ListBuffer[AgentId] = new ListBuffer[AgentId]()
+    val nIds: ListBuffer[Actor.AgentId] = new ListBuffer[Actor.AgentId]()
     others.foreach(i => {
       vectorClock.recordLearning(localTime, Set(P(ProcessTime(i.id, initTime))))
       nIds.append(i.id)
@@ -77,7 +74,7 @@ class Process extends Actor {
         send(others(r))
       }
       handleMessages()
-      waitTurns(1)
+      waitLabel("turn",1)
     }
   }
 }

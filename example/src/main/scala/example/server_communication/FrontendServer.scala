@@ -1,8 +1,8 @@
-package example.server_communication
+package example
+package server_communication
 
-import meta.classLifting.SpecialInstructions.{handleMessages, waitTurns}
-import meta.deep.runtime.Actor
 import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class FrontendServer() extends Actor {
@@ -18,7 +18,7 @@ class FrontendServer() extends Actor {
 //      requestPage()
 //      println("Hello world! Frontend " + id + " Turn " + currentTurn)
       println("requestPage content is " + requestPage())
-      waitTurns(1)
+      waitLabel("turn",1)
       handleMessages()
     }
   }

@@ -1,9 +1,8 @@
-package example.monitor_example.agent_monitor
-import meta.classLifting.SpecialInstructions._
-import meta.deep.runtime.Actor
-import squid.quasi.lift
+package example
+package monitor_example.agent_monitor
 
-import scala.collection.mutable.ListBuffer
+import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class monitorSim() extends Actor {
@@ -21,7 +20,7 @@ class monitorSim() extends Actor {
   def main(): Unit = {
     while(true){
       printAggregate()
-      waitTurns(1)
+      waitLabel("turn",1)
       handleMessages()
     }
   }

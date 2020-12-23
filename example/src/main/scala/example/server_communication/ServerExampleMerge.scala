@@ -1,4 +1,5 @@
-package example.server_communication
+package example
+package server_communication
 
 object ServerExampleMerge extends App {
   import meta.deep.IR

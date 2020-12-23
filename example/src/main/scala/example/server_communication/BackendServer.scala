@@ -1,8 +1,8 @@
-package example.server_communication
+package example
+package server_communication
 
-import meta.classLifting.SpecialInstructions.{waitTurns, handleMessages}
-import meta.deep.runtime.Actor
 import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class BackendServer() extends Actor {
@@ -15,7 +15,7 @@ class BackendServer() extends Actor {
   def main(): Unit = {
     while(true) {
       println("Hello world! Backend " + id + " Turn " + currentTurn)
-      waitTurns(1)
+      waitLabel("turn",1)
       handleMessages()
     }
   }

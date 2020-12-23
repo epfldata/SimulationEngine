@@ -1,10 +1,10 @@
-package example.rumor
+package example
+package rumor
 
-import meta.classLifting.SpecialInstructions._
-import meta.deep.runtime.Actor
 import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
-@lift 
+@lift
 class Env() extends Actor {
 
   var rumorReach: Int = 0 
@@ -15,7 +15,7 @@ class Env() extends Actor {
 
   def main(): Unit = {
     while(true){
-      waitTurns(1)
+      waitLabel("turn",1)
       handleMessages()
       println("Current rumor count: " + rumorReach)
     }

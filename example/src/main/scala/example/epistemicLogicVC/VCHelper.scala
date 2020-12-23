@@ -1,4 +1,5 @@
-package example.epistemicLogicVC
+package example
+package epistemicLogicVC
 
 import meta.deep.runtime.Actor.AgentId
 

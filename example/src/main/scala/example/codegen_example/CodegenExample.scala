@@ -1,4 +1,5 @@
-package example.codegen_example
+package example
+package codegen_example
 
 import meta.deep.IR
 import meta.deep.IR.Predef._
@@ -19,7 +20,7 @@ object CodegenExample extends App {
       .get)
   val actorTypes
     : List[ActorType[_]] = marketActorType :: farmerActorType :: controlFlowTest :: Nil
-  val optimization: CompilationMode = Vanilla 
+  val optimization: CompilationMode = Vanilla
   optimization.setPackage(this.getClass.getPackage.getName)
 
   val pipeline = Pipeline(

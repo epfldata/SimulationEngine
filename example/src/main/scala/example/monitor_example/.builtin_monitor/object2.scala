@@ -1,10 +1,11 @@
-//package example.monitor_example.builtin_monitor
-//import meta.classLifting.SpecialInstructions._
-//import meta.deep.runtime.Actor
+//package example
+//package builtin_monitor
+//
+//////
+////
 //import squid.quasi.lift
-//
-//import scala.collection.mutable.ListBuffer
-//
+import meta.classLifting.SpecialInstructions._
+
 //@lift
 //class object2 extends Actor {
 //
@@ -20,7 +21,7 @@
 //        monitor.logAggregate("Recovered")
 //        monitor.logTimeseries("Recovered")
 //      }
-//      waitTurns(1)
+//      waitLabel("turn",1)
 //      handleMessages()
 //    }
 //  }

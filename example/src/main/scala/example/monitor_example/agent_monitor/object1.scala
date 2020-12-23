@@ -1,8 +1,9 @@
-package example.monitor_example.agent_monitor
+package example
+package monitor_example.agent_monitor
 
-import meta.classLifting.SpecialInstructions._
-import meta.deep.runtime.Actor
+
 import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class object1(var own_monitor: monitorSim) extends Actor {
@@ -13,7 +14,7 @@ class object1(var own_monitor: monitorSim) extends Actor {
         println("Object1 wins the game!")
         own_monitor.logAggregate()
       }
-      waitTurns(1)
+      waitLabel("turn",1)
       handleMessages()
     }
   }

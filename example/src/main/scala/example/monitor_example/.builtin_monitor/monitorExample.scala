@@ -1,4 +1,5 @@
-//package example.monitor_example.builtin_monitor
+//package example
+//package monitor_example.builtin_monitor
 //
 //object monitorExample extends App {
 //  import meta.deep.IR

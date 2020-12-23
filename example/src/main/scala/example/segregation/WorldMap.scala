@@ -1,11 +1,11 @@
-package example.segregation
+package example
+package segregation
 
-import meta.deep.runtime.Actor
-import squid.quasi.lift
-import meta.classLifting.SpecialInstructions._
-import scala.util.Random
 import scala.collection.mutable.{Map, ArrayBuffer}
 import segregationModel.Loc
+
+import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class WorldMap() extends Actor with Torus2D {
@@ -96,10 +96,10 @@ class WorldMap() extends Actor with Torus2D {
       segregationMeasure()
 //      if (totalReports == (Actor.totalSims - 1)){
 //        totalReports = 0
-//        waitTime(1)
+//        waitLabel("time",(1)
 //      }
 //      printWorld()
-      waitTurns(1)
+      waitLabel("turn",1)
     }
   }
 }

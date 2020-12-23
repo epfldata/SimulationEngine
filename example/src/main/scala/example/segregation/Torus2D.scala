@@ -1,4 +1,5 @@
-package example.segregation
+package example
+package segregation
 
 trait Torus2D {
 

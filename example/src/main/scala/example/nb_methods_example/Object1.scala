@@ -1,10 +1,9 @@
-package example.nb_methods_example
+package example
+package nb_methods_example
 
+import meta.deep.runtime.{Future}
+import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
-import meta.deep.runtime.{Actor, Future}
-import squid.quasi.{dbg_lift, lift}
-
-import scala.collection.mutable.ListBuffer
 
 object expSetup {
   val someVal: Double = 10.7
@@ -42,7 +41,7 @@ class Object1(var n1: Object2) extends Actor {
       handleMessages()
       inquire()
       assert(async_messages.size == 0)
-      waitTurns(1)
+      waitLabel("turn",1)
     }
   }
 }

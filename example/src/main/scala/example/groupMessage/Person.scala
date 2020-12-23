@@ -1,12 +1,11 @@
-package example.groupMessage
+package example
+package groupMessage
 
-import meta.classLifting.SpecialInstructions._
+
 import meta.deep.runtime.{Actor, Future}
-import squid.quasi.lift
 import scala.collection.mutable.Set
-import scala.util.Random
-import scala.collection.mutable.ListBuffer
-
+import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class Person(var name: String) extends Actor {
@@ -27,15 +26,15 @@ class Person(var name: String) extends Actor {
     val r: Int = Random.nextInt(6)
     if (r < 3) {
       println(name + " works!")
-      waitTurns(3)
+      waitLabel("turn",3)
     }
     else if (r < 5) {
       println(name + " sleeps!")
-      waitTurns(2)
+      waitLabel("turn",2)
     }
     else {
       println(name + " eats and exercises!")
-      waitTurns(1)
+      waitLabel("turn",1)
     }
   }
 

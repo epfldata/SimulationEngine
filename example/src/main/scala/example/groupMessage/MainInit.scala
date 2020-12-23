@@ -1,12 +1,10 @@
-package example.groupMessage
+package example
+package groupMessage
 
-import meta.classLifting.SpecialInstructions._
-import meta.deep.runtime.Actor
 import squid.quasi.lift
-import scala.collection.mutable.ListBuffer
 
 @lift
-class MainInit extends Actor {
+class MainInit {
   def main(): List[Actor] = {
     val l: ListBuffer[Actor] = new ListBuffer[Actor]()
     val lc: ListBuffer[Person] = new ListBuffer[Person]()
@@ -23,9 +21,6 @@ class MainInit extends Actor {
 }
 
 object groupMessageExample extends App {
-  import meta.deep.IR
-  import meta.deep.IR.TopLevel.ClassWithObject
-  import meta.compile.compileSims
 
   val cls1: ClassWithObject[Person] = Person.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)

@@ -1,7 +1,8 @@
-package example.stateless_server
+package example
+package stateless_server
 
-import meta.deep.runtime.Actor
 import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class InitActors extends Actor {

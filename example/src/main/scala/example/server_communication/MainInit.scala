@@ -1,14 +1,12 @@
-package example.server_communication
+package example
+package server_communication
 
-import meta.deep.runtime.Actor
 import squid.quasi.lift
-
-import scala.collection.mutable.ListBuffer
 
 @lift
 class MainInit {
   def main(): List[Actor] = {
-    val l = ListBuffer[Actor]()
+    val l = new ListBuffer[Actor]()
 
     for(i <- 0 to 3) {
       val backendServer = new BackendServer

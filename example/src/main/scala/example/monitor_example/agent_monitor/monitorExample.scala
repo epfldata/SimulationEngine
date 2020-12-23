@@ -1,9 +1,7 @@
-package example.monitor_example.agent_monitor
+package example
+package monitor_example.agent_monitor
 
 object monitorExample extends App {
-  import meta.deep.IR
-  import meta.deep.IR.TopLevel.ClassWithObject
-  import meta.compile.compileSims
 
   val cls1: ClassWithObject[object1] = object1.reflect(IR)
   val cls2: ClassWithObject[monitorSim] = monitorSim.reflect(IR)

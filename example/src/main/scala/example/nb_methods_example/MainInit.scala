@@ -1,12 +1,11 @@
-package example.nb_methods_example
-import meta.deep.runtime.Actor
+package example
+package nb_methods_example
 import squid.quasi.lift
-import scala.collection.mutable.ListBuffer
 
 @lift
-class MainInit extends Actor {
+class MainInit {
   def main(): List[Actor] = {
-    val foo: ListBuffer[Actor] = ListBuffer[Actor]()
+    val foo: ListBuffer[Actor] = new ListBuffer[Actor]()
 
     val obj2: Object2 = new Object2
     foo.append(obj2)

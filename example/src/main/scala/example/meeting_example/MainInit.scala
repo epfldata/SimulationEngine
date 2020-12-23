@@ -1,10 +1,10 @@
-package example.meeting_example
+package example
+package meeting_example
 
-import meta.deep.runtime.Actor
 import squid.quasi.lift
 
 @lift
-class MainInit extends Actor {
+class MainInit {
   def init() = {
     val Sim1 = new Person(true)
     val Sim2 = new Person(false)
@@ -14,4 +14,11 @@ class MainInit extends Actor {
 
     List(Sim1, Sim2, Sim3)
   }
+}
+
+object meetingExample extends App {
+  val cls1: ClassWithObject[Person] = Person.reflect(IR)
+  val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
+
+  compileSims(List(cls1), mainClass)
 }

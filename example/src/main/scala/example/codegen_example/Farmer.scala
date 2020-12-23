@@ -1,8 +1,8 @@
-package example.codegen_example
+package example
+package codegen_example
 
-import meta.classLifting.SpecialInstructions._
-import meta.deep.runtime.Actor
 import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class Farmer() extends Actor {
@@ -24,7 +24,7 @@ class Farmer() extends Actor {
     while (true) {
       val testResult = market.sell2(500)
       println("TEST_VAR", testResult)
-      waitTurns(1)
+      waitLabel("turn",1)
     }
   }
 

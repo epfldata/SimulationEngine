@@ -1,8 +1,8 @@
-package example.codegen_example
+package example
+package codegen_example
 
-import meta.classLifting.SpecialInstructions.waitTurns
-import meta.deep.runtime.Actor
 import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class ControlFlowTestObject extends Actor {
@@ -13,13 +13,13 @@ class ControlFlowTestObject extends Actor {
   def main(): Unit = {
     while (true) {
       if (x < 0) {
-        waitTurns(1)
+        waitLabel("turn",1)
       } else {
         if (x < 0) {
-          waitTurns(1)
+          waitLabel("turn",1)
         }
       }
-      waitTurns(1)
+      waitLabel("turn",1)
     }
   }
 

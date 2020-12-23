@@ -1,11 +1,10 @@
-package example.epistemicLogicVC
+package example
+package epistemicLogicVC
 
-import meta.deep.runtime.Actor
 import squid.quasi.lift
-import scala.collection.mutable.ListBuffer
 
 @lift
-class MainInit extends Actor {
+class MainInit {
   def main(): List[Actor] = {
     val l: ListBuffer[Actor] = new ListBuffer[Actor]()
     val lc: ListBuffer[Process] = new ListBuffer[Process]()
@@ -27,9 +26,6 @@ class MainInit extends Actor {
 }
 
 object epistemicLogicVCExample extends App {
-  import meta.deep.IR
-  import meta.deep.IR.TopLevel.ClassWithObject
-  import meta.compile.compileSims
 
   val cls1: ClassWithObject[Process] = Process.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
