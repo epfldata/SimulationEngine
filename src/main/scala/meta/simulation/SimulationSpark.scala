@@ -21,7 +21,6 @@ object SimulationSpark {
     var currentTime: Double = config.startTime
     val totalTurn: Int = config.totalTurn
     val totalTime: Double = config.totalTime
-    val monitor_enabled: Boolean = config.monitorEnabled
 
     sc.setLogLevel("ERROR")
 //    sc.setCheckpointDir("checkpoint/")
@@ -42,7 +41,6 @@ object SimulationSpark {
     val start = System.nanoTime()
     waitLabels("time") = actors.count().toInt
 
-    println("Monitor is enabled: " + monitor_enabled)
     while (currentTurn <= totalTurn && currentTime <= totalTime) {
       println("(Time " + BigDecimal(currentTime).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
         + " Turn " + currentTurn + ")" )
@@ -84,12 +82,10 @@ object SimulationSpark {
         SparkSims.addReceiveMessages(actor, dMessages)
       })
 
-      if (monitor_enabled) Monitor.eachIteration(()=>())
       proceed()
     }
 
     val end = System.nanoTime()
-    if (monitor_enabled) Monitor.onCompletion()
     val consumed = end - start
     println("Time consumed", consumed)
   }
