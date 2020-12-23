@@ -7,7 +7,6 @@ import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
 import meta.deep.runtime.{Actor, Message, RequestMessage}
-import squid.lib.MutVar
 
 import scala.collection.mutable.ListBuffer
 
@@ -234,16 +233,8 @@ class Lifter {
             )
         handleMessage.asInstanceOf[Algo[T]]
 
-        // wait real-time
-      case code"SpecialInstructions.waitTime($x)" =>
-        liftCode(code"""SpecialInstructions.waitLabel("time", $x)""".asInstanceOf[OpenCode[T]], actorSelfVariable, clasz)
-
       case code"SpecialInstructions.waitLabel($x: String, $y: Double)" =>
         WaitLabel(x, y).asInstanceOf[Algo[T]]
-
-      // wait turn, each turn performs msg sync
-      case code"SpecialInstructions.waitTurns($x)" =>
-        liftCode(code"""SpecialInstructions.waitLabel("turn", $x)""".asInstanceOf[OpenCode[T]], actorSelfVariable, clasz)
 
       case code"SpecialInstructions.interrupt($interval: Double, (() => ${MethodApplication(msg)}))" =>
         val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
@@ -265,12 +256,7 @@ class Lifter {
             methodsIdMap(msg.symbol),
             argss)
         } else {
-          // code"meta.classLifting.SpecialInstructions.asyncMessage[example.epistemicLogicMC.epistemicLogic.EpistemicSentence]((() => n@61f39bb.state()))"
-
           var recipientActorVariable: OpenCode[Actor] = msg.args.last.head.asInstanceOf[OpenCode[Actor]]
-//          msg.args.last match {
-//            case Nil => msg.args.head.head.rep
-//          }
           val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
           var mtd = msg.symbol
           var curriedMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
@@ -328,10 +314,6 @@ class Lifter {
                          methodsMap(ma.symbol).blocking)
             f.asInstanceOf[Algo[T]]
           }
-      // call by name argument
-//      case code"(($x: $xt) => $body: $yt)" => {
-//        ScalaCode(cde)
-//      }
       case _ =>
         //here there is space for some more code patterns to be lifted, by using the liftCodeOther method which can be overriden
         val liftedCode = liftCodeOther(cde, actorSelfVariable, clasz)
@@ -405,6 +387,7 @@ class Lifter {
           liftCode(y, actorSelfVariable, clasz),
           ScalaCode(code"false"))
         Some(f.asInstanceOf[Algo[T]])
+
       case code"($v: Boolean).|| $y" =>
         val f = IfThenElse(v,
           ScalaCode(code"true"),
