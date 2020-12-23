@@ -1,8 +1,6 @@
 package meta.deep.runtime
 
 import java.util.UUID
-
-import meta.deep.runtime.Actor.AgentId
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.{ListBuffer, Map}
@@ -47,7 +45,12 @@ object Actor {
     waitLabels.keys.foreach(k => {
       proceedLabel(k) = k match {
         case "turn" => {
-          labelVals(k).min
+          // turn may be empty, if Sims are sync with blocking calls
+          if (labelVals(k).nonEmpty) {
+            labelVals(k).min
+          } else {
+            1
+          }
         }
         case _ => {
           val foo = labelVals(k)
@@ -148,7 +151,7 @@ case class Future[+T](var isCompleted: Boolean = false,
   * functions for a step-wise simulation
   */
 class Actor extends Serializable {
-
+  import Actor.AgentId
   var id: AgentId = Actor.getNextAgentId
   var currentTurn: Int = 0
   var currentTime: Double = 0
