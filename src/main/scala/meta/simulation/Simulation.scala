@@ -13,8 +13,6 @@ class Simulation(config: SimulationConfig) {
   val totalTurn: Int = config.totalTurn
   val totalTime: Double = config.totalTime
 
-  private var lastTurn: Int = -1
-
   def collect(currentTurn: Int): Unit = {
     newActors.map(i => i.currentTurn = currentTurn)
     actors = actors ::: newActors.toList
