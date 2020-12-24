@@ -385,8 +385,8 @@ $run_until
     init match {
       case true => result 
       case _ => {
-        val newSimPattern = s"(\\s+)val (\\S*) = new generated.(\\S*);".r
-        newSimPattern.replaceAllIn(result, 
+        val newSimPattern = s"(\\s+)val (\\S*) = new generated\\.(.*);".r
+        newSimPattern.replaceAllIn(result,
           m=>{(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2)})")})
       }
     }
