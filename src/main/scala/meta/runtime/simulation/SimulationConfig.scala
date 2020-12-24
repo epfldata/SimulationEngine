@@ -1,6 +1,5 @@
-package meta.runtime.simulation
-
-import meta.runtime.Actor
+package meta.runtime
+package simulation
 
 case class SimulationConfig(var actors: List[Actor],
                             var startTurn: Int = 0,
