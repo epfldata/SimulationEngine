@@ -6,7 +6,7 @@ val paradiseVersion = "2.1.0"
 val breezeVersion = "0.13.2"
 val scalaTestVersion = "3.0.0"
 val squidVersion = "0.4.1-SNAPSHOT"
-val sparkVersion = "2.4.3"
+val sparkVersion = "3.0.1"
 val graphVizVersion = "0.10.0"
 
 lazy val commonSettings = Seq(
@@ -72,7 +72,7 @@ lazy val example = (project in file("example"))
 lazy val genExample = (project in file("generated"))
   .settings(
     name := "genExample",
-    commonSettings, logSetting
+    commonSettings, logSetting, sparkSettings
   )
   .dependsOn(root, library, example)
 
