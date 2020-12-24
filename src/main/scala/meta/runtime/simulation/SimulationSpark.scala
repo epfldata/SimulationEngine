@@ -2,85 +2,85 @@ package meta.runtime
 package simulation
 
 import SimRuntime._
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext, broadcast}
 
 object SimulationSpark {
 
-  def run(config: SimulationConfig): Unit = {
+  @transient private lazy val conf: SparkConf =
+    new SparkConf().setMaster("local")
+      .setAppName("ECONOMIC_SIMULATION")
+  //        .set("spark.driver.allowMultipleContexts", "true")
 
-    @transient lazy val conf: SparkConf =
-      new SparkConf().setMaster("local")
-        .setAppName("ECONOMIC_SIMULATION")
-//        .set("spark.driver.allowMultipleContexts", "true")
+  @transient private lazy val sc: SparkContext = new SparkContext(conf)
 
-    @transient lazy val sc: SparkContext = new SparkContext(conf)
+  sc.setLogLevel("ERROR")
+//      sc.setCheckpointDir("checkpoint/")
 
-    var actors: RDD[Actor] = sc.parallelize(config.actors)
-    var currentTurn: Int = config.startTurn
-    var currentTime: Double = config.startTime
-    val totalTurn: Int = config.totalTurn
-    val totalTime: Double = config.totalTime
 
-    sc.setLogLevel("ERROR")
-//    sc.setCheckpointDir("checkpoint/")
+  def apply(c: SimulationConfig): SimulationSnapshot = {
+    initLabelVals()
+
+    var actors: RDD[Actor] = sc.parallelize(c.actors)
+    var currentTurn: Int = c.startTurn
+    var currentTime: Double = c.startTime
+
+    def collect(): Unit = {
+      newActors.map(i => i.currentTurn = currentTurn)
+      actors = actors ++ sc.parallelize(newActors)
+      newActors.clear()
+    }
 
     def proceed(): Unit = {
       proceedGroups()
-      currentTurn += proceedLabel("turn").asInstanceOf[Int]
-      currentTime += proceedLabel("time")
+      currentTurn = currentTurn + proceedLabel("turn").asInstanceOf[Int]
+      currentTime = currentTime + proceedLabel("time")
 
-      actors = actors.map(i => {
+      actors.map(i => {
         i.currentTime = currentTime
         i.currentTurn = currentTurn
         i
       })
     }
 
-    initLabelVals()
     val start = System.nanoTime()
-    waitLabels("time") = actors.count().toInt
+    waitLabels("time") = c.actors.length
 
-    while (currentTurn <= totalTurn && currentTime <= totalTime) {
-      println("(Time " + BigDecimal(currentTime).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
-        + " Turn " + currentTurn + ")" )
+    while (currentTurn <= c.totalTurn && currentTime <= c.totalTime) {
+      println(util.displayTime(currentTurn, currentTime))
 
-      // Checkpoint actors object, so that it does not get too big
-      // see: https://stackoverflow.com/questions/36421373/java-lang-stackoverflowerror-and-checkpointing-on-spark
-      // Result in non-serializable error
+//       Checkpoint actors object, so that it does not get too big
+//       see: https://stackoverflow.com/questions/36421373/java-lang-stackoverflowerror-and-checkpointing-on-spark
+//       Result in non-serializable error
 
-//      if (currentTurn % 50 == 0) {
+//      if (currentTurn % 10 == 0) {
 //        actors.checkpoint()
 //      }
 
-      //Execute all actors
-      actors = actors.map(x => SparkSims.cleanSendMessage(x))
-          .map(x => SparkSims.checkInterrupts(x, currentTime))
-          .map(x => SparkSims.run_until(x, currentTurn))
-          .cache()    // cache to persist it, otherwise Sims get different ids across runs
+//      collect()
+//      waitLabels("time") = actors.collect.length
+//      Execute all actors
+      actors = actors.map(x => x.cleanSendMessage)
+        .map(x => x.addInterrupts(currentTime))
+        .map(x => x.run_until(currentTurn))
+        .cache()
 
-      // Collect all messages from the round
-      // leftOuterJoin results in closure bug: it captures agentId as a class variable, not an object variable
-      // Use broadcast variable to share read-only collected messages. Can't have transformations within a transformation
+//       Collect all messages from the round
+//       leftOuterJoin results in closure bug: it captures agentId as a class variable, not an object variable
+//       Use broadcast variable to share read-only collected messages. Can't have transformations within a transformation
+
       val messageMap: scala.collection.Map[Actor.AgentId, List[Message]] = actors
-        .flatMap(SparkSims.getSendMessages)
+        .flatMap(x => x.getSendMessages)
         .map(x => (x.receiverId, x))
         .combineByKey(
-          (message: Message) => {
-            List(message)
-          },
-          (l: List[Message], message: Message) => {
-            message :: l
-          },
-          (l1: List[Message], l2: List[Message]) => {
-            l1 ::: l2
-          }).collectAsMap()
+          (message: Message) => List(message),
+          (l: List[Message], message: Message) => message :: l,
+          (l1: List[Message], l2: List[Message]) => l1 ::: l2).collectAsMap()
 
       val dMessages = sc.broadcast(messageMap)
 
       actors = actors.map(actor => {
-        SparkSims.addReceiveMessages(actor, dMessages)
+        actor.addReceiveMessages(dMessages.value.getOrElse(actor.id, List()))
       })
 
       proceed()
@@ -89,5 +89,6 @@ object SimulationSpark {
     val end = System.nanoTime()
     val consumed = end - start
     println("Time consumed", consumed)
+    SimulationSnapshot(actors.collect.toList, currentTurn, currentTime)
   }
 }
