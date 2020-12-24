@@ -4,7 +4,7 @@ import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{CodeNodeMtd, CodeNodePos, EdgeInfo}
 import meta.deep.algo.{AlgoInfo, CallMethod, Send, AsyncSend}
 import meta.deep.member.Method
-import meta.deep.runtime.Actor
+import meta.runtime.Actor
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 

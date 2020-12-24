@@ -9,7 +9,7 @@ import meta.deep.member.ActorType
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import meta.classLifting.Lifter
-import meta.deep.runtime.Actor
+import meta.runtime.Actor
 
 /**
   * Combines two actor types together and creates a new actor type. The original ones are still there, so the new one

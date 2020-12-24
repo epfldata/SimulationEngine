@@ -2,7 +2,7 @@ package example
 package stateless_server
 
 
-import meta.deep.runtime.{Actor, Future}
+import meta.runtime.{Actor, Future}
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 

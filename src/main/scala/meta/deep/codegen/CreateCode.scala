@@ -7,7 +7,7 @@ import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
 import meta.deep.algo.AlgoInfo.EdgeInfo
 import meta.deep.member.{ActorType}
-import meta.deep.runtime.Actor
+import meta.runtime.Actor
 
 import scala.collection.mutable.ArrayBuffer
 import meta.compile.CompilationMode
@@ -98,7 +98,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     var run_until = "  override def run_until" + parts(2)
       .trim()
       .substring(1)
-      .replaceFirst("=>", ": meta.deep.runtime.Actor = ")
+      .replaceFirst("=>", ": meta.runtime.Actor = ")
       .replaceAll(timeVarGenerated, timeVarReplaceWith)
       .dropRight(1)
       .trim
@@ -387,7 +387,7 @@ $run_until
       case _ => {
         val newSimPattern = s"(\\s+)val (\\S*) = new generated.(\\S*);".r
         newSimPattern.replaceAllIn(result, 
-          m=>{(m + s"${m.group(1)}meta.deep.runtime.Actor.newActors.append(${m.group(2)})")})
+          m=>{(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2)})")})
       }
     }
   }
@@ -458,7 +458,7 @@ $run_until
       s"""package ${generatedPackage}
 
 object InitData  {
-  def initActors: List[meta.deep.runtime.Actor] = {${changeTypes(modifiedCode, init = true)}}
+  def initActors: List[meta.runtime.Actor] = {${changeTypes(modifiedCode, init = true)}}
 }"""
     val file = new File(storagePath + "/InitData.scala")
     val bw = new BufferedWriter(new FileWriter(file))

@@ -1,7 +1,7 @@
 package meta.deep.algo
 
 import meta.deep.IR.Predef._
-import meta.deep.runtime.{Actor}
+import meta.runtime.{Actor}
 
 case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
                            actorRef: OpenCode[Actor],
@@ -27,11 +27,11 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
       code"""
         val sender = $actorFrom;
         val receiver = $actorRef;
-        val requestMessage = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
-        requestMessage.future = requestMessage.future.asInstanceOf[meta.deep.runtime.Future[T]]
+        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
+        requestMessage.future = requestMessage.future.asInstanceOf[meta.runtime.Future[T]]
         sender.sendMessage(requestMessage);
-        sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.deep.runtime.Message) => {
-          requestMessage.future = requestMessage.future.setValue((response.asInstanceOf[meta.deep.runtime.ResponseMessage]).arg).asInstanceOf[meta.deep.runtime.Future[T]]
+        sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.runtime.Message) => {
+          requestMessage.future = requestMessage.future.setValue((response.asInstanceOf[meta.runtime.ResponseMessage]).arg).asInstanceOf[meta.runtime.Future[T]]
          sender.async_messages = sender.async_messages + (requestMessage.future.id -> requestMessage.future)
         })
         ${AlgoInfo.returnValue} := Some(requestMessage.future)

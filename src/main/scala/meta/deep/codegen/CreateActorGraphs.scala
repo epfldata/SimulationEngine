@@ -118,7 +118,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
       AlgoInfo.positionStack,
       code"ListBuffer[List[((Int,Int),Int)]]()") :: VarValue(
       AlgoInfo.responseMessage,
-      code"MutVar[meta.deep.runtime.ResponseMessage](null)") :: variables
+      code"MutVar[meta.runtime.ResponseMessage](null)") :: variables
 
     CompiledActorGraph(
       actorType.name,

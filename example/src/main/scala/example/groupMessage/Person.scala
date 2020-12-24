@@ -2,7 +2,7 @@ package example
 package groupMessage
 
 
-import meta.deep.runtime.{Actor, Future}
+import meta.runtime.{Actor, Future}
 import scala.collection.mutable.Set
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._

@@ -1,7 +1,7 @@
 package meta.deep.algo
 
 import meta.deep.IR.Predef._
-import meta.deep.runtime.{Future, ResponseMessage}
+import meta.runtime.{Future, ResponseMessage}
 import squid.lib.MutVar
 
 import scala.collection.mutable

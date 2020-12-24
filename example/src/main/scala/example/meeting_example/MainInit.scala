@@ -10,7 +10,7 @@ class MainInit {
     val Sim2 = new Person(false)
     val Sim3 = new Person(false)
 
-    Actor.waitLabels("MeetingGroup") = 3
+    SimRuntime.waitLabels("MeetingGroup") = 3
 
     List(Sim1, Sim2, Sim3)
   }

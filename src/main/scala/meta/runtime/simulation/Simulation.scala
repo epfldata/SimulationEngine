@@ -1,13 +1,13 @@
-package generated.simulation
-
-import meta.deep.runtime.Actor
-import meta.deep.runtime.Actor._
+package meta.runtime
+package simulation
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
+import SimRuntime._
 
-class Simulation(config: SimulationConfig) {
+class Simulation(config: SimulationConfig, enableSpark: Boolean = false) {
   var actors: List[Actor] = config.actors
+
   var currentTurn: Int = config.startTurn
   var currentTime: Double = config.startTime
   val totalTurn: Int = config.totalTurn

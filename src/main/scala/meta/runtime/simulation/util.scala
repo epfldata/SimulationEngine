@@ -1,4 +1,5 @@
-package generated.simulation
+package meta.runtime
+package simulation
 
 object util {
   private def truncDigit(num: Double): Double = {
@@ -8,4 +9,6 @@ object util {
   def displayTime(turn: Int, time: Double): String = {
     "(Time " + truncDigit(time) + " Turn " + turn + ")" 
   }
+
+
 }

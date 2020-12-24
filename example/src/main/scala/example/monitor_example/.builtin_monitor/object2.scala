@@ -4,7 +4,7 @@
 //////
 ////
 //import squid.quasi.lift
-import meta.classLifting.SpecialInstructions._
+//import meta.classLifting.SpecialInstructions._
 
 //@lift
 //class object2 extends Actor {

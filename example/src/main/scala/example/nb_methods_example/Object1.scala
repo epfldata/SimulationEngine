@@ -1,7 +1,7 @@
 package example
 package nb_methods_example
 
-import meta.deep.runtime.{Future}
+import meta.runtime.{Future}
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 

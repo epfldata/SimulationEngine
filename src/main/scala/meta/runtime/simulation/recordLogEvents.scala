@@ -1,4 +1,4 @@
-package meta.example
+package meta.runtime.simulation
 
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent

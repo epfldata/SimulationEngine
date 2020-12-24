@@ -2,7 +2,7 @@ package example
 package latency
 
 
-import meta.deep.runtime.Actor.AgentId
+import meta.runtime.Actor.AgentId
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 

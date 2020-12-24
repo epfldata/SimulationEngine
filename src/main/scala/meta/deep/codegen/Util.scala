@@ -5,9 +5,9 @@ import meta.deep.algo.AlgoInfo.{CodeNodeMtd, CodeNodePos, EdgeInfo, VarWrapper}
 import meta.deep.algo.{AlgoInfo, CallMethod, Send}
 import meta.deep.codegen.CreateActorGraphs._
 import meta.deep.member.ActorType
-import meta.deep.runtime.ResponseMessage
+import meta.runtime.ResponseMessage
 import squid.lib.MutVar
-import meta.deep.runtime.Actor
+import meta.runtime.Actor
 import meta.deep.member.Method
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map}

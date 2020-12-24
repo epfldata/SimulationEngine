@@ -25,10 +25,10 @@ case class WaitLabel[R](label: OpenCode[String],
             DoWhile(code"$waitCounter < $value",
               LetBinding(None,
                         LetBinding(None,      // push the waitValue to the stack
-                                  ScalaCode(code"meta.deep.runtime.Actor.labelVals($label).append($value - $waitCounter)"),
+                                  ScalaCode(code"meta.runtime.SimRuntime.labelVals($label).append($value - $waitCounter)"),
                                   Wait()),
                         LetBinding(Some(waitCounter),
-                                  ScalaCode(code"$waitCounter + meta.deep.runtime.Actor.proceedLabel($label)"),
+                                  ScalaCode(code"$waitCounter + meta.runtime.SimRuntime.proceedLabel($label)"),
                                   NoOp()))))
     f.codegen()
   }

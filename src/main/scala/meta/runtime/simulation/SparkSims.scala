@@ -1,7 +1,7 @@
-package generated.simulation
+package meta.runtime.simulation
 
-import meta.deep.runtime.Actor.AgentId
-import meta.deep.runtime.{Actor, Message, RequestMessage, ResponseMessage}
+import meta.runtime.Actor.AgentId
+import meta.runtime.{Actor, Message, RequestMessage, ResponseMessage}
 import org.apache.spark.broadcast.Broadcast
 
 import scala.collection.mutable.ListBuffer

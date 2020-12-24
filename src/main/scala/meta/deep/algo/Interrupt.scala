@@ -1,7 +1,7 @@
 package meta.deep.algo
 
 import meta.deep.IR.Predef._
-import meta.deep.runtime.{Actor}
+import meta.runtime.{Actor}
 
 case class Interrupt[R](actor: OpenCode[Actor],
                          delay: OpenCode[Double],
@@ -27,7 +27,7 @@ case class Interrupt[R](actor: OpenCode[Actor],
       code"""
         val sender = $actor;
         val receiver = $actor;
-        val interruptRequest = meta.deep.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
+        val interruptRequest = meta.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
         // register the interrupt
         val interrupts = sender.interrupts.getOrElse($delay, List());
         sender.interrupts($delay) = interrupts ::: List(interruptRequest)

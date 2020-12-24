@@ -7,7 +7,7 @@ import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.codegen._
 import meta.deep.member.{ActorType, LiftedMethod, State}
-import meta.deep.runtime.RequestMessage
+import meta.runtime.RequestMessage
 import meta.compile.{CompilationMode, Vanilla}
 
 object CodegenExample extends App {
@@ -119,7 +119,7 @@ object CodegenExample extends App {
 
     val market = ActorType[Market](
       "Market",
-      List("meta.deep.runtime.Actor"),
+      List("meta.runtime.Actor"),
       List(),
       State[List[String]](IR.methodSymbol[Market]("goods"),
                           codeTypeOf[List[String]],
@@ -229,7 +229,7 @@ object CodegenExample extends App {
 
     val farmer = ActorType[Farmer](
       "Farmer",
-      List("meta.deep.runtime.Actor"),
+      List("meta.runtime.Actor"),
       List(),
       State[Market](IR.methodSymbol[Farmer]("market"),
                     codeTypeOf[Market],
@@ -276,7 +276,7 @@ object CodegenExample extends App {
 
     val cF = ActorType[ControlFlowTestObject](
       "ControlFlowTestObject",
-      List("meta.deep.runtime.Actor"),
+      List("meta.runtime.Actor"),
       List(),
       State[Int](IR.methodSymbol[ControlFlowTestObject]("x"),
                  codeTypeOf[Int],

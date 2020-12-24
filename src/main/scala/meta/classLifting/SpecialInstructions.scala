@@ -2,7 +2,7 @@ package meta.classLifting
 
 
 object SpecialInstructions {
-  import meta.deep.runtime.Future
+  import meta.runtime.Future
   import Broadcast._
 
   /** makes the actor wait for a number of turns

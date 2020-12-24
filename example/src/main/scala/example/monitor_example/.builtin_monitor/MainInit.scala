@@ -1,9 +1,9 @@
 //package example
 // package monitor_example.builtin_monitor
-//import meta.deep.runtime.{Actor, Monitor}
+//import meta.runtime.{Actor, Monitor}
 ////
 //import squid.quasi.lift
-import meta.classLifting.SpecialInstructions._
+//import meta.classLifting.SpecialInstructions._
 
 //@lift
 //class MainInit {

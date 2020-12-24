@@ -1,7 +1,8 @@
-package generated.simulation
+package meta.runtime
+package simulation
 
-import meta.deep.runtime.Actor._
-import meta.deep.runtime.{Actor, Message, Monitor}
+import SimRuntime._
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext, broadcast}
 
@@ -62,7 +63,7 @@ object SimulationSpark {
       // Collect all messages from the round
       // leftOuterJoin results in closure bug: it captures agentId as a class variable, not an object variable
       // Use broadcast variable to share read-only collected messages. Can't have transformations within a transformation
-      val messageMap: scala.collection.Map[AgentId, List[Message]] = actors
+      val messageMap: scala.collection.Map[Actor.AgentId, List[Message]] = actors
         .flatMap(SparkSims.getSendMessages)
         .map(x => (x.receiverId, x))
         .combineByKey(

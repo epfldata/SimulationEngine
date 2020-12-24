@@ -6,7 +6,7 @@ import meta.deep.IR.Predef.base.MethodApplication
 import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
-import meta.deep.runtime.{Actor, Message, RequestMessage}
+import meta.runtime.{Actor, Message, RequestMessage}
 
 import scala.collection.mutable.ListBuffer
 

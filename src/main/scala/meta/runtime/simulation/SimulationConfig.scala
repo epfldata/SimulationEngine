@@ -1,5 +1,6 @@
-package generated.simulation
-import meta.deep.runtime.Actor
+package meta.runtime.simulation
+
+import meta.runtime.Actor
 
 case class SimulationConfig(var actors: List[Actor],
                             var startTurn: Int = 0,

@@ -19,7 +19,7 @@ class MainInit {
     })
 
     // Setup the wait label
-    Actor.waitLabels("People") = populationSize*2
+    SimRuntime.waitLabels("People") = populationSize*2
     // Setup the monitor, if desired
 //    worldMap.monitor.initTimeseries("Segregation")
     foo.toList

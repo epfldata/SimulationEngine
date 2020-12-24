@@ -1,8 +1,11 @@
 package object example {
-  type Actor = meta.deep.runtime.Actor
-  val Actor = meta.deep.runtime.Actor
+  type Actor = meta.runtime.Actor
+  val Actor = meta.runtime.Actor
+  val SimRuntime = meta.runtime.SimRuntime
+
   // path-dependent type in lifter
   //  val SpecialInstruction = meta.classLifting.SpecialInstructions
+
   // https://stackoverflow.com/questions/20466161/adding-aliases-for-macro-annotations
   //  type lift = squid.quasi.lift
   val IR = meta.deep.IR
