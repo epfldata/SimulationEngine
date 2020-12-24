@@ -5,7 +5,7 @@ import SimRuntime._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext, broadcast}
 
-object SimulationSpark {
+object SimulationSpark extends Simulation {
 
   @transient private lazy val conf: SparkConf =
     new SparkConf().setMaster("local")
@@ -19,6 +19,10 @@ object SimulationSpark {
 
 
   def apply(c: SimulationConfig): SimulationSnapshot = {
+    run(c)
+  }
+
+  def run(c: SimulationConfig): SimulationSnapshot = {
     initLabelVals()
 
     var actors: RDD[Actor] = sc.parallelize(c.actors)
