@@ -5,12 +5,18 @@ import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import SimRuntime._
 
-class Default(val config: SimulationConfig) extends Simulation {
-  private var actors: List[Actor] = config.actors
-  private var currentTurn: Int = config.startTurn
-  private var currentTime: Double = config.startTime
-  private val totalTurn: Int = config.totalTurn
-  private val totalTime: Double = config.totalTime
+object Default extends Simulation {
+
+  private var actors: List[Actor] = _
+  private var currentTurn: Int = _
+  private var currentTime: Double = _
+
+  def apply(config: SimulationConfig): SimulationSnapshot = {
+    actors = config.actors
+    currentTurn = config.startTurn
+    currentTime = config.startTime
+    run(config)
+  }
 
   // Can be overridden in an inherited class. Same for scheduleEvents
   def init(): List[()=> Unit] = {
@@ -18,9 +24,8 @@ class Default(val config: SimulationConfig) extends Simulation {
     scheduleEvents()
   }
 
-  def collect(currentTurn: Int): Unit = {
+  def collect(): Unit = {
     newActors.map(i => i.currentTurn = currentTurn)
-    println("Total new actors: " + newActors.length)
     actors = actors ::: newActors.toList
     newActors.clear()
   }
@@ -42,7 +47,7 @@ class Default(val config: SimulationConfig) extends Simulation {
     events.append(
       () => { println(util.displayTime(currentTurn, currentTime)) }
     )
-    events.append(() => collect(currentTurn))
+    events.append(() => collect())
     // If new actors are added, time takes them into account as well
     events.append(() => waitLabels("time") = actors.length)
     events.append(() => {
@@ -61,7 +66,7 @@ class Default(val config: SimulationConfig) extends Simulation {
   def run(config: SimulationConfig): SimulationSnapshot = {
     val events: List[()=> Unit] = init()
     val start = System.nanoTime()
-    while (currentTurn <= totalTurn && currentTime <= totalTime) {
+    while (currentTurn <= config.totalTurn && currentTime <= config.totalTime) {
       events.foreach(_())
     }
 
