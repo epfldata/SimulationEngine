@@ -2,7 +2,7 @@ package meta.runtime
 
 import scala.collection.mutable.{ListBuffer, Map}
 
-object SimRuntime extends Serializable {
+object SimRuntime {
   val newActors: ListBuffer[Actor] = ListBuffer[Actor]()
 
   // track the number of Sims waiting for each label at each iteration. Set once
