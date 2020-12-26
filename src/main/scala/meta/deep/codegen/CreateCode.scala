@@ -92,7 +92,11 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
       .replace(" var "," private var ")
       .replace(" val ", " private val ")
       .replace(s"private var ${timeVarGenerated}: scala.Int = 0;\n  ", s"") +
-      parts(1).replace(timeVarGenerated, timeVarReplaceWith)
+        parts(1).replace(timeVarGenerated, timeVarReplaceWith)
+
+    // mark iterators as transient for serializability
+    val iterPatt = s"(\\s+)private (.*:) (scala.collection.Iterator.*);".r
+    initVars = iterPatt.replaceAllIn(initVars, m => s"${m.group(1)}@transient private ${m.group(2)} ${m.group(3)};")
 
     //This ugly syntax is needed to replace the received code with a correct function definition
     var run_until = "  override def run_until" + parts(2)
