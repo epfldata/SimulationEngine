@@ -98,6 +98,8 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     val iterPatt = s"(\\s+)private (.*:) (scala.collection.Iterator.*);".r
     initVars = iterPatt.replaceAllIn(initVars, m => s"${m.group(1)}@transient private ${m.group(2)} ${m.group(3)};")
 
+    // find the List.Coll and remove them
+
     //This ugly syntax is needed to replace the received code with a correct function definition
     var run_until = "  override def run_until" + parts(2)
       .trim()
@@ -446,23 +448,12 @@ $run_until
     * @param code init code of the simulation
     */
   def createInit(code: String): Unit = {
-    var modifiedCode: String = code
-
-    // to support merge; break traits
-//    if (hasDirectAccess(code)){
-//      println("Direct attribute access from MainInit is supported for backward compatibility only. Please use parameter list instead")
-//      val agentMap: Map[String, String] = buildAgentNameMap(modifiedCode)
-//      modifiedCode = code.split("\n").map(statement =>
-//        // keep the compiler happy about unreachable cases
-//        statement.replace(".`", s".`${agentMap.getOrElse(getObjectName(statement), "ERROR")}_")
-//      ).mkString("\n")
-//    }
 
     val classString =
       s"""package ${generatedPackage}
 
 object InitData  {
-  def initActors: List[meta.runtime.Actor] = {${changeTypes(modifiedCode, init = true)}}
+  def initActors: List[meta.runtime.Actor] = {${changeTypes(code, init = true)}}
 }"""
     val file = new File(storagePath + "/InitData.scala")
     val bw = new BufferedWriter(new FileWriter(file))
@@ -470,31 +461,6 @@ object InitData  {
     bw.close()
   }
 
-  def hasDirectAccess(code: String): Boolean = {
-    code.contains("_=`")
-  }
-
-  def buildAgentNameMap(code: String): Map[String, String] = {
-    var tokens: Array[String] = Array()
-    var agentNameMap: Map[String, String] = Map[String, String]()
-    code.split(";").filter(_.contains("new ")).foreach(
-      line => {
-        tokens = line.split("\\s+")
-        agentNameMap += (tokens(tokens.indexOf("val") + 1) -> shortenPathName(tokens(tokens.indexOf("new") + 1)))
-      })
-    agentNameMap
-  }
-
-  def shortenPathName(fullPathName: String): String = {
-    fullPathName.slice(
-      ((a: Int, b: Int) => (if (a > 0) a else b)) (fullPathName.lastIndexOf(".")+1, 0),
-      ((a: Int, b: Int) => (if (a > -1) a else b)) (fullPathName.indexOf("("), fullPathName.size)
-    )
-  }
-
-  def getObjectName(statement: String): String = {
-    (statement.split("\\s+").filterNot(_=="")).head.split("\\.").head
-  }
 
   /**
     * Generates init code of one variable of type VarWrapper
