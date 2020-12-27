@@ -6,10 +6,10 @@ import meta.deep.IR
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
 import meta.deep.algo.AlgoInfo.EdgeInfo
-import meta.deep.member.{ActorType}
+import meta.deep.member.ActorType
 import meta.runtime.Actor
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import meta.compile.CompilationMode
 
 class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimization: CompilationMode)
@@ -76,36 +76,86 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     )
 
     val scalaCode = IR.showScala(codeWithInit.rep)
-    var replacedTypes = scalaCode
-//    selfs.foreach(x => replacedTypes = replacedTypes.replace(x, "this"))
-    val steps = changeTypes(replacedTypes)
 
-    //Needed to split, so that a function can be extracted from the code, to write everything as class variables
-    val parts =
-      steps.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
+    // split into three sections: variable declarations, commands, driver code
+    val parts = scalaCode.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
+    // driver code doesn't contain agent types
+    parts(0) = changeTypes(parts(0), false)
+    parts(1) = changeTypes(parts(1), false)
 
-    val timerPattern = "timeVar_[0-9]*".r
-    val timeVarGenerated: String = timerPattern.findFirstIn(parts(0)).get
-    val timeVarReplaceWith: String = "currentTurn" // timer as defined by actor class
+    //write everything as class variables
+    var timeVarGenerated: String = ""
 
-    var initVars: String = parts(0).substring(2)
-      .replace(" var "," private var ")
-      .replace(" val ", " private val ")
-      .replace(s"private var ${timeVarGenerated}: scala.Int = 0;\n  ", s"") +
-        parts(1).replace(timeVarGenerated, timeVarReplaceWith)
+    // if str to be replaced is "", then remove the variable
+    var varToReplace: Map[String, String] = Map[String, String]()
 
-    // mark iterators as transient for serializability
-    val iterPatt = s"(\\s+)private (.*:) (scala.collection.Iterator.*);".r
-    initVars = iterPatt.replaceAllIn(initVars, m => s"${m.group(1)}@transient private ${m.group(2)} ${m.group(3)};")
+    def rewriteVariables(s: String): String = {
+      val varPattern = s"(\\s+)(var .*): (.*) = (.*;)".r    // general form of var assignments
+      val valPattern = s"(\\s+)(val .*) = (.*;)".r    // general form of val assignments
+      val iterTypPattern = s"scala\\.collection\\.Iterator(.*)".r   // type pattern of an iterator
+      val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.List\\.Coll(.*)".r    // type that contains List.Coll
+      val timerNamePattern = s"(var timeVar_[0-9]*)".r      // name pattern of timer
 
-    // find the List.Coll and remove them
+      s match {
+        case varPattern(f1, f2, f3, f4) =>
+          f2 match {
+            case timerNamePattern(a) =>
+              timeVarGenerated = a.substring(4)
+              varToReplace += (timeVarGenerated -> "currentTurn")
+              ""
+            case _ =>
+              f1 + (f3 match {
+                case iterTypPattern(a1) => "@transient "
+                case lCollTypePattern(a1, a2) =>
+                  varToReplace += (f2.substring(4) -> "")   // record the generated var name
+                  return ""       // remove these variables (List.Coll: List doesn't have Coll attribute)
+                case _ => ""
+              }) + "private " + f2 + ": " + f3 + " = " + f4
+          }
+        case valPattern(f1, f2, f3) =>
+          f1 + "private " + f2 + " = " + f3
+        case x => x
+      }
+    }
+
+    def helper(doc: String)(perLineTransform: String => String): String = {
+      doc.split("\n").map(x => perLineTransform(x)).mkString("\n")
+    }
+
+    self_name.foreach(x => {
+      varToReplace += (x._1 -> "this")
+    })
+
+    def rewriteCmds(s: String): String = {
+      val valPattern = s"(\\s+)(val .*) = (.*;)".r    // general form of val assignments
+      val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.List\\.Coll(.*)".r
+
+      val ans: String = varToReplace.foldLeft(s)((x, y) => {
+        if (y._2 == "" && x.contains(y._1)) {
+          ""
+        } else {
+          x.replaceAll(y._1, y._2)
+        }
+      })
+
+      ans match {
+        case valPattern(f1, f2, lCollTypePattern(a1, a2)) => ""
+        case _ => ans
+      }
+    }
+
+    parts(0) = helper(parts(0).substring(2))(rewriteVariables)
+    parts(1) = helper(parts(1))(rewriteCmds)
+
+    val initVars: String = parts(0) + parts(1)
+
+    parts(2) = helper(parts(2))(rewriteCmds)
 
     //This ugly syntax is needed to replace the received code with a correct function definition
-    var run_until = "  override def run_until" + parts(2)
+    val run_until = "  override def run_until" + parts(2)
       .trim()
       .substring(1)
       .replaceFirst("=>", ": meta.runtime.Actor = ")
-      .replaceAll(timeVarGenerated, timeVarReplaceWith)
       .dropRight(1)
       .trim
       .dropRight(1)
@@ -113,12 +163,6 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     // "classname_" is for merging optimization
     var initParams: String = compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.map(s =>{
-        self_name.keys.foreach(self => {
-          initVars = initVars.replace(s"${self}.${s.sym.name};", s"this.${s.sym.name};")
-          initVars = initVars.replace(s"${self}.`${s.sym.name}_=`", s"this.`${s.sym.name}_=`")
-//          initVars = initVars.replace(s"${self}.${s.sym.name};", s"this.${self_name(self)}_${s.sym.name};")
-//          initVars = initVars.replace(s"${self}.`${s.sym.name}_=`", s"this.`${self_name(self)}_${s.sym.name}_=`")
-        })
         s"  var ${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
         //        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
       })}).mkString("\n")
@@ -128,25 +172,13 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
         if (compiledActorGraph.parameterList.indexOf(x) != -1) {
           val mutability: String = x._1.split(" ").head.substring(0, 3)
           val varName: String = x._1.split(" ").last
-
-          self_name.keys.foreach(self => {
-            initVars = initVars.replace(s"${self}.${varName};", s"this.${varName};")
-            initVars = initVars.replace(s"${self}.`${varName}_=`", s"this.`${varName}_=`")
-//            initVars = initVars.replace(s"${self}.${x._1};", s"this.${self_name(self)}_${x._1};")
-//            initVars = initVars.replace(s"${self}.`${x._1}_=`", s"this.`${self_name(self)}_${x._1}_=`")
-          })
           s"${mutability} ${varName}: ${changeTypes(x._2, false)}"
-//          s"var ${actorType.name}_${x._1}: ${changeTypes(x._2, false)}"
         } else {
           ""
         }})
     }).mkString(", ")
 
-    self_name.keys.foreach(self => {
-      initParams = initParams.replace(self, "this")
-      initVars = initVars.replace(self, "this")
-      run_until = run_until.replace(self, "this")
-    })
+    initParams = helper(initParams)(rewriteCmds)
 
     def parents: String = {
       s"${compiledActorGraph.parentNames.head}${compiledActorGraph.parentNames.tail.foldLeft("")((a,b) => a + " with " + b)}"
