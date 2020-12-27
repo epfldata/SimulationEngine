@@ -8,8 +8,7 @@ object compileSims {
 
   def apply(startClasses: List[Clasz[_ <: Actor]], mainClass: Clasz[_], mode: CompilationMode = Vanilla, destFolder: String=""): Unit = {
 
-    val lifter = new Lifter()
-    val simulationData = lifter(startClasses, mainClass)
+    val simulationData = Lifter(startClasses, mainClass)
 
     var statemachineElements: List[StateMachineElement] = List(new EdgeMerge())
 

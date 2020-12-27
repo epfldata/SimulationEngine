@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
   *
   * lifts the code into the deep representation [[meta.deep]]
   */
-class Lifter {
+object Lifter {
 
   /** Maps method symbols to their IDs
     *
