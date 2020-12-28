@@ -19,6 +19,8 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
 
   val generatedPackage: String = optimization.pkgName 
 
+  var typesReplaceWith: Map[String, String] = Map()
+
   override def run(compiledActorGraphs: List[CompiledActorGraph])
     : List[CompiledActorGraph] = {
 
@@ -29,6 +31,8 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     }
 
     this.compiledActorGraphs = compiledActorGraphs
+
+    this.typesReplaceWith = updateTypesToReplace(compiledActorGraphs)
 
     for (cAG <- this.compiledActorGraphs) {
       prepareClass(cAG)
@@ -80,6 +84,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     // split into three sections: variable declarations, commands, driver code
     val parts = scalaCode.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
     // driver code doesn't contain agent types
+
     parts(0) = changeTypes(parts(0), false)
     parts(1) = changeTypes(parts(1), false)
 
@@ -89,67 +94,67 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     // if str to be replaced is "", then remove the variable
     var varToReplace: Map[String, String] = Map[String, String]()
 
-    def rewriteVariables(s: String): String = {
+    def rewriteVariables(code: String): String = {
       val varPattern = s"(\\s+)(var .*): (.*) = (.*;)".r    // general form of var assignments
       val valPattern = s"(\\s+)(val .*) = (.*;)".r    // general form of val assignments
       val iterTypPattern = s"scala\\.collection\\.Iterator(.*)".r   // type pattern of an iterator
       val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.List\\.Coll(.*)".r    // type that contains List.Coll
       val timerNamePattern = s"(var timeVar_[0-9]*)".r      // name pattern of timer
 
-      s match {
-        case varPattern(f1, f2, f3, f4) =>
-          f2 match {
-            case timerNamePattern(a) =>
-              timeVarGenerated = a.substring(4)
-              varToReplace += (timeVarGenerated -> "currentTurn")
-              ""
-            case _ =>
-              f1 + (f3 match {
-                case iterTypPattern(a1) => "@transient "
-                case lCollTypePattern(a1, a2) =>
-                  varToReplace += (f2.substring(4) -> "")   // record the generated var name
-                  return ""       // remove these variables (List.Coll: List doesn't have Coll attribute)
-                case _ => ""
-              }) + "private " + f2 + ": " + f3 + " = " + f4
-          }
-        case valPattern(f1, f2, f3) =>
-          f1 + "private " + f2 + " = " + f3
-        case x => x
-      }
-    }
-
-    def helper(doc: String)(perLineTransform: String => String): String = {
-      doc.split("\n").map(x => perLineTransform(x)).mkString("\n")
+      code.split("\n").map(s => {
+        s match {
+          case varPattern(f1, f2, f3, f4) =>
+            f2 match {
+              case timerNamePattern(a) =>
+                timeVarGenerated = a.substring(4)
+                varToReplace += (timeVarGenerated -> "currentTurn")
+                ""
+              case _ =>
+                f3 match {
+                  case iterTypPattern(a1) => f1 + "@transient " + "private " + f2 + ": " + f3 + " = " + f4
+                  case lCollTypePattern(a1, a2) =>
+                    varToReplace += (f2.substring(4) -> "")   // record the generated var name
+                    ""       // remove these variables (List.Coll: List doesn't have Coll attribute)
+                  case _ => f1 + "private " + f2 + ": " + f3 + " = " + f4
+                }
+            }
+          case valPattern(f1, f2, f3) =>
+            f1 + "private " + f2 + " = " + f3
+          case x => x
+        }
+      }).mkString("\n")
     }
 
     self_name.foreach(x => {
       varToReplace += (x._1 -> "this")
     })
 
-    def rewriteCmds(s: String): String = {
+    def rewriteCmds(code: String): String = {
       val valPattern = s"(\\s+)(val .*) = (.*;)".r    // general form of val assignments
       val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.List\\.Coll(.*)".r
 
-      val ans: String = varToReplace.foldLeft(s)((x, y) => {
-        if (y._2 == "" && x.contains(y._1)) {
-          ""
-        } else {
-          x.replaceAll(y._1, y._2)
-        }
-      })
+      code.split("\n").map(s => {
+        val ans: String = varToReplace.foldLeft(s)((x, y) => {
+          if (y._2 == "" && x.contains(y._1)) {
+            ""
+          } else {
+            x.replaceAll(y._1, y._2)
+          }
+        })
 
-      ans match {
-        case valPattern(f1, f2, lCollTypePattern(a1, a2)) => ""
-        case _ => ans
-      }
+        ans match {
+          case valPattern(f1, f2, lCollTypePattern(a1, a2)) => ""
+          case _ => ans
+        }
+      }).mkString("\n")
     }
 
-    parts(0) = helper(parts(0).substring(2))(rewriteVariables)
-    parts(1) = helper(parts(1))(rewriteCmds)
+    parts(0) = rewriteVariables(parts(0).substring(2))
+    parts(1) = rewriteCmds(parts(1))
 
     val initVars: String = parts(0) + parts(1)
 
-    parts(2) = helper(parts(2))(rewriteCmds)
+    parts(2) = rewriteCmds(parts(2))
 
     //This ugly syntax is needed to replace the received code with a correct function definition
     val run_until = "  override def run_until" + parts(2)
@@ -178,7 +183,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
         }})
     }).mkString(", ")
 
-    initParams = helper(initParams)(rewriteCmds)
+    initParams = rewriteCmds(initParams)
 
     def parents: String = {
       s"${compiledActorGraph.parentNames.head}${compiledActorGraph.parentNames.tail.foldLeft("")((a,b) => a + " with " + b)}"
@@ -397,31 +402,33 @@ $run_until
     bw.close()
   }
 
+  def updateTypesToReplace(cags: List[CompiledActorGraph]): Map[String, String] = {
+    val typesToReplace: Set[String] = cags.filter(_.actorTypes.length==1).map(x => x.actorTypes.head.name).toSet
+
+    val examplePackageName: String = optimization.canonicalName
+    val libPackageName: String = "lib"
+
+    typesToReplace.flatMap(t => {
+      Set(("\\b" + examplePackageName + "." + t + "\\b", generatedPackage + "." + t),
+      ("\\b" + libPackageName + "." + t + "\\b", generatedPackage + "." + t))
+    }).toMap
+  }
+
   /**
     * This changes the type of the variables to reference to the generated classes.
     * @param code which should be changed
     * @return code with replaced variable types
     */
   def changeTypes(code: String, init: Boolean = false): String = {
+    var result: String = code
 
-    var result = code
-
-    for (cAG <- this.compiledActorGraphs) {
-      //We only replace compiledActorGraphs with 1 actor type, otherwise it is a merged one
-      if (cAG.actorTypes.length == 1) {
-        // canonical name of the actor, including full path and the actor name 
-        // actorTypes.head.name is needed for merging 
-        val canonicalSimName: String = 
-          optimization.canonicalName + "." + cAG.actorTypes.head.name
-
-        // replace the package of canonical Sim name with the generated one. Respect word boundary
-        result = result.replaceAll("\\b"+canonicalSimName+"\\b", generatedPackage + "." + cAG.name)
-      }
+    for (k <- this.typesReplaceWith.keys) {
+      result = result.replaceAll(k, this.typesReplaceWith(k))
     }
 
-    // new Sims are added to newActors at runtime 
+    // new Sims are added to newActors at runtime
     init match {
-      case true => result 
+      case true => result
       case _ => {
         val newSimPattern = s"(\\s+)val (\\S*) = new generated\\.(.*);".r
         newSimPattern.replaceAllIn(result,
