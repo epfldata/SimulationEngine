@@ -154,6 +154,9 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     // var future_objs: List[Option[meta.runtime.Future[lib.EpistemicLogic.package.P[example.epistemicLogicMC.MCHelper.ChildStatus]]]] = scala.collection.immutable.Nil
 
     // "classname_" is for merging optimization
+    // Add to resolve package object
+    this.typesReplaceWith += "\\.package\\." -> "\\.`package`\\."
+
     var initParams: String = compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.map(s =>{
         s"  var ${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
@@ -394,11 +397,11 @@ $run_until
     val typesToReplace: Set[String] = cags.filter(_.actorTypes.length==1).map(x => x.actorTypes.head.name).toSet
 
     val examplePackageName: String = optimization.canonicalName
-    val libPackageName: String = "lib.Bot"
+    val libPackageName: String = "lib\\.Bot"
 
     typesToReplace.flatMap(t => {
-      List(("\\b" + libPackageName + "." + t + "\\b", examplePackageName + "." + t),
-        ("\\b" + examplePackageName + "." + t + "\\b", generatedPackage + "." + t)
+      List(("\\b" + libPackageName + "\\." + t + "\\b", examplePackageName + "\\." + t),
+        ("\\b" + examplePackageName + "\\." + t + "\\b", generatedPackage + "\\." + t)
       )
     }).toMap
   }
