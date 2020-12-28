@@ -392,7 +392,7 @@ $run_until
     val typesToReplace: Set[String] = cags.filter(_.actorTypes.length==1).map(x => x.actorTypes.head.name).toSet
 
     val examplePackageName: String = optimization.canonicalName
-    val libPackageName: String = "lib"
+    val libPackageName: String = "lib.Bot"
 
     typesToReplace.flatMap(t => {
       Set(("\\b" + examplePackageName + "." + t + "\\b", generatedPackage + "." + t),

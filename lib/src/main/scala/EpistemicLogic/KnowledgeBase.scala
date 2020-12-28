@@ -1,11 +1,13 @@
 package lib.EpistemicLogic
 import Sentence._
+import squid.quasi.lift
 
 object KnowledgeBase {
   type Rule = EpistemicSentence => Boolean
 }
 
 // Consider making EpistemicSentence a type parameter
+//@lift
 class KnowledgeBase {
   import KnowledgeBase._
   var knowledgeBase: Set[EpistemicSentence] = Set()
