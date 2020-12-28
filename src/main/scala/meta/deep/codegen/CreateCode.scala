@@ -54,6 +54,10 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
 //    val selfs = compiledActorGraph.actorTypes.map(actorType =>
 //      actorType.self.toCode.toString().substring(5).dropRight(1))
 
+    self_name.foreach(x => {
+      this.typesReplaceWith += (x._1 -> "this")
+    })
+
     val commands = generateCode(compiledActorGraph)
     val code = this.createCommandOpenCode(commands)
 
@@ -83,16 +87,9 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
 
     // split into three sections: variable declarations, commands, driver code
     val parts = scalaCode.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
-    // driver code doesn't contain agent types
 
-    parts(0) = changeTypes(parts(0), false)
-    parts(1) = changeTypes(parts(1), false)
-
-    //write everything as class variables
-    var timeVarGenerated: String = ""
-
-    // if str to be replaced is "", then remove the variable
-    var varToReplace: Map[String, String] = Map[String, String]()
+    // Some generated variables cause compile error (also dead code), such as List.Coll, thus track for deletion
+    var varToDelete: List[String] = List()
 
     def rewriteVariables(code: String): String = {
       val varPattern = s"(\\s+)(var .*): (.*) = (.*;)".r    // general form of var assignments
@@ -106,14 +103,13 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
           case varPattern(f1, f2, f3, f4) =>
             f2 match {
               case timerNamePattern(a) =>
-                timeVarGenerated = a.substring(4)
-                varToReplace += (timeVarGenerated -> "currentTurn")
+                this.typesReplaceWith += (a.substring(4) -> "currentTurn")
                 ""
               case _ =>
                 f3 match {
                   case iterTypPattern(a1) => f1 + "@transient " + "private " + f2 + ": " + f3 + " = " + f4
                   case lCollTypePattern(a1, a2) =>
-                    varToReplace += (f2.substring(4) -> "")   // record the generated var name
+                    varToDelete = f2.substring(4) :: varToDelete  // record the generated var name
                     ""       // remove these variables (List.Coll: List doesn't have Coll attribute)
                   case _ => f1 + "private " + f2 + ": " + f3 + " = " + f4
                 }
@@ -125,21 +121,15 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
       }).mkString("\n")
     }
 
-    self_name.foreach(x => {
-      varToReplace += (x._1 -> "this")
-    })
-
     def rewriteCmds(code: String): String = {
       val valPattern = s"(\\s+)(val .*) = (.*;)".r    // general form of val assignments
       val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.List\\.Coll(.*)".r
 
       code.split("\n").map(s => {
-        val ans: String = varToReplace.foldLeft(s)((x, y) => {
-          if (y._2 == "" && x.contains(y._1)) {
+        val ans: String = varToDelete.foldLeft(s)((x, y) => {
+          if (x.contains(y)) {    // delete the line containing the variable name
             ""
-          } else {
-            x.replaceAll(y._1, y._2)
-          }
+          } else x
         })
 
         ans match {
@@ -149,15 +139,11 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
       }).mkString("\n")
     }
 
-    parts(0) = rewriteVariables(parts(0).substring(2))
-    parts(1) = rewriteCmds(parts(1))
-
-    val initVars: String = parts(0) + parts(1)
-
-    parts(2) = rewriteCmds(parts(2))
+    val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)) +
+      rewriteCmds(parts(1)))
 
     //This ugly syntax is needed to replace the received code with a correct function definition
-    val run_until = "  override def run_until" + parts(2)
+    val run_until = "  override def run_until" + changeTypes(parts(2))
       .trim()
       .substring(1)
       .replaceFirst("=>", ": meta.runtime.Actor = ")
