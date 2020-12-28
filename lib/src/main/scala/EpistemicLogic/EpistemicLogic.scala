@@ -1,6 +1,6 @@
-package lib.EpistemicLogic
+package lib
 
-object Sentence {
+package object EpistemicLogic {
 
   sealed trait EpistemicSentence extends Product with Serializable
 

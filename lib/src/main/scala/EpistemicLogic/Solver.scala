@@ -1,7 +1,5 @@
 package lib.EpistemicLogic
 
-import Sentence._
-
 object Solver {
 
   // add to the set knowledge base new inferred knowledge axioms

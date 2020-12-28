@@ -1,7 +1,5 @@
 package lib.EpistemicLogic
 
-import lib.EpistemicLogic.Sentence._
-
 object Utils {
   def ors(es: List[EpistemicSentence]): EpistemicSentence = {
     es.tail.foldLeft(es.head)((x, y) => ImpE(NotE(x), y))

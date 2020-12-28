@@ -1,9 +1,10 @@
-import lib.EpistemicLogic.Sentence._
-import lib.EpistemicLogic.Solver._
+package lib.EpistemicLogic
+package test
 
 import org.scalatest.FlatSpec
 
 class SolverSpec extends FlatSpec {
+  import Solver.deduction
 
   val p1: EpistemicSentence = P("Child 1 is muddy")
   val p2: EpistemicSentence = P("Child 2 is muddy")
