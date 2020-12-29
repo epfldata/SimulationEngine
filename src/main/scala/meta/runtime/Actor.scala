@@ -114,23 +114,8 @@ class Actor extends Serializable {
   var currentTurn: Int = 0
   var currentTime: Double = 0
   var current_pos: Int = 0
-//  var monitor = Monitor
+
   val logger = LoggerFactory.getLogger(this.getClass.getName())
-
-  var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
-  
-  final def isCompleted(future_obj: Future[Any]): Boolean = {
-    async_messages.get(future_obj.id).isDefined
-  }
-
-  final def getFutureValue[T](future_obj: Future[T]): T = {
-    async_messages.get(future_obj.id).get.value.get.asInstanceOf[T]
-  }
-
-  final def clearFutureObj(future_obj: Future[Any]): None.type ={
-    async_messages = async_messages.-(future_obj.id)
-    None
-  }
 
   /**
     * Contains the received messages from the previous step

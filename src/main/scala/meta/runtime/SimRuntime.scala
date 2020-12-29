@@ -5,12 +5,27 @@ import scala.collection.mutable.{ListBuffer, Map}
 object SimRuntime {
   val newActors: ListBuffer[Actor] = ListBuffer[Actor]()
 
+  var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
+
   // track the number of Sims waiting for each label at each iteration. Set once
   val waitLabels: Map[String, Int] = Map[String, Int]()
 
   // track the min value that each label group should advance by
   val labelVals: Map[String, ListBuffer[Double]] = Map[String, ListBuffer[Double]]()
   var proceedLabel: Map[String, Double] = Map[String, Double]()
+
+  def isCompleted(future_obj: Future[Any]): Boolean = {
+    async_messages.get(future_obj.id).isDefined
+  }
+
+  def getFutureValue[T](future_obj: Future[T]): T = {
+    async_messages.get(future_obj.id).get.value.get.asInstanceOf[T]
+  }
+
+  def clearFutureObj(future_obj: Future[Any]): None.type ={
+    async_messages = async_messages.-(future_obj.id)
+    None
+  }
 
   def initLabelVals(): Unit = {
     waitLabels("time") = 0
