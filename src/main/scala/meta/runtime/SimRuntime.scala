@@ -8,7 +8,7 @@ object SimRuntime {
   var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
 
   // track the number of Sims waiting for each label at each iteration. Set once
-  val waitLabels: Map[String, Int] = Map[String, Int]()
+  val waitLabels: Map[String, Long] = Map[String, Long]()
 
   // track the min value that each label group should advance by
   val labelVals: Map[String, ListBuffer[Double]] = Map[String, ListBuffer[Double]]()
