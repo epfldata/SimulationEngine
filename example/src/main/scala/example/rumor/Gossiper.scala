@@ -1,7 +1,6 @@
 package example
 package rumor
 
-import scala.collection.mutable.Set
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 
