@@ -49,7 +49,7 @@ class Default(val config: SimulationConfig) extends Simulation {
       actors = actors.map { a =>
       {
         a.cleanSendMessage
-//          .addInterrupts(currentTime)
+          .addInterrupts(currentTime)
           .addReceiveMessages(Random.shuffle(mx.getOrElse(a.id, List())))
           .run_until(currentTurn)
       }}
