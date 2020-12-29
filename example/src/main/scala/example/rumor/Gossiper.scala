@@ -7,8 +7,7 @@ import meta.classLifting.SpecialInstructions._
 
 trait Person extends Actor {
    // Assume a person has the following prob to spread the rumour
-//   var activityLevel = Random.nextInt(10)
-   val network: Set[Person] = Set[Person]()
+   var network: Set[Person] = Set[Person]()
 }
 
 @lift
@@ -34,11 +33,18 @@ trait Person extends Actor {
      asyncMessage(() => p.hearRumor())
    }
 
+  def newHire(): Unit = {
+    network = network.union(Set(new Gossiper(env, false, spreadProb)))
+  }
+
    def main(): Unit = {
      while(true){
        report()
        if (spreadRumor){
           network.toList.foreach(p => if (Random.nextBoolean()) gossipRumor(p.asInstanceOf[Gossiper]))
+       }
+       if (Random.nextInt(30) == 5) {
+         newHire()
        }
        waitLabel("turn",1 )
        handleMessages()
