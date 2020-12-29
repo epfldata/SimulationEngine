@@ -47,7 +47,7 @@ lazy val root = (project in file("."))
 lazy val library = (project in file("lib"))
   .settings(
     name := "library",
-    commonSettings
+    commonSettings, squidSettings
   )
   .dependsOn(root)
 
