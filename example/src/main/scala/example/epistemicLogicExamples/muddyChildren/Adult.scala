@@ -2,7 +2,6 @@ package example
 package epistemicLogicExamples
 package MuddyChildren
 
-import MCHelper._
 import lib.EpistemicLogic._
 import lib.Bot.MessengerBot
 

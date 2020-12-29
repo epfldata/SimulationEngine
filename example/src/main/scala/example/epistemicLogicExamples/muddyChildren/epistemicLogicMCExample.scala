@@ -35,7 +35,7 @@ class MainInit {
   }
 }
 
-object epistemicLogicMCExample extends App {
+object muddyChildrenExample extends App {
 
   import lib.Bot.MessengerBot
 

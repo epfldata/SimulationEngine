@@ -1,9 +1,8 @@
 package example
-package epistemicLogicVC
+package epistemicLogicExamples
+package vectorClock
 
 import lib.EpistemicLogic._
-
-import VCHelper._
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._

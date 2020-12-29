@@ -1,10 +1,9 @@
 package example
 package epistemicLogicExamples
-package MuddyChildren
 
 import lib.EpistemicLogic._
 
-object MCHelper {
+package object MuddyChildren {
   import meta.runtime.Actor.AgentId
 
   case class ChildStatus(id: AgentId, isMuddy: Boolean, isForward: Boolean, epoch: Int)

@@ -1,5 +1,6 @@
 package example
-package epistemicLogicVC
+package epistemicLogicExamples
+package vectorClock
 
 import squid.quasi.lift
 
@@ -25,7 +26,7 @@ class MainInit {
   }
 }
 
-object epistemicLogicVCExample extends App {
+object vectorClockExample extends App {
 
   val cls1: ClassWithObject[Process] = Process.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)

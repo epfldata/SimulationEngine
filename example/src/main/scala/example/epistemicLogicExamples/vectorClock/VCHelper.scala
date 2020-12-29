@@ -1,8 +1,7 @@
 package example
-package epistemicLogicVC
+package epistemicLogicExamples
 
-import meta.runtime.Actor.AgentId
-
-object VCHelper {
+package object vectorClock {
+  import meta.runtime.Actor.AgentId
   case class ProcessTime(id: AgentId, time: Int)
 }
