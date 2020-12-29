@@ -1,10 +1,8 @@
-import example.epistemicLogicVC.VCHelper.ProcessTime
-import lib.EpistemicLogic.Sentence.P
+import lib.EpistemicLogic._
 import org.scalatest.FlatSpec
 
 class vectorClockTest extends FlatSpec {
-  import example.epistemicLogicVC.VectorClock
-
+  import example.epistemicLogicExamples.vectorClock._
   val p1: ProcessTime = ProcessTime(1, 1)
   val p2: ProcessTime = ProcessTime(1, 2)
   val p3: ProcessTime = ProcessTime(1, 3)
