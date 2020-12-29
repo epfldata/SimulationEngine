@@ -91,8 +91,8 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     // Some generated variables cause compile error (also dead code), such as List.Coll, thus track for deletion
 
     def rewriteVariables(code: String): String = {
-      val varPattern = s"(\\s+)(var .*): (.*) = (.*;)".r    // general form of var assignments
-      val valPattern = s"(\\s+)(val .*) = (.*;)".r    // general form of val assignments
+      val varPattern = s"(\\s*)(var .*): (.*) = (.*;)".r    // general form of var assignments
+      val valPattern = s"(\\s*)(val .*) = (.*;)".r    // general form of val assignments
       val iterTypPattern = s"scala\\.collection\\.Iterator(.*)".r   // type pattern of an iterator
       val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.List\\.Coll(.*)".r
 
@@ -403,7 +403,7 @@ $run_until
     init match {
       case true => result
       case _ => {
-        val newSimPattern = s"(\\s+)val (\\S*) = new generated\\.(.*);".r
+        val newSimPattern = s"(\\s*)val (\\S*) = new generated\\.(.*);".r
         newSimPattern.replaceAllIn(result,
           m=>{(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2)})")})
       }
