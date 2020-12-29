@@ -2,7 +2,7 @@ package generated.example
 
 package object test {
   type Default = meta.runtime.simulation.Default
-  val SimulationSpark = meta.runtime.simulation.SimulationSpark
+  type SimulationSpark = meta.runtime.simulation.SimulationSpark
   type Config = meta.runtime.simulation.SimulationConfig
   val util = meta.runtime.simulation.util
   type FlatSpec = org.scalatest.FlatSpec
