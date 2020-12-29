@@ -4,7 +4,7 @@ object KnowledgeBase {
   type Rule = EpistemicSentence => Boolean
 }
 
-class KnowledgeBase {
+class KnowledgeBase extends Serializable {
   import KnowledgeBase._
   var knowledgeBase: Set[EpistemicSentence] = Set()
   var constraints: List[EpistemicSentence => Boolean] = List()
