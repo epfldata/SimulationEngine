@@ -89,13 +89,14 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     val parts = scalaCode.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
 
     // Some generated variables cause compile error (also dead code), such as List.Coll, thus track for deletion
-    var varToDelete: List[String] = List()
 
     def rewriteVariables(code: String): String = {
       val varPattern = s"(\\s+)(var .*): (.*) = (.*;)".r    // general form of var assignments
       val valPattern = s"(\\s+)(val .*) = (.*;)".r    // general form of val assignments
       val iterTypPattern = s"scala\\.collection\\.Iterator(.*)".r   // type pattern of an iterator
-      val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.List\\.Coll(.*)".r    // type that contains List.Coll
+      val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.List\\.Coll(.*)".r
+
+      // type that contains List.Coll
       val timerNamePattern = s"(var timeVar_[0-9]*)".r      // name pattern of timer
 
       code.split("\n").map(s => {
@@ -106,13 +107,13 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
                 this.typesReplaceWith += (a.substring(4) -> "currentTurn")
                 ""
               case _ =>
-                f3 match {
-                  case iterTypPattern(a1) => f1 + "@transient " + "private " + f2 + ": " + f3 + " = " + f4
-                  case lCollTypePattern(a1, a2) =>
-                    varToDelete = f2.substring(4) :: varToDelete  // record the generated var name
-                    ""       // remove these variables (List.Coll: List doesn't have Coll attribute)
-                  case _ => f1 + "private " + f2 + ": " + f3 + " = " + f4
-                }
+                f1 + (f3 match {
+                    case iterTypPattern(a1) =>
+                      "@transient "
+                    case lCollTypePattern(a1, a2) =>
+                      "@transient "
+                    case _ => ""
+                  }) + "private " + f2 + ": " + f3 + " = " + f4
             }
           case valPattern(f1, f2, f3) =>
             f1 + "private " + f2 + " = " + f3
@@ -121,26 +122,10 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
       }).mkString("\n")
     }
 
-    def rewriteCmds(code: String): String = {
-      val valPattern = s"(\\s+)(val .*) = (.*;)".r    // general form of val assignments
-      val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.List\\.Coll(.*)".r
+    // Coll is no longer accessible in 2.12.8
+    this.typesReplaceWith += ("List\\.Coll" -> "List[_]")
 
-      code.split("\n").map(s => {
-        val ans: String = varToDelete.foldLeft(s)((x, y) => {
-          if (x.contains(y)) {    // delete the line containing the variable name
-            ""
-          } else x
-        })
-
-        ans match {
-          case valPattern(f1, f2, lCollTypePattern(a1, a2)) => ""
-          case _ => ans
-        }
-      }).mkString("\n")
-    }
-
-    val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)) +
-      rewriteCmds(parts(1)))
+    val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)) + parts(1))
 
     //This ugly syntax is needed to replace the received code with a correct function definition
     val run_until = "  override def run_until" + changeTypes(parts(2))
@@ -151,13 +136,11 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
       .trim
       .dropRight(1)
 
-    // var future_objs: List[Option[meta.runtime.Future[lib.EpistemicLogic.package.P[example.epistemicLogicMC.MCHelper.ChildStatus]]]] = scala.collection.immutable.Nil
-
     // "classname_" is for merging optimization
     // Add to resolve package object
     this.typesReplaceWith += "\\.package\\." -> "\\.`package`\\."
 
-    var initParams: String = compiledActorGraph.actorTypes.flatMap(actorType => {
+    val initParams: String = compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.map(s =>{
         s"  var ${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
         //        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
@@ -173,8 +156,6 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
           ""
         }})
     }).mkString(", ")
-
-    initParams = rewriteCmds(initParams)
 
     def parents: String = {
       s"${compiledActorGraph.parentNames.head}${compiledActorGraph.parentNames.tail.foldLeft("")((a,b) => a + " with " + b)}"
