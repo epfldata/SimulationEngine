@@ -11,6 +11,8 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
   @transient private lazy val conf: SparkConf =
     new SparkConf().setMaster("local")
       .setAppName("ECONOMIC_SIMULATION")
+      .set("spark.driver.memory", "2g")
+      .set("spark.executor.memory", "512m")
   //        .set("spark.driver.allowMultipleContexts", "true")
 
   @transient private lazy val sc: SparkContext = new SparkContext(conf)
@@ -37,8 +39,7 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
       i.currentTime = currentTime
       i.currentTurn = currentTurn
       i
-    }).cache()
-    actors.count()
+    })
   }
 
   def scheduleEvents(): List[()=> Unit] = {
@@ -47,14 +48,14 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
       () => { println(util.displayTime(currentTurn, currentTime)) }
     )
     events.append(() => {
-      if (currentTurn % 30 == 0) {
+      if (currentTurn % 10 == 0) {
         actors.checkpoint()
       }
     })
     events.append(() => {
       collect()
+      waitLabels("time") = actors.count()
     })
-//    events.append(() => waitLabels("time") = actors.collect().length)
     events.append(() => {
       val messageMap: scala.collection.Map[Actor.AgentId, Set[Message]] = actors
         .flatMap(x => x.getSendMessages)
@@ -66,20 +67,14 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
       val dMessages = sc.broadcast(messageMap)
 
       actors = actors.map(x => x.addReceiveMessages(dMessages.value.getOrElse(x.id, List()).toList))
-        .map(x => x.cleanSendMessage)
+    })
+    events.append(() => {
+      actors = actors.map(x => x.cleanSendMessage)
         .map(x => x.addInterrupts(currentTime))
         .map(x => x.run_until(currentTurn))
         .cache()
       actors.count()
     })
-
-//    events.append(() => {
-//      actors = actors.map(x => x.cleanSendMessage)
-//        .map(x => x.addInterrupts(currentTime))
-//        .map(x => x.run_until(currentTurn))
-//        .cache()
-//      actors.count()
-//    })
     events.append(() => proceed())
     events.toList
   }
@@ -88,15 +83,12 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
     newActors.map(i => i.currentTurn = currentTurn)
     actors = (actors ++ sc.parallelize(newActors)).cache()
     newActors.clear()
-    actors.count()
   }
 
   def run(): SimulationSnapshot = {
 
     val events: List[() => Unit] = init()
     val start = System.nanoTime()
-    // Todo: update the time label when new actors added
-    waitLabels("time") = config.actors.length
 
     while (currentTurn <= config.totalTurn && currentTime <= config.totalTime) {
       events.foreach(_())
