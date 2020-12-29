@@ -19,7 +19,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
 
   val generatedPackage: String = optimization.pkgName 
 
-  var typesReplaceWith: Map[String, String] = Map()
+  var typesReplaceWith: List[(String, String)] = List[(String, String)]()
 
   override def run(compiledActorGraphs: List[CompiledActorGraph])
     : List[CompiledActorGraph] = {
@@ -55,7 +55,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
 //      actorType.self.toCode.toString().substring(5).dropRight(1))
 
     self_name.foreach(x => {
-      this.typesReplaceWith += (x._1 -> "this")
+      this.typesReplaceWith = (x._1, "this") :: this.typesReplaceWith
     })
 
     val commands = generateCode(compiledActorGraph)
@@ -104,7 +104,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
           case varPattern(f1, f2, f3, f4) =>
             f2 match {
               case timerNamePattern(a) =>
-                this.typesReplaceWith += (a.substring(4) -> "currentTurn")
+                this.typesReplaceWith = (a.substring(4), "currentTurn") :: this.typesReplaceWith
                 ""
               case _ =>
                 f1 + (f3 match {
@@ -123,7 +123,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     }
 
     // Coll is no longer accessible in 2.12.8
-    this.typesReplaceWith += ("List\\.Coll" -> "List[_]")
+    this.typesReplaceWith = ("List\\.Coll", "List[_]") :: this.typesReplaceWith
 
     val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)) + parts(1))
 
@@ -138,7 +138,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
 
     // "classname_" is for merging optimization
     // Add to resolve package object
-    this.typesReplaceWith += "\\.package\\." -> "\\.`package`\\."
+    this.typesReplaceWith = ("\\.package\\.", "\\.`package`\\.") :: this.typesReplaceWith
 
     val initParams: String = compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.map(s =>{
@@ -374,17 +374,23 @@ $run_until
     bw.close()
   }
 
-  def updateTypesToReplace(cags: List[CompiledActorGraph]): Map[String, String] = {
+  def updateTypesToReplace(cags: List[CompiledActorGraph]): List[(String, String)] = {
     val typesToReplace: Set[String] = cags.filter(_.actorTypes.length==1).map(x => x.actorTypes.head.name).toSet
 
-    val examplePackageName: String = optimization.canonicalName
+    val examplePackageRegex: String = optimization.canonicalName.foldLeft("")((x, y) => {
+      if (y == ".".charAt(0)) {x + "\\."} else x + y
+    })
+
+    val generatedPackageRegex: String = generatedPackage.foldLeft("")((x, y) => {
+      if (y == ".".charAt(0)) {x + "\\."} else x + y
+    })
+
     val libPackageName: String = "lib\\.Bot"
 
-    typesToReplace.flatMap(t => {
-      List(("\\b" + libPackageName + "\\." + t + "\\b", examplePackageName + "\\." + t),
-        ("\\b" + examplePackageName + "\\." + t + "\\b", generatedPackage + "\\." + t)
-      )
-    }).toMap
+    typesToReplace.toList.flatMap(t => {
+      List(("\\b" + libPackageName + "\\." + t + "\\b", examplePackageRegex + "\\." + t),
+        ("\\b" + examplePackageRegex + "\\." + t + "\\b", generatedPackageRegex + "\\." + t))
+    })
   }
 
   /**
@@ -395,8 +401,8 @@ $run_until
   def changeTypes(code: String, init: Boolean = false): String = {
     var result: String = code
 
-    for (k <- this.typesReplaceWith.keys) {
-      result = result.replaceAll(k, this.typesReplaceWith(k))
+    for (k <- this.typesReplaceWith) {
+      result = result.replaceAll(k._1, k._2)
     }
 
     // new Sims are added to newActors at runtime
