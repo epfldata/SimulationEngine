@@ -6,7 +6,7 @@ import scala.collection.mutable.ListBuffer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext, broadcast}
 
-object SimulationSpark extends Simulation {
+class SimulationSpark(val config: SimulationConfig) extends Simulation {
 
   @transient private lazy val conf: SparkConf =
     new SparkConf().setMaster("local")
@@ -15,20 +15,12 @@ object SimulationSpark extends Simulation {
 
   @transient private lazy val sc: SparkContext = new SparkContext(conf)
 
-  @transient private var actors: RDD[Actor] = _
-  private var currentTurn: Int = 0
-  private var currentTime: Double = 0
+  @transient private var actors: RDD[Actor] = sc.parallelize(config.actors)
+  private var currentTurn: Int = config.startTurn
+  private var currentTime: Double = config.startTime
 
   sc.setLogLevel("ERROR")
   sc.setCheckpointDir("checkpoint/")
-
-  def apply(c: SimulationConfig): SimulationSnapshot = {
-    actors = sc.parallelize(c.actors)
-    currentTurn = c.startTurn
-    currentTime = c.startTime
-    waitLabels("time") = c.actors.length
-    run(c)
-  }
 
   // Can be overridden in an inherited class. Same for scheduleEvents
   def init(): List[()=> Unit] = {
@@ -45,7 +37,8 @@ object SimulationSpark extends Simulation {
       i.currentTime = currentTime
       i.currentTurn = currentTurn
       i
-    })
+    }).cache()
+    actors.count()
   }
 
   def scheduleEvents(): List[()=> Unit] = {
@@ -58,43 +51,54 @@ object SimulationSpark extends Simulation {
         actors.checkpoint()
       }
     })
-    events.append(() => collect())
+    events.append(() => {
+      collect()
+    })
 //    events.append(() => waitLabels("time") = actors.collect().length)
     events.append(() => {
-      actors = actors.map(x => x.cleanSendMessage)
-        .map(x => x.addInterrupts(currentTime))
-        .map(x => x.run_until(currentTurn))
-        .cache()})
-    events.append(() => {
-      val messageMap: scala.collection.Map[Actor.AgentId, List[Message]] = actors
+      val messageMap: scala.collection.Map[Actor.AgentId, Set[Message]] = actors
         .flatMap(x => x.getSendMessages)
         .map(x => (x.receiverId, x))
         .combineByKey(
-          (message: Message) => List(message),
-          (l: List[Message], message: Message) => message :: l,
-          (l1: List[Message], l2: List[Message]) => l1 ::: l2).collectAsMap()
-
+          (message: Message) => Set(message),
+          (l: Set[Message], message: Message) => Set(message).union(l),
+          (l1: Set[Message], l2: Set[Message]) => l1 ++ l2).collectAsMap()
       val dMessages = sc.broadcast(messageMap)
 
-      actors = actors.map(actor => {
-        actor.addReceiveMessages(dMessages.value.getOrElse(actor.id, List()))
-      })
+      actors = actors.map(x => x.addReceiveMessages(dMessages.value.getOrElse(x.id, List()).toList))
+        .map(x => x.cleanSendMessage)
+        .map(x => x.addInterrupts(currentTime))
+        .map(x => x.run_until(currentTurn))
+        .cache()
+      actors.count()
     })
+
+//    events.append(() => {
+//      actors = actors.map(x => x.cleanSendMessage)
+//        .map(x => x.addInterrupts(currentTime))
+//        .map(x => x.run_until(currentTurn))
+//        .cache()
+//      actors.count()
+//    })
     events.append(() => proceed())
     events.toList
   }
 
   def collect(): Unit = {
     newActors.map(i => i.currentTurn = currentTurn)
-    actors = actors ++ sc.parallelize(newActors)
+    actors = (actors ++ sc.parallelize(newActors)).cache()
     newActors.clear()
+    actors.count()
   }
 
-  def run(c: SimulationConfig): SimulationSnapshot = {
+  def run(): SimulationSnapshot = {
+
     val events: List[() => Unit] = init()
     val start = System.nanoTime()
     // Todo: update the time label when new actors added
-    while (currentTurn <= c.totalTurn && currentTime <= c.totalTime) {
+    waitLabels("time") = config.actors.length
+
+    while (currentTurn <= config.totalTurn && currentTime <= config.totalTime) {
       events.foreach(_())
     }
 

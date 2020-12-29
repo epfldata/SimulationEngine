@@ -1,7 +1,9 @@
 package meta.runtime
 package simulation
 
-trait Simulation {
+trait Simulation extends Serializable {
+
+  val config: SimulationConfig
 
   // return a list of events
   def init(): List[()=> Unit]
@@ -16,5 +18,5 @@ trait Simulation {
   def scheduleEvents(): List[()=> Unit]
 
   // entry point of the simulation
-  def run(c: SimulationConfig): SimulationSnapshot
+  def run(): SimulationSnapshot
 }

@@ -5,18 +5,11 @@ import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import SimRuntime._
 
-object Default extends Simulation {
+class Default(val config: SimulationConfig) extends Simulation {
 
-  private var actors: List[Actor] = _
-  private var currentTurn: Int = _
-  private var currentTime: Double = _
-
-  def apply(config: SimulationConfig): SimulationSnapshot = {
-    actors = config.actors
-    currentTurn = config.startTurn
-    currentTime = config.startTime
-    run(config)
-  }
+  private var actors: List[Actor] = config.actors
+  private var currentTurn: Int = config.startTurn
+  private var currentTime: Double = config.startTime
 
   // Can be overridden in an inherited class. Same for scheduleEvents
   def init(): List[()=> Unit] = {
@@ -55,15 +48,17 @@ object Default extends Simulation {
       actors = actors.map { a =>
       {
         a.cleanSendMessage
-          //                  .addInterrupts(currentTime)
+//          .addInterrupts(currentTime)
           .addReceiveMessages(Random.shuffle(mx.getOrElse(a.id, List())))
           .run_until(currentTurn)
-      }}})
+      }}
+    })
     events.append(() => proceed())
     events.toList
   }
 
-  def run(config: SimulationConfig): SimulationSnapshot = {
+  def run(): SimulationSnapshot = {
+
     val events: List[()=> Unit] = init()
     val start = System.nanoTime()
     while (currentTurn <= config.totalTurn && currentTime <= config.totalTime) {
