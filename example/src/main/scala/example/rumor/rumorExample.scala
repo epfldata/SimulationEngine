@@ -2,6 +2,7 @@ package example
 package rumor
 
 import squid.quasi.lift
+import lib.Bot.LoggerBot
 
 @lift
 class MainInit {
@@ -9,13 +10,16 @@ class MainInit {
     val l: ListBuffer[Actor] = new ListBuffer[Actor]()
     var lp: List[Person] = List[Person]()
 
-    val env: Env = new Env()
+    // Use one logger to track the extent of the rumor spread
+    val gossipLogger: LoggerBot = new LoggerBot("gossip", 1, false)
+
     val closeContacts: Int = 5
     val population: Int = 100
 
-    val seed: Person = new Gossiper(env, true, 0.5)
+    val seed: Person = new Gossiper(gossipLogger, true, 0.5)
+
     lp = seed :: lp
-    lp = lp ++ (1 to population).toList.map(i => new Gossiper(env, false, 0.3))
+    lp = lp ++ (1 to population).toList.map(i => new Gossiper(gossipLogger, false, 0.3))
 
     // Everyone is randomly connected to at most closeContacts
      lp.foreach(p =>
@@ -23,7 +27,7 @@ class MainInit {
      )
 
     l.appendAll(lp)
-    l.append(env) 
+    l.append(gossipLogger) 
     l.toList 
   }
 }
@@ -31,7 +35,7 @@ class MainInit {
 object rumorExample extends App{
 
   val cls1: ClassWithObject[Gossiper] = Gossiper.reflect(IR)
-  val cls2: ClassWithObject[Env] = Env.reflect(IR)
+  val cls2: ClassWithObject[LoggerBot] = LoggerBot.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
   compileSims(List(cls1, cls2), mainClass)

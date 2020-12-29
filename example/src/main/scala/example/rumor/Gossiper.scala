@@ -3,6 +3,7 @@ package rumor
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
+import lib.Bot.LoggerBot
 
 trait Person extends Actor {
    // Assume a person has the following prob to spread the rumour
@@ -10,8 +11,8 @@ trait Person extends Actor {
 }
 
 @lift
- class Gossiper(val env: Env, var heardRumor: Boolean, val spreadProb: Double) extends Person{
-   var reported: Boolean = false
+ class Gossiper(val loggerBot: LoggerBot, var heardRumor: Boolean, val spreadProb: Double) extends Person{
+   var recorded: Boolean = false
 
    def spreadRumor: Boolean = {
      heardRumor && (Random.nextDouble() > spreadProb)
@@ -21,24 +22,21 @@ trait Person extends Actor {
      heardRumor = true
    }
 
-   def report(): Unit = {
-     if (heardRumor && !reported) {
-       asyncMessage(() => env.reportRumor())
-       reported = true
-     }
-   }
-
    def gossipRumor(p: Gossiper): Unit = {
      asyncMessage(() => p.hearRumor())
    }
 
   def newHire(): Unit = {
-    network = network.union(Set(new Gossiper(env, false, spreadProb)))
+    network = network.union(Set(new Gossiper(loggerBot, false, spreadProb)))
   }
 
    def main(): Unit = {
      while(true){
-       report()
+       if (heardRumor && !recorded) {
+         asyncMessage(() => loggerBot.accumulate())
+         recorded = true
+       }
+
        if (spreadRumor){
           network.toList.foreach(p => if (Random.nextBoolean()) gossipRumor(p.asInstanceOf[Gossiper]))
        }
