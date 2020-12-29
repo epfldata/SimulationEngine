@@ -3,6 +3,9 @@ package object example {
   val Actor = meta.runtime.Actor
   val SimRuntime = meta.runtime.SimRuntime
 
+  type Future[T] = meta.runtime.Future[T]
+  val Future = meta.runtime.Future
+
   // path-dependent type in lifter
   //  val SpecialInstruction = meta.classLifting.SpecialInstructions
 
