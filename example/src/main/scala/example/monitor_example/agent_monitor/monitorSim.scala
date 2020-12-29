@@ -20,7 +20,7 @@ class monitorSim() extends Actor {
   def main(): Unit = {
     while(true){
       printAggregate()
-      waitLabel("turn",1)
+      waitLabel(Turn,1)
       handleMessages()
     }
   }

@@ -23,10 +23,10 @@ class Sim(var time: Double) extends Actor {
     while (true) {
       if (nextBoolean()){
           logger.debug("Wait turn! " + " Id " + id)
-        waitLabel("turn",1)
+        waitLabel(Turn,1)
       } else {
         logger.debug("Wait time " + time + " Id " + id)
-        waitLabel("time", time)
+        waitLabel(Time, time)
         logger.debug("Wait time finished " + id)
       }
       handleMessages()

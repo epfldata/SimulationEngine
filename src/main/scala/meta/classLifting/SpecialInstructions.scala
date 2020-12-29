@@ -3,17 +3,24 @@ package meta.classLifting
 object SpecialInstructions {
   import meta.runtime.Future
 
-  /** makes the actor wait for a number of turns
-    *
-    * usage - make actors of different granularity
-    */
+  sealed trait waitMode
+  case object Turn extends waitMode {
+    override def toString: String = "turn"
+  }
 
-  // Create a synchronization label for the selected Sims.
-  def waitLabel(label: String, waitValue: Double): Unit = ???
+  case object Time extends waitMode {
+    override def toString: String = "time"
+  }
+
+  case class Group(l: String) extends waitMode {
+    assert(l != "time" && l != "turn")
+    override def toString: String = l
+  }
+
+  def waitLabel(label: waitMode, waitValue: Double): Unit = ???
 
   def asyncMessage[T](message: (()=>T)): Option[Future[T]] = ???
 
-  // Handle incoming messages
   def handleMessages(): Unit = ???
 
   // Interrupt for time

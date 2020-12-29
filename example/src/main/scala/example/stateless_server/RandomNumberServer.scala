@@ -15,13 +15,13 @@ class RandomNumberServer extends Actor {
   }
 
   def getDelayedNumber(): Int = {
-    waitLabel("turn",1)
+    waitLabel(Turn,1)
     nextInt(50)
   }
 
   def main(): Unit = {
     while (true) {
-      waitLabel("turn",1)
+      waitLabel(Turn,1)
       handleMessages()
     }
   }

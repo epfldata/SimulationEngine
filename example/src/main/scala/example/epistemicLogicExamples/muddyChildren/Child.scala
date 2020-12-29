@@ -1,21 +1,19 @@
-package example.epistemicLogicMC
-
-import meta.classLifting.SpecialInstructions._
-import meta.deep.runtime.{Actor, Future}
-import meta.deep.runtime.Actor.AgentId
-import scala.collection.mutable.ListBuffer
-
-import squid.quasi.lift
-import lib.EpistemicLogic.Sentence._
-import lib.EpistemicLogic.KnowledgeBase
+package example
+package epistemicLogicExamples
+package MuddyChildren
 
 import MCHelper._
+import lib.EpistemicLogic._
+import lib.Bot.MessengerBot
+
+import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 
 @lift
 class Child(val isMuddy: Boolean) extends Actor {
 
   var neighbors: List[Child] = Nil
-  var neighborIds: ListBuffer[AgentId] = new ListBuffer[AgentId]()
+  var neighborIds: List[Actor.AgentId] = Nil
 
   var epoch: Int = 0
   var isForward: Boolean = false
@@ -74,42 +72,35 @@ class Child(val isMuddy: Boolean) extends Actor {
     }
   }
 
-  val future_objs: ListBuffer[Option[Future[P[ChildStatus]]]] = new ListBuffer[Option[Future[P[ChildStatus]]]]()
-
   // non-RPC
   def see(): List[P[ChildStatus]] = {
-    neighbors.foreach(n =>
-      future_objs.append(asyncMessage(() => n.tell())))
-    // see all neighbors
-    while (!future_objs.toList.forall(x => isCompleted(x.get))) {
-      waitTurns(1)
-      handleMessages()
-    }
+    val messenger: MessengerBot = new MessengerBot()
+    val wReply: List[Option[Future[P[ChildStatus]]]] = neighbors.map(c => asyncMessage(() => c.tell()))
+
+    // send out the batched messages
+    waitLabel(Turn,1)
+    // process any incoming requests
+    handleMessages()
+
+    val ans: List[P[ChildStatus]] = messenger.waitUntilAllReply(wReply).asInstanceOf[List[P[ChildStatus]]]
 
     knowledgeBase.remember(Set(seeAllNeighbor()))
-
-    val ans: ListBuffer[P[ChildStatus]] = new ListBuffer[P[ChildStatus]]()
-    future_objs.toList.foreach(o => ans.append(getFutureValue[P[ChildStatus]](o.get)))
-    future_objs.toList.foreach(o => clearFutureObj(o.get))
-    future_objs.clear()
-
     assert(ans.size == neighbors.size)
 
     // remember what they see
-    ans.toList.foreach(c => {
+    ans.map(c => {
       val f: EpistemicSentence = if (c.proposition.isMuddy) {
         P(ChildMuddy(c.proposition.id))
       } else {
         NotE(P(ChildMuddy(c.proposition.id)))
       }
       knowledgeBase.recordLearning(epoch, Set(Ka(id, f)))
+      c
     })
-
-    ans.toList
   }
 
   def main(): Unit = {
-    neighbors.foreach(n => neighborIds.append(n.id))
+    neighborIds = neighbors.map(n => n.id)
     while (true) {
       see().foreach(s => {
         think(s)

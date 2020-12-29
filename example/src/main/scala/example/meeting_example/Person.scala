@@ -11,9 +11,9 @@ class Person(var isBoss: Boolean) extends Actor {
     while (true) {
       println("Meeting attendee: " + id)
       if (isBoss) {
-        waitLabel("MeetingGroup", 2)
+        waitLabel(Group("Meeting"), 2)
       } else {
-        waitLabel("MeetingGroup", 1)
+        waitLabel(Group("Meeting"), 1)
       }
       handleMessages()
     }

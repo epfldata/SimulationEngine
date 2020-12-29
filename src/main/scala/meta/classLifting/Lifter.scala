@@ -233,8 +233,8 @@ object Lifter {
             )
         handleMessage.asInstanceOf[Algo[T]]
 
-      case code"SpecialInstructions.waitLabel($x: String, $y: Double)" =>
-        WaitLabel(x, y).asInstanceOf[Algo[T]]
+      case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
+        WaitLabel(code"$x.toString()", y).asInstanceOf[Algo[T]]
 
       case code"SpecialInstructions.interrupt($interval: Double, (() => ${MethodApplication(msg)}))" =>
         val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order

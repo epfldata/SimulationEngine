@@ -1,7 +1,7 @@
 package example
 package epistemicLogicVC
 
-import lib.EpistemicLogic.Sentence._
+import lib.EpistemicLogic._
 
 import VCHelper._
 
@@ -74,7 +74,7 @@ class Process extends Actor {
         send(others(r))
       }
       handleMessages()
-      waitLabel("turn",1)
+      waitLabel(Turn,1)
     }
   }
 }

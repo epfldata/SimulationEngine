@@ -2,8 +2,7 @@ package example
 package epistemicLogicVC
 
 import example.epistemicLogicVC.VCHelper.ProcessTime
-import lib.EpistemicLogic.KnowledgeBase
-import lib.EpistemicLogic.Sentence._
+import lib.EpistemicLogic._
 import meta.runtime.Actor.AgentId
 
 class VectorClock extends KnowledgeBase {

@@ -11,7 +11,7 @@ class MessengerBot() extends Actor {
 
   def waitUntilAllReceive(future_objs: List[Option[Future[Any]]]): Unit = {
     while (!(future_objs.nonEmpty && future_objs.forall(x => SimRuntime.isCompleted(x.get)))) {
-      waitLabel("turn",1)
+      waitLabel(Turn,1)
     }
     future_objs.foreach(o => SimRuntime.clearFutureObj(o.get))
     deleted = true
@@ -19,7 +19,7 @@ class MessengerBot() extends Actor {
 
   def waitUntilAllReply(future_objs: List[Option[Future[Any]]]): List[Any] = {
     while (!(future_objs.nonEmpty && future_objs.forall(x => SimRuntime.isCompleted(x.get)))) {
-      waitLabel("turn",1)
+      waitLabel(Turn,1)
     }
     val ans: List[Any] = future_objs.map(o => SimRuntime.getFutureValue[Any](o.get))
     future_objs.foreach(o => SimRuntime.clearFutureObj(o.get))
@@ -30,7 +30,7 @@ class MessengerBot() extends Actor {
   def main(): Unit = {
     while (!deleted) {
       handleMessages()
-      waitLabel("turn", 1)
+      waitLabel(Turn, 1)
     }
   }
 }

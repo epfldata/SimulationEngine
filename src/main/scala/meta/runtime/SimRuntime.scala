@@ -1,5 +1,6 @@
 package meta.runtime
 
+import meta.classLifting.SpecialInstructions.waitMode
 import scala.collection.mutable.{ListBuffer, Map}
 
 object SimRuntime {
@@ -8,11 +9,15 @@ object SimRuntime {
   var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
 
   // track the number of Sims waiting for each label at each iteration. Set once
-  val waitLabels: Map[String, Long] = Map[String, Long]()
+  private val waitLabels: Map[String, Long] = Map[String, Long]()
 
   // track the min value that each label group should advance by
   val labelVals: Map[String, ListBuffer[Double]] = Map[String, ListBuffer[Double]]()
   var proceedLabel: Map[String, Double] = Map[String, Double]()
+
+  def registerLabel(group: waitMode, totalSubscribers: Long): Unit = {
+    waitLabels += (group.toString -> totalSubscribers)
+  }
 
   def isCompleted(future_obj: Future[Any]): Boolean = {
     async_messages.get(future_obj.id).isDefined

@@ -45,7 +45,7 @@ trait Person extends Actor {
        if (Random.nextInt(30) == 5) {
          newHire()
        }
-       waitLabel("turn",1 )
+       waitLabel(Turn,1 )
        handleMessages()
      }
    }

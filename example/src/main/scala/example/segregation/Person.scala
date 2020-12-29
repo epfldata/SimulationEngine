@@ -47,10 +47,10 @@ class Person(var world: WorldMap, var view: Int) extends Actor {
 //          println(id + " I want to move! " + location)
           location = world.move(location)
         }
-        waitLabel("People", 1)
-//        waitLabel("time",1)
+        waitLabel(Group("People"), 1)
+//        waitLabel(Time,1)
       }
-//      waitLabel("turn",1)
+//      waitLabel(Turn,1)
       handleMessages()
     }
   }

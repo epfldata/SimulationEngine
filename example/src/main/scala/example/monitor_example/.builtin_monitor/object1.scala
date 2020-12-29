@@ -19,7 +19,7 @@
 //        monitor.logAggregate("Infectious")
 //        monitor.logTimeseries("Infectious")
 //      }
-//      waitLabel("turn",1)
+//      waitLabel(Turn,1)
 //      handleMessages()
 //    }
 //  }

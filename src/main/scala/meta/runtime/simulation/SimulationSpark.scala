@@ -5,6 +5,7 @@ import SimRuntime._
 import scala.collection.mutable.ListBuffer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext, broadcast}
+import meta.classLifting.SpecialInstructions.Time
 
 class SimulationSpark(val config: SimulationConfig) extends Simulation {
 
@@ -54,7 +55,7 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
     })
     events.append(() => {
       collect()
-      waitLabels("time") = actors.count()
+      registerLabel(Time, actors.count())
     })
     events.append(() => {
       val messageMap: scala.collection.Map[Actor.AgentId, Set[Message]] = actors

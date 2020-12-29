@@ -1,10 +1,12 @@
-package example.epistemicLogicMC
+package example
+package epistemicLogicExamples
+package MuddyChildren
 
-import meta.deep.runtime.Actor.AgentId
-import lib.EpistemicLogic.Sentence._
-import lib.EpistemicLogic.Utils._
+import lib.EpistemicLogic._
 
 object MCHelper {
+  import meta.runtime.Actor.AgentId
+
   case class ChildStatus(id: AgentId, isMuddy: Boolean, isForward: Boolean, epoch: Int)
   case class HearParent(epoch: Int)
   case class ChildMuddy(id: AgentId, isMuddy: Boolean = true)
@@ -15,7 +17,7 @@ object MCHelper {
 
   // at least one muddy child
   def announce(ids: List[AgentId]): EpistemicSentence = {
-    ors(ids.map(i => P(ChildMuddy(i))))
+    Utils.ors(ids.map(i => P(ChildMuddy(i))))
   }
 
   // speculate: agent i hasn't stepped up in the past n round => agent i knows there are at least n muddy children
@@ -38,7 +40,7 @@ object MCHelper {
     if (ans.isEmpty) {
       Set(Ka(i, P(ChildMuddy(i))))
     } else {
-      Set(Ka(i, ors(ans.map(cs => ands(cs.map(c => P(ChildMuddy(c))))))))
+      Set(Ka(i, Utils.ors(ans.map(cs => Utils.ands(cs.map(c => P(ChildMuddy(c))))))))
     }
   }
 

@@ -15,7 +15,7 @@ class Env() extends Actor {
 
   def main(): Unit = {
     while(true){
-      waitLabel("turn",1)
+      waitLabel(Turn,1)
       handleMessages()
       println("Current rumor count: " + rumorReach)
     }

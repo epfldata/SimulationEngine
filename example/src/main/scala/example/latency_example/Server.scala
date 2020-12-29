@@ -13,7 +13,7 @@ class Server(var processTime: Double) extends Actor {
     println("Server processing request for " + clientId)
     if (Random.nextBoolean()) {
       println("Please wait! ; take " + processTime)
-      waitLabel("time", processTime)
+      waitLabel(Time, processTime)
     }
     val ans: Int = Random.nextInt(100)
     println("Response for client id " + clientId + " is " + ans)
@@ -23,8 +23,8 @@ class Server(var processTime: Double) extends Actor {
   def main(): Unit = {
     while(true) {
       handleMessages()
-      waitLabel("time",0.1)
-      waitLabel("turn",1)
+      waitLabel(Time,0.1)
+      waitLabel(Turn,1)
     }
   }
 }

@@ -96,10 +96,10 @@ class WorldMap() extends Actor with Torus2D {
       segregationMeasure()
 //      if (totalReports == (Actor.totalSims - 1)){
 //        totalReports = 0
-//        waitLabel("time",(1)
+//        waitLabel(Time,(1)
 //      }
 //      printWorld()
-      waitLabel("turn",1)
+      waitLabel(Turn,1)
     }
   }
 }

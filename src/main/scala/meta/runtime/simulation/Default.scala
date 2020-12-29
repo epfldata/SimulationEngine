@@ -4,6 +4,7 @@ package simulation
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import SimRuntime._
+import meta.classLifting.SpecialInstructions.Time
 
 class Default(val config: SimulationConfig) extends Simulation {
 
@@ -42,7 +43,7 @@ class Default(val config: SimulationConfig) extends Simulation {
     )
     events.append(() => collect())
     // If new actors are added, time takes them into account as well
-    events.append(() => waitLabels("time") = actors.length)
+    events.append(() => registerLabel(Time, actors.length))
     events.append(() => {
       val mx = actors.flatMap(_.getSendMessages).groupBy(_.receiverId)
       actors = actors.map { a =>

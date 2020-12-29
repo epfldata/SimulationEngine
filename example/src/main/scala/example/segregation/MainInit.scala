@@ -2,26 +2,24 @@ package example
 package segregation
 
 import squid.quasi.lift
+import meta.classLifting.SpecialInstructions.Group
 
 @lift
 class MainInit {
   def main(): List[Actor] = {
-    val foo: ListBuffer[Actor] = new ListBuffer()
+    var foo: List[Actor] = List()
 
     val worldMap = new WorldMap()
-    foo.append(worldMap)
+    foo = worldMap :: foo
+
     val populationSize: Int = 1125
 
-    (1 to populationSize).foreach(i => {
-      val p1 = new Person(worldMap, 0)
-      val p2 = new Person(worldMap, 1)
-      foo.append(p1, p2)
-    })
+    foo = foo ++ (1 to populationSize).toList.flatMap(i =>
+      List(new Person(worldMap, 0), new Person(worldMap, 1))
+    )
 
     // Setup the wait label
-    SimRuntime.waitLabels("People") = populationSize*2
-    // Setup the monitor, if desired
-//    worldMap.monitor.initTimeseries("Segregation")
-    foo.toList
+    SimRuntime.registerLabel(Group("People"), populationSize*2)
+    foo
   }
 }

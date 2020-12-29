@@ -14,7 +14,7 @@ class object1(var own_monitor: monitorSim) extends Actor {
         println("Object1 wins the game!")
         own_monitor.logAggregate()
       }
-      waitLabel("turn",1)
+      waitLabel(Turn,1)
       handleMessages()
     }
   }

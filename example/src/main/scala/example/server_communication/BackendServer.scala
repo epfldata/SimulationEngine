@@ -15,7 +15,7 @@ class BackendServer() extends Actor {
   def main(): Unit = {
     while(true) {
       println("Hello world! Backend " + id + " Turn " + currentTurn)
-      waitLabel("turn",1)
+      waitLabel(Turn,1)
       handleMessages()
     }
   }

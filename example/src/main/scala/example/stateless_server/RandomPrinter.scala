@@ -19,7 +19,7 @@ class RandomPrinter() extends Actor {
   def main(): Unit = {
     while (true) {
       printNum()
-      waitLabel("turn",1)
+      waitLabel(Turn,1)
       handleMessages()
     }
   }

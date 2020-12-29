@@ -18,7 +18,7 @@ class FrontendServer() extends Actor {
 //      requestPage()
 //      println("Hello world! Frontend " + id + " Turn " + currentTurn)
       println("requestPage content is " + requestPage())
-      waitLabel("turn",1)
+      waitLabel(Turn,1)
       handleMessages()
     }
   }

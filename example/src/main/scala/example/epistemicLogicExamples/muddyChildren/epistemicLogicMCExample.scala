@@ -1,11 +1,11 @@
-package example.epistemicLogicMC
+package example
+package epistemicLogicExamples
+package MuddyChildren
 
-import meta.deep.runtime.Actor
 import squid.quasi.lift
-import scala.collection.mutable.ListBuffer
 
 @lift
-class MainInit extends Actor {
+class MainInit {
   def main(): List[Actor] = {
     val l: ListBuffer[Actor] = new ListBuffer[Actor]()
     val lc: ListBuffer[Child] = new ListBuffer[Child]()
@@ -36,13 +36,13 @@ class MainInit extends Actor {
 }
 
 object epistemicLogicMCExample extends App {
-  import meta.deep.IR
-  import meta.deep.IR.TopLevel.ClassWithObject
-  import meta.compile.compileSims
+
+  import lib.Bot.MessengerBot
 
   val cls2: ClassWithObject[Adult] = Adult.reflect(IR)
   val cls1: ClassWithObject[Child] = Child.reflect(IR)
+  val cls3: ClassWithObject[MessengerBot] = MessengerBot.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  compileSims(List(cls2, cls1), mainClass)
+  compileSims(List(cls2, cls1, cls3), mainClass)
 }

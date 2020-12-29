@@ -62,7 +62,7 @@ trait Torus2D {
 //    val f = Figure()
 //    val p = f.subplot(0)
 //
-//    p.xlabel = "Time"
+//    p.xlabel = Time
 //    p.ylabel = "Segregation Level"
 //    f.saveas("segregation.png")
 //  }
