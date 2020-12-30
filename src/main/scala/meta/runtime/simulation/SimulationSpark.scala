@@ -41,6 +41,7 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
       i.currentTurn = currentTurn
       i
     })
+    actors.count()
   }
 
   def scheduleEvents(): List[()=> Unit] = {
@@ -82,7 +83,8 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
 
   def collect(): Unit = {
     newActors.map(i => i.currentTurn = currentTurn)
-    actors = (actors ++ sc.parallelize(newActors)).cache()
+    actors = (actors ++ sc.parallelize(newActors))
+//      .cache()
     newActors.clear()
   }
 
@@ -97,7 +99,11 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
 
     val end = System.nanoTime()
     val consumed = end - start
-    println("Time consumed", consumed)
-    SimulationSnapshot(actors.collect().toList, currentTurn, currentTime)
+
+    val updatedActors: List[Actor] = actors.collect().toList
+
+    println("Time consumed, " + consumed)
+
+    SimulationSnapshot(updatedActors, currentTurn, currentTime, util.nanoToMilli(consumed))
   }
 }

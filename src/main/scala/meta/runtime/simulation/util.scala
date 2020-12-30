@@ -21,6 +21,11 @@ object util {
     "(Time " + truncDigit(time) + " Turn " + turn + ")" 
   }
 
+  // Milli
+  def nanoToMilli(nanoSec: Long): Double = {
+    nanoSec / 1000000.0
+  }
+
   // record log events
   def record[T](block: => T): immutable.Seq[ILoggingEvent] = {
     /** Collects all log events that occur */

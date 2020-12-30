@@ -68,7 +68,9 @@ class Default(val config: SimulationConfig) extends Simulation {
 
     val end = System.nanoTime()
     val consumed = end - start
-    println("Time consumed", consumed)
-    SimulationSnapshot(actors, currentTurn, currentTime)
+
+    println("Time consumed," + consumed)
+
+    SimulationSnapshot(actors, currentTurn, currentTime, util.nanoToMilli(consumed))
   }
 }

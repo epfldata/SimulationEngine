@@ -6,7 +6,3 @@ case class SimulationConfig(var actors: List[Actor],
                             val totalTurn: Int = 100,
                             var startTime: Double = 0,
                             val totalTime: Double = 10)
-
-case class SimulationSnapshot(var actors: List[Actor] = List(),
-                              var currentTurn: Int = 0,
-                              var currentTime: Double = 0)
