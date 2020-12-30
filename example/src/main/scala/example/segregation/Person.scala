@@ -1,15 +1,13 @@
 package example
 package segregation
 
-import segregationModel.Loc
-
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 
 @lift
 class Person(var world: WorldMap, var view: Int) extends Actor {
 
-  var location: Loc = -1
+  var location: Int = -1
   var similarity: Double = 1
 
   def register(): Unit = {

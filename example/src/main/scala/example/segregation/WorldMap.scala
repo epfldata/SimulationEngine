@@ -1,8 +1,9 @@
 package example
 package segregation
 
-import scala.collection.mutable.{Map, ArrayBuffer}
-import segregationModel.Loc
+import lib.Space.Torus2D
+
+import scala.collection.mutable.{ArrayBuffer, Map}
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
@@ -14,35 +15,35 @@ class WorldMap() extends Actor with Torus2D {
   var height: Int = segregationModel.worldHeight
   var radius: Int = segregationModel.neighborhoodRadius
 
-  val emptyLoc: ArrayBuffer[Loc] = (0 to (segregationModel.worldWidth * segregationModel.worldHeight-1)).to[ArrayBuffer]
+  val emptyLoc: ArrayBuffer[Int] = (0 to (segregationModel.worldWidth * segregationModel.worldHeight-1)).to[ArrayBuffer]
 
-  val similarities: Map[Loc, Double] = Map[Loc, Double]()
-  val world: Map[Loc, Person] = Map[Loc, Person]()
+  val similarities: Map[Int, Double] = Map[Int, Double]()
+  val world: Map[Int, Person] = Map[Int, Person]()
 
   var totalReports: Int = 0
 
   // Return a free location
-  private def getPlacement(): Loc = {
-    val freeLoc: Loc = emptyLoc(Random.nextInt(emptyLoc.length))
+  private def getPlacement(): Int = {
+    val freeLoc: Int = emptyLoc(Random.nextInt(emptyLoc.length))
     emptyLoc -= freeLoc
     freeLoc
   }
 
   // Return -1 if unable to locate, otherwise return the location
-  def registerLocation(p: Person): Loc = {
+  def registerLocation(p: Person): Int = {
     if (emptyLoc.length == 0) {
       -1
     } else {
-      val loc: Loc = getPlacement()
+      val loc: Int = getPlacement()
       world(loc) = p
       loc
     }
   }
 
   // Find the neighbor cells and return people who live there
-  def getNeighbors(n: Loc): List[Person] = {
+  def getNeighbors(n: Int): List[Person] = {
     val neighborhood: ArrayBuffer[Person] = ArrayBuffer[Person]()
-    val neighborLocs: List[Loc] = (neighborCells(n, radius) - n).toList // remove the req cell, if in the neighborCells
+    val neighborLocs: List[Int] = (neighborCells(n, radius) - n).toList // remove the req cell, if in the neighborCells
 
     // Not supported by current lifter 
 //    neighborLocs.filter(loc => world.get(loc).isDefined).map(loc => world.get(loc).get)
@@ -55,11 +56,11 @@ class WorldMap() extends Actor with Torus2D {
     neighborhood.toList
   }
 
-  def move(n: Loc): Loc = {
+  def move(n: Int): Int = {
     if (emptyLoc.length == 0){
       n
     } else {
-      val loc: Loc = getPlacement()
+      val loc: Int = getPlacement()
       emptyLoc.append(n)                // free the prev loc
       world(loc) = world.remove(n).get  // update the map
       similarities.remove(n)            // remove its prev report
@@ -68,7 +69,7 @@ class WorldMap() extends Actor with Torus2D {
   }
 
   // record the similarity report from Sims
-  def report(loc: Loc, similarity: Double): Unit = {
+  def report(loc: Int, similarity: Double): Unit = {
     totalReports = totalReports + 1
     similarities(loc) = similarity
   }
@@ -86,7 +87,7 @@ class WorldMap() extends Actor with Torus2D {
 
   def printWorld(): Unit = {
     println("***********")
-    println("Loc" + " View" + " Id")
+    println("Int" + " View" + " Id")
     world.toList.sortBy(pair => pair._1).foreach(pair => println(pair._1, pair._2.view, pair._2.id))
   }
 
