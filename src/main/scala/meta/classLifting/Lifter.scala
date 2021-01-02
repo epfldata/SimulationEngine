@@ -378,6 +378,18 @@ object Lifter {
           liftCode(code"$body", actorSelfVariable, clasz))
         Some(f.asInstanceOf[Algo[T]])
 
+      case code"($x: List[$tb]).filter(($y: tb) => $body: Boolean): List[tb] " =>
+        val el = Variable[Boolean]
+
+        val f = FlatMap[tb.Typ, tb.Typ](x, y,
+          LetBinding(Some(el),
+            liftCode(code"$body", actorSelfVariable, clasz),
+            IfThenElse(code"$el",
+              ScalaCode(code"List($y)"),
+              ScalaCode(code"List()"),
+            )))
+        Some(f.asInstanceOf[Algo[T]])
+
       case code"($x: List[$tb]).foldLeft($a: $ta)(($y: ta, $z: tb) => $body): ta" =>
         // todo
         Some(ScalaCode(cde))
