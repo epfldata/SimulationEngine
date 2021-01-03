@@ -1,7 +1,27 @@
-# economic_simulations
+# Large-scale agent-based simulation 
 
-### Write Classes using Code-Lifting
-* Do not use val parameters, they can't be lifted.  Use var instead
+The goal of this project is to provide a framework suitable for scaled-out simulation. Each Sim has a mailbox, and communicates with others through sending and receiving messages. 
+
+### Synchronization DSLs
+
+To address the synchronization issue among Sims (agents), we define a set of DSL functions. The syntax for a blocking message is the same as a regular function. You can define in Sim1 a call to Sim2:  
+
+```val secret: Int = Sim2.tellMeThis()``` or ```val workDone: Boolean = Sim2.doThat()``` 
+
+given that tellMeThis() and doThat() are public methods in Sim2's class. The compiler converts it to delivering a message to Sim2 and waiting for a reply. When the reply arrives, the function returns and Sim1's variables ```secret``` and ```workDone```  get their values. Besides blocking calls, Sim can also send asynchronous messages, with a different syntax```asyncMessage(() => msg)```. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. Function ```waitLabel``` signals that messages in the Sim's mailbox are ready to be delivered. Apart from communicating with others, Sim decides when it wants to check its mailbox by calling another DSL function, ```handleMessages```. We also have another special instruction, interrupt.  You can find the signature of these methods here ```/src/main/scala/meta/classLifting/SpecialInstructions.scala```
+
+### Class-lifting Sims 
+Users define the behaviour of each agent in its own class. This project uses library Squid to lift classes and generate the IR for our compiler before emitting compiled code to folder ```/generated```. Please make sure you have the  Squid library installed before proceeding. 
+```
+- clone the class-lifting branch of Squid repo: 
+  https://github.com/epfldata/squid.git
+- create a local snapshot by running publishLocal: 
+  bash bin/publishLocal.sh
+- Expected output: 
+  you should see "build 0.4.1-SNAPSHOT"
+```
+   
+   Here are some tips for writing class-lifting code: 
 * The optimzations created work for specific use-cases:
   * ActorMerge takes a pair of ActorType Names to specify which one to merge.  
   Take care, that the class variables are named differently in the two Sims
@@ -16,6 +36,8 @@
   * while(cond) {code}
   * var x = code
   * list.foreach(code)
+  * list.map(code)
+  * list.flatMap(code)
   * (x <: Actor).\[methodCall\](...)
   * if(cond) code else code2
 * You can use any other code, which does not contain a nested supported lifting structure.   
@@ -24,54 +46,31 @@
   * add in this subclass the nodes to the graph
   * Extend the lifter and override the method liftCodeOther  
   and handle there your created algos.
-* You can call following additional functions:
-  * asyncMessage(message) ... send a nonblocking message. Please checkout the example in folder nb_methods_example/ for how it is used 
-  * waitTurns(x: Int) ... the Sim waits for x turns
-  * waitTime(x: Double) ... the Sim waits for x unit of time. Time advances only when all Sims are waiting for time.
-* It is required to use waitTurns at least once in a loop, like while(true),
-  otherwise this Sim will not stop its step
-* To lift a class annotate it with @lift and extend from runtime.Actor
+* To lift a class, annotate it with @lift and extend from runtime.Actor
+
+All simulation samples are in folder `example/`. Besides defining Sim classes that describe their behaviour, users also define a MainInit file that describes how many instances of the Sims to generate, and a singleton object that compiles the example.
+
+
+### Run Class-lifting Examples
  
-### Run Classlifting-Examples
-Make sure to run the code with enough stack size, otherwise you will get a StackOverflowError. 
-You can set this parameter for example in Intellij by putting -Xss128m (128MB Stack size) at VM configuration in the 
-configuration settings.
-
-At the moment it is important to build squid locally (branch: class-lifting) before using this code. Since there is no public release for certain features.
-```
-// clone the squid repo: https://github.com/epfldata/squid.git
-git checkout class-lifting
-// inside the squid folder
-bin/publishLocal.sh
-// you should see "build 0.4.1-SNAPSHOT"
-```
+The generated code is in folder `/generated/src/main/scala/$packageName$`. Please reference the test scripts in `/generated/src/test/scala` for how to start a simulation. 
  
-Please note that `/src/main/scala/ecosim` contains a standalone copy of the project in current master branch, which is the initial version that doesn't include message passing or relying on Squid. 
+### Project Structure 
+- `ecosim/` contains the legacy implementation of the simulation framework without using message passing 
+- `example/` contains the examples using class-lifting and message-passing 
+- `generated/` contains the compiled examples. The simulation drivers take compiled examples and run 
+- `lib/` contains the library for writing the class-lifting examples. 
+    - `Bot/` are the agents which you can instantiate directly in your example. Please refer to the rumor example which uses the LoggerBot to see how to use it. Please make sure to include the Bot you used in your main class when compiling your example. 
+    - Other folders contain helper classes which are non-agent that you can use directly in your example. 
+- `src/` contains the compiler source code and supporting runtime objects. 
 
-Examples in `meta`, upon successful termination, will generate files which are used for the actual simulation in 
-folder `generated`. For example, consider the case `server_communication` in `src/main/scala/meta/example`. After running **ServerExample**, one should find 
-files **BackendServer**, **FrontendServer**, and **InitData** been generated in folder `generated/main/scala/generated`. Now one 
-can proceed to start the actual simulation by running **generated/main/scala/generated/Simulation** and the expected output is
-```$xslt
-(TIMER, 0)
-...
-(Time consumed, *some_number*)
-```
-If desired, you can test the actorMerge optimization by replacing the **ServerExample** with **ServerExampleMerge**. One should see the merged file `BackendServer_FrontendServer` being generated in 
-`generated`. As of now, you need to modify the generated **InitData** file to start the merged actor. 
-
-To test the performance with Spark support, you can run **generated/main/scala/generated/SimulationSpark** in lieu of **generated/main/scala/generated/Simulation** over IRs. Please do note
-that the **InitData** is overwritten by the new example. It is easy to modify the output directory and package name for the desired simulation, where are specified in the ***Example** file. Upon 
-such modification, please also change 
-
-```actors = generated.InitData.initActors``` 
-
-in **Simulation** to 
-
-```actors = *new_package_name*.InitData.initActors```
-
-where the **new_package_name** is what specified in ***Example** file with default value "generated" defined in `src/main/scala/meta/deep/codegen/CreateCode`. 
  
 ### Code Format
 We use Scalafmt for formatting the code.
 For installing Scalafmt with your favorite IDE see https://scalameta.org/scalafmt/
+
+### Known Issues 
+Occassionally you may see StackOverFlowError when compiling your example. Please make sure to increase your stack size before launching JVM. 
+In Intellij, you can set -Xss128m (128MB Stack size) at VM configuration in the configuration settings.
+
+Please open an issue or make a pull request if you encounter any problems or have suggestions. Thank you.  

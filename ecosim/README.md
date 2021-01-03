@@ -1,0 +1,1 @@
+This folder contains the legacy implementation of the simulation framework that doesn't include message passing or relying on Squid. Currently it is a copy of the master branch. 
