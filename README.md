@@ -1,18 +1,24 @@
 # Large-scale agent-based simulation 
 
-The goal of this project is to provide a framework suitable for scaled-out agent-based simulation. Each agent (Sim) has a mailbox, and communicates with others through sending and receiving messages.  
+The goal of this project is to provide a framework suitable for scaled-out agent-based simulation. From a high-level, each Sim has state variables and methods. Sims communicate by sending messages. 
 
-### Synchronization DSLs
+### Synchronization DSL
 
 We define an embedded DSL to address the synchronization issue among Sims. 
 
-The syntax for a blocking message is the same as a regular function. You can define in Sim1 a call to Sim2:  
+The syntax for a blocking message is the same as a regular function. When a Sim calls the public method of another, it sends a blocking message to the receiver, waiting for its response. You can define in Sim1 a call to Sim2:  
 
 ```val secret: Int = Sim2.tellMeThis()``` or ```val workDone: Boolean = Sim2.doThat()``` 
 
-given that tellMeThis() and doThat() are public methods in Sim2's class. The transpiler converts it to delivering a message to Sim2 and waiting for a reply. When the reply arrives, the function returns and Sim1's variables ```secret``` and ```workDone```  get their values. Besides blocking calls, Sim can also send asynchronous messages, with a different syntax```asyncMessage(() => msg)```. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. Function ```waitLabel``` signals that messages in the Sim's mailbox are ready to be delivered. Apart from communicating with others, Sim decides when it wants to check its mailbox by calling another DSL function, ```handleMessages```. We also have another special instruction, interrupt.  You can find the signature of these methods here ```/src/main/scala/meta/classLifting/SpecialInstructions.scala```
+given that `tellMeThis()` and `doThat()` are public methods in Sim2's class. The transpiler converts it to delivering a message to Sim2 and waiting for a reply. When the reply arrives, the function returns and Sim1's variables ```secret``` and ```workDone```  get their values. 
 
-### Class-lifting Sims 
+Besides blocking calls, Sim can also send asynchronous messages, with a different syntax```asyncMessage(() => msg)```. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. 
+
+Function ```waitLabel``` signals that messages in the Sim's mailbox are ready to be delivered. 
+
+Apart from communicating with others, Sim decides when it wants to check its mailbox by calling another DSL function, ```handleMessages```. We also have another special instruction, `interrupt`.  You can find the signature of these methods here ```/src/main/scala/meta/classLifting/SpecialInstructions.scala```
+
+### Sims as Meta-Programs 
 The embedded DSL is in a staged meta-programming environment. Staging is the operation that generates **object programs** from **meta-programs**. In our framework, users define the behaviour of each agent in **meta-programs** written in a subset of Scala enriched with DSL, which are then translated by our transpiler to **object programs** (valid Scala source programs).
  
 We use Squid meta-programming framework. As of now, you need to build Squid locally (branch: class-lifting). 
@@ -53,12 +59,19 @@ We use Squid meta-programming framework. As of now, you need to build Squid loca
   and handle there your created algos.
 * To lift a class, annotate it with @lift and extend from runtime.Actor
 
-All simulation samples are in folder `example/`. Besides defining Sim classes that describe their behaviour, users also define a MainInit file that describes how many instances of the Sims to generate, and a singleton object that compiles the example.
 
-
-### Run Class-lifting Examples
+### Start Simulation 
+ Once you have written your meta-programs and translated them to object programs, you can start simulation. The object programs are in folder `/generated/src/main/scala/$packageName$`. To start a simulation, first define you simulation configuration: the total turns and time you want to run the simulation for. Next, decide whether you want to use Spark to parallelize your agents. When running locally, Spark consumes more memory and often results in slower simulation. Afterwards, simply pass the configuration to the simulation driver and invoke `run()`. 
+```
+// Define the configuration for your simulation
+val c: Config = new Config(InitData.initActors, 0, 100, 0, 10)
+// Pass the configuration to default simulation 
+val result: SimulationSnapshot = new Simulation(c).run()
+// Pass the configuration to Spark simulation 
+val result2: SimulationSnapshot = new SimulationSpark(c).run()
+```
  
-The generated object programs are in folder `/generated/src/main/scala/$packageName$`. Please reference the test scripts in `/generated/src/test/scala` for how to start a simulation. 
+ You can also reference the test scripts in `/generated/src/test/scala`
  
 ### Project Structure 
 - `ecosim/` contains the legacy implementation of the simulation framework without using message passing 
