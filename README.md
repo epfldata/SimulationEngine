@@ -73,7 +73,7 @@ val result2: SimulationSnapshot = new SimulationSpark(c).run()
  
  You can also reference the test scripts in `/generated/src/test/scala`
  
-### Project Structure 
+### Folder Structure 
 - `ecosim/` contains the legacy implementation of the simulation framework without using message passing 
 - `example/` contains the examples using class-lifting and message-passing 
 - `generated/` contains the object programs. The simulation drivers take object programs and run 
@@ -88,8 +88,7 @@ We use Scalafmt for formatting the code.
 For installing Scalafmt with your favorite IDE see https://scalameta.org/scalafmt/
 
 ### Known Issues 
-- "StackOverFlow": Occassionally you may get StackOverFlowError when compiling your example. Please make sure to increase your stack size before launching JVM. 
-In Intellij, you can set -Xss128m (128MB Stack size) at VM configuration in the configuration settings.
+- "StackOverFlow": You may get StackOverFlowError in staging phase. Please make sure to increase your stack size before launching JVM. In Intellij, you can set -Xss128m (128MB Stack size) at VM configuration in the configuration settings.
 
 - "None.get during macro expansion": If you see the following error message when compiling your example, please check all the parameters in your lifted classes have references val or var.  
 ```
@@ -102,4 +101,15 @@ java.util.NoSuchElementException: None.get
 @lift 
 ```
 
-Please open an issue or make a pull request if you encounter any problems or have suggestions. Thank you.  
+- "Unsupported feature: Refinement type 'Product with Serializable with $your_trait_name$'": If you get this error during lifting, please make sure your trait referenced in $your_trait_name$ extends "Product with Serializable" 
+```
+Embedding Error: Unsupported feature: Refinement type 'Product with Serializable with ...'
+@lift
+```
+
+- "Term ... rewritten to ...": You can ignore this warning 
+```
+Term of type _$1 was rewritten to a term of type List[Option[meta.runtime.Future[Unit]]], not a known subtype.
+``` 
+
+Please open an issue or make a pull request if you encounter other problems or have suggestions. Thank you.  
