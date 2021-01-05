@@ -115,7 +115,7 @@ class Actor extends Serializable {
   var currentTime: Double = 0
   var current_pos: Int = 0
 
-  val logger = LoggerFactory.getLogger(this.getClass.getName())
+//  val logger = LoggerFactory.getLogger(this.getClass.getName())
 
   /**
     * Contains the received messages from the previous step
