@@ -140,11 +140,12 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     // Add to resolve package object
     this.typesReplaceWith = ("\\.package\\.", "\\.`package`\\.") :: this.typesReplaceWith
 
-    val initParams: String = compiledActorGraph.actorTypes.flatMap(actorType => {
+    val initParams: String = changeTypes(
+      "\n" + compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.map(s =>{
-        s"  var ${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
+        s"  var ${s.sym.name}: ${s.tpe.rep.toString} = ${IR.showScala(s.init.rep)};"
         //        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
-      })}).mkString("\n")
+      })}).mkString("\n"))
 
     val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.parameterList.map(x => {
@@ -405,13 +406,22 @@ $run_until
       result = result.replaceAll(k._1, k._2)
     }
 
+    val typedPattern = s"(\\s*)(va[r|l] .*): (.*) = new generated\\.(.*);".r    // general form of var assignments
+    val nonTypedPattern = s"(\\s*)(val .*) = new generated\\.(.*);".r    // general form of val assignments
+
     // new Sims are added to newActors at runtime
     init match {
       case true => result
       case _ => {
-        val newSimPattern = s"(\\s*)val (\\S*) = new generated\\.(.*);".r
-        newSimPattern.replaceAllIn(result,
-          m=>{(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2)})")})
+        result = typedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
+        result = nonTypedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
+        result
+//        val newSimPattern1 = s"(\\s*)va[l|r] (\\S+) = new generated\\.(.*);".r
+//        newSimPattern1.replaceAllIn(result,
+//          m=>{(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2)})")})
+//        val newSimPattern2 = s"(\\s*)va[r|l] ([\w+]): (\\S*) = new generated\\.(.*);".r
+//        newSimPattern2.replaceAllIn(result,
+//          m=>{(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2)})")})
       }
     }
   }
