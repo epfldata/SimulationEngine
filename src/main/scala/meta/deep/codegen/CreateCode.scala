@@ -158,7 +158,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     }).mkString(", ")
 
     def parents: String = {
-      s"${compiledActorGraph.parentNames.head}${compiledActorGraph.parentNames.tail.foldLeft("")((a,b) => a + " with " + b)}"
+      s"${compiledActorGraph.parentNames.head}${compiledActorGraph.parentNames.tail.foldLeft("")((a,b) => a + " with " + changeTypes(b))}"
     }
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars, run_until, parents);
