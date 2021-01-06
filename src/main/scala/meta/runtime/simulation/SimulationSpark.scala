@@ -4,7 +4,7 @@ package simulation
 import SimRuntime._
 import scala.collection.mutable.ListBuffer
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkConf, SparkContext, broadcast}
+import org.apache.spark.{SparkConf, SparkContext}
 import meta.classLifting.SpecialInstructions.Time
 
 class SimulationSpark(val config: SimulationConfig) extends Simulation {
@@ -18,7 +18,7 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
 
   @transient private lazy val sc: SparkContext = new SparkContext(conf)
 
-  @transient private var actors: RDD[Actor] = sc.parallelize(config.actors)
+  @transient private var actors: RDD[(Actor.AgentId, Actor)] = sc.parallelize(config.actors).map(x => (x.id, x))
   private var currentTurn: Int = config.startTurn
   private var currentTime: Double = config.startTime
 
@@ -36,7 +36,7 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
     currentTurn = currentTurn + proceedLabel("turn").asInstanceOf[Int]
     currentTime = currentTime + proceedLabel("time")
 
-    actors = actors.map(i => {
+    actors = actors.mapValues(i => {
       i.currentTime = currentTime
       i.currentTurn = currentTurn
       i
@@ -59,22 +59,21 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
       registerLabel(Time, actors.count())
     })
     events.append(() => {
-      val messageMap: scala.collection.Map[Actor.AgentId, Set[Message]] = actors
-        .flatMap(x => x.getSendMessages)
+      val messageMap: RDD[(Actor.AgentId, List[Message])] = actors
+        .flatMap(_._2.getSendMessages)
         .map(x => (x.receiverId, x))
         .combineByKey(
-          (message: Message) => Set(message),
-          (l: Set[Message], message: Message) => Set(message).union(l),
-          (l1: Set[Message], l2: Set[Message]) => l1 ++ l2).collectAsMap()
-      val dMessages = sc.broadcast(messageMap)
+          (message: Message) => List(message),
+          (l: List[Message], message: Message) => message :: l,
+          (l1: List[Message], l2: List[Message]) => l1 ::: l2
+        )
 
-      actors = actors.map(x => x.addReceiveMessages(dMessages.value.getOrElse(x.id, List()).toList))
-    })
-    events.append(() => {
-      actors = actors.map(x => x.cleanSendMessage)
-        .map(x => x.addInterrupts(currentTime))
-        .map(x => x.run_until(currentTurn))
-        .cache()
+      actors = actors
+        .leftOuterJoin(messageMap)
+        .mapValues { x =>
+          x._1.addReceiveMessages(x._2.getOrElse(List()))
+            .cleanSendMessage.addInterrupts(currentTime).run_until(currentTurn)
+        }.cache()
       actors.count()
     })
     events.append(() => proceed())
@@ -83,8 +82,7 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
 
   def collect(): Unit = {
     newActors.map(i => i.currentTurn = currentTurn)
-    actors = (actors ++ sc.parallelize(newActors))
-//      .cache()
+    actors = (actors ++ sc.parallelize(newActors).map(x => (x.id, x)))
     newActors.clear()
   }
 
@@ -100,7 +98,7 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
     val end = System.nanoTime()
     val consumed = end - start
 
-    val updatedActors: List[Actor] = actors.collect().toList
+    val updatedActors: List[Actor] = actors.values.collect.toList
 
     println("Time consumed, " + consumed)
 
