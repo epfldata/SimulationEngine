@@ -1,10 +1,8 @@
 package example
 package segregation
 
-import lib.Bot.LoggerBot
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions.Group
-import lib.Grid.Torus2D
 
 @lift
 class MainInit {

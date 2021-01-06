@@ -1,21 +1,24 @@
 package example
 package segregation
 
+import lib.Bot.LoggerBotTimeseries
 import lib.Grid.{Grid, Torus2D}
 
 import scala.collection.mutable.Map
-
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 
 @lift
 class WorldMap(val width: Int, val height: Int) extends Actor {
 
+  val loggerBot: LoggerBotTimeseries = new LoggerBotTimeseries("similarity", 10)
+
   var grid: Option[Grid[Int]] = None
   val similarities: Map[Int, Double] = Map[Int, Double]()
   val world: Map[Int, Person] = Map[Int, Person]()
 
   var totalReports: Int = 0
+  var segregationLevel: Double = 0
 
   def init(): Unit = {
     grid = Some(new Torus2D(width, height))
@@ -47,32 +50,22 @@ class WorldMap(val width: Int, val height: Int) extends Actor {
   }
 
   // segregation is measured as the average similarities
-  def segregationMeasure(): Double = {
+  def recordSegregation(): Unit = {
     if (similarities.size > 0) {
-//      monitor.logTimeseries("Segregation", similarities.values.sum / similarities.size)
-      logger.info("{}", similarities.values.sum / similarities.size)
-      similarities.values.sum / similarities.size
-    } else {
-      0
+      segregationLevel = similarities.values.sum / similarities.size
+      asyncMessage(() => loggerBot.append(segregationLevel))
     }
-  }
-
-  def printWorld(): Unit = {
-    println("***********")
-    println("Int" + " View" + " Id")
-    world.toList.sortBy(pair => pair._1).foreach(pair => println(pair._1, pair._2.view, pair._2.id))
   }
 
   def main(): Unit ={
     init()
     while(true){
       handleMessages()
-      segregationMeasure()
+      recordSegregation()
 //      if (totalReports == (Actor.totalSims - 1)){
 //        totalReports = 0
 //        waitLabel(Time,(1)
 //      }
-//      printWorld()
       waitLabel(Turn,1)
     }
   }
