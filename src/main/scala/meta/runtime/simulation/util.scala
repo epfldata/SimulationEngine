@@ -21,9 +21,11 @@ object util {
     "(Time " + truncDigit(time) + " Turn " + turn + ")" 
   }
 
-  // Milli
-  def nanoToMilli(nanoSec: Long): Double = {
-    nanoSec / 1000000.0
+  def bench(code: => Unit ): Unit = {
+    val start: Long = System.currentTimeMillis()
+    code
+    val end: Long = System.currentTimeMillis()
+    println(s"Total time: ${end - start} ms")
   }
 
   // record log events

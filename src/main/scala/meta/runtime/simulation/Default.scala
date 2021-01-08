@@ -21,6 +21,7 @@ class Default(val config: SimulationConfig) extends Simulation {
   def collect(): Unit = {
     newActors.map(i => i.currentTurn = currentTurn)
     actors = actors ::: newActors.toList
+    println("Total actors are " + actors.length)
     newActors.clear()
   }
 
@@ -61,16 +62,13 @@ class Default(val config: SimulationConfig) extends Simulation {
   def run(): SimulationSnapshot = {
 
     val events: List[()=> Unit] = init()
-    val start = System.nanoTime()
-    while (currentTurn <= config.totalTurn && currentTime <= config.totalTime) {
-      events.foreach(_())
+
+    util.bench {
+      while (currentTurn <= config.totalTurn && currentTime <= config.totalTime) {
+        events.foreach(_())
+      }
     }
 
-    val end = System.nanoTime()
-    val consumed = end - start
-
-    println("Time consumed," + consumed)
-
-    SimulationSnapshot(actors, currentTurn, currentTime, util.nanoToMilli(consumed))
+    SimulationSnapshot(actors, currentTurn, currentTime)
   }
 }

@@ -89,19 +89,15 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
   def run(): SimulationSnapshot = {
 
     val events: List[() => Unit] = init()
-    val start = System.nanoTime()
 
-    while (currentTurn <= config.totalTurn && currentTime <= config.totalTime) {
-      events.foreach(_())
+    util.bench {
+      while (currentTurn <= config.totalTurn && currentTime <= config.totalTime) {
+        events.foreach(_())
+      }
     }
-
-    val end = System.nanoTime()
-    val consumed = end - start
 
     val updatedActors: List[Actor] = actors.values.collect.toList
 
-    println("Time consumed, " + consumed)
-
-    SimulationSnapshot(updatedActors, currentTurn, currentTime, util.nanoToMilli(consumed))
+    SimulationSnapshot(updatedActors, currentTurn, currentTime)
   }
 }
