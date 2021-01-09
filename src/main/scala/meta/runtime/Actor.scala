@@ -114,6 +114,7 @@ class Actor extends Serializable {
   var currentTurn: Int = 0
   var currentTime: Double = 0
   var current_pos: Int = 0
+  var deleted: Boolean = false
 
 //  val logger = LoggerFactory.getLogger(this.getClass.getName())
 

@@ -47,7 +47,7 @@ class Default(val config: SimulationConfig) extends Simulation {
     events.append(() => registerLabel(Time, actors.length))
     events.append(() => {
       val mx = actors.flatMap(_.getSendMessages).groupBy(_.receiverId)
-      actors = actors.map { a =>
+      actors = actors.filterNot(x => x.deleted).map { a =>
       {
         a.cleanSendMessage
           .addInterrupts(currentTime)
