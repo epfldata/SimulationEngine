@@ -1,8 +1,15 @@
 # Large-scale agent-based simulation 
 
-The goal of this project is to provide a framework suitable for scaled-out agent-based simulation. From a high-level, each Sim has state variables and methods. Sims communicate by sending messages. 
+The goal of this project is to provide a framework suitable for scaled-out agent-based simulation. 
 
-### Synchronization DSL
+# Table of contents
+- [Synchronization DSL](#DSL)
+- [Sims as Meta-Programs](#Meta-programs)
+- [Start Simulation](#Simulation)
+- [Folder Structure](#Folder)
+- [Issues and Solutions](docs/Issues.md)
+
+### <a name="DSL"></a> Synchronization DSL
 
 We define an embedded DSL to address the synchronization issue among Sims. 
 
@@ -18,7 +25,7 @@ Function ```waitLabel``` signals that messages in the Sim's mailbox are ready to
 
 Apart from communicating with others, Sim decides when it wants to check its mailbox by calling another DSL function, ```handleMessages```. We also have another special instruction, `interrupt`.  You can find the signature of these methods here ```/src/main/scala/meta/classLifting/SpecialInstructions.scala```
 
-### Sims as Meta-Programs 
+### <a name="Meta-Programs"></a> Sims as Meta-Programs
 The embedded DSL is in a staged meta-programming environment. Staging is the operation that generates **object programs** from **meta-programs**. In our framework, users define the behaviour of each agent in **meta-programs** written in a subset of Scala enriched with DSL, which are then translated by our transpiler to **object programs** (valid Scala source programs).
  
 We use Squid meta-programming framework. As of now, you need to build Squid locally (branch: class-lifting). 
@@ -60,7 +67,7 @@ We use Squid meta-programming framework. As of now, you need to build Squid loca
 * To lift a class, annotate it with @lift and extend from runtime.Actor
 
 
-### Start Simulation 
+### <a name="Simulation"></a> Start Simulation 
  Once you have written your meta-programs and translated them to object programs, you can start simulation. The object programs are in folder `/generated/src/main/scala/$packageName$`. To start a simulation, first define you simulation configuration: the total turns and time you want to run the simulation for. Next, decide whether you want to use Spark to parallelize your agents. When running locally, Spark consumes more memory and often results in slower simulation. Afterwards, simply pass the configuration to the simulation driver and invoke `run()`. 
 ```
 // Define the configuration for your simulation
@@ -73,7 +80,7 @@ val result2: SimulationSnapshot = new SimulationSpark(c).run()
  
  You can also reference the test scripts in `/generated/src/test/scala`
  
-### Folder Structure 
+### <a name="Folder"></a> Folder Structure 
 - `ecosim/` contains the legacy implementation of the simulation framework without using message passing 
 - `example/` contains the examples using class-lifting and message-passing 
 - `generated/` contains the object programs. The simulation drivers take object programs and run 
@@ -86,48 +93,5 @@ val result2: SimulationSnapshot = new SimulationSpark(c).run()
 ### Code Format
 We use Scalafmt for formatting the code.
 For installing Scalafmt with your favorite IDE see https://scalameta.org/scalafmt/
-
-### Known Issues 
-- "StackOverFlow": You may get StackOverFlowError in staging phase. Please make sure to increase your stack size before launching JVM. In Intellij, you can set -Xss128m (128MB Stack size) at VM configuration in the configuration settings.
-
-- "ClassNotFoundException": Not restricted to this project, but you may see the following exception when using the "run" short cut from your IDE and even sbt `runMain *mainclass*`, especially for nested packages. First, please make sure your project structure follows the guidelines. If files are located properly, please try `run` from your project, i.e. after switching to the proper project in sbt, and select the index of the mainclass of your example. 
-```
-sbt    
->> project example   (Comment: assumes the error for main class in example.*)
->> run 
-(an indexed list of discovered main classes)
-enter the index of your main class! 
-```
-
-Not sure how/why it is different from `runMain`, but now it no longer complains (hopefully!) 
-```
-"scala, (run-main-2) java.lang.ClassNotFoundException: example.epistemicLogicExamples.MuddyChildren_v2[error] java.lang.ClassNotFoundException: example.epistemicLogicExamples.MuddyChildren_v2"
-```
-
-- "None.get during macro expansion": If you see the following error message when compiling your example, please check all the parameters in your lifted classes have references val or var.  
-```
-exception during macro expansion: 
-java.util.NoSuchElementException: None.get
-	at scala.None$.get(Option.scala:366)
-	at scala.None$.get(Option.scala:364)
-    ... 
-
-@lift 
-```
-
-- "Unsupported feature: Refinement type 'Product with Serializable with $your_trait_name$'": If you get this error during lifting, please make sure your trait referenced in $your_trait_name$ extends "Product with Serializable" 
-```
-Embedding Error: Unsupported feature: Refinement type 'Product with Serializable with ...'
-@lift
-```
-
-- "Term ... rewritten to ...": You can ignore this warning 
-```
-Term of type _$1 was rewritten to a term of type List[Option[meta.runtime.Future[Unit]]], not a known subtype.
-``` 
-
-- Inconsistency of the test and src. Please be aware that sometimes the test files don't actually sync in with the latest objects. First, please make sure the generated objects indeed contain your latest updates. If the problem still exists, please run `testOnly *testName*` from sbt, and then try from your IDE. This should bring the references up-to-date. 
-
-- Lifted classes, at the time of writing, do not support type parameters or call-by-name parameters.
  
 Please open an issue or make a pull request if you encounter other problems or have suggestions. Thank you.  
