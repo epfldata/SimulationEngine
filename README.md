@@ -1,8 +1,8 @@
-# Large-scale agent-based simulation 
+## Large-scale agent-based simulation 
 
 The goal of this project is to provide a framework suitable for scaled-out agent-based simulation. 
 
-# Table of contents
+### Overview 
 - [Synchronization DSL](#DSL)
 - [Sims as Meta-Programs](#Meta-programs)
 - [Start Simulation](#Simulation)
