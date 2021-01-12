@@ -1,7 +1,11 @@
-## Possible Issues 
+### Possible Issues 
 - "StackOverFlow": You may get StackOverFlowError in staging phase. Please make sure to increase your stack size before launching JVM. In Intellij, you can set -Xss128m (128MB Stack size) at VM configuration in the configuration settings.
 
-- "ClassNotFoundException": Not restricted to this project, but you may see the following exception when using the "run" short cut from your IDE and even sbt `runMain *mainclass*`, especially for nested packages. First, please make sure your project structure follows the guidelines. If files are located properly, please try `run` from your project, i.e. after switching to the proper project in sbt, and select the index of the mainclass of your example. 
+- "ClassNotFoundException": Not restricted to this project, but you may see the following exception when using the "run" shortcut from your IDE and even sbt `runMain *mainclass*`, especially for nested packages. 
+```
+"scala, (run-main-2) java.lang.ClassNotFoundException: example.epistemicLogicExamples.MuddyChildren_v2[error] java.lang.ClassNotFoundException: example.epistemicLogicExamples.MuddyChildren_v2"
+```
+First, please make sure your project structure follows the guidelines. If files are located properly, please try `run` from your project, i.e. after switching to the proper project in sbt, and select the index of the mainclass of your example. 
 ```
 sbt    
 >> project example   (Comment: assumes the error for main class in example.*)
@@ -9,11 +13,7 @@ sbt
 (an indexed list of discovered main classes)
 enter the index of your main class! 
 ```
-
 Not sure how/why it is different from `runMain`, but now it no longer complains (hopefully!) 
-```
-"scala, (run-main-2) java.lang.ClassNotFoundException: example.epistemicLogicExamples.MuddyChildren_v2[error] java.lang.ClassNotFoundException: example.epistemicLogicExamples.MuddyChildren_v2"
-```
 
 - "None.get during macro expansion": If you see the following error message when compiling your example, please check all the parameters in your lifted classes have references val or var.  
 ```
