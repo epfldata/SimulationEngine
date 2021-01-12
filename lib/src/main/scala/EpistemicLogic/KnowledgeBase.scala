@@ -1,5 +1,7 @@
 package lib.EpistemicLogic
 
+import EpistemicLogicCommon._
+
 object KnowledgeBase {
   type Rule = EpistemicSentence => Boolean
 }
@@ -59,6 +61,21 @@ class KnowledgeBase extends Serializable {
 
   def knowAny(sentences: Set[EpistemicSentence]): Boolean = {
     knowledgeBase.diff(sentences) != knowledgeBase
+  }
+
+  def knowAnyType[T](typeTemplate: String): Set[EpistemicSentence] = {
+//    knowledgeBase.filter(p => {
+//      println("P is " + p + " " + p.isInstanceOf[P[T]])
+//      p.isInstanceOf[P[T]]
+//    })
+//    knowledgeBase.flatMap(p =>
+//      p match {
+//        case p: P[T] =>
+//            println("P is " + p); Set(p)
+//        case _: EpistemicSentence => Set()
+//      }
+//    )
+    knowledgeBase.filter(p => p.toString.contains(typeTemplate))
   }
 
   // return inferred knowledge from the counterFacts without actually modifying the knowledge base

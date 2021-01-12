@@ -2,6 +2,7 @@ package lib.EpistemicLogic
 package test
 
 import org.scalatest.FlatSpec
+import lib.EpistemicLogic.EpistemicLogicCommon._
 
 class SolverSpec extends FlatSpec {
   import Solver.deduction

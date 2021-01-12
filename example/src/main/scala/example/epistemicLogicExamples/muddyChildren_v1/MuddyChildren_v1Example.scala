@@ -1,6 +1,6 @@
 package example
 package epistemicLogicExamples
-package MuddyChildren
+package MuddyChildren_v1
 
 import squid.quasi.lift
 
@@ -10,8 +10,8 @@ class MainInit {
     val l: ListBuffer[Actor] = new ListBuffer[Actor]()
     val lc: ListBuffer[Child] = new ListBuffer[Child]()
 
-    val muddyChildren: Int = 2
-    val totalChildren: Int = 3
+    val muddyChildren: Int = 3
+    val totalChildren: Int = 10
 
     (1 to muddyChildren).foreach(_ =>
       lc.append(new Child(true))
@@ -35,7 +35,7 @@ class MainInit {
   }
 }
 
-object muddyChildrenExample extends App {
+object MuddyChildren_v1Example extends App {
 
   import lib.Bot.MessengerBot
 

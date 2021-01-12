@@ -1,9 +1,9 @@
 package example
 package epistemicLogicExamples
 
-import lib.EpistemicLogic._
+import lib.EpistemicLogic.EpistemicLogicCommon._
 
-package object MuddyChildren {
+package object MuddyChildren_v1 {
   import meta.runtime.Actor.AgentId
 
   case class ChildStatus(id: AgentId, isMuddy: Boolean, isForward: Boolean, epoch: Int)
@@ -16,7 +16,7 @@ package object MuddyChildren {
 
   // at least one muddy child
   def announce(ids: List[AgentId]): EpistemicSentence = {
-    Utils.ors(ids.map(i => P(ChildMuddy(i))))
+    ors(ids.map(i => P(ChildMuddy(i))))
   }
 
   // speculate: agent i hasn't stepped up in the past n round => agent i knows there are at least n muddy children
@@ -39,7 +39,7 @@ package object MuddyChildren {
     if (ans.isEmpty) {
       Set(Ka(i, P(ChildMuddy(i))))
     } else {
-      Set(Ka(i, Utils.ors(ans.map(cs => Utils.ands(cs.map(c => P(ChildMuddy(c))))))))
+      Set(Ka(i, ors(ans.map(cs => ands(cs.map(c => P(ChildMuddy(c))))))))
     }
   }
 

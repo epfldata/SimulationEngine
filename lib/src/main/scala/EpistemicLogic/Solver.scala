@@ -1,5 +1,7 @@
 package lib.EpistemicLogic
 
+import EpistemicLogicCommon._
+
 object Solver {
 
   // add to the set knowledge base new inferred knowledge axioms

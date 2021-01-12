@@ -1,8 +1,10 @@
 package example
 package epistemicLogicExamples
-package MuddyChildren
+package MuddyChildren_v1
 
 import lib.EpistemicLogic._
+import lib.EpistemicLogic.EpistemicLogicCommon._
+
 import lib.Bot.MessengerBot
 
 import squid.quasi.lift
@@ -17,7 +19,7 @@ class Adult(val children: List[Child]) extends Actor {
   val allChildrenMuddy: ListBuffer[EpistemicSentence] = new ListBuffer[EpistemicSentence]()
   val allChildrenUnaware: ListBuffer[EpistemicSentence] = new ListBuffer[EpistemicSentence]()
 
-  def see(): Unit = {
+  private def see(): Unit = {
     knowledgeBase.forgetAll()
 
     val messenger: MessengerBot = new MessengerBot()
@@ -35,7 +37,7 @@ class Adult(val children: List[Child]) extends Actor {
   }
 
   // Ask all children simultaneously, and wait for all children to answer
-  def ask(): Unit = {
+  private def ask(): Unit = {
     val messenger: MessengerBot = new MessengerBot()
     val wReceive: List[Option[Future[Unit]]] = children.map(c => asyncMessage(() => c.answer()))
     messenger.waitUntilAllReceive(wReceive)
