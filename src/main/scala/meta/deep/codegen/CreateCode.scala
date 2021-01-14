@@ -94,7 +94,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
       val varPattern = s"(\\s*)(var .*): (.*) = (.*;)".r    // general form of var assignments
       val valPattern = s"(\\s*)(val .*) = (.*;)".r    // general form of val assignments
       val iterTypPattern = s"scala\\.collection\\.Iterator(.*)".r   // type pattern of an iterator
-      val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.List\\.Coll(.*)".r
+      val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.(\\w+)\\.Coll(.*)".r
 
       // type that contains List.Coll
       val timerNamePattern = s"(var timeVar_[0-9]*)".r      // name pattern of timer
@@ -110,7 +110,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
                 f1 + (f3 match {
                     case iterTypPattern(a1) =>
                       "@transient "
-                    case lCollTypePattern(a1, a2) =>
+                    case lCollTypePattern(a1, a2, a3) =>
                       "@transient "
                     case _ => ""
                   }) + "private " + f2 + ": " + f3 + " = " + f4
@@ -123,7 +123,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     }
 
     // Coll is no longer accessible in 2.12.8
-    this.typesReplaceWith = ("List\\.Coll", "List[_]") :: this.typesReplaceWith
+    this.typesReplaceWith = ("\\.Coll\\b", "[_]") :: this.typesReplaceWith
 
     val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)) + parts(1))
 
