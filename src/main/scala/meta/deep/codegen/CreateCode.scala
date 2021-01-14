@@ -40,7 +40,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
 
     createInit(IR.showScala(initCode.rep))
 
-    null
+    Nil
   }
 
   /**
@@ -375,23 +375,17 @@ $run_until
     bw.close()
   }
 
+  
   def updateTypesToReplace(cags: List[CompiledActorGraph]): List[(String, String)] = {
     val typesToReplace: Set[String] = cags.filter(_.actorTypes.length==1).map(x => x.actorTypes.head.name).toSet
 
-    val examplePackageRegex: String = optimization.canonicalName.foldLeft("")((x, y) => {
-      if (y == ".".charAt(0)) {x + "\\."} else x + y
-    })
-
-    val generatedPackageRegex: String = generatedPackage.foldLeft("")((x, y) => {
-      if (y == ".".charAt(0)) {x + "\\."} else x + y
-    })
-
-    val libPackageName: String = "lib\\.Bot"
-
-    typesToReplace.toList.flatMap(t => {
-      List(("\\b" + libPackageName + "\\." + t + "\\b", examplePackageRegex + "\\." + t),
-        ("\\b" + examplePackageRegex + "\\." + t + "\\b", generatedPackageRegex + "\\." + t))
-    })
+    assert(typesToReplace.forall(x => optimization.fullNameMap.get(x).isDefined))
+    
+    optimization.fullNameMap.filter(x => x._1!="Main").map(x => {
+      ("\\b" + x._2.foldLeft("")((x, y) => {
+        if (y == ".".charAt(0)) {x + "\\."} else x + y
+      }) + "\\." + x._1 + "\\b", optimization.pkgName + "\\." + x._1)
+    }).toList 
   }
 
   /**

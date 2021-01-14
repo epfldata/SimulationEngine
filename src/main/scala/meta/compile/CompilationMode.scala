@@ -1,53 +1,53 @@
 package meta.compile 
 
 sealed abstract class CompilationMode {
-    def setPackage(name: String): Unit  
-    def canonicalName: String    
+    def setPackage(name: Map[String, String]): Unit  
+    def fullNameMap: Map[String, String]    
     def pkgName: String 
 }
 
 // no optimization
 case object Vanilla extends CompilationMode {
-    private var canonical: String = ""
+    private var fullName: Map[String, String] = Map[String, String]()
     private var pkg: String = "" 
 
-    def canonicalName: String = canonical 
+    def fullNameMap: Map[String, String] = fullName 
 
     def pkgName: String = pkg 
     
-    def setPackage(name: String): Unit = {
-        canonical = name 
-        pkg = "generated." + name 
+    def setPackage(name: Map[String, String]): Unit = {
+        fullName = name 
+        pkg = "generated." + name.get("Main").get
     }
 }
 
 // merged Sims
 case class SimsMerge(namePairs: List[(String, String)]) extends CompilationMode {
-    private var canonical: String = ""
+    private var fullName: Map[String, String] = Map[String, String]()
     private var pkg: String = "" 
 
-    def canonicalName: String = canonical 
+    def fullNameMap: Map[String, String] = fullName 
 
     def pkgName: String = pkg 
     
-    def setPackage(name: String): Unit = {
-        canonical = name 
-        pkg = "generated." + name + "_merged"
+    def setPackage(name: Map[String, String]): Unit = {
+        fullName = name 
+        pkg = "generated." + name.get("Main").get + "_merged"
     }
 }
 
 // stateless-server optimization
 case class SimsStateless(statelessServers: List[String]) extends CompilationMode {
-    private var canonical: String = ""
+    private var fullName: Map[String, String] = Map[String, String]()
     private var pkg: String = "" 
 
-    def canonicalName: String = canonical 
+    def fullNameMap: Map[String, String] = fullName 
 
     def pkgName: String = pkg 
     
-    def setPackage(name: String): Unit = {
-        canonical = name 
-        pkg = "generated." + name + "_sso"
+    def setPackage(name: Map[String, String]): Unit = {
+        fullName = name 
+        pkg = "generated." + name.get("Main").get + "_sso"
     }
 }
 

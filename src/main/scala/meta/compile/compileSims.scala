@@ -12,8 +12,16 @@ object compileSims {
 
     var statemachineElements: List[StateMachineElement] = List(new EdgeMerge())
 
+    var nameMap: Map[String, String] = Map[String, String]()
+    
     val canonicalName: String = mainClass.getClass.getPackage.getName()
 
+    nameMap = nameMap + ("Main" -> canonicalName)
+
+    startClasses.foreach(x => {
+      nameMap = nameMap + (x.name -> x.getClass.getPackage().getName())
+    })
+    
     statemachineElements = mode match {
       case Vanilla => 
         statemachineElements
@@ -28,7 +36,7 @@ object compileSims {
       case s => s 
     }
 
-    mode.setPackage(canonicalName)
+    mode.setPackage(nameMap)
     
     statemachineElements = statemachineElements :+ new CreateCode(simulationData._2,
       destFolderName, 
