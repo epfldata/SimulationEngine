@@ -60,6 +60,8 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
 
     val commands = generateCode(compiledActorGraph)
     val code = this.createCommandOpenCode(commands)
+    
+    println(s"Compiled Sim ${self_name.values.toList} has states: ${commands.length}")
 
     val codeWithInit = this.generateVarInit(
       compiledActorGraph.variables2,
