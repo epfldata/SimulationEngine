@@ -8,8 +8,10 @@ import lib.Bot.MessengerBot
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 
-import MuddyChildren_v2_util.ChildStatus
-import MuddyChildren_v1.{ChildMuddy, HearParent, announce, counterExampleLearning, inferOtherAgent, seeAllNeighbor}
+import MuddyChildren_v1.{ChildStatus => _, _}
+import Actor.AgentId 
+
+case class ChildStatus(id: AgentId, isMuddy: Boolean)
 
 @lift
 class Child(val isMuddy: Boolean) extends Actor {
