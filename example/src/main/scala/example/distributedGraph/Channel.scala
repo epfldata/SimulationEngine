@@ -1,5 +1,5 @@
 package example
-package distributedGraph.networkTraversal
+package distributedGraph
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._

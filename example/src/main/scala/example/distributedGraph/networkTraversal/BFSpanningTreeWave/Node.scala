@@ -1,5 +1,6 @@
 package example
-package distributedGraph.networkTraversal
+package distributedGraph 
+package networkTraversal 
 package BFSpanningTreeWave
 
 import squid.quasi.lift

@@ -1,4 +1,4 @@
 package example
-package distributedGraph.networkTraversal
+package distributedGraph
 
 trait TreeNode extends Actor
