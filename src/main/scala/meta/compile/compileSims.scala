@@ -5,10 +5,11 @@ object compileSims {
   import meta.deep.IR.TopLevel._
   import meta.deep.codegen.{CreateActorGraphs, CreateCode, EdgeMerge, Pipeline, StateMachineElement, ActorMerge, SSO}
   import meta.runtime.Actor
+  import meta.deep.IR.Predef._ 
 
-  def apply(startClasses: List[Clasz[_ <: Actor]], mainClass: Clasz[_], mode: CompilationMode = Vanilla, destFolder: String=""): Unit = {
+  def apply(startClasses: List[Clasz[_ <: Actor]], mainClass: Clasz[_], mainInit: Option[OpenCode[Unit]] = None, mode: CompilationMode = Vanilla, destFolder: String=""): Unit = {
 
-    val simulationData = Lifter(startClasses, mainClass)
+    val simulationData = Lifter(startClasses)
 
     var statemachineElements: List[StateMachineElement] = List(new EdgeMerge())
 
@@ -38,11 +39,11 @@ object compileSims {
 
     mode.setPackage(nameMap)
     
-    statemachineElements = statemachineElements :+ new CreateCode(simulationData._2,
+    statemachineElements = statemachineElements :+ new CreateCode(mainInit.get,
       destFolderName, 
       mode)
 
-    val pipeline = Pipeline(new CreateActorGraphs(simulationData._1), statemachineElements)
+    val pipeline = Pipeline(new CreateActorGraphs(simulationData), statemachineElements)
 
     pipeline.run()
   }

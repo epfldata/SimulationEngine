@@ -12,7 +12,7 @@ import meta.runtime.Actor
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import meta.compile.CompilationMode
 
-class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimization: CompilationMode)
+class CreateCode(initCode: OpenCode[Unit], storagePath: String, optimization: CompilationMode)
     extends StateMachineElement() {
 
   var compiledActorGraphs: List[CompiledActorGraph] = Nil
@@ -49,6 +49,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     */
   def prepareClass(compiledActorGraph: CompiledActorGraph): Unit = {
     var self_name = Map[String, String]()
+
     compiledActorGraph.actorTypes.map(actorType =>
       self_name += (actorType.self.toCode.toString().substring(5).dropRight(1) -> actorType.name))
 //    val selfs = compiledActorGraph.actorTypes.map(actorType =>
@@ -61,6 +62,7 @@ class CreateCode(initCode: OpenCode[List[Actor]], storagePath: String, optimizat
     val commands = generateCode(compiledActorGraph)
     val code = this.createCommandOpenCode(commands)
     
+    // GraphDrawing.drawGraph(compiledActorGraph.graph, s"${self_name.values.toList}_prepareClass")
     println(s"Compiled Sim ${self_name.values.toList} has states: ${commands.length}")
 
     val codeWithInit = this.generateVarInit(
@@ -406,9 +408,9 @@ $run_until
     val nonTypedPattern = s"(\\s*)(val .*) = new generated\\.(.*);".r    // general form of val assignments
 
     // new Sims are added to newActors at runtime
-    init match {
-      case true => result
-      case _ => {
+    // init match {
+    //   case true => result
+    //   case _ => {
         result = typedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
         result = nonTypedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
         result
@@ -418,8 +420,8 @@ $run_until
 //        val newSimPattern2 = s"(\\s*)va[r|l] ([\w+]): (\\S*) = new generated\\.(.*);".r
 //        newSimPattern2.replaceAllIn(result,
 //          m=>{(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2)})")})
-      }
-    }
+      // }
+    // }
   }
 
   /**
@@ -471,13 +473,21 @@ $run_until
     * This generates the init code of the simulation
     * @param code init code of the simulation
     */
-  def createInit(code: String): Unit = {
+  def createInit(c: String): Unit = {
+
+    // remove the opening and closing {}
+    var code: String = c.substring(1).dropRight(1)
+
+    // add List() to satisfy the list requirement 
+    code = code + "  List()\n"
 
     val classString =
       s"""package ${generatedPackage}
 
 object InitData  {
-  def initActors: List[meta.runtime.Actor] = {${changeTypes(code, init = true)}}
+  def initActors: List[meta.runtime.Actor] = {
+    ${changeTypes(code, init = true)}
+  }  
 }"""
     val file = new File(storagePath + "/InitData.scala")
     val bw = new BufferedWriter(new FileWriter(file))
