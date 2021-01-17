@@ -7,21 +7,48 @@ object compileSims {
   import meta.runtime.Actor
   import meta.deep.IR.Predef._ 
 
-  def apply(startClasses: List[Clasz[_ <: Actor]], mainClass: Clasz[_], mainInit: Option[OpenCode[Unit]] = None, mode: CompilationMode = Vanilla, destFolder: String=""): Unit = {
+  /**
+    * Staging, convert Sims from source programs to object programs. 
+    * We allow two ways to specify the main class which serve as entrypoint of the object programs, either lift an existing MainClass, or write as OpenCode[] directly.
+    * @param startClasses: Sim classes which are staged
+    * @param mainClass: Return List[Actor] including *all* Sims needed when simulation starts
+    * @param mainInit: Return OpenCode[Unit]
+    * @param initPkgName: the package name of init main
+    * @param mode
+    * @param destFolder
+    */
+  def apply(startClasses: List[Clasz[_ <: Actor]], 
+            mainClass: Option[Clasz[_]] = None, 
+            mainInit: Option[OpenCode[Unit]] = None, 
+            initPkgName: String = "", 
+            mode: CompilationMode = Vanilla, 
+            destFolder: String=""): Unit = {
 
     val simulationData = Lifter(startClasses)
 
     var statemachineElements: List[StateMachineElement] = List(new EdgeMerge())
 
     var nameMap: Map[String, String] = Map[String, String]()
-    
-    val canonicalName: String = mainClass.getClass.getPackage.getName()
 
-    nameMap = nameMap + ("Main" -> canonicalName)
+    var canonicalName: String = ""
 
     startClasses.foreach(x => {
       nameMap = nameMap + (x.name -> x.getClass.getPackage().getName())
     })
+
+    // Can specify main init either way 
+    (mainClass, mainInit) match {
+      case (Some(x), _) => {
+        canonicalName = x.getClass.getPackage.getName()
+      }
+      case (None, Some(x)) => {
+        assert(!initPkgName.isEmpty())
+        canonicalName = initPkgName 
+      }
+      case (None, None) => throw new Exception("MainInit not defined!") 
+    }
+  
+    nameMap = nameMap + ("Main" -> canonicalName)
     
     statemachineElements = mode match {
       case Vanilla => 
@@ -37,9 +64,17 @@ object compileSims {
       case s => s 
     }
 
+    println(s"MainInit: $canonicalName, destFolder: $destFolderName")
+
+
     mode.setPackage(nameMap)
     
-    statemachineElements = statemachineElements :+ new CreateCode(mainInit.get,
+    val stagedMain: OpenCode[_] = mainInit match {
+      case None => Lifter.liftInitCode(mainClass.get)
+      case Some(x) => x
+    }
+
+    statemachineElements = statemachineElements :+ new CreateCode(stagedMain,
       destFolderName, 
       mode)
 
