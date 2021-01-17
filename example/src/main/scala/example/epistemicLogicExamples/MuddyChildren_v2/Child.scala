@@ -12,9 +12,9 @@ import MuddyChildren_v2_util.ChildStatus
 import MuddyChildren_v1.{ChildMuddy, HearParent, announce, counterExampleLearning, inferOtherAgent, seeAllNeighbor}
 
 @lift
-class Child_v2(val isMuddy: Boolean) extends Actor {
+class Child(val isMuddy: Boolean) extends Actor {
 
-  var neighbors: List[Child_v2] = Nil
+  var neighbors: List[Child] = Nil
   var neighborIds: List[Actor.AgentId] = Nil
 
   var epoch: Int = 0
@@ -29,10 +29,9 @@ class Child_v2(val isMuddy: Boolean) extends Actor {
     P(ChildStatus(id, isMuddy))
   }
 
-  // Children answers simultaneously; can't change one's answer based on observing the same round behaviour
-  // Children record that they heard the parent. If they are aware, they step forward.
   // RPC
-  def answer(): Option[(Actor.AgentId, Boolean)] = {
+  // A child hears announcement and answers isAware or not 
+  def answer(): Option[(Actor.AgentId, Boolean)] = {  
     if (knowledgeBase.know(seeAllNeighbor())) {
       epoch = epoch + 1
       knowledgeBase.recordLearning(epoch, Set(P(HearParent(epoch))))
@@ -56,14 +55,12 @@ class Child_v2(val isMuddy: Boolean) extends Actor {
   }
 
   // RPC
-  // think records what a child learns from the given status.
+  // Record what a child learns from the given children status announced by the parent 
   def think(cs: List[(Actor.AgentId, Boolean)]): Unit = {
-    val announce: EpistemicSentence = P(HearParent(epoch))
-    // A child thinks only after hearing from the parent in this epoch
-    // If the observation has an earlier epoch, than ignore it because already seen it
-    if (knowledgeBase.know(announce) && !isAware) {
+
+    if (!isAware) {
       cs.filter(x => x._1!=id).foreach(c => {
-        val ans: Set[EpistemicSentence] = if (c._2) { // if the other agent is aware
+        val ans: Set[EpistemicSentence] = if (c._2) { // if the agent is aware
           var f: EpistemicSentence = P(ChildMuddy(c._1))
           if (!knowledgeBase.know(f)) {
             f = NotE(f)
@@ -108,7 +105,7 @@ class Child_v2(val isMuddy: Boolean) extends Actor {
   def main(): Unit = {
     neighborIds = neighbors.map(n => n.id)
     see()
-    println(s"Child $id has remembered all neighbors!")
+    // println("Seen all neighbors!")
     while (true) {
       handleMessages()
       waitLabel(Turn, 1)

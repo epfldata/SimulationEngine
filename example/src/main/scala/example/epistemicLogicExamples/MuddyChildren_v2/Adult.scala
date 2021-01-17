@@ -14,7 +14,7 @@ import MuddyChildren_v1.ChildMuddy
 import scala.collection.mutable.Map
 
 @lift
-class Adult_v2(val children: List[Child_v2]) extends Actor {
+class Adult(val children: List[Child]) extends Actor {
 
   val knowledgeBase: KnowledgeBase = new KnowledgeBase()
   knowledgeBase.default()
@@ -24,7 +24,7 @@ class Adult_v2(val children: List[Child_v2]) extends Actor {
 
   var childrenStatus: List[(Actor.AgentId, Boolean)] = List()
 
-  var childrenIndexed: Map[Actor.AgentId, Child_v2] = Map[Actor.AgentId, Child_v2]()
+  var childrenIndexed: Map[Actor.AgentId, Child] = Map[Actor.AgentId, Child]()
 
   private def see(): Unit = {
     val messenger: MessengerBot = new MessengerBot()
@@ -37,7 +37,8 @@ class Adult_v2(val children: List[Child_v2]) extends Actor {
     })
   }
 
-  // Ask all children simultaneously, and wait for all children to answer
+  // Ask children simultaneously, and wait for all answers
+  // Return whether each child is aware or not, indexed by their ids
   private def ask(): Option[List[(Actor.AgentId, Boolean)]] = {
     val messenger: MessengerBot = new MessengerBot()
     val wReceive: List[Option[Future[Option[(Actor.AgentId, Boolean)]]]] = children.map(c => asyncMessage(() => c.answer()))
@@ -49,6 +50,7 @@ class Adult_v2(val children: List[Child_v2]) extends Actor {
     }
   }
 
+  // Tell children who is aware at the end of each round 
   private def announce(): Unit = {
     val messenger: MessengerBot = new MessengerBot()
     val wReceive: List[Option[Future[Unit]]] = children.map(c => asyncMessage(() => c.think(childrenStatus)))
@@ -62,9 +64,14 @@ class Adult_v2(val children: List[Child_v2]) extends Actor {
     })
 
     see()
+    // println("Seen all children!")
     while (true) {
       if (knowledgeBase.knowAny(allChildrenMuddy.toSet)) {
         while (existsUnawareChild) {
+
+          println("There is at least one muddy child.")
+          println("Speak up if you know whether you are clean or muddy")
+
           val reply: Option[List[(Actor.AgentId, Boolean)]] = ask()
 
           if (reply.nonEmpty) {
@@ -77,19 +84,16 @@ class Adult_v2(val children: List[Child_v2]) extends Actor {
             })
 
             if (reply.get.exists(x => x._2 == false)) {
-              println("There is at least one muddy child.")
-              println("Step up if you know whether you are clean or muddy")
               childrenStatus = reply.get
               announce()
             } else {
-              println("Exists unaware reset!")
               existsUnawareChild = false
             }
           } else {
             println("Empty reply!")
           }
-          println("Adults knowledge base: ")
-          knowledgeBase.knowledgeBase.foreach(println)
+          // println("Adults knowledge base: ")
+          // knowledgeBase.knowledgeBase.foreach(println)
         }
       }
       waitLabel(Turn,1)
