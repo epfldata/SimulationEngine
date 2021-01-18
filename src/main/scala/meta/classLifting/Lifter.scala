@@ -127,7 +127,7 @@ object Lifter {
     * @param clasz - initialization class representation - must contain only 1 method, which returns an [[OpenCode]] of list of [[Actor]]s
     * @return - extracted initialization method body
     */
-  private def liftInitCode(clasz: Clasz[_]): OpenCode[List[Actor]] = {
+  def liftInitCode(clasz: Clasz[_]): OpenCode[List[Actor]] = {
     //it's expected that this class' first method initializes actors
     val initMethod = clasz.methods.head
     val initCode = clasz.methods.head.body
@@ -282,12 +282,9 @@ object Lifter {
                 }
                 curriedMtd = mtd2.args.head.head
               }
-              // case _ => 
               case _ => throw new Exception(s"Error state in asyncMessage! $cde $recipientActorVariable $curriedMtd")
             }
           }
-
-          // println("Async msg: " + actorSelfVariable.toCode + " recipient " + recipientActorVariable + " args " + argss)
 
           AsyncSend[T, mt.Typ](
             actorSelfVariable.toCode,
