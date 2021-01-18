@@ -13,7 +13,7 @@ object compileSims {
     * @param startClasses: Sim classes which are staged
     * @param mainClass: Return List[Actor] including *all* Sims needed when simulation starts
     * @param mainInit: Return OpenCode[Unit]
-    * @param initPkgName: the package name of init main
+    * @param initPkgName: the package name of init main. If empty, take the package name of the first agent in start classes
     * @param mode
     * @param destFolder
     */
@@ -42,8 +42,11 @@ object compileSims {
         canonicalName = x.getClass.getPackage.getName()
       }
       case (None, Some(x)) => {
-        assert(!initPkgName.isEmpty())
-        canonicalName = initPkgName 
+        if(initPkgName.isEmpty()){
+          canonicalName = startClasses.head.getClass.getPackage.getName()
+        } else {
+          canonicalName = initPkgName 
+        }
       }
       case (None, None) => throw new Exception("MainInit not defined!") 
     }
@@ -64,8 +67,7 @@ object compileSims {
       case s => s 
     }
 
-    println(s"MainInit: $canonicalName, destFolder: $destFolderName")
-
+    println(s"MainInit: $canonicalName \n destFolder: $destFolderName")
 
     mode.setPackage(nameMap)
     
