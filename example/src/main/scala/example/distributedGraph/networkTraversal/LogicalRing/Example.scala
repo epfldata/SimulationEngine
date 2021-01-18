@@ -38,5 +38,5 @@ object Example extends App {
   val cls3: ClassWithObject[MessengerBot] = MessengerBot.reflect(IR)
   val cls4: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  compileSims(List(cls1, cls2, cls3), cls4)
+  compileSims(List(cls1, cls2, cls3), Some(cls4))
 }

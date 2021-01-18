@@ -1,6 +1,6 @@
 package example
 package epistemicLogicExamples
-package MuddyChildren_v1
+package MuddyChildren_v2
 
 import squid.quasi.lift
 
@@ -11,7 +11,7 @@ class MainInit {
     val lc: ListBuffer[Child] = new ListBuffer[Child]()
 
     val muddyChildren: Int = 3
-    val totalChildren: Int = 10
+    val totalChildren: Int = 4
 
     (1 to muddyChildren).foreach(_ =>
       lc.append(new Child(true))
@@ -35,14 +35,14 @@ class MainInit {
   }
 }
 
-object MuddyChildren_v1Example extends App {
+object Example extends App {
 
   import lib.Bot.MessengerBot
 
-  val cls2: ClassWithObject[Adult] = Adult.reflect(IR)
   val cls1: ClassWithObject[Child] = Child.reflect(IR)
+  val cls2: ClassWithObject[Adult] = Adult.reflect(IR)
   val cls3: ClassWithObject[MessengerBot] = MessengerBot.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  compileSims(List(cls2, cls1, cls3), mainClass)
+  compileSims(List(cls1, cls2, cls3), Some(mainClass))
 }

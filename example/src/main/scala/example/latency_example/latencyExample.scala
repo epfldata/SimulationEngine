@@ -7,5 +7,5 @@ object latencyExample extends App{
   val cls2: ClassWithObject[Client] = Client.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  compileSims(List(cls1, cls2), mainClass)
+  compileSims(List(cls1, cls2), Some(mainClass))
 }

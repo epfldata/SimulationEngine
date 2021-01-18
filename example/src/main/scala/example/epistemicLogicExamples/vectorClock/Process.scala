@@ -2,7 +2,7 @@ package example
 package epistemicLogicExamples
 package vectorClock
 
-import lib.EpistemicLogic._
+import lib.EpistemicLogic.EpistemicLogicCommon._
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._

@@ -11,10 +11,10 @@ class Server(var processTime: Double) extends Actor {
 
   def request(clientId: AgentId): Int = {
     println("Server processing request for " + clientId)
-    if (Random.nextBoolean()) {
-      println("Please wait! ; take " + processTime)
+//    if (Random.nextBoolean()) {
+      println("Please wait! take " + processTime)
       waitLabel(Time, processTime)
-    }
+//    }
     val ans: Int = Random.nextInt(100)
     println("Response for client id " + clientId + " is " + ans)
     ans

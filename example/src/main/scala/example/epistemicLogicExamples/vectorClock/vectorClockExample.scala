@@ -31,5 +31,5 @@ object vectorClockExample extends App {
   val cls1: ClassWithObject[Process] = Process.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  compileSims(List(cls1), mainClass)
+  compileSims(List(cls1), Some(mainClass))
 }

@@ -33,10 +33,9 @@ object Lifter {
     * @return deep embedding of the classes
     */
 
-  def apply(startClasses: List[Clasz[_ <: Actor]],
-            initializationClass: Clasz[_])
-    : (List[ActorType[_]], OpenCode[List[Actor]]) = {
-    val actorsInit: OpenCode[List[Actor]] = liftInitCode(initializationClass)
+  def apply(startClasses: List[Clasz[_ <: Actor]])
+    : List[ActorType[_]] = {
+    // val actorsInit: OpenCode[List[Actor]] = liftInitCode(initializationClass)
     //Collecting method symbols and info to generate methodsIdMap and methodsMap
     var counter = 0
 
@@ -64,7 +63,7 @@ object Lifter {
       liftActor(c)
     })
 
-    (endTypes, actorsInit)
+    endTypes
   }
 
   /** Lifts a specific [[Actor]] class into an ActorType
@@ -128,7 +127,7 @@ object Lifter {
     * @param clasz - initialization class representation - must contain only 1 method, which returns an [[OpenCode]] of list of [[Actor]]s
     * @return - extracted initialization method body
     */
-  private def liftInitCode(clasz: Clasz[_]): OpenCode[List[Actor]] = {
+  def liftInitCode(clasz: Clasz[_]): OpenCode[List[Actor]] = {
     //it's expected that this class' first method initializes actors
     val initMethod = clasz.methods.head
     val initCode = clasz.methods.head.body
@@ -274,6 +273,7 @@ object Lifter {
                       recipientActorVariable = argss(0).asInstanceOf[OpenCode[Actor]]
                       argss.remove(0)
                     } else {
+                      println(s"msg: $msg, argss: $argss, mtd argss: ${mtd2.args.last}")
                       throw new Exception("Async msg does't support local variables yet. Please make it a Sim variable instead")
                     }
                   }
@@ -282,7 +282,7 @@ object Lifter {
                 }
                 curriedMtd = mtd2.args.head.head
               }
-              case _ => throw new Exception("Error state in asyncMessage!")
+              case _ => throw new Exception(s"Error state in asyncMessage! $cde $recipientActorVariable $curriedMtd")
             }
           }
 
@@ -325,14 +325,16 @@ object Lifter {
         // somewhere inside (e.g. an unsupported code pattern could contain a Foreach somewhere inside of it and that
         // would cause problems if it was lifted as ScalaCode)
         else {
-          cde analyse {
-            case d if d != cde =>
-              val c = liftCode(d, actorSelfVariable, clasz)
-              c match {
-                case scalacode: ScalaCode[_] =>
-                case _                       => throw new Exception("Unsupported code inside " + cde)
-              }
-          }
+         cde analyse {
+           case d if d != cde =>
+             val c = liftCode(d, actorSelfVariable, clasz)
+             c match {
+               case scalacode: ScalaCode[_] =>
+               case _                       =>
+                //  println(Console.RED + s"Lifter warning: possible unsupported code: $cde" + Console.RESET)
+                 throw new Exception("Unsupported code inside " + cde)
+             }
+         }
           val f = ScalaCode(cde)
           f.asInstanceOf[Algo[T]]
         }
@@ -378,17 +380,18 @@ object Lifter {
           liftCode(code"$body", actorSelfVariable, clasz))
         Some(f.asInstanceOf[Algo[T]])
 
-      case code"($x: List[$tb]).filter(($y: tb) => $body: Boolean): List[tb] " =>
-        val el = Variable[Boolean]
-
-        val f = FlatMap[tb.Typ, tb.Typ](x, y,
-          LetBinding(Some(el),
-            liftCode(code"$body", actorSelfVariable, clasz),
-            IfThenElse(code"$el",
-              ScalaCode(code"List($y)"),
-              ScalaCode(code"List()"),
-            )))
-        Some(f.asInstanceOf[Algo[T]])
+        // Comment out filter. Use default Scala for better performance. Currently filter doesn't involve DSLs
+//      case code"($x: List[$tb]).filter(($y: tb) => $body: Boolean): List[tb] " =>
+//        val el = Variable[Boolean]
+//
+//        val f = FlatMap[tb.Typ, tb.Typ](x, y,
+//          LetBinding(Some(el),
+//            liftCode(code"$body", actorSelfVariable, clasz),
+//            IfThenElse(code"$el",
+//              ScalaCode(code"List($y)"),
+//              ScalaCode(code"List()"),
+//            )))
+//        Some(f.asInstanceOf[Algo[T]])
 
       case code"($x: List[$tb]).foldLeft($a: $ta)(($y: ta, $z: tb) => $body): ta" =>
         // todo
