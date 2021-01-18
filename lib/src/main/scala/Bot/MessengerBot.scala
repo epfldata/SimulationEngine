@@ -1,4 +1,5 @@
-package lib.Bot
+package lib
+package Bot
 
 import meta.classLifting.SpecialInstructions._
 import meta.runtime.Future
@@ -6,8 +7,6 @@ import squid.quasi.lift
 
 @lift
 class MessengerBot() extends Actor {
-
-  var deleted: Boolean = false
 
   def waitUntilAllReceive(future_objs: List[Option[Future[Any]]]): Unit = {
     while (!(future_objs.nonEmpty && future_objs.forall(x => SimRuntime.isCompleted(x.get)))) {

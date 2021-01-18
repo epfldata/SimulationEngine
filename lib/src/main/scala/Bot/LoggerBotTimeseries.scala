@@ -3,13 +3,10 @@ package Bot
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-//
-//import breeze.linalg._
-//import breeze.plot._
 
 @lift
 class LoggerBotTimeseries(val item: String,
-                          val reportFrequency: Int) extends Bot {
+                          val reportFrequency: Int) extends Actor {
 
   var latest: Double = 0
   var timeseries: List[(Double, Double)] = List()
@@ -24,10 +21,6 @@ class LoggerBotTimeseries(val item: String,
       println(s"$item: $latest")
     }
   }
-
-//  def readHistory(): List[Double] = {
-//    timeseries
-//  }
 
   def main(): Unit = {
     while (!deleted) {

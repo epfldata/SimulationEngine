@@ -38,7 +38,7 @@ class Torus2D(val width: Int, val height: Int) extends Grid[Int] {
   override def removeAgent(agentLoc: Int, agent: Actor): Unit = {
     currentPlacement.get(agentLoc) match {
       case None =>
-      case List() =>
+//      case List() =>
       case Some(x) => {
         currentPlacement = currentPlacement + (agentLoc -> x.filter(a => a!=agent))
         if (x.length == 1) { emptyLoc(agentLoc) = 1 }
