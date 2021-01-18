@@ -3,7 +3,7 @@ package rumor
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
-import lib.Bot.LoggerBot
+import lib.Bot.LoggerBotInt
 
 trait Person extends Actor {
    // Assume a person has the following prob to spread the rumour
@@ -11,8 +11,12 @@ trait Person extends Actor {
 }
 
 @lift
- class Gossiper(val loggerBot: LoggerBot, var heardRumor: Boolean, val spreadProb: Double) extends Person{
+ class Gossiper(val loggerBot: LoggerBotInt,
+                var heardRumor: Boolean,
+                val spreadProb: Double) extends Person {
+
    var recorded: Boolean = false
+   val accValue: Int = 1
 
    def spreadRumor: Boolean = {
      heardRumor && (Random.nextDouble() > spreadProb)
@@ -33,7 +37,7 @@ trait Person extends Actor {
    def main(): Unit = {
      while(true){
        if (heardRumor && !recorded) {
-         asyncMessage(() => loggerBot.accumulate())
+         asyncMessage(() => loggerBot.log(accValue))
          recorded = true
        }
 

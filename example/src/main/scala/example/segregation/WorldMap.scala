@@ -54,6 +54,7 @@ class WorldMap(val width: Int, val height: Int) extends Actor {
     if (similarities.size > 0) {
       segregationLevel = similarities.values.sum / similarities.size
       asyncMessage(() => loggerBot.append(segregationLevel))
+//      println("Segregation level: " + segregationLevel)
     }
   }
 

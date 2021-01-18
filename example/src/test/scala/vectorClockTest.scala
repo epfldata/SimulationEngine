@@ -1,4 +1,5 @@
-import lib.EpistemicLogic._
+import lib.EpistemicLogic.EpistemicLogicCommon._
+
 import org.scalatest.FlatSpec
 
 class vectorClockTest extends FlatSpec {

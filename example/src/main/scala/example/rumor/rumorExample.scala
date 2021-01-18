@@ -2,7 +2,7 @@ package example
 package rumor
 
 import squid.quasi.lift
-import lib.Bot.LoggerBot
+import lib.Bot.LoggerBotInt
 
 @lift
 class MainInit {
@@ -11,7 +11,7 @@ class MainInit {
     var lp: List[Person] = List[Person]()
 
     // Use one logger to track the extent of the rumor spread
-    val gossipLogger: LoggerBot = new LoggerBot("gossip", 1, false)
+    val gossipLogger: LoggerBotInt = new LoggerBotInt("gossip", 3)
 
     val closeContacts: Int = 5
     val population: Int = 100
@@ -34,9 +34,11 @@ class MainInit {
 
 object rumorExample extends App{
 
+  import meta.deep.IR.TopLevel.ClassWithObject
+
   val cls1: ClassWithObject[Gossiper] = Gossiper.reflect(IR)
-  val cls2: ClassWithObject[LoggerBot] = LoggerBot.reflect(IR)
+  val cls2: ClassWithObject[LoggerBotInt] = LoggerBotInt.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  compileSims(List(cls1, cls2), mainClass)
+  compileSims(List(cls1, cls2), Some(mainClass))
 }

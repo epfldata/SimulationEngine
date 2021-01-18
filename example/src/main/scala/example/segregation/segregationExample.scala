@@ -10,5 +10,5 @@ object segregationExample extends App {
   val cls3: ClassWithObject[LoggerBotTimeseries] = LoggerBotTimeseries.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  compileSims(List(cls1, cls2, cls3), mainClass)
+  compileSims(List(cls1, cls2, cls3), Some(mainClass))
 }

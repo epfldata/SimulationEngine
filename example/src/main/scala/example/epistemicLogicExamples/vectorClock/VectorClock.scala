@@ -3,6 +3,8 @@ package epistemicLogicExamples
 package vectorClock
 
 import lib.EpistemicLogic._
+import lib.EpistemicLogic.EpistemicLogicCommon._
+
 import meta.runtime.Actor.AgentId
 
 

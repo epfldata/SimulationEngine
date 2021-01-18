@@ -39,7 +39,7 @@ object RomeoJulietExample extends App {
   val cls4: ClassWithObject[Juliet] = Juliet.reflect(IR)
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
-  compileSims(List(cls1, cls2, cls3, cls4), mainClass)
+  compileSims(List(cls1, cls2, cls3, cls4), Some(mainClass))
 
 
 }

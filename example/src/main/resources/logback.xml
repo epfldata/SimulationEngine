@@ -14,6 +14,7 @@
         </encoder>
     </appender>
 
+<!--    level = "error" -->
     <!-- setting Spark log level  -->
     <logger name="org" level="error" />
     <logger name="akka" level="error" />

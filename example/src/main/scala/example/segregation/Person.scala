@@ -35,6 +35,7 @@ class Person(val world: WorldMap, val view: Int, val toleranceThreshold: Double)
 
   def main(): Unit ={
     while(true){
+//      println("Person " + id)
       if (!location.isDefined){
         location = world.placeAgent(this)
       } else {
@@ -43,6 +44,7 @@ class Person(val world: WorldMap, val view: Int, val toleranceThreshold: Double)
         }
         waitLabel(Group("People"), 1)
       }
+//      println("Person " + id + " finished! Next turn!")
       handleMessages()
     }
   }
