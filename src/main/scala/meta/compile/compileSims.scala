@@ -62,14 +62,16 @@ object compileSims {
         new SSO(statelessServers) :: statemachineElements
     }
 
+    mode.setPackage(nameMap)
+
     val destFolderName = destFolder match {
-      case "" => "generated/src/main/scala/" + canonicalName
+      case "" => "generated/src/main/scala/" + 
+      mode.pkgName.split("\\.").tail.mkString(".")
       case s => s 
     }
 
-    println(s"MainInit: $canonicalName \n destFolder: $destFolderName")
-
-    mode.setPackage(nameMap)
+    println(s"DestFolder: $destFolderName\n" +
+      s"Package name: ${mode.pkgName}")
     
     val stagedMain: OpenCode[_] = mainInit match {
       case None => Lifter.liftInitCode(mainClass.get)
