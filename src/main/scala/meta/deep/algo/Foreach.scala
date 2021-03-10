@@ -3,6 +3,8 @@ package meta.deep.algo
 import meta.deep.IR.Predef._
 import squid.lib.MutVar
 
+import meta.deep.member.VarWrapper 
+
 case class Foreach[E, R: CodeType](ls: OpenCode[List[E]],
                                    variable: Variable[E],
                                    f: Algo[R])(implicit val E: CodeType[E])
@@ -21,8 +23,8 @@ case class Foreach[E, R: CodeType](ls: OpenCode[List[E]],
     val iterMut = Variable[MutVar[Iterator[E]]]
     val listValMut = Variable[MutVar[E]]
 
-    AlgoInfo.variables = AlgoInfo.VarWrapper(iter, iterMut) :: AlgoInfo.variables
-    AlgoInfo.variables = AlgoInfo.VarWrapper(variable, listValMut) :: AlgoInfo.variables
+    AlgoInfo.variables = VarWrapper(iter, iterMut) :: AlgoInfo.variables
+    AlgoInfo.variables = VarWrapper(variable, listValMut) :: AlgoInfo.variables
 
     val f1 = code"""$iterMut := $ls.iterator; ()"""
 

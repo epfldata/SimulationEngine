@@ -4,7 +4,8 @@ package meta.deep.codegen
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.ListBuffer
+import meta.deep.member.CompiledActorGraph
 
 /**
   * This class merges edges from the graph, if a program path cannot change between the edges.
@@ -29,7 +30,7 @@ class EdgeMerge() extends StateMachineElement() {
     * @param graph which should be optimized
     * @return new graph with optimized code
     */
-  def optimizeCode(graph: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
+  def optimizeCode(graph: ListBuffer[EdgeInfo]): ListBuffer[EdgeInfo] = {
     val nodeCount: Int =
       graph.flatMap(x => List(x.from.getId, x.to.getId)).distinct.length
 
@@ -145,7 +146,7 @@ class EdgeMerge() extends StateMachineElement() {
         if (x == entry.middleNode) entry.endNode else x)
     }
 
-    val graph2 = groupedGraphStart.foldLeft(ArrayBuffer[EdgeInfo]())((a, b) => {
+    val graph2 = groupedGraphStart.foldLeft(ListBuffer[EdgeInfo]())((a, b) => {
       // Update jumping positions of nodes by changing start and end edges to point to the new created edge
       b._2.foreach(e => {
         e.storePosRef.foreach(edgeGroup => {

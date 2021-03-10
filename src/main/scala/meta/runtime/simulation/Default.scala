@@ -21,7 +21,6 @@ class Default(val config: SimulationConfig) extends Simulation {
   def collect(): Unit = {
     newActors.map(i => i.currentTurn = currentTurn)
     actors = actors ::: newActors.toList
-    println("Total actors are " + actors.length)
     newActors.clear()
   }
 

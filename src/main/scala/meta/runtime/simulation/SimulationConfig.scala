@@ -10,7 +10,7 @@ package simulation
   * @param startTime define the initial time of the simulation
   * @param totalTime define the total time of the simulation
   */
-case class SimulationConfig(var actors: List[Actor],
+case class SimulationConfig(var actors: List[Actor] = List(),
                             var startTurn: Int = 0,
                             val totalTurn: Int = 40,
                             var startTime: Double = 0,
