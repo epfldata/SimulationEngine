@@ -1,16 +1,16 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.{CodeNodeMtd, CodeNodePos, EdgeInfo, VarWrapper}
+import meta.deep.algo.AlgoInfo.{CodeNodeMtd, CodeNodePos, EdgeInfo}
 import meta.deep.algo.{AlgoInfo, CallMethod, Send}
 import meta.deep.codegen.CreateActorGraphs._
-import meta.deep.member.ActorType
+import meta.deep.member.{ActorType, CompiledActorGraph, VarValue, VarWrapper}
 import meta.runtime.ResponseMessage
 import squid.lib.MutVar
 import meta.runtime.Actor
 import meta.deep.member.Method
 
-import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map}
+import scala.collection.mutable.{ListBuffer, Map}
 
 /**
   * This is a class which contains the generation pipeline
@@ -60,47 +60,10 @@ abstract class StateMachineElement() extends PipelineElement() {
       compiledActorGraphs: List[CompiledActorGraph]): List[CompiledActorGraph]
 }
 
-/**
-  * This class represents the graph representation used for working in StateMachineElement
-  * @param name the name of the actortype
-  * @param parentNames a list of parents' names
-  * @param graph the graph of EdgeInfos containing the actual code
-  * @param variables a list of variables which have been used in code and needs a conversion to MutVar
-  * @param variables2 a list of variables which have been additionally added, where no conversion was necessary
-  * @param actorTypes a list of actorTypes represented in this graph represented actortype
-  * @param positionStack a list of positionStack, one for each original actortype
-  * @param returnValue a list of returnValue, one for each original actortype
-  * @param responseMessage a list of responseMessage, one for each original actortype
-//  * @param responseMessagess a list of a map of responseMessagess, one for each original actortype
-  */
-case class CompiledActorGraph(
-    var name: String,
-    var parentNames: List[String],
-    var parameterList: List[(String, String)],
-    var graph: ArrayBuffer[EdgeInfo],
-    var variables: List[VarWrapper[_]],
-    var variables2: List[VarValue[_]],
-    var actorTypes: List[ActorType[_]],
-    var positionStack: List[Variable[ListBuffer[List[((Int, Int), Int)]]]], //required to generate popping from stack statements at create code
-    returnValue: List[Variable[MutVar[Any]]],
-    responseMessage: List[Variable[MutVar[ResponseMessage]]]
-)
-
-/**
-  * This class is used to create the variable stack for each parameter variable of a method
-  *
-  * @param variable to be used in code
-  * @param init     code to init variable
-  * @param A        type of variable
-  * @tparam C variable type
-  */
-case class VarValue[C](variable: Variable[C], init: OpenCode[C])(
-    implicit val A: CodeType[C]) {}
-
 object utilObj {
 
   def createCallMethodEdges(methodId: Int,
-                            sendEdge: EdgeInfo): ArrayBuffer[EdgeInfo] = {
+                            sendEdge: EdgeInfo): ListBuffer[EdgeInfo] = {
 
     AlgoInfo.resetData()
     CallMethod[Any](methodId, sendEdge.sendInfo._1.argss).codegen()
@@ -125,7 +88,7 @@ object utilObj {
     newEdges
   }
 
-  def rewriteCallMethod(edges: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
+  def rewriteCallMethod(edges: ListBuffer[EdgeInfo]): ListBuffer[EdgeInfo] = {
     edges.foreach(edge => {
       edge.code = edge.code.rewrite({
         case code"meta.deep.algo.Instructions.setMethodParam(${Const(a)}, ${Const(
@@ -139,12 +102,12 @@ object utilObj {
           }
         case code"meta.deep.algo.Instructions.saveMethodParam(${Const(a)}, ${Const(
         b)}, $c) " =>
-          val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
+          val stack: ListBuffer[Variable[ListBuffer[Any]]] =
             methodVariableTableStack(a)
           val varstack: Variable[ListBuffer[Any]] = stack(b)
           code"$varstack.prepend($c);"
         case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)}) " =>
-          val stack: ArrayBuffer[Variable[ListBuffer[Any]]] =
+          val stack: ListBuffer[Variable[ListBuffer[Any]]] =
             methodVariableTableStack(a)
           val initCode: OpenCode[Unit] = code"()"
           stack.zipWithIndex.foldRight(initCode)((c, b) => {
@@ -164,9 +127,9 @@ object utilObj {
   /*
    Surround the graphs with 'wait edge' though there needs not to be latency penalty
    */
-  def addGlue(edges: ArrayBuffer[EdgeInfo],
+  def addGlue(edges: ListBuffer[EdgeInfo],
                  methodId: Int,
-                 removeWait: Boolean = true): ArrayBuffer[EdgeInfo] = {
+                 removeWait: Boolean = true): ListBuffer[EdgeInfo] = {
     val firstFrom = edges.head.from
     edges.foreach(edge1 => {
       edge1.to match {
@@ -197,7 +160,7 @@ object utilObj {
     edges
   }
 
-  def mtdToPosNodes(graph: ArrayBuffer[EdgeInfo]): Unit = {
+  def mtdToPosNodes(graph: ListBuffer[EdgeInfo]): Unit = {
     graph.foreach(edge => {
       edge.from match {
         case c: CodeNodeMtd =>
@@ -231,7 +194,7 @@ object utilObj {
     })
   }
 
-  def getFreePos(graph: ArrayBuffer[EdgeInfo]): Int = {
+  def getFreePos(graph: ListBuffer[EdgeInfo]): Int = {
     graph.flatMap(edge => edge.from :: edge.to :: Nil)
       .maxBy(node =>
         node match {
@@ -247,7 +210,7 @@ object utilObj {
     * @param moveAmount how much to move the graph
     * @param moveThreshold after which position to start moving
     */
-  def moveGraphPositions(graph: ArrayBuffer[EdgeInfo], moveAmount: Int, moveThreshold: Int): Unit = {
+  def moveGraphPositions(graph: ListBuffer[EdgeInfo], moveAmount: Int, moveThreshold: Int): Unit = {
     graph.foreach(edge => {
       edge.from match {
         case c: CodeNodePos =>
@@ -267,7 +230,7 @@ object utilObj {
   /*
   For two compiled actor graphs, remove instances of each other from all variables
    */
-  def mergeVariables(graph1: CompiledActorGraph, graph2: CompiledActorGraph): (List[(String, String)], List[VarWrapper[_]], List[VarValue[_]]) = {
+  def mergeVariables(graph1: CompiledActorGraph, graph2: CompiledActorGraph): (List[VarWrapper[_]], List[VarValue[_]]) = {
     val variables1: List[VarWrapper[_]] =
       graph1.variables.filter(x => !(x.A <:< graph2.actorTypes.head.X)) :::
         graph2.variables.filter(x => !(x.A <:< graph1.actorTypes.head.X))
@@ -275,30 +238,31 @@ object utilObj {
     val variables2: List[VarValue[_]] = graph1.variables2 :::
       graph2.variables2
 
-    val parameterList: List[(String, String)] = {
-      graph1.parameterList.filter(x => x._2!=graph2.actorTypes.head.X.rep.toString()) :::
-        graph2.parameterList.filter(x => x._2!=graph1.actorTypes.head.X.rep.toString())
-    }
-    (parameterList, variables1, variables2)
+    // parameter list 
+    // val parameterList: List[(String, String)] = {
+    //   graph1.parameterList.filter(x => x._2!=graph2.actorTypes.head.X.rep.toString()) :::
+    //     graph2.parameterList.filter(x => x._2!=graph1.actorTypes.head.X.rep.toString())
+    // }
+    (variables1, variables2)
   }
 
   def newCallMethodEdges(methodId: Int,
-                         sendEdge: EdgeInfo): ArrayBuffer[EdgeInfo] = {
-    val newEdges: ArrayBuffer[EdgeInfo] = utilObj.createCallMethodEdges(methodId, sendEdge)
+                         sendEdge: EdgeInfo): ListBuffer[EdgeInfo] = {
+    val newEdges: ListBuffer[EdgeInfo] = utilObj.createCallMethodEdges(methodId, sendEdge)
     utilObj.rewriteCallMethod(newEdges)
   }
 
   /*
     Replace edges related to the leading send edge with local method calls identified by method id in the leadingSendEdge in graph. Modify the original graph directly
    */
-  def replaceSends(graph: ArrayBuffer[EdgeInfo], graphId: Int, leadingSendEdge: ArrayBuffer[(Int, EdgeInfo)]): Unit = {
+  def replaceSends(graph: ListBuffer[EdgeInfo], graphId: Int, leadingSendEdge: ListBuffer[(Int, EdgeInfo)]): Unit = {
 
     val lastOffset: Int = 4 // four edges after the leading edge (total four send edges)
 
-    var newEdgesMap: Map[Int, ArrayBuffer[EdgeInfo]] = Map[Int, ArrayBuffer[EdgeInfo]]()
+    var newEdgesMap: Map[Int, ListBuffer[EdgeInfo]] = Map[Int, ListBuffer[EdgeInfo]]()
 
     // TODO: add support for analysing whether the lead edges to be removed are truly redundant or bind variable arguments. See example in merge with comm for such case
-    val leadingEdgesWithFirstOffset: ArrayBuffer[(Int, EdgeInfo, Int)] =
+    val leadingEdgesWithFirstOffset: ListBuffer[(Int, EdgeInfo, Int)] =
       leadingSendEdge.map(edge => {
         var firstOffset: Int = 0
         var found: Boolean = false
@@ -320,7 +284,7 @@ object utilObj {
       .map(methodId_sendEdge => {
         val edgeIdx = graph.indexOf(methodId_sendEdge._2)
         newEdgesMap = newEdgesMap + (edgeIdx -> {
-          val newEdges: ArrayBuffer[EdgeInfo] = newCallMethodEdges(methodId_sendEdge._1, methodId_sendEdge._2)
+          val newEdges: ListBuffer[EdgeInfo] = newCallMethodEdges(methodId_sendEdge._1, methodId_sendEdge._2)
           newEdges.head.from = graph(edgeIdx - methodId_sendEdge._3).from
           newEdges.last.to = graph(edgeIdx + lastOffset).to
           newEdges.foreach(x => {
@@ -341,7 +305,7 @@ object utilObj {
   /*
   Return a copy of the subgraph related to methodId.
    */
-  def getEdgesByMtdId(graph: ArrayBuffer[EdgeInfo], methodId: Int): ArrayBuffer[EdgeInfo] = {
+  def getEdgesByMtdId(graph: ListBuffer[EdgeInfo], methodId: Int): ListBuffer[EdgeInfo] = {
     graph.filter(edge => edge.methodId1== methodId)
       .map(edge => edge.myCopy())
   }
@@ -349,7 +313,7 @@ object utilObj {
   /*
   Replace "this1" and "return1" for graph with "this2" and "return2". Modify the graph directly
    */
-  def resetThisReturn(graph: ArrayBuffer[EdgeInfo],
+  def resetThisReturn(graph: ListBuffer[EdgeInfo],
                       this1: Variable[Actor],
                       this2: Variable[Actor],
                       return1: Variable[MutVar[Any]],

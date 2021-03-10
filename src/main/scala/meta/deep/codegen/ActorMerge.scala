@@ -4,13 +4,11 @@ import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{CodeNodePos, CodeNodeMtd, EdgeInfo}
 import meta.deep.algo.{AlgoInfo, CallMethod, Send}
 import meta.deep.codegen.CreateActorGraphs.MutVarType
-import meta.deep.member.ActorType
+import meta.deep.member.{ActorType, CompiledActorGraph}
 
 import scala.collection.mutable
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-import meta.classLifting.Lifter
-import meta.runtime.Actor
-
+import scala.collection.mutable.ListBuffer
+import meta.runtime.Actor 
 /**
   * Combines two actor types together and creates a new actor type. The original ones are still there, so the new one
   * can be used afterwards if needed.
@@ -45,14 +43,14 @@ class ActorMerge(mergeData: List[(String, String)])
       val a1Return = a1.returnValue.head
       val a2Return = a2.returnValue.head
 
-      var a1_updated_graph: ArrayBuffer[EdgeInfo] = a1.graph.clone()
-      var a2_updated_graph: ArrayBuffer[EdgeInfo] = a2.graph.clone()
+      var a1_updated_graph: ListBuffer[EdgeInfo] = a1.graph.clone()
+      var a2_updated_graph: ListBuffer[EdgeInfo] = a2.graph.clone()
 
-      val a1LeadSends: ArrayBuffer[EdgeInfo] = getLeadSends(a1_updated_graph, a2.name)
-      val a2LeadSends: ArrayBuffer[EdgeInfo] = getLeadSends(a2_updated_graph, a1.name)
+      val a1LeadSends: ListBuffer[EdgeInfo] = getLeadSends(a1_updated_graph, a2.name)
+      val a2LeadSends: ListBuffer[EdgeInfo] = getLeadSends(a2_updated_graph, a1.name)
 
       val oldToNewMtdIds: mutable.Map[Int, Int] = mutable.Map()
-      val localizedMethodIdSend: ArrayBuffer[(Int, EdgeInfo)] = ArrayBuffer[(Int, EdgeInfo)]()
+      val localizedMethodIdSend: ListBuffer[(Int, EdgeInfo)] = ListBuffer[(Int, EdgeInfo)]()
 
       // TODO: fix the messaging behaviour when a blocking method to another SIM is present in a merged method
       var freePos: Int = utilObj.getFreePos(a2_updated_graph)
@@ -83,22 +81,20 @@ class ActorMerge(mergeData: List[(String, String)])
       newActorGraphs = CompiledActorGraph(
         a1.name + "_" + a2.name,
         (a1.parentNames ::: a2.parentNames).distinct,
-        mergedVariables._1,
         finalGraph,
+        mergedVariables._1,
         mergedVariables._2,
-        mergedVariables._3,
         a1.actorTypes ::: a2.actorTypes,
         a1.positionStack ::: a2.positionStack,
         a1.returnValue,
         a1.responseMessage,
-//        a1.responseMessagess
       ) :: newActorGraphs
     })
 
     newActorGraphs
   }
 
-  def getLeadSends(graph: ArrayBuffer[EdgeInfo], receiverName: String): ArrayBuffer[EdgeInfo] = {
+  def getLeadSends(graph: ListBuffer[EdgeInfo], receiverName: String): ListBuffer[EdgeInfo] = {
     def getReceiverName(msg: Send[_]): String = {
       msg.actorRef.rep.dfn.typ.toString.split("\\.").last
     }
@@ -110,9 +106,9 @@ class ActorMerge(mergeData: List[(String, String)])
    * Identify the part of the graph containing the method id in the Send edge
    * Return the methodId
    */
-  def copyMethod(sendEdge: EdgeInfo, graph: ArrayBuffer[EdgeInfo], freePos: Int, oldToNewMtdIds: mutable.Map[Int, Int]): (Int, ArrayBuffer[EdgeInfo]) = {
+  def copyMethod(sendEdge: EdgeInfo, graph: ListBuffer[EdgeInfo], freePos: Int, oldToNewMtdIds: mutable.Map[Int, Int]): (Int, ListBuffer[EdgeInfo]) = {
 
-    def copyIter(g: ArrayBuffer[EdgeInfo], freePos: Int, newId: Int): ArrayBuffer[EdgeInfo] = {
+    def copyIter(g: ListBuffer[EdgeInfo], freePos: Int, newId: Int): ListBuffer[EdgeInfo] = {
       val oldPos: Int = g.head.from.asInstanceOf[CodeNodePos].pos
       g.foreach(edge => {
         edge.methodId1 = newId
@@ -124,7 +120,7 @@ class ActorMerge(mergeData: List[(String, String)])
     }
 
     val methodId: Int = sendEdge.sendInfo._1.methodId
-    val methodGraph: ArrayBuffer[EdgeInfo] = utilObj.getEdgesByMtdId(graph, methodId)
+    val methodGraph: ListBuffer[EdgeInfo] = utilObj.getEdgesByMtdId(graph, methodId)
     val newMtdId: Int = utilObj.copyRuntimeMtd(methodId)
 
     copyIter(methodGraph, freePos,  newMtdId)
@@ -168,9 +164,9 @@ class ActorMerge(mergeData: List[(String, String)])
     * @param graph the input graph, which should be anaylzed
     * @return a wait graph
     */
-  def waitGraph(graph: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
+  def waitGraph(graph: ListBuffer[EdgeInfo]): ListBuffer[EdgeInfo] = {
     val graphStart = graph.groupBy(_.from.getNativeId)
-    val newGraph: ArrayBuffer[EdgeInfo] = ArrayBuffer[EdgeInfo]()
+    val newGraph: ListBuffer[EdgeInfo] = ListBuffer[EdgeInfo]()
     var startNodes: List[Int] = List()
     var edgeList = List[(Int, Int)]()
 
@@ -190,7 +186,7 @@ class ActorMerge(mergeData: List[(String, String)])
         startNodes = currentNode :: startNodes
       }
 
-      val startNode = graphStart.getOrElse(currentNode, ArrayBuffer())
+      val startNode = graphStart.getOrElse(currentNode, ListBuffer())
 
       //NOTE: this cannot happen due to extension at creating
       if (startNode.isEmpty) {
@@ -252,12 +248,12 @@ class ActorMerge(mergeData: List[(String, String)])
     * @return a merged graph containing the combined transitions between the two graphs
     */
   def generateMergedStateMachine(
-      graph1: ArrayBuffer[EdgeInfo],
-      graph2: ArrayBuffer[EdgeInfo]): ArrayBuffer[MergeInfo] = {
+      graph1: ListBuffer[EdgeInfo],
+      graph2: ListBuffer[EdgeInfo]): ListBuffer[MergeInfo] = {
     val startGraph1 = graph1.groupBy(_.from.getNativeId)
     val startGraph2 = graph2.groupBy(_.from.getNativeId)
 
-    val mergedGraph: ArrayBuffer[MergeInfo] = ArrayBuffer[MergeInfo]()
+    val mergedGraph: ListBuffer[MergeInfo] = ListBuffer[MergeInfo]()
 
     var newStateCounter: Int = 0
     var stateMapping: Map[(Int, Int), Int] = Map[(Int, Int), Int]()
@@ -297,7 +293,7 @@ class ActorMerge(mergeData: List[(String, String)])
       }
     }
 
-    val mergedGraphReachableList = ArrayBuffer[Int]()
+    val mergedGraphReachableList = ListBuffer[Int]()
     val startMergedgraph = mergedGraph.groupBy(_.from.getNativeId)
 
     def calculateReachable(currentNode: Int): Unit = {
@@ -311,7 +307,7 @@ class ActorMerge(mergeData: List[(String, String)])
 
     calculateReachable(0)
 
-    val mergedGraphReachable = ArrayBuffer[MergeInfo]()
+    val mergedGraphReachable = ListBuffer[MergeInfo]()
     //This removes unreached states
     mergedGraph.foreach(edge => {
       if (mergedGraphReachableList.contains(edge.from.getNativeId)) {
@@ -334,9 +330,9 @@ class ActorMerge(mergeData: List[(String, String)])
     * @param graph2 the graph of actor2
     * @return a combined graph between actor1 and actor2
     */
-  def combineActors(mergedGraph: ArrayBuffer[MergeInfo],
-                    graph1: ArrayBuffer[EdgeInfo],
-                    graph2: ArrayBuffer[EdgeInfo]): ArrayBuffer[EdgeInfo] = {
+  def combineActors(mergedGraph: ListBuffer[MergeInfo],
+                    graph1: ListBuffer[EdgeInfo],
+                    graph2: ListBuffer[EdgeInfo]): ListBuffer[EdgeInfo] = {
     val graph1Start = graph1.groupBy(_.from.getNativeId)
     val graph2Start = graph2.groupBy(_.from.getNativeId)
     val graph1Reachable: collection.mutable.Map[Int, List[Int]] =
@@ -344,7 +340,7 @@ class ActorMerge(mergeData: List[(String, String)])
     val graph2Reachable: collection.mutable.Map[Int, List[Int]] =
       collection.mutable.Map[Int, List[Int]]()
 
-    def calculateReachableStates(graphStart: Map[Int, ArrayBuffer[EdgeInfo]],
+    def calculateReachableStates(graphStart: Map[Int, ListBuffer[EdgeInfo]],
                                  currentNode: Int,
                                  visited: List[Int]): List[Int] = {
       //Node already visited
@@ -387,7 +383,7 @@ class ActorMerge(mergeData: List[(String, String)])
     var reachedStatesGlobal = Map[Int, Map[Int, Int]]()
     var startGraphGlobalMap = Map[Int, Int]()
     var posCounter = 0
-    val globalGraph: ArrayBuffer[EdgeInfo] = ArrayBuffer[EdgeInfo]()
+    val globalGraph: ListBuffer[EdgeInfo] = ListBuffer[EdgeInfo]()
 
     //old to new ones: startState, contextState (-1 if first graph, else end of first graph, edge)
     var edgeMapping = Map[EdgeInfo, List[EdgeInfo]]()
@@ -398,7 +394,7 @@ class ActorMerge(mergeData: List[(String, String)])
       val start1Pos = start(0).graph1._1.pos
       val start2Pos = start(0).graph2._1.pos
 
-      val graph: ArrayBuffer[EdgeInfo] = ArrayBuffer[EdgeInfo]()
+      val graph: ListBuffer[EdgeInfo] = ListBuffer[EdgeInfo]()
 
       val reachableStates = start.map(x => (x.graph1._2.pos, x.graph2._2.pos))
 
@@ -416,12 +412,12 @@ class ActorMerge(mergeData: List[(String, String)])
       // Graph 2: reset for each subgraph (wait per graph1)
       val posMapping2 = collection.mutable.Map[Int, Int]()
 
-      def generateEdges(graphStart: Map[Int, ArrayBuffer[EdgeInfo]],
+      def generateEdges(graphStart: Map[Int, ListBuffer[EdgeInfo]],
                         graphPos: Int,
-                        graphStart2: Map[Int, ArrayBuffer[EdgeInfo]],
+                        graphStart2: Map[Int, ListBuffer[EdgeInfo]],
                         graphPos2: Int,
                         posMappingI: collection.mutable.Map[Int, Int]): Unit = {
-        val start1Edges = graphStart.getOrElse(graphPos, ArrayBuffer())
+        val start1Edges = graphStart.getOrElse(graphPos, ListBuffer())
 
         val nodePos = posCounter
 
