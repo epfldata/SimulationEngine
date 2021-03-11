@@ -35,16 +35,13 @@ object Lifter {
 
   def apply(startClasses: List[Clasz[_ <: Actor]])
     : List[ActorType[_]] = {
-    // val actorsInit: OpenCode[List[Actor]] = liftInitCode(initializationClass)
-    //Collecting method symbols and info to generate methodsIdMap and methodsMap
-    var counter = 0
 
     startClasses
       .map(c => c.methods)
       .flatten
       .foreach(method => {
         import method.A
-        methodsIdMap = methodsIdMap + (method.symbol -> counter)
+        methodsIdMap = methodsIdMap + (method.symbol -> Method.getNextMethodId)
         //the method is only nonblocking if its return type is a subtype of NBUnit
         var blocking = true
         if (method.A <:< codeTypeOf[NBUnit]) blocking = false
@@ -54,9 +51,6 @@ object Lifter {
               method.tparams,
               method.vparamss,
               blocking))
-
-        counter += 1
-        Method.getNextMethodId
       })
     //lifting types
     val endTypes = startClasses.map(c => {
