@@ -53,12 +53,12 @@ object someSpec {
   def compile(): Unit = {
     val testSome: ClassWithObject[liftSomeSpec] = liftSomeSpec.reflect(IR)
     val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
-    compileSims(List(testSome), Some(mainClass), destFolder = "src/test/scala/generated/")
+    compileSims(List(testSome), Some(mainClass), destFolder = "src/test/scala/generated/liftSome")
   }
 
-  def main(args: Array[String]): Unit = {
-    compile()
-    sleep(100)
-    new Default(SimulationConfig(generated.meta.test.liftSome.InitData.initActors, 0, 1, 0, 1)).run()
-  }
+  // def main(args: Array[String]): Unit = {
+  //   compile()
+  //   sleep(100)
+  //   new Default(SimulationConfig(generated.meta.test.liftSome.InitData.initActors, 0, 1, 0, 1)).run()
+  // }
 }

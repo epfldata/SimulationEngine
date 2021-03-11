@@ -159,13 +159,13 @@ class inheritanceE2ECompile extends FlatSpec {
     compileSims(List(c1, c2, c3, c4), 
       mainInit = Some(init),  
       initPkgName = this.getClass().getPackage().getName(), 
-      destFolder = "src/test/scala/generated/")  
+      destFolder = "src/test/scala/generated/inheritance")  
   }
 }
 
-class inheritanceE2ERun extends FlatSpec {
-  "The generated code" should "run" in {
-    generated.meta.test.inheritance.InitData.initActors() 
-    new Default(SimulationConfig(totalTurn = 5)).run()
-  }
-}
+// class inheritanceE2ERun extends FlatSpec {
+//   "The generated code" should "run" in {
+//     generated.meta.test.inheritance.InitData.initActors() 
+//     new Default(SimulationConfig(totalTurn = 5)).run()
+//   }
+// }

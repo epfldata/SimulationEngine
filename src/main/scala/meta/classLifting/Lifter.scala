@@ -64,15 +64,19 @@ object Lifter {
   def init(initClasses: List[Clasz[_ <: Actor]]): Unit = {
     for (c <- initClasses) {
       var mnamess: List[String] = List[String]()  // array of all the symbol names of this class's methods (owner.method) 
-      c.methods.foreach(m => {  
-        val mtdName: String = m.symbol.toString()
-        mnamess = mtdName :: mnamess 
-        methodsIdMap = methodsIdMap + (mtdName -> Method.getNextMethodId)
-        methodsMap = methodsMap + (mtdName -> new MethodInfo[m.A](
-          mtdName, 
-          m.tparams, 
-          m.vparamss, 
-          m.body.asOpenCode))
+      c.methods.foreach({  
+        case m: c.Method[a, b] => 
+          import m.A 
+
+          val mtdName: String = m.symbol.toString()
+          mnamess = mtdName :: mnamess 
+          methodsIdMap = methodsIdMap + (mtdName -> Method.getNextMethodId)
+          val cde: OpenCode[m.A] = m.body.asOpenCode
+          methodsMap = methodsMap + (mtdName -> new MethodInfo[m.A](
+            mtdName, 
+            m.tparams, 
+            m.vparamss, 
+            cde))
       })
       if (mnamess.contains(s"${c.name}.main")) {
         leafActors.append(c) 
@@ -494,18 +498,22 @@ object Lifter {
     //lifting methods - with main method as special case
 
     val callableMethods: List[LiftedMethod[_]] = MMap(actorName).map(actorMtd => {
-      val m: MethodInfo[_] = methodsMap(actorMtd)
 
-      val mtdBody = liftCode(m.body)
+      methodsMap(actorMtd) match {
+        case m: MethodInfo[a] => {
+    
+          val mtdBody = liftCode[m.A](m.body)
 
-      if (m.symbol == s"${actorName}.main") {
-        mainAlgo = mtdBody 
-        None 
-      } else {
-        Some(new LiftedMethod(m.symbol, mtdBody, m.tparams, m.vparams, methodsIdMap(m.symbol)))
+          if (m.symbol == s"${actorName}.main") {
+            mainAlgo = mtdBody 
+            None 
+          } else {
+            Some(new LiftedMethod[m.A](m.symbol, mtdBody, m.tparams, m.vparams, methodsIdMap(m.symbol)))
+          }
+        }
       }
     }).filter(x => x!=None).toList.map(x => x.get)
-
+    
     ActorType[M](actorName,
                  parentNames,
                  fields,
