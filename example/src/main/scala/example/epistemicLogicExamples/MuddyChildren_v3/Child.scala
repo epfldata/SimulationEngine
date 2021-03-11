@@ -56,7 +56,6 @@ class Child(val isMuddy: Boolean) extends Actor {
   // non-RPC
   // think records what a child learns from the given status.
   private def think(c: P[ChildStatus]): Unit = {
-    assert(c.proposition.epoch == epoch)
     if (!isForward) {  
       val newKnowledge: Set[EpistemicSentence] = if (c.proposition.isForward) {
         val f: EpistemicSentence = if (c.proposition.isMuddy) {
