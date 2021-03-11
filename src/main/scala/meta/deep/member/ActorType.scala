@@ -18,8 +18,8 @@ import meta.runtime.Actor
 case class ActorType[X <: Actor](
     name: String,
     parentNames: List[String],
-    var states: List[Field],
+    parameterList: List[(String, String)],
+    var states: List[State[_]],
     methods: List[LiftedMethod[_]],
     main: Algo[_],
-    self: Variable[X])(implicit val X: CodeType[X]) {
-}
+    self: Variable[X])(implicit val X: CodeType[X]) {}

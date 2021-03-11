@@ -3,28 +3,27 @@ package meta.deep.codegen
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
 import meta.deep.algo.{Algo, AlgoInfo, NoOp, ScalaCode}
-import meta.deep.member._
-
+import meta.deep.member.ActorType
 import squid.lib.MutVar
 
 import scala.annotation.tailrec
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object CreateActorGraphs {
 
-  /** for each method, maps its id to a list buffer of [[MutVarType]] that it uses
+  /** for each method, maps its id to an array buffer of [[MutVarType]] that it uses
     *
     */
   val methodVariableTable
-    : collection.mutable.Map[Int, ListBuffer[MutVarType[_]]] =
-    collection.mutable.Map[Int, ListBuffer[MutVarType[_]]]()
+    : collection.mutable.Map[Int, ArrayBuffer[MutVarType[_]]] =
+    collection.mutable.Map[Int, ArrayBuffer[MutVarType[_]]]()
 
   /** for each method, maps its id to a stack of the parameters that it uses
     *
     */
   val methodVariableTableStack
-    : collection.mutable.Map[Int, ListBuffer[Variable[ListBuffer[Any]]]] =
-    collection.mutable.Map[Int, ListBuffer[Variable[ListBuffer[Any]]]]()
+    : collection.mutable.Map[Int, ArrayBuffer[Variable[ListBuffer[Any]]]] =
+    collection.mutable.Map[Int, ArrayBuffer[Variable[ListBuffer[Any]]]]()
 
   /** a wrapper that holds the type of the inner MutVar
     *
@@ -85,7 +84,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
 
       val varList = ListBuffer[MutVarType[_]]()
 
-      method.vparams.foreach(paramList => {
+      method.mtd.vparamss.foreach(paramList => {
         paramList.foreach({
           case param: Variable[v] =>
             //To be honest, dont know why this is working now (Type)
@@ -93,7 +92,8 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
               val cT = variable.Typ
               val methodArgsMut: Variable[MutVar[variable.Typ]] =
                 Variable[MutVar[variable.Typ]]
-              AlgoInfo.variables = VarWrapper[Z](variable, methodArgsMut) :: AlgoInfo.variables
+              AlgoInfo.variables = AlgoInfo
+                .VarWrapper[Z](variable, methodArgsMut) :: AlgoInfo.variables
               varList.append(MutVarType(methodArgsMut, cT))
             }
 
@@ -109,7 +109,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
 
     AlgoInfo.convertStageGraph(methodLookupTable.toMap,
                                methodLookupTableEnd.toMap)
-                       
+
     utilObj.rewriteCallMethod(AlgoInfo.stateGraph)
 
     expandEndNodes()
@@ -123,6 +123,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     CompiledActorGraph(
       actorType.name,
       actorType.parentNames,
+      actorType.parameterList,
       AlgoInfo.stateGraph.clone(),
       AlgoInfo.variables,
       variables,
@@ -168,7 +169,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
   private def createVariableTable(
       data: List[(Int, List[MutVarType[_]])]): Unit = data match {
     case x :: xs =>
-      methodVariableTable(x._1) = ListBuffer(x._2: _*)
+      methodVariableTable(x._1) = ArrayBuffer(x._2: _*)
       createVariableTable(xs)
     case Nil => ()
   }
@@ -182,7 +183,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
   private def createVariableTableStack(data: List[(Int, Int)]): Unit =
     data match {
       case x :: xs =>
-        val a = ListBuffer[Variable[ListBuffer[Any]]]()
+        val a = ArrayBuffer[Variable[ListBuffer[Any]]]()
         for (_ <- 0 until x._2) {
           val x = Variable[ListBuffer[Any]]
           a.append(x)

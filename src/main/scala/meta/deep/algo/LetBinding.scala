@@ -1,7 +1,7 @@
 package meta.deep.algo
 
 import meta.deep.IR.Predef._
-import meta.deep.member.VarWrapper
+import meta.deep.algo.AlgoInfo.VarWrapper
 import squid.lib.MutVar
 
 /**
@@ -53,7 +53,7 @@ case class LetBinding[V, A: CodeType, T: CodeType](
           bindingMut = finding.get.to.asInstanceOf[Variable[MutVar[V]]]
           contained = true
         } else {
-          val tmp = VarWrapper(bound.get, bindingMut)
+          val tmp = AlgoInfo.VarWrapper(bound.get, bindingMut)
           AlgoInfo.variables = tmp :: AlgoInfo.variables
           AlgoInfo.varSavers = tmp :: AlgoInfo.varSavers
         }

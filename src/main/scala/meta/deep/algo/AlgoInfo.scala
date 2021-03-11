@@ -5,8 +5,7 @@ import meta.runtime.{Future, ResponseMessage}
 import squid.lib.MutVar
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
-import meta.deep.member.VarWrapper 
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 /**
   * This object contains shared data between the algo codegens
@@ -31,7 +30,7 @@ object AlgoInfo {
   /**
     * Stores the edges to build up a state transition graph
     */
-  val stateGraph: ListBuffer[EdgeInfo] = ListBuffer[EdgeInfo]()
+  val stateGraph: ArrayBuffer[EdgeInfo] = ArrayBuffer[EdgeInfo]()
 
   /**
     * This stack is used to save a position onto it, so that it can be used to jump
@@ -119,6 +118,19 @@ object AlgoInfo {
 
     def getNativeId: Int
   }
+
+  /**
+    * Helper class to save mappings between a variable introduced to a mutable variable, which is used in
+    * the program. This is necessary, since it is not possible to define var variable references in squid
+    * at the moment, thus we have to use the MutVar Wrapper to change the variable afterwards
+    *
+    * @param from original variable defined by Algo
+    * @param to   new mutation variable created as replacement for original one
+    * @param A    code type of original variable
+    * @tparam C type of original variable
+    */
+  case class VarWrapper[C](from: Variable[C], to: Variable[MutVar[C]])(
+      implicit val A: CodeType[C])
 
   /**
     * Node for a position in code
