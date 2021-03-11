@@ -53,7 +53,7 @@ object someSpec {
   def compile(): Unit = {
     val testSome: ClassWithObject[liftSomeSpec] = liftSomeSpec.reflect(IR)
     val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
-    compileSims(List(testSome), mainClass, Vanilla, "src/test/scala/generated/")
+    compileSims(List(testSome), Some(mainClass), destFolder = "src/test/scala/generated/")
   }
 
   def main(args: Array[String]): Unit = {
