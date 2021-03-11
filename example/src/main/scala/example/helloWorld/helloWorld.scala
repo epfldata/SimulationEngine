@@ -12,6 +12,7 @@ import meta.classLifting.SpecialInstructions._
 class Server() extends Actor {
 
     def getPrice(): Int = {
+        println("Server request received!")
         Random.nextInt() + 50
     }
 
@@ -28,7 +29,8 @@ class Client(val server: Server) extends Actor {
     
     def main(): Unit = {
         while(true) {
-            server.getPrice()
+            val p: Int = server.getPrice()
+            println("Response received " + p)
             waitLabel(Turn, 1)
         }
     }
@@ -51,4 +53,4 @@ object Example extends App {
   val mainInit: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
   compileSims(List(server, client), Some(mainInit))
-}
+} 
