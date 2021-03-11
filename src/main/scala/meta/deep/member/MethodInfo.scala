@@ -1,4 +1,4 @@
-package meta.member
+package meta.deep.member
 
 import meta.deep.IR
 import meta.deep.IR.Predef._

@@ -45,22 +45,12 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     val c: String = initCode.Typ.rep.toString() match {
       case "Unit" => 
         initClass = false 
-        IR.showScala(initCode.rep).substring(1).dropRight(1)+"  List()\n"
+        IR.showScala(initCode.rep).substring(1).dropRight(1)
       case "List[meta.runtime.Actor]" =>  // compatibility
         initClass = true 
-        println(IR.showScala(initCode.rep))
         IR.showScala(initCode.rep)
       case _ => throw new Exception("Invalid init code!")
     }
-    // val c: String = initCode match {
-    //   case x: OpenCode[Unit] => 
-    //     initClass = false 
-    //     IR.showScala(x.rep).substring(1).dropRight(1)+"  List()\n"
-    //   case x: OpenCode[List[Actor]] => 
-    //     initClass = true 
-    //     IR.showScala(x.rep)
-    //   case _ => throw new Exception("Invalid init code!")
-    // }
 
     createInit(c)
 
@@ -524,7 +514,6 @@ object InitData {
     bw.write(classString)
     bw.close()
   }
-
 
   /**
     * Generates init code of one variable of type VarWrapper
