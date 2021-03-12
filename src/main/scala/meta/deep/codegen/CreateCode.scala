@@ -40,13 +40,14 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       prepareClass(cAG)
     }
 
-    val c: String = initCode match {
-      case x: OpenCode[Unit] => 
+    val c: String = initCode.Typ.rep.toString() match {
+      case "Unit" => 
         initClass = false 
-        IR.showScala(x.rep).substring(1).dropRight(1)+"  List()\n"
-      case x: OpenCode[List[Actor]] => 
+        IR.showScala(initCode.rep).substring(1).dropRight(1)
+      case "List[meta.runtime.Actor]" =>  // compatibility
         initClass = true 
-        IR.showScala(x.rep)
+        println(IR.showScala(initCode.rep))
+        IR.showScala(initCode.rep)
       case _ => throw new Exception("Invalid init code!")
     }
 
@@ -168,7 +169,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
         if (compiledActorGraph.parameterList.indexOf(x) != -1) {
           val mutability: String = x._1.split(" ").head.substring(0, 3)
           val varName: String = x._1.split(" ").last
-          s"${mutability} ${varName}: ${changeTypes(x._2, false)}"
+          s"${mutability} ${varName}: ${changeTypes(x._2)}"
         } else {
           ""
         }})
@@ -409,7 +410,7 @@ $run_until
     * @param code which should be changed
     * @return code with replaced variable types
     */
-  def changeTypes(code: String, init: Boolean = false): String = {
+  def changeTypes(code: String): String = {
     var result: String = code
 
     for (k <- this.typesReplaceWith) {
@@ -420,15 +421,13 @@ $run_until
     val nonTypedPattern = s"(\\s*)(val .*) = new generated\\.(.*);".r    // general form of val assignments
 
     // new Sims are added to newActors at runtime
-    (init, initClass) match {
-      case (true, true) => result
-      case _ => {
-        result = typedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
-        result = nonTypedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
-        result
-    }
+    
+    result = typedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
+
+    nonTypedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
+    
   }
-}
+
 
   /**
     * Converts a list of opencode code fragments to a opencode of array of code fragments
@@ -485,8 +484,8 @@ $run_until
       s"""package ${generatedPackage}
 
 object InitData  {
-  def initActors: List[meta.runtime.Actor] = {
-    ${changeTypes(code, init = true)}
+  def initActors(): Unit = {
+    ${changeTypes(code)}
   }  
 }"""
     val file = new File(storagePath + "/InitData.scala")

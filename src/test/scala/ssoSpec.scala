@@ -88,7 +88,7 @@ class ssoLifter extends FlatSpec {
   val c3: ClassWithObject[Client] = Client.reflect(IR)    
 
   "Init" should "populate the sso method during lifting" in {
-    Lifter.init(List(c1, c2, c3))
+    // Lifter.init(List(c1, c2, c3))
     
     // assert(Lifter.ssoMtds.diff(List("Server.statelessMtd", "Server.redirectMtd1", "RandomServer.mtd")).isEmpty)
 
@@ -126,9 +126,10 @@ class ssoCompile extends FlatSpec {
   }
 }
 
-// class ssoRun extends FlatSpec {
-//   "The generated code" should "run" in {
-//     generated.meta.test.SSO.InitData.initActors() 
-//     new Default(SimulationConfig(totalTurn = 10)).run()
-//   }
-// }
+class ssoRun extends FlatSpec {
+  "The generated code" should "run" in {
+    
+    generated.meta.test.SSO.InitData.initActors()
+    new Default(SimulationConfig(actors = List(), totalTurn = 10)).run()
+  }
+}

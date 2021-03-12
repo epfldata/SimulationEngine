@@ -121,17 +121,11 @@ object Lifter {
     * @param clasz - initialization class representation - must contain only 1 method, which returns an [[OpenCode]] of list of [[Actor]]s
     * @return - extracted initialization method body
     */
-  def liftInitCode(clasz: Clasz[_]): OpenCode[List[Actor]] = {
-    //it's expected that this class' first method initializes actors
-    val initMethod = clasz.methods.head
-    val initCode = clasz.methods.head.body
 
-    if (initMethod.A <:< codeTypeOf[List[Actor]])
-      initCode.asInstanceOf[OpenCode[List[Actor]]]
-    else {
-      throw new Exception("The main method does not return a list of actors")
-    }
+  def liftInitCode(clasz: Clasz[_]): OpenCode[_] = {
+    clasz.methods.head.body 
   }
+
 
   /** Lifts an [[OpenCode]](expression) into its deep representation [[Algo]]
     *
