@@ -34,7 +34,8 @@ class child1 extends parent2 {
   def main(): Unit = {
     while(true) {
       println("This is child1! ")
-      println("I can access my parents' methods as if my own: " + pMtd2())
+      pMtd2()
+      println("I can access my parents' methods as if my own!")
       handleMessages()
       waitLabel(Turn, 1)
     }
@@ -163,9 +164,9 @@ class inheritanceE2ECompile extends FlatSpec {
   }
 }
 
-// class inheritanceE2ERun extends FlatSpec {
-//   "The generated code" should "run" in {
-//     generated.meta.test.inheritance.InitData.initActors() 
-//     new Default(SimulationConfig(totalTurn = 5)).run()
-//   }
-// }
+class inheritanceE2ERun extends FlatSpec {
+  "The generated code" should "run" in {
+    generated.meta.test.inheritance.InitData.initActors() 
+    new Default(SimulationConfig(totalTurn = 5)).run()
+  }
+}

@@ -50,24 +50,23 @@ object Lifter {
 
   var branchActors: Map[String, Clasz[_ <: Actor]] = Map() 
 
-
   def init(initClasses: List[Clasz[_ <: Actor]]): Unit = {
     for (c <- initClasses) {
       var mnamess: List[String] = List[String]()  // array of all the symbol names of this class's methods (owner.method) 
       c.methods.foreach({  
-        case m: c.Method[a, b] => 
-          import m.A 
+        case method: c.Method[_, _] => 
+          import method.A 
 
-          val mtdName: String = m.symbol.toString()
+          val mtdName: String = method.symbol.toString()
           mnamess = mtdName :: mnamess 
           methodsIdMap = methodsIdMap + (mtdName -> Method.getNextMethodId)
-          val cde: OpenCode[m.A] = m.body.asOpenCode
-          methodsMap = methodsMap + (mtdName -> new MethodInfo[m.A](
+
+          val cde: OpenCode[method.A] = method.body.asOpenCode
+          methodsMap = methodsMap + (mtdName -> new MethodInfo(
             mtdName, 
-            m.tparams, 
-            m.vparamss, 
-            cde)
-          )
+            method.tparams, 
+            method.vparamss, 
+            cde)(method.A))
       })
 
       if (mnamess.contains(s"${c.name}.main")) {
@@ -155,7 +154,7 @@ object Lifter {
     init(startClasses)
     addRedirectMethods() 
 
-    val endTypes = startClasses.map(c => {
+    val endTypes = leafActors.toList.map(c => {
       liftActor(c)
     })
 
@@ -169,11 +168,12 @@ object Lifter {
     * @return an [[ActorType]] - deep embedding of an [[Actor]] class
     */
   def liftActor[T <: Actor](clasz: Clasz[T]) = {
-    val parentNames: List[String] = clasz.parents.map(parent => parent.rep.toString())
-
-    // val parameterList: List[(String, String)] = clasz.fields.filter(field => !field.init.isDefined)
-    //   .map(x => (s"${x.symbol.asMethodSymbol}", s"${x.A.rep}"))
     val actorName: String = clasz.name 
+
+    val discoveredParents: List[String] = clasz.parents.map(parent => 
+      parent.rep.toString())
+    val agentParents: List[String] = inheritance.getOrElse(actorName, Set()).toList.map(p => branchActors(p).self.Typ.rep.toString())
+    val parentNames: List[String] = discoveredParents.diff(agentParents)
 
     val fields: List[Field] = 
       (clasz :: inheritance.getOrElse(actorName, Set()).toList.map(x => branchActors(x))).flatMap(c => c.fields.map(x => {
@@ -195,31 +195,26 @@ object Lifter {
     import clasz.C
     val actorSelfVariable: Variable[_ <: Actor] =
       clasz.self.asInstanceOf[Variable[T]]
-    //lifting states - class attributes
 
-    var endMethods: List[LiftedMethod[_]] = List()
     var mainAlgo: Algo[_] = DoWhile(code"true", Wait())
 
-    clasz.methods.foreach({
-      case method: clasz.Method[a, b] =>
-        import method.A
+    val endMethods: List[LiftedMethod[_]] = MMap(actorName).map(actorMtd => {
+      methodsMap(actorMtd) match {
+        case m: MethodInfo[a] => {
+          import m.A 
 
-        val cde: OpenCode[method.A] = method.body.asOpenCode
-        val mtdBody = liftCode[method.A](cde, actorSelfVariable, clasz)
+          val cde: OpenCode[m.A] = m.body.asOpenCode 
+          val mtdBody = liftCode[m.A](cde, actorSelfVariable, clasz)
 
-        val mName: String = method.symbol.toString() 
-
-        endMethods = new LiftedMethod[method.A](
-          mName, 
-          mtdBody,
-          method.tparams, 
-          method.vparamss, 
-          methodsIdMap(mName)) :: endMethods
-
-        if (mName.endsWith(".main")) {
-          mainAlgo = CallMethod[Unit](methodsIdMap(mName), List(List()))
+          if (m.symbol == s"${actorName}.main") {
+            mainAlgo = mtdBody 
+            None 
+          } else {
+            Some(new LiftedMethod[m.A](m.symbol, mtdBody, m.tparams, m.vparams, methodsIdMap(m.symbol)))
+          }
         }
-    })
+      }
+    }).filter(x => x!=None).toList.map(x => x.get)
 
     ActorType[T](clasz.name,
                  parentNames,

@@ -200,7 +200,13 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     }).mkString(", ")
 
     def parents: String = {
-      s"${compiledActorGraph.parentNames.head}${compiledActorGraph.parentNames.tail.foldLeft("")((a,b) => a + " with " + changeTypes(b))}"
+      var parentNames: List[String] = compiledActorGraph.parentNames
+
+      if (!parentNames.contains("meta.runtime.Actor")) {
+        parentNames = "meta.runtime.Actor" :: parentNames 
+      } 
+        
+      s"${parentNames.head}${parentNames.tail.foldLeft("")((a,b) => a + " with " + changeTypes(b))}"
     }
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars, run_until, parents);

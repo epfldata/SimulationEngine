@@ -12,12 +12,12 @@ import meta.deep.IR.Predef._
   * @tparam A return value type
   */
 
-class MethodInfo[A0: CodeType](val symbol: String,
+class MethodInfo[A0](val symbol: String,
                     val tparams: List[IR.TypParam],
                     val vparams: List[List[IR.Variable[_]]], 
-                    val body: OpenCode[A0]) {
-  def replica(newSym: String): MethodInfo[A0] = {
-    new MethodInfo[A0](newSym, this.tparams, this.vparams, this.body)
+                    val body: OpenCode[A0])(implicit val A: CodeType[A0]) {
+  def replica(newSym: String): MethodInfo[A] = {
+    new MethodInfo[A](newSym, this.tparams, this.vparams, this.body)(A)
   }
 
   type A = A0 
