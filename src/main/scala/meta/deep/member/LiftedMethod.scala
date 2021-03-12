@@ -15,22 +15,20 @@ import meta.deep.algo.Algo
   * @param R        return type of method
   * @tparam R type of return value
   */
-abstract class LiftedMethod[R](val cls: IR.TopLevel.Clasz[_],
-                               val body: Algo[R],
-                               val methodId: Int)(implicit val R: CodeType[R]) {
-  val mtd: cls.Method[R, cls.Scp]
+class LiftedMethod[R](val symbol: String, 
+                      val body: Algo[R],
+                      val tparams: List[IR.TypParam],
+                      val vparams: List[List[IR.Variable[_]]], 
+                      val methodId: Int)(implicit val R: CodeType[R]) {
 
-  override def hashCode(): Int = sym.hashCode()
-
-  def sym: IR.MtdSymbol = mtd.symbol
+  override def hashCode(): Int = symbol.hashCode()
 
   override def equals(that: Any): Boolean = that match {
-    case that: LiftedMethod[_] => that.sym === sym
+    case that: LiftedMethod[_] => that.symbol == symbol
   }
 
   override def toString =
-    s"${sym.asMethodSymbol.owner.name}.${sym.asMethodSymbol.name}"
-
+    symbol 
 }
 
 object Method {

@@ -21,7 +21,7 @@ object Lifter {
     */
   var methodsIdMap: Map[String, Int] = Map()
 
-  /** Maps method symbols to their methods' information, [[meta.classLifting.MethodInfo]]
+  /** Maps method symbols to their methods' information 
     *
     */
   var methodsMap: Map[String, MethodInfo[_]] = Map()
@@ -81,6 +81,67 @@ object Lifter {
     }
   }
 
+     // If a branch agent doesn't have any branch parent, it's completed  
+   // 
+  def addRedirectMethods(): Unit = {
+
+    val branchActorNames: Set[String] = branchActors.keySet 
+
+    // the buffer contains the names of the branch agents which are yet to find its parents 
+    val unplaced = branchActorNames.toBuffer
+    
+    // a branch agent may inherit from another branch agent 
+    for (c <- branchActors.values) {
+      val parents: Set[String] = c.parents.map(p => p.rep.toString.split("\\.").last).toSet[String]
+      val agentParents: Set[String] = branchActorNames.intersect(parents) 
+
+      if (agentParents.nonEmpty){
+        inheritance = inheritance.updated(c.name, agentParents)
+      } else {
+        unplaced -= c.name 
+      }
+    }
+    
+    while (unplaced.nonEmpty) {
+      unplaced.foreach(a => {
+        val nextLayer: Set[String] = inheritance(a) 
+        if (!nextLayer.exists(x => unplaced.contains(x))) {
+          inheritance = inheritance.updated(a, nextLayer.flatMap(x => inheritance.getOrElse(x, Set())).union(nextLayer))
+          unplaced -= a
+        }
+      })
+    }
+
+    for (c <- leafActors) {
+      val parents: Set[String] = c.parents.map(p => p.rep.toString.split("\\.").last).toSet[String]
+
+      val cMethods: List[String] = MMap(c.name).toList.map(x => x.split("\\.").last)
+
+      // parents who are also agents 
+      val directAgentParents: Set[String] = branchActorNames.intersect(parents) 
+
+      // include dependencies from its parents
+      val agentParents: Set[String] = directAgentParents
+        .union(directAgentParents.flatMap(x => inheritance.getOrElse(x, Set())))
+      
+      inheritance = inheritance.updated(c.name, agentParents)
+
+      agentParents.foreach(p => { 
+        MMap(p).foreach(n => {
+          val nStr: String = n.split("\\.").last 
+          if (!cMethods.contains(nStr)) {
+            val mtdName: String = s"${c.name}.${nStr}"
+            methodsIdMap = methodsIdMap + (mtdName -> Method.getNextMethodId)
+            val origMtdInfo = methodsMap.get(n.toString).get 
+            methodsMap = methodsMap + (mtdName -> origMtdInfo.replica(mtdName))
+            redirectMap = redirectMap.updated(n, mtdName :: redirectMap.getOrElse(n, List()))
+            MMap = MMap.updated(c.name, mtdName :: MMap(c.name))
+          } 
+        })
+      })
+    }
+  }
+
   /** Lifts the classes and object initialization
     *
     * @param startClasses        - classes that need to be lifted, in form of [[Clasz]]
@@ -92,6 +153,7 @@ object Lifter {
     : List[ActorType[_]] = {
 
     init(startClasses)
+    addRedirectMethods() 
 
     val endTypes = startClasses.map(c => {
       liftActor(c)
@@ -106,7 +168,7 @@ object Lifter {
     * @tparam T - type of actor
     * @return an [[ActorType]] - deep embedding of an [[Actor]] class
     */
-  private def liftActor[T <: Actor](clasz: Clasz[T]) = {
+  def liftActor[T <: Actor](clasz: Clasz[T]) = {
     val parentNames: List[String] = clasz.parents.map(parent => parent.rep.toString())
 
     // val parameterList: List[(String, String)] = clasz.fields.filter(field => !field.init.isDefined)
@@ -138,7 +200,6 @@ object Lifter {
     var endMethods: List[LiftedMethod[_]] = List()
     var mainAlgo: Algo[_] = DoWhile(code"true", Wait())
 
-    //lifting methods - with main method as special case
     clasz.methods.foreach({
       case method: clasz.Method[a, b] =>
         import method.A
@@ -149,12 +210,11 @@ object Lifter {
         val mName: String = method.symbol.toString() 
 
         endMethods = new LiftedMethod[method.A](
-          clasz,
+          mName, 
           mtdBody,
-          methodsIdMap(mName)) {
-          override val mtd: cls.Method[method.A, cls.Scp] =
-            method.asInstanceOf[this.cls.Method[method.A, cls.Scp]]
-        } :: endMethods
+          method.tparams, 
+          method.vparamss, 
+          methodsIdMap(mName)) :: endMethods
 
         if (mName.endsWith(".main")) {
           mainAlgo = CallMethod[Unit](methodsIdMap(mName), List(List()))
@@ -188,7 +248,7 @@ object Lifter {
     * @tparam T - return type of the expression
     * @return [[Algo]] - deep representation of the expression
     */
-  private def liftCode[T: CodeType](cde: OpenCode[T],
+  def liftCode[T: CodeType](cde: OpenCode[T],
                                     actorSelfVariable: Variable[_ <: Actor],
                                     clasz: Clasz[_ <: Actor]): Algo[T] = {
     cde match {
@@ -243,17 +303,6 @@ object Lifter {
         val reqAlgo: Algo[Any] = ScalaCode(
           code"$actorSelfVariable.addReceiveMessages(List($p1))")
 
-        // val callRequest = clasz.methods.foldRight(reqAlgo)((method, rest) => {
-        //   val methodId = methodsIdMap(method.symbol)
-        //   val methodInfo = methodsMap(method.symbol)
-        //   //map method parameters correctly
-
-        //   val argss: List[List[OpenCode[_]]] =
-        //     methodInfo.vparams.zipWithIndex.map(x => {
-        //       x._1.zipWithIndex.map(y => {
-        //         code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
-        //       })
-        //     })
         val actorName: String = clasz.name 
         val callRequest = MMap(actorName).filterNot(x => x.endsWith(".main")).foldRight(reqAlgo)((actorMtd, rest) => {
             val methodId: Int = methodsIdMap(actorMtd)
@@ -347,26 +396,40 @@ object Lifter {
 
       case code"${MethodApplication(ma)}:Any "
         if methodsIdMap.get(ma.symbol.toString()).isDefined =>
-          //extracting arguments and formatting them
-          var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
-          val methodName: String = ma.symbol.toString()
+            //extracting arguments and formatting them
+            var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+            val methodName: String = ma.symbol.toString()
 
-          //method is local - method recipient is this(self)
-          val recipientActorVariable =
-            ma.args.head.head.asInstanceOf[OpenCode[Actor]]
-          if (actorSelfVariable.toCode == recipientActorVariable) {
-            val f = CallMethod(methodsIdMap(methodName), argss)
-            f.asInstanceOf[Algo[T]]
-          }
-          //method recipient is another actor - a message has to be sent
-          else {
-            val f = Send(actorSelfVariable.toCode,
-                         recipientActorVariable,
-                         methodsIdMap(methodName),
-                         argss,
-                         true)
-            f.asInstanceOf[Algo[T]]
-          }
+            val recipientActorVariable =
+              ma.args.head.head.asInstanceOf[OpenCode[Actor]]
+
+            if (redirectMap.contains(methodName)) {
+              val redirectedLocalMtdName: String = s"${clasz.name}.${methodName.split("\\.").last}"
+              val redirectedChildMtdName: String = s"${recipientActorVariable.Typ.rep.toString.split("\\.").last}.${methodName.split("\\.").last}"
+
+              if (redirectMap(methodName).contains(redirectedLocalMtdName)) {
+                println(s"Redirect ${methodName} to local call ${redirectedLocalMtdName}")
+                CallMethod[T](methodsIdMap(redirectedLocalMtdName), argss)
+              } else if (redirectMap(methodName).contains(redirectedChildMtdName)) {
+                println(s"Redirect ${methodName} to child ${redirectedChildMtdName}")
+                Send[T](actorSelfVariable.toCode,
+                  recipientActorVariable,
+                  methodsIdMap(redirectedChildMtdName),
+                  argss, true)
+              } else {
+                throw new Exception(s"Redirected method ${methodName} to no known dest! ${redirectedLocalMtdName}, ${redirectedChildMtdName}")
+              }
+            } else { 
+              if (actorSelfVariable.toCode == recipientActorVariable) {
+                CallMethod[T](methodsIdMap(methodName), argss)
+              } else {
+              Send[T](actorSelfVariable.toCode,
+                  recipientActorVariable,
+                  methodsIdMap(methodName),
+                  argss, true)
+              }
+            }
+
       case _ =>
         //here there is space for some more code patterns to be lifted, by using the liftCodeOther method which can be overriden
         val liftedCode = liftCodeOther(cde, actorSelfVariable, clasz)
