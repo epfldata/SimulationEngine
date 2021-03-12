@@ -3,7 +3,7 @@ package meta.compile
 object compileSims {
   import meta.classLifting.Lifter
   import meta.deep.IR.TopLevel._
-  import meta.deep.codegen.{CreateActorGraphs, CreateCode, EdgeMerge, Pipeline, StateMachineElement, ActorMerge, SSO}
+  import meta.deep.codegen._
   import meta.runtime.Actor
   import meta.deep.IR.Predef._ 
 
@@ -18,13 +18,14 @@ object compileSims {
     * @param destFolder
     */
   def apply(startClasses: List[Clasz[_ <: Actor]], 
+            ssoEnabled: Boolean = false, 
             mainClass: Option[Clasz[_]] = None, 
             mainInit: Option[OpenCode[Unit]] = None, 
             initPkgName: String = "", 
             mode: CompilationMode = Vanilla, 
             destFolder: String=""): Unit = {
 
-    val simulationData = Lifter(startClasses)
+    val simulationData = Lifter(startClasses, ssoEnabled)
 
     var statemachineElements: List[StateMachineElement] = List(new EdgeMerge())
 
@@ -58,8 +59,6 @@ object compileSims {
         statemachineElements
       case SimsMerge(namePairs) =>
         new ActorMerge(namePairs) :: statemachineElements
-      case SimsStateless(statelessServers) =>
-        new SSO(statelessServers) :: statemachineElements
     }
 
     mode.setPackage(nameMap)

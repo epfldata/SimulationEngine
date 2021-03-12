@@ -10,6 +10,8 @@ import meta.runtime.simulation.{Default, SimulationConfig}
 import org.scalatest.FlatSpec
 import scala.util.Random 
 
+import scala.collection.mutable.ListBuffer 
+
 @lift 
 class RandomServer extends Actor {
     val foo: Double = 30 
@@ -33,9 +35,15 @@ class RandomServer extends Actor {
 @lift 
 class Server(val randServer: RandomServer) extends Actor {
     val var1: Int = 10 
+    val l: ListBuffer[Int] = new ListBuffer[Int]() 
+
+    var var2: Double = 20 
 
     def statefulMtd: Int = {
         println("Stateful mtd called!")
+        println("Mutable variable " + var2) 
+        println("Mutable list buffer with immutable decl " + l)
+        println("Immutable variable " + var1) 
         var1 
     }
 
@@ -69,9 +77,9 @@ class Server(val randServer: RandomServer) extends Actor {
 class Client(val s: Server) extends Actor {
     def main(): Unit = {
         while(true) {
-            println("Call redirect mtd")
-            s.redirectMtd1() 
-            println("Call stateless mtd")
+            // println("Call redirect mtd")
+            // s.redirectMtd1() 
+            // println("Call stateless mtd")
             val res: Int = s.statelessMtd(3) 
             println("Answer of the stateless method is " + res)
             waitLabel(Turn, 1)
@@ -88,19 +96,9 @@ class ssoLifter extends FlatSpec {
   val c3: ClassWithObject[Client] = Client.reflect(IR)    
 
   "Init" should "populate the sso method during lifting" in {
-    // Lifter.init(List(c1, c2, c3))
+    val res = Lifter(List(c1, c2, c3), true)
     
-    // assert(Lifter.ssoMtds.diff(List("Server.statelessMtd", "Server.redirectMtd1", "RandomServer.mtd")).isEmpty)
-
-    // Lifter.ssoEnabled = true 
-
-    // Lifter.liftActor(c1)
-    // Lifter.liftActor(c2)
-    // Lifter.liftActor(c3)
-
-    // // println(Lifter.methodsIdMap)
-    // assert(Lifter.methodsIdMap.get("Server.mtd_sso").isDefined)
-    // assert(Lifter.methodsIdMap.get("Client.statelessMtd_sso").isDefined)
+    assert(Lifter.ssoMtds.diff(List("Server.statelessMtd", "Server.redirectMtd1", "RandomServer.mtd")).isEmpty)
   }
 }
 
@@ -119,7 +117,7 @@ class ssoCompile extends FlatSpec {
     val c2: ClassWithObject[Client] = Client.reflect(IR)
     val c3: ClassWithObject[RandomServer] = RandomServer.reflect(IR)  
 
-    compileSims(List(c1, c2, c3), 
+    compileSims(List(c1, c2, c3), ssoEnabled = true, 
       mainInit = Some(init),  
       initPkgName = this.getClass().getPackage().getName(), 
       destFolder = "src/test/scala/generated/sso")  

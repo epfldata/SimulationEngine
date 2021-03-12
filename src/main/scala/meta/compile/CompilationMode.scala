@@ -36,20 +36,5 @@ case class SimsMerge(namePairs: List[(String, String)]) extends CompilationMode 
     }
 }
 
-// stateless-server optimization
-case class SimsStateless(statelessServers: List[String]) extends CompilationMode {
-    private var fullName: Map[String, String] = Map[String, String]()
-    private var pkg: String = "" 
-
-    def fullNameMap: Map[String, String] = fullName 
-
-    def pkgName: String = pkg 
-    
-    def setPackage(name: Map[String, String]): Unit = {
-        fullName = name 
-        pkg = "generated." + name.get("Main").get + "_sso"
-    }
-}
-
 
 
