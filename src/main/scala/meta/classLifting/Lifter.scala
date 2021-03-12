@@ -19,12 +19,67 @@ object Lifter {
   /** Maps method symbols to their IDs
     *
     */
-  var methodsIdMap: Map[IR.MtdSymbol, Int] = Map()
+  var methodsIdMap: Map[String, Int] = Map()
 
   /** Maps method symbols to their methods' information, [[meta.classLifting.MethodInfo]]
     *
     */
-  var methodsMap: Map[IR.MtdSymbol, MethodInfo[_]] = Map()
+  var methodsMap: Map[String, MethodInfo[_]] = Map()
+
+  /* Map actor name and symbol names (owner.method) of its methods
+    * store in String because we would like to add new methods 
+    */
+
+  var MMap: Map[String, List[String]] = Map()
+
+  /**
+   * Map the original method symbol and the method symbol it re-directs to 
+   */
+  var redirectMap: Map[String, List[String]] = Map()
+  
+  /**
+   * Map each agent (both branch and leaf) with its branch agent parents 
+   */
+  var inheritance: Map[String, Set[String]] = Map() 
+
+  /**
+   * We separate between leafActors and branchActors syntactically 
+   * An actor is leaf iff it has a main method that defines its behaviour; otherwise it is a branch 
+   */ 
+  val leafActors: ListBuffer[Clasz[_ <: Actor]] = new ListBuffer[Clasz[_ <: Actor]]()
+
+  var branchActors: Map[String, Clasz[_ <: Actor]] = Map() 
+
+
+  def init(initClasses: List[Clasz[_ <: Actor]]): Unit = {
+    for (c <- initClasses) {
+      var mnamess: List[String] = List[String]()  // array of all the symbol names of this class's methods (owner.method) 
+      c.methods.foreach({  
+        case m: c.Method[a, b] => 
+          import m.A 
+
+          val mtdName: String = m.symbol.toString()
+          mnamess = mtdName :: mnamess 
+          methodsIdMap = methodsIdMap + (mtdName -> Method.getNextMethodId)
+          val cde: OpenCode[m.A] = m.body.asOpenCode
+          methodsMap = methodsMap + (mtdName -> new MethodInfo[m.A](
+            mtdName, 
+            m.tparams, 
+            m.vparamss, 
+            cde)
+          )
+      })
+
+      if (mnamess.contains(s"${c.name}.main")) {
+        leafActors.append(c) 
+        // println(s"Leaf actor: ${c.name}")
+      } else {
+        branchActors = branchActors + (c.name -> c)
+        // println(s"Branch actor: ${c.name}")
+      }
+      MMap = MMap + (c.name -> mnamess) 
+    }
+  }
 
   /** Lifts the classes and object initialization
     *
@@ -36,23 +91,8 @@ object Lifter {
   def apply(startClasses: List[Clasz[_ <: Actor]])
     : List[ActorType[_]] = {
 
-    startClasses
-      .map(c => c.methods)
-      .flatten
-      .foreach(method => {
-        import method.A
-        methodsIdMap = methodsIdMap + (method.symbol -> Method.getNextMethodId)
-        //the method is only nonblocking if its return type is a subtype of NBUnit
-        var blocking = true
-        if (method.A <:< codeTypeOf[NBUnit]) blocking = false
+    init(startClasses)
 
-        methodsMap = methodsMap + (method.symbol -> new MethodInfo[method.A](
-              method.symbol,
-              method.tparams,
-              method.vparamss,
-              blocking))
-      })
-    //lifting types
     val endTypes = startClasses.map(c => {
       liftActor(c)
     })
@@ -93,17 +133,18 @@ object Lifter {
         val cde: OpenCode[method.A] = method.body.asOpenCode
         val mtdBody = liftCode[method.A](cde, actorSelfVariable, clasz)
 
+        val mName: String = method.symbol.toString() 
+
         endMethods = new LiftedMethod[method.A](
           clasz,
           mtdBody,
-          methodsMap(method.symbol).blocking,
-          methodsIdMap(method.symbol)) {
+          methodsIdMap(mName)) {
           override val mtd: cls.Method[method.A, cls.Scp] =
             method.asInstanceOf[this.cls.Method[method.A, cls.Scp]]
         } :: endMethods
 
-        if (method.symbol.asMethodSymbol.name.toString == "main") {
-          mainAlgo = CallMethod[Unit](methodsIdMap(method.symbol), List(List()))
+        if (mName.endsWith(".main")) {
+          mainAlgo = CallMethod[Unit](methodsIdMap(mName), List(List()))
         }
     })
 
@@ -190,17 +231,28 @@ object Lifter {
         val reqAlgo: Algo[Any] = ScalaCode(
           code"$actorSelfVariable.addReceiveMessages(List($p1))")
 
-        val callRequest = clasz.methods.foldRight(reqAlgo)((method, rest) => {
-          val methodId = methodsIdMap(method.symbol)
-          val methodInfo = methodsMap(method.symbol)
-          //map method parameters correctly
+        // val callRequest = clasz.methods.foldRight(reqAlgo)((method, rest) => {
+        //   val methodId = methodsIdMap(method.symbol)
+        //   val methodInfo = methodsMap(method.symbol)
+        //   //map method parameters correctly
 
-          val argss: List[List[OpenCode[_]]] =
-            methodInfo.vparams.zipWithIndex.map(x => {
-              x._1.zipWithIndex.map(y => {
-                code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
+        //   val argss: List[List[OpenCode[_]]] =
+        //     methodInfo.vparams.zipWithIndex.map(x => {
+        //       x._1.zipWithIndex.map(y => {
+        //         code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
+        //       })
+        //     })
+        val actorName: String = clasz.name 
+        val callRequest = MMap(actorName).filterNot(x => x.endsWith(".main")).foldRight(reqAlgo)((actorMtd, rest) => {
+            val methodId: Int = methodsIdMap(actorMtd)
+            val methodInfo: MethodInfo[_] = methodsMap(actorMtd)
+
+            val argss: List[List[OpenCode[_]]] =
+              methodInfo.vparams.zipWithIndex.map(x => {
+                x._1.zipWithIndex.map(y => {
+                  code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
+                })
               })
-            })
 
           IfThenElse(
             code"$p1.methodId==${Const(methodId)}",
@@ -225,7 +277,7 @@ object Lifter {
 
       case code"SpecialInstructions.interrupt($interval: Double, (() => ${MethodApplication(msg)}))" =>
         val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
-        var mtd: IR.MtdSymbol = msg.symbol
+        var mtd: String = msg.symbol.toString()
         Interrupt(actorSelfVariable.toCode,
                   interval,
                   methodsIdMap(mtd),
@@ -233,26 +285,26 @@ object Lifter {
 
       // asynchronously call a remote method
       case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" =>
-        if (methodsIdMap.get(msg.symbol).isDefined){
+        if (methodsIdMap.get(msg.symbol.toString()).isDefined){
           val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
           val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
 
           AsyncSend[T, mt.Typ](
             actorSelfVariable.toCode,
             recipientActorVariable,
-            methodsIdMap(msg.symbol),
+            methodsIdMap(msg.symbol.toString),
             argss)
         } else {
           var recipientActorVariable: OpenCode[Actor] = msg.args.last.head.asInstanceOf[OpenCode[Actor]]
           val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
-          var mtd = msg.symbol
+          var mtd: String = msg.symbol.toString 
           var curriedMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
           argss.append(msg.args.last.head)
 
           while (!methodsIdMap.get(mtd).isDefined) {
             curriedMtd match {
               case code"($sa: $st) => ${MethodApplication(mtd2)}: Any" => {
-                mtd = mtd2.symbol
+                mtd = mtd2.symbol.toString()
                 if (methodsIdMap.get(mtd).isDefined){
                   recipientActorVariable = mtd2.args.head.head.asInstanceOf[OpenCode[Actor]]
                   if (mtd2.args.last.length != argss.length){
@@ -282,24 +334,25 @@ object Lifter {
         }
 
       case code"${MethodApplication(ma)}:Any "
-        if methodsIdMap.get(ma.symbol).isDefined =>
+        if methodsIdMap.get(ma.symbol.toString()).isDefined =>
           //extracting arguments and formatting them
           var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+          val methodName: String = ma.symbol.toString()
 
           //method is local - method recipient is this(self)
           val recipientActorVariable =
             ma.args.head.head.asInstanceOf[OpenCode[Actor]]
           if (actorSelfVariable.toCode == recipientActorVariable) {
-            val f = CallMethod(methodsIdMap(ma.symbol), argss)
+            val f = CallMethod(methodsIdMap(methodName), argss)
             f.asInstanceOf[Algo[T]]
           }
           //method recipient is another actor - a message has to be sent
           else {
             val f = Send(actorSelfVariable.toCode,
                          recipientActorVariable,
-                         methodsIdMap(ma.symbol),
+                         methodsIdMap(methodName),
                          argss,
-                         methodsMap(ma.symbol).blocking)
+                         true)
             f.asInstanceOf[Algo[T]]
           }
       case _ =>

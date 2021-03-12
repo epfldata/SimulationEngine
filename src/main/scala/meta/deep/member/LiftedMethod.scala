@@ -17,7 +17,6 @@ import meta.deep.algo.Algo
   */
 abstract class LiftedMethod[R](val cls: IR.TopLevel.Clasz[_],
                                val body: Algo[R],
-                               val blocking: Boolean,
                                val methodId: Int)(implicit val R: CodeType[R]) {
   val mtd: cls.Method[R, cls.Scp]
 
