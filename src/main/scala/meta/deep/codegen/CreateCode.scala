@@ -6,10 +6,10 @@ import meta.deep.IR
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
 import meta.deep.algo.AlgoInfo.EdgeInfo
-import meta.deep.member.ActorType
+import meta.deep.member.{CompiledActorGraph, VarValue, VarWrapper}
 import meta.runtime.Actor
 
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ListBuffer
 import meta.compile.CompilationMode
 
 class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: CompilationMode)
@@ -61,22 +61,22 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     * @param compiledActorGraph the graph data required for generating the class
     */
   def prepareClass(compiledActorGraph: CompiledActorGraph): Unit = {
-    var self_name = Map[String, String]()
+    // var self_name = Map[String, String]()
 
-    compiledActorGraph.actorTypes.map(actorType =>
-      self_name += (actorType.self.toCode.toString().substring(5).dropRight(1) -> actorType.name))
+    // compiledActorGraph.actorTypes.map(actorType =>
+    //   self_name += (actorType.self.toCode.toString().substring(5).dropRight(1) -> actorType.name))
 //    val selfs = compiledActorGraph.actorTypes.map(actorType =>
 //      actorType.self.toCode.toString().substring(5).dropRight(1))
 
-    self_name.foreach(x => {
-      this.typesReplaceWith = (x._1, "this") :: this.typesReplaceWith
-    })
+    // self_name.foreach(x => {
+    //   this.typesReplaceWith = (x._1, "this") :: this.typesReplaceWith
+    // })
 
     val commands = generateCode(compiledActorGraph)
     val code = this.createCommandOpenCode(commands)
     
     // GraphDrawing.drawGraph(compiledActorGraph.graph, s"${self_name.values.toList}_prepareClass")
-    println(s"Compiled Sim ${self_name.values.toList} has states: ${commands.length}")
+    println(s"Compiled Sim ${compiledActorGraph.name} has states: ${commands.length}")
 
     val codeWithInit = this.generateVarInit(
       compiledActorGraph.variables2,
@@ -142,6 +142,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     // Coll is no longer accessible in 2.12.8
     this.typesReplaceWith = ("\\.Coll\\b", "[_]") :: this.typesReplaceWith
 
+    this.typesReplaceWith = ("this@[a-zA-Z0-9]*", "this") :: this.typesReplaceWith
+
     val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)) + parts(1))
 
     //This ugly syntax is needed to replace the received code with a correct function definition
@@ -159,20 +161,42 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
     val initParams: String = changeTypes(
       "\n" + compiledActorGraph.actorTypes.flatMap(actorType => {
-      actorType.states.map(s =>{
-        s"  var ${s.sym.name}: ${s.tpe.rep.toString} = ${IR.showScala(s.init.rep)};"
+      actorType.states.filterNot(x => x.parameter).map(s =>{
+        if (s.mutable) {
+          s"  var ${s.name}: ${s.tpeRep} = ${s.init};"
+        } else {
+          s"  val ${s.name}: ${s.tpeRep} = ${s.init};"
+        }
+
         //        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
       })}).mkString("\n"))
 
+    // val initParams: String = changeTypes(
+    //   "\n" + compiledActorGraph.actorTypes.flatMap(actorType => {
+    //   actorType.states.map(s =>{
+    //     s"  var ${s.sym.name}: ${s.tpe.rep.toString} = ${IR.showScala(s.init.rep)};"
+    //     //        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
+    //   })}).mkString("\n"))
+
+    // val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
+    //   actorType.parameterList.map(x => {
+    //     if (compiledActorGraph.parameterList.indexOf(x) != -1) {
+    //       val mutability: String = x._1.split(" ").head.substring(0, 3)
+    //       val varName: String = x._1.split(" ").last
+    //       s"${mutability} ${varName}: ${changeTypes(x._2)}"
+    //     } else {
+    //       ""
+    //     }})
+    // }).mkString(", ")
+
     val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
-      actorType.parameterList.map(x => {
-        if (compiledActorGraph.parameterList.indexOf(x) != -1) {
-          val mutability: String = x._1.split(" ").head.substring(0, 3)
-          val varName: String = x._1.split(" ").last
-          s"${mutability} ${varName}: ${changeTypes(x._2)}"
+      actorType.states.filter(x => x.parameter).map(s => {
+        if (s.mutable) {
+          s"var ${s.name}: ${changeTypes(s.tpeRep)}"
         } else {
-          ""
-        }})
+          s"val ${s.name}: ${changeTypes(s.tpeRep)}"
+        }
+      })
     }).mkString(", ")
 
     def parents: String = {
@@ -189,13 +213,13 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     */
   def generateCode(
       compiledActorGraph: CompiledActorGraph): List[OpenCode[Unit]] = {
-    val graph: ArrayBuffer[EdgeInfo] = compiledActorGraph.graph
+    val graph: ListBuffer[EdgeInfo] = compiledActorGraph.graph
     //Reassign positions
     var positionMap: Map[Int, Int] = Map()
 
     val groupedGraph = graph.groupBy(_.from.getNativeId)
 
-    var code: ArrayBuffer[OpenCode[Unit]] = ArrayBuffer[OpenCode[Unit]]()
+    var code: ListBuffer[OpenCode[Unit]] = ListBuffer[OpenCode[Unit]]()
 
     var changeCodePos: List[(Int, EdgeInfo)] = List()
     var requiredSavings: List[Int] = List()
@@ -206,7 +230,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
       positionMap = positionMap + (node -> code.length)
 
-      val start = groupedGraph.getOrElse(node, ArrayBuffer[EdgeInfo]())
+      val start = groupedGraph.getOrElse(node, ListBuffer[EdgeInfo]())
 
       //If we have more than one unknown cond, we have to store the edges to the list, so that the position can be looked up
       var unknownCondNode: Int = 0
@@ -235,7 +259,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
         //If there are more than one unknown cond, we have to get the position from stack
         var unknownCond: Int = 0
         groupedGraph
-          .getOrElse(target, ArrayBuffer[EdgeInfo]())
+          .getOrElse(target, ListBuffer[EdgeInfo]())
           .foreach(edge2 => {
             if (edge2.cond == null) {
               unknownCond = unknownCond + 1
@@ -450,7 +474,7 @@ $run_until
     * @tparam R return type of code
     * @return after with bounded variables
     */
-  def generateMutVarInit[R: CodeType](variables: List[AlgoInfo.VarWrapper[_]],
+  def generateMutVarInit[R: CodeType](variables: List[VarWrapper[_]],
                                       after: OpenCode[R]): OpenCode[R] =
     variables match {
       case Nil => code"$after"
@@ -504,7 +528,7 @@ object InitData  {
     * @tparam R return type of code
     * @return rest with bounded variable
     */
-  private def initVar[A, R: CodeType](variable: AlgoInfo.VarWrapper[A],
+  private def initVar[A, R: CodeType](variable: VarWrapper[A],
                                       rest: OpenCode[R]): OpenCode[R] = {
     import variable.A
     code"""val ${variable.to} = squid.lib.MutVar(${nullValue[A]}); $rest"""

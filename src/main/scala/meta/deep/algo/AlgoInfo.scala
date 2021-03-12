@@ -5,7 +5,9 @@ import meta.runtime.{Future, ResponseMessage}
 import squid.lib.MutVar
 
 import scala.collection.mutable
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ListBuffer
+
+import meta.deep.member.VarWrapper 
 
 /**
   * This object contains shared data between the algo codegens
@@ -30,7 +32,7 @@ object AlgoInfo {
   /**
     * Stores the edges to build up a state transition graph
     */
-  val stateGraph: ArrayBuffer[EdgeInfo] = ArrayBuffer[EdgeInfo]()
+  val stateGraph: ListBuffer[EdgeInfo] = ListBuffer[EdgeInfo]()
 
   /**
     * This stack is used to save a position onto it, so that it can be used to jump
@@ -129,8 +131,8 @@ object AlgoInfo {
     * @param A    code type of original variable
     * @tparam C type of original variable
     */
-  case class VarWrapper[C](from: Variable[C], to: Variable[MutVar[C]])(
-      implicit val A: CodeType[C])
+  // case class VarWrapper[C](from: Variable[C], to: Variable[MutVar[C]])(
+  //     implicit val A: CodeType[C])
 
   /**
     * Node for a position in code

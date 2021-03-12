@@ -109,18 +109,31 @@ object Lifter {
   private def liftActor[T <: Actor](clasz: Clasz[T]) = {
     val parentNames: List[String] = clasz.parents.map(parent => parent.rep.toString())
 
-    val parameterList: List[(String, String)] = clasz.fields.filter(field => !field.init.isDefined)
-      .map(x => (s"${x.symbol.asMethodSymbol}", s"${x.A.rep}"))
+    // val parameterList: List[(String, String)] = clasz.fields.filter(field => !field.init.isDefined)
+    //   .map(x => (s"${x.symbol.asMethodSymbol}", s"${x.A.rep}"))
+    val actorName: String = clasz.name 
+
+    val fields: List[Field] = 
+      (clasz :: inheritance.getOrElse(actorName, Set()).toList.map(x => branchActors(x))).flatMap(c => c.fields.map(x => {
+        val varName: String = x.symbol.asTerm.toString().split(" ").last
+        if (x.init.isDefined) {   // state variable
+          Field(varName, 
+            x.A.rep.tpe.toString, 
+            IR.showScala(x.init.get.rep), 
+            x.set.nonEmpty, 
+            false)
+        } else {                  // parameter
+          Field(varName, 
+            x.A.rep.tpe.toString, 
+          "",
+            x.set.nonEmpty, 
+            true)
+        }}))
 
     import clasz.C
     val actorSelfVariable: Variable[_ <: Actor] =
       clasz.self.asInstanceOf[Variable[T]]
     //lifting states - class attributes
-
-    val endStates = clasz.fields.filter(field => field.init.isDefined).map {
-      case field =>
-        State[field.A](field.symbol, field.A, field.init.get)
-    }
 
     var endMethods: List[LiftedMethod[_]] = List()
     var mainAlgo: Algo[_] = DoWhile(code"true", Wait())
@@ -150,8 +163,7 @@ object Lifter {
 
     ActorType[T](clasz.name,
                  parentNames,
-                 parameterList,
-                 endStates,
+                 fields,
                  endMethods,
                  mainAlgo,
                  clasz.self.asInstanceOf[Variable[T]])

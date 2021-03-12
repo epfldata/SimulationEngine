@@ -3,11 +3,11 @@ package meta.deep.codegen
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
 import meta.deep.algo.{Algo, AlgoInfo, NoOp, ScalaCode}
-import meta.deep.member.ActorType
+import meta.deep.member._
 import squid.lib.MutVar
 
 import scala.annotation.tailrec
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ListBuffer
 
 object CreateActorGraphs {
 
@@ -15,15 +15,15 @@ object CreateActorGraphs {
     *
     */
   val methodVariableTable
-    : collection.mutable.Map[Int, ArrayBuffer[MutVarType[_]]] =
-    collection.mutable.Map[Int, ArrayBuffer[MutVarType[_]]]()
+    : collection.mutable.Map[Int, ListBuffer[MutVarType[_]]] =
+    collection.mutable.Map[Int, ListBuffer[MutVarType[_]]]()
 
   /** for each method, maps its id to a stack of the parameters that it uses
     *
     */
   val methodVariableTableStack
-    : collection.mutable.Map[Int, ArrayBuffer[Variable[ListBuffer[Any]]]] =
-    collection.mutable.Map[Int, ArrayBuffer[Variable[ListBuffer[Any]]]]()
+    : collection.mutable.Map[Int, ListBuffer[Variable[ListBuffer[Any]]]] =
+    collection.mutable.Map[Int, ListBuffer[Variable[ListBuffer[Any]]]]()
 
   /** a wrapper that holds the type of the inner MutVar
     *
@@ -92,8 +92,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
               val cT = variable.Typ
               val methodArgsMut: Variable[MutVar[variable.Typ]] =
                 Variable[MutVar[variable.Typ]]
-              AlgoInfo.variables = AlgoInfo
-                .VarWrapper[Z](variable, methodArgsMut) :: AlgoInfo.variables
+              AlgoInfo.variables = VarWrapper[Z](variable, methodArgsMut) :: AlgoInfo.variables
               varList.append(MutVarType(methodArgsMut, cT))
             }
 
@@ -123,7 +122,6 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     CompiledActorGraph(
       actorType.name,
       actorType.parentNames,
-      actorType.parameterList,
       AlgoInfo.stateGraph.clone(),
       AlgoInfo.variables,
       variables,
@@ -169,7 +167,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
   private def createVariableTable(
       data: List[(Int, List[MutVarType[_]])]): Unit = data match {
     case x :: xs =>
-      methodVariableTable(x._1) = ArrayBuffer(x._2: _*)
+      methodVariableTable(x._1) = ListBuffer(x._2: _*)
       createVariableTable(xs)
     case Nil => ()
   }
@@ -183,7 +181,7 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
   private def createVariableTableStack(data: List[(Int, Int)]): Unit =
     data match {
       case x :: xs =>
-        val a = ArrayBuffer[Variable[ListBuffer[Any]]]()
+        val a = ListBuffer[Variable[ListBuffer[Any]]]()
         for (_ <- 0 until x._2) {
           val x = Variable[ListBuffer[Any]]
           a.append(x)
