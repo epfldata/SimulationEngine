@@ -39,11 +39,8 @@ class Server(val randServer: RandomServer) extends Actor {
 
     var var2: Double = 20 
 
+    // Optimization opportunity
     def statefulMtd: Int = {
-        println("Stateful mtd called!")
-        println("Mutable variable " + var2) 
-        println("Mutable list buffer with immutable decl " + l)
-        println("Immutable variable " + var1) 
         var1 
     }
 
@@ -117,7 +114,9 @@ class ssoCompile extends FlatSpec {
     val c2: ClassWithObject[Client] = Client.reflect(IR)
     val c3: ClassWithObject[RandomServer] = RandomServer.reflect(IR)  
 
-    compileSims(List(c1, c2, c3), ssoEnabled = true, 
+    Optimization.sso = true 
+
+    compileSims(List(c1, c2, c3),
       mainInit = Some(init),  
       initPkgName = this.getClass().getPackage().getName(), 
       destFolder = "src/test/scala/generated/sso")  

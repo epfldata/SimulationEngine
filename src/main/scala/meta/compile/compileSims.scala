@@ -18,7 +18,6 @@ object compileSims {
     * @param destFolder
     */
   def apply(startClasses: List[Clasz[_ <: Actor]], 
-            ssoEnabled: Boolean = false, 
             mainClass: Option[Clasz[_]] = None, 
             mainInit: Option[OpenCode[Unit]] = None, 
             initPkgName: String = "", 

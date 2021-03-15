@@ -1,5 +1,7 @@
 package meta.compile 
 
+import meta.runtime.Actor 
+
 sealed abstract class CompilationMode {
     def setPackage(name: Map[String, String]): Unit  
     def fullNameMap: Map[String, String]    
@@ -35,6 +37,3 @@ case class SimsMerge(namePairs: List[(String, String)]) extends CompilationMode 
         pkg = "generated." + name.get("Main").get + "_merged"
     }
 }
-
-
-

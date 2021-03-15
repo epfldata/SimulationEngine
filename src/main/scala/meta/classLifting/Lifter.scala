@@ -7,7 +7,7 @@ import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
 import meta.runtime.{Actor, Message, RequestMessage}
-
+import meta.compile.Optimization
 import scala.collection.mutable.ListBuffer
 
 /** Code lifter
@@ -158,10 +158,10 @@ object Lifter {
     * @return deep embedding of the classes
     */
 
-  def apply(startClasses: List[Clasz[_ <: Actor]], sso: Boolean = false)
+  def apply(startClasses: List[Clasz[_ <: Actor]])
     : List[ActorType[_]] = {
 
-    ssoEnabled = sso   
+    ssoEnabled = Optimization.sso    
     init(startClasses)
     addRedirectMethods() 
 
