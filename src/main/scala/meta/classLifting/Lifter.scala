@@ -8,7 +8,8 @@ import meta.deep.algo._
 import meta.deep.member._
 import meta.runtime.{Actor, Message, RequestMessage}
 import meta.compile.Optimization
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{Map => MutMap, ListBuffer}
+
 
 /** Code lifter
   *
@@ -207,25 +208,20 @@ object Lifter {
     val actorSelfVariable: Variable[_ <: Actor] =
       clasz.self.asInstanceOf[Variable[T]]
 
+    // Cache the translation results for reuse. 
+    val cache: MutMap[OpenCode[_], Algo[_]] = MutMap()
+
     var mainAlgo: Algo[_] = DoWhile(code"true", Wait())
 
     var addedSSOMtd: List[MethodInfo[_]] = List() 
 
-    def liftMethod(mtd: MethodInfo[_]): LiftedMethod[_] = {
-      mtd match {
-        case m: MethodInfo[a] => {
-            import m.A 
-
-            val cde: OpenCode[m.A] = m.body.asOpenCode 
-            val mtdBody = liftCode[m.A](cde)
-
-            new LiftedMethod[m.A](m.symbol, mtdBody, m.tparams, m.vparams, methodsIdMap(m.symbol))
-        }
-      }
-    }
-
+    // avoid translating same code repeatedly
     def liftCode[T: CodeType](cde: OpenCode[T]): Algo[T] = {
-      cde match {
+      if (cache.get(cde).isDefined) {
+        // println("Save translation! " + cde)
+        cache(cde).asInstanceOf[Algo[T]]
+      } else {
+        cde match {
         case code"val $x: squid.lib.MutVar[$xt] = squid.lib.MutVar.apply[xt]($v); $rest: T  " =>
           val f = LetBinding(
             Some(x.asInstanceOf[Variable[Any]]),
@@ -235,10 +231,11 @@ object Lifter {
             xt)
           f.asInstanceOf[Algo[T]]
         case code"val $x: $xt = $v; $rest: T" =>
-          LetBinding(Some(x),
+          val f = LetBinding(Some(x),
                     liftCode(v),
                     liftCode[T](rest))
                     .asInstanceOf[Algo[T]]
+          f.asInstanceOf[Algo[T]]
         case code"$e; $rest: T  " =>
           val f = LetBinding(None,
                             liftCode(e),
@@ -250,6 +247,7 @@ object Lifter {
             x,
             y,
             liftCode(code"$foreachbody; ()"))
+          cache += (cde -> f)
           f.asInstanceOf[Algo[T]]
 
         case code"while($cond) $body" =>
@@ -302,11 +300,13 @@ object Lifter {
                 p1,
                 callRequest
               )
-          // println(handleMessage)
+          cache += (cde -> handleMessage)    
           handleMessage.asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
-          WaitLabel[T](code"$x.toString()", y)
+          val f = WaitLabel[T](code"$x.toString()", y)
+          cache += (cde -> f)
+          f 
 
         case code"SpecialInstructions.interrupt($interval: Double, (() => ${MethodApplication(msg)}))" =>
           val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
@@ -318,7 +318,7 @@ object Lifter {
 
         // asynchronously call a remote method
         case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" =>
-          if (methodsIdMap.get(msg.symbol.toString()).isDefined){
+          val f = if (methodsIdMap.get(msg.symbol.toString()).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
 
@@ -326,7 +326,7 @@ object Lifter {
               actorSelfVariable.toCode,
               recipientActorVariable,
               methodsIdMap(msg.symbol.toString()),
-              argss)
+              argss)  
           } else {
             var recipientActorVariable: OpenCode[Actor] = msg.args.last.head.asInstanceOf[OpenCode[Actor]]
             val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
@@ -365,6 +365,9 @@ object Lifter {
               methodsIdMap(mtd),
               List(argss.toList))
           }
+          
+          cache += (cde -> f)
+          f 
 
           // If a method is both redirect and sso? We would like sso to merge it. 
         case code"${MethodApplication(ma)}:Any "
@@ -376,7 +379,7 @@ object Lifter {
             val recipientActorVariable =
               ma.args.head.head.asInstanceOf[OpenCode[Actor]]
 
-            if (redirectMap.contains(methodName)) {
+            val f = if (redirectMap.contains(methodName)) {
               val renamedMethods: List[String] = redirectMap(methodName)
 
               val redirectedLocalMtdName: String = s"${actorName}.${methodName.split("\\.").last}"
@@ -415,6 +418,9 @@ object Lifter {
               }
             }
 
+            cache += (cde -> f)
+            f 
+
         case _ =>
           //here there is space for some more code patterns to be lifted, by using the liftCodeOther method which can be overriden
           val liftedCode = liftCodeOther(cde)
@@ -426,23 +432,34 @@ object Lifter {
           // somewhere inside (e.g. an unsupported code pattern could contain a Foreach somewhere inside of it and that
           // would cause problems if it was lifted as ScalaCode)
           else {
-          cde analyse {
-            case d if d != cde =>
-              val c = liftCode(d)
-              c match {
-                case scalacode: ScalaCode[_] => {
-                  if (c.toString.contains("this")) {
-                    
-                  }
+            cde analyse {
+              case d if d != cde =>
+                val c = liftCode(d)
+                c match {
+                  case scalacode: ScalaCode[_] => 
+                  case _                       =>
+                    //  println(Console.RED + s"Lifter warning: possible unsupported code: $cde" + Console.RESET)
+                    throw new Exception("Unsupported code inside " + cde)
                 }
-                case _                       =>
-                  //  println(Console.RED + s"Lifter warning: possible unsupported code: $cde" + Console.RESET)
-                  throw new Exception("Unsupported code inside " + cde)
-              }
-          }
+            }
             val f = ScalaCode(cde)
+            cache += (cde -> f)
             f.asInstanceOf[Algo[T]]
           }
+        }
+      }
+    }
+
+    def liftMethod(mtd: MethodInfo[_])(cache: MutMap[OpenCode[_], Algo[_]]): LiftedMethod[_] = {
+      mtd match {
+        case m: MethodInfo[a] => {
+            import m.A 
+
+            val cde: OpenCode[m.A] = m.body.asOpenCode 
+            val mtdBody = liftCode[m.A](cde)
+
+            new LiftedMethod[m.A](m.symbol, mtdBody, m.tparams, m.vparams, methodsIdMap(m.symbol))
+        }
       }
     }
 
@@ -520,14 +537,14 @@ object Lifter {
     }
 
     val endMethods: List[LiftedMethod[_]] = MMap(actorName).map(actorMtd => {
-      val lm = liftMethod(methodsMap(actorMtd))
+      val lm = liftMethod(methodsMap(actorMtd))(cache)
       if (lm.symbol.endsWith(".main")) {
         mainAlgo = lm.body 
         None 
       } else {
         Some(lm)
       }}).filter(x => x!=None).toList.map(x => x.get) ::: addedSSOMtd.map(m => {
-      liftMethod(m)
+      liftMethod(m)(cache)
     })
 
     ActorType[T](clasz.name,
