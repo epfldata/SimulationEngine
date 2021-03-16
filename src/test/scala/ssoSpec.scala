@@ -93,7 +93,7 @@ class ssoLifter extends FlatSpec {
   val c3: ClassWithObject[Client] = Client.reflect(IR)    
 
   "Init" should "populate the sso method during lifting" in {
-    val res = Lifter(List(c1, c2, c3), true)
+    val res = Lifter(List(c1, c2, c3))
     
     assert(Lifter.ssoMtds.diff(List("Server.statelessMtd", "Server.redirectMtd1", "RandomServer.mtd")).isEmpty)
   }

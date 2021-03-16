@@ -24,7 +24,7 @@ object compileSims {
             mode: CompilationMode = Vanilla, 
             destFolder: String=""): Unit = {
 
-    val simulationData = Lifter(startClasses, ssoEnabled)
+    val simulationData = Lifter(startClasses)
 
     var statemachineElements: List[StateMachineElement] = List(new EdgeMerge())
 
