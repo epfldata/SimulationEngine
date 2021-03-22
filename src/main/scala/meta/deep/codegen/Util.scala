@@ -125,42 +125,6 @@ object utilObj {
     edges
   }
 
-  /*
-   Surround the graphs with 'wait edge' though there needs not to be latency penalty
-   */
-  def addGlue(edges: ListBuffer[EdgeInfo],
-                 methodId: Int,
-                 removeWait: Boolean = true): ListBuffer[EdgeInfo] = {
-    val firstFrom = edges.head.from
-    edges.foreach(edge1 => {
-      edge1.to match {
-        case c: CodeNodePos =>
-          edge1.to = CodeNodePos(c.pos + 1)
-        case _ =>
-      }
-      edge1.from match {
-        case c: CodeNodePos =>
-          edge1.from = CodeNodePos(c.pos + 1)
-        case _ =>
-      }
-    })
-    val w1 = AlgoInfo.EdgeInfo("wait",
-      firstFrom,
-      edges.head.from,
-      code"()",
-      waitEdge = !removeWait,
-      methodId1 = methodId)
-    val w2 = AlgoInfo.EdgeInfo("wait",
-      edges.last.to,
-      CodeNodePos(edges.last.to.asInstanceOf[CodeNodePos].pos + 1),
-      code"()",
-      waitEdge = !removeWait,
-      methodId1 = methodId)
-    edges.prepend(w1)
-    edges.append(w2)
-    edges
-  }
-
   def mtdToPosNodes(graph: ListBuffer[EdgeInfo]): Unit = {
     graph.foreach(edge => {
       edge.from match {
