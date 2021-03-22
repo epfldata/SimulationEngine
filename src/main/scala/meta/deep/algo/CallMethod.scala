@@ -10,14 +10,13 @@ case class CallMethod[R: CodeType](methodId: Int,
     val initParam: OpenCode[Any] = code"()"
 
     val flattendArgs = argss.flatten
-    val setMethodParamsList = flattendArgs.zipWithIndex.foldRight(initParam)((
-        a,
-        b) =>
-      code"Instructions.setMethodParam(${Const(methodId)}, ${Const(a._2)}, ${a._1}); $b")
+
     val saveMethodParamsList = flattendArgs.zipWithIndex.foldRight(initParam)((
         a,
         b) =>
-      code"Instructions.saveMethodParam(${Const(methodId)}, ${Const(a._2)}, ${a._1}); $b")
+      code"""Instructions.saveMethodParam(${Const(methodId)}, ${Const(a._2)}, ${a._1}); 
+      $b""")
+
     val restoreMethodParam =
       code"Instructions.restoreMethodParams(${Const(methodId)})"
 
@@ -25,10 +24,10 @@ case class CallMethod[R: CodeType](methodId: Int,
     // 2. Save old parameter registers
     // 3. Set new parameter into registers
     // 4. Jump to method
+
     val f1: OpenCode[Unit] =
       code"""
-                 $saveMethodParamsList;
-                 $setMethodParamsList;
+                 $saveMethodParamsList; 
                  ()
             """
     // 5. Method will return to position pushed on stack and contain returnValue

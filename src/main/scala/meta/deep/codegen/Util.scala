@@ -92,21 +92,19 @@ object utilObj {
   def rewriteCallMethod(edges: ListBuffer[EdgeInfo]): ListBuffer[EdgeInfo] = {
     edges.foreach(edge => {
       edge.code = edge.code.rewrite({
-        case code"meta.deep.algo.Instructions.setMethodParam(${Const(a)}, ${Const(
-        b)}, $c) " =>
-          val variable: MutVarType[_] = methodVariableTable(a)(b)
-
-          variable match {
-            case v: MutVarType[a] =>
-              code"${v.variable} := $c.asInstanceOf[${v.codeType}]"
-            case _ => throw new RuntimeException("Illegal state")
-          }
         case code"meta.deep.algo.Instructions.saveMethodParam(${Const(a)}, ${Const(
         b)}, $c) " =>
           val stack: ListBuffer[Variable[ListBuffer[Any]]] =
             methodVariableTableStack(a)
           val varstack: Variable[ListBuffer[Any]] = stack(b)
-          code"$varstack.prepend($c);"
+
+          val variable: MutVarType[_] = methodVariableTable(a)(b)
+
+          variable match {
+            case v: MutVarType[a] =>
+              code"$varstack.prepend($c); ${v.variable} := $c.asInstanceOf[${v.codeType}]"
+            case _ => throw new RuntimeException("Illegal state")
+          }
         case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)}) " =>
           val stack: ListBuffer[Variable[ListBuffer[Any]]] =
             methodVariableTableStack(a)
@@ -122,42 +120,6 @@ object utilObj {
           })
       })
     })
-    edges
-  }
-
-  /*
-   Surround the graphs with 'wait edge' though there needs not to be latency penalty
-   */
-  def addGlue(edges: ListBuffer[EdgeInfo],
-                 methodId: Int,
-                 removeWait: Boolean = true): ListBuffer[EdgeInfo] = {
-    val firstFrom = edges.head.from
-    edges.foreach(edge1 => {
-      edge1.to match {
-        case c: CodeNodePos =>
-          edge1.to = CodeNodePos(c.pos + 1)
-        case _ =>
-      }
-      edge1.from match {
-        case c: CodeNodePos =>
-          edge1.from = CodeNodePos(c.pos + 1)
-        case _ =>
-      }
-    })
-    val w1 = AlgoInfo.EdgeInfo("wait",
-      firstFrom,
-      edges.head.from,
-      code"()",
-      waitEdge = !removeWait,
-      methodId1 = methodId)
-    val w2 = AlgoInfo.EdgeInfo("wait",
-      edges.last.to,
-      CodeNodePos(edges.last.to.asInstanceOf[CodeNodePos].pos + 1),
-      code"()",
-      waitEdge = !removeWait,
-      methodId1 = methodId)
-    edges.prepend(w1)
-    edges.append(w2)
     edges
   }
 
