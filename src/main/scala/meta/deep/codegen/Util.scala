@@ -92,21 +92,19 @@ object utilObj {
   def rewriteCallMethod(edges: ListBuffer[EdgeInfo]): ListBuffer[EdgeInfo] = {
     edges.foreach(edge => {
       edge.code = edge.code.rewrite({
-        case code"meta.deep.algo.Instructions.setMethodParam(${Const(a)}, ${Const(
-        b)}, $c) " =>
-          val variable: MutVarType[_] = methodVariableTable(a)(b)
-
-          variable match {
-            case v: MutVarType[a] =>
-              code"${v.variable} := $c.asInstanceOf[${v.codeType}]"
-            case _ => throw new RuntimeException("Illegal state")
-          }
         case code"meta.deep.algo.Instructions.saveMethodParam(${Const(a)}, ${Const(
         b)}, $c) " =>
           val stack: ListBuffer[Variable[ListBuffer[Any]]] =
             methodVariableTableStack(a)
           val varstack: Variable[ListBuffer[Any]] = stack(b)
-          code"$varstack.prepend($c);"
+
+          val variable: MutVarType[_] = methodVariableTable(a)(b)
+
+          variable match {
+            case v: MutVarType[a] =>
+              code"$varstack.prepend($c); ${v.variable} := $c.asInstanceOf[${v.codeType}]"
+            case _ => throw new RuntimeException("Illegal state")
+          }
         case code"meta.deep.algo.Instructions.restoreMethodParams(${Const(a)}) " =>
           val stack: ListBuffer[Variable[ListBuffer[Any]]] =
             methodVariableTableStack(a)
