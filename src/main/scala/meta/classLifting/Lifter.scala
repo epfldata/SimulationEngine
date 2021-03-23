@@ -493,7 +493,6 @@ object Lifter {
           if (methodsIdMap.get(ma.symbol.toString()).isDefined){
             issueCalls = true 
           } 
-        case _ =>  
       }
 
       // In general, Main should contain both wait and handleMessages 
