@@ -10,6 +10,7 @@ import meta.runtime.{Actor, Message, RequestMessage}
 import meta.compile.Optimization
 import scala.collection.mutable.{Map => MutMap, ListBuffer}
 
+import meta.Util.warning 
 
 /** Code lifter
   *
@@ -410,7 +411,6 @@ object Lifter {
               } else if (actorSelfVariable.toCode == recipientActorVariable) {
                 CallMethod[T](methodsIdMap(methodName), argss)
               } else {
-                println("Send a message!")
                 Send[T](actorSelfVariable.toCode,
                   recipientActorVariable,
                   methodsIdMap(methodName),
@@ -450,17 +450,62 @@ object Lifter {
       }
     }
 
+    /**
+     * This method lift a method from MethodInfo representation to LiftedMethod 
+     * We only call liftCode if method body contains a special instruction or issues calls. 
+     * Otherwise, we use the ScalaCode representation directly 
+     */ 
     def liftMethod(mtd: MethodInfo[_])(cache: MutMap[OpenCode[_], Algo[_]]): LiftedMethod[_] = {
       mtd match {
         case m: MethodInfo[a] => {
             import m.A 
-
             val cde: OpenCode[m.A] = m.body.asOpenCode 
-            val mtdBody = liftCode[m.A](cde)
 
-            new LiftedMethod[m.A](m.symbol, mtdBody, m.tparams, m.vparams, methodsIdMap(m.symbol))
+            if (preLiftAnalyse(cde, m.symbol)) {
+              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol))
+            } else {
+              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol))
+            }
         }
       }
+    }
+
+    /**
+     * This method analyses whether a method body contains a special instruction or method call. We also issue warnings about possible programmer mistakes. 
+     */
+    def preLiftAnalyse(cde: OpenCode[_], mtdName: String): Boolean = {
+      var containWaits: Boolean = false 
+      var processMessages: Boolean = false 
+      var issueCalls: Boolean = false 
+      var issueInterrupts: Boolean = false 
+      val isMain: Boolean = mtdName.endsWith(".main")
+
+      cde analyse {
+        case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" => 
+          containWaits = true 
+        case code"SpecialInstructions.handleMessages()" => 
+          processMessages = true 
+        case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" => 
+          issueCalls = true 
+        case code"SpecialInstructions.interrupt($interval: Double, (() => ${MethodApplication(msg)}))" => 
+          issueInterrupts = true 
+        case code"${MethodApplication(ma)}:Any " => 
+          if (methodsIdMap.get(ma.symbol.toString()).isDefined){
+            issueCalls = true 
+          } 
+      }
+
+      // In general, Main should contain both wait and handleMessages 
+      if (isMain && !(containWaits && processMessages)) {
+        warning(s"Main ${mtdName} does not contain wait or handleMessages!")
+      }
+
+      // In most cases, we don't want to have wait or handleMessages in regular methods 
+      if (!isMain && (containWaits || processMessages)) {
+        warning(s"Method ${mtdName} contains wait or handleMessages!")
+      }
+      
+      containWaits || processMessages || issueCalls || issueInterrupts 
     }
 
     /** Used for operations that were not covered in [[liftCode]]. Lifts an [[OpenCode]](expression) into its deep representation [[Algo]]

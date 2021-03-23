@@ -46,7 +46,6 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
         IR.showScala(initCode.rep).substring(1).dropRight(1)
       case "List[meta.runtime.Actor]" =>  // compatibility
         initClass = true 
-        println(IR.showScala(initCode.rep))
         IR.showScala(initCode.rep)
       case _ => throw new Exception("Invalid init code!")
     }
@@ -61,20 +60,13 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     * @param compiledActorGraph the graph data required for generating the class
     */
   def prepareClass(compiledActorGraph: CompiledActorGraph): Unit = {
-    // var self_name = Map[String, String]()
-
-    // compiledActorGraph.actorTypes.map(actorType =>
-    //   self_name += (actorType.self.toCode.toString().substring(5).dropRight(1) -> actorType.name))
-//    val selfs = compiledActorGraph.actorTypes.map(actorType =>
-//      actorType.self.toCode.toString().substring(5).dropRight(1))
-
-    // self_name.foreach(x => {
-    //   this.typesReplaceWith = (x._1, "this") :: this.typesReplaceWith
-    // })
 
     val commands = generateCode(compiledActorGraph)
+    // debug.toFile(commands.toString(), "gcmds")
+
     val code = this.createCommandOpenCode(commands)
-    
+    // debug.toFile(code.toString(), "gcode")
+
     // GraphDrawing.drawGraph(compiledActorGraph.graph, s"${self_name.values.toList}_prepareClass")
     println(s"Compiled Sim ${compiledActorGraph.name} has states: ${commands.length}")
 
@@ -170,24 +162,6 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
         //        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
       })}).mkString("\n"))
-
-    // val initParams: String = changeTypes(
-    //   "\n" + compiledActorGraph.actorTypes.flatMap(actorType => {
-    //   actorType.states.map(s =>{
-    //     s"  var ${s.sym.name}: ${s.tpe.rep.toString} = ${IR.showScala(s.init.rep)};"
-    //     //        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
-    //   })}).mkString("\n"))
-
-    // val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
-    //   actorType.parameterList.map(x => {
-    //     if (compiledActorGraph.parameterList.indexOf(x) != -1) {
-    //       val mutability: String = x._1.split(" ").head.substring(0, 3)
-    //       val varName: String = x._1.split(" ").last
-    //       s"${mutability} ${varName}: ${changeTypes(x._2)}"
-    //     } else {
-    //       ""
-    //     }})
-    // }).mkString(", ")
 
     val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.filter(x => x.parameter).map(s => {
@@ -382,7 +356,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
         case v =>
           //Quick-fix for var types
           if (v.from != null) {
-            y = y.subs(v.from).~>(code"(${v.to}!).asInstanceOf[${v.A}]")
+              // y = y.subs(v.from).~>(code"(${v.to}!).asInstanceOf[${v.A}]")
+              y = y.subs(v.from).~>(code"(${v.to}!)")
           }
       })
       y
