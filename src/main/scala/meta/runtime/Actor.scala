@@ -103,6 +103,10 @@ case class Future[+T](var isCompleted: Boolean = false,
   }
 }
 
+class Container extends Actor {
+  var containedAgents: List[Actor] = List()
+}
+
 /**
   * This class represents the main class of the generated classes
   * It contains the logic for message handling and defines the
@@ -111,11 +115,11 @@ case class Future[+T](var isCompleted: Boolean = false,
 class Actor extends Serializable {
   import Actor.AgentId
   var id: AgentId = Actor.getNextAgentId
-  var currentTurn: Int = 0
-  var currentTime: Double = 0
-  var current_pos: Int = 0
+  var proxyIds: List[Actor.AgentId] = List(id)
+  // var currentTurn: Int = 0
+  // var currentTime: Double = 0
   var deleted: Boolean = false
-
+  
 //  val logger = LoggerFactory.getLogger(this.getClass.getName())
 
   /**
@@ -156,22 +160,29 @@ class Actor extends Serializable {
     * @param messages Actions with receiver matching the agent from the previous step
     */
   final def addReceiveMessages(messages: List[Message]): Actor = {
+    // println("Add receive message! " + messages + " for agent " + id)
     this.receivedMessages = this.receivedMessages ::: messages.filter(
       x =>
         x.isInstanceOf[RequestMessage] || responseListeners
           .get(x.sessionId)
           .isEmpty)
-    messages
+    // Only invoke handler callback If the agent is not a proxy
+    // println(s"Proxy id: ${proxyIds}  Messages " + messages)
+
+    if (proxyIds.size == 1) {
+      messages
       .filter(
         x =>
           responseListeners.get(x.sessionId).isDefined && x
             .isInstanceOf[ResponseMessage])
       .foreach(x => {
         val handler = responseListeners(x.sessionId)
+        // println("Invoke response handler of message " + x.sessionId)
         responseListeners.remove(x.sessionId)
         handler(x)
       })
-    this
+    }
+    this 
   }
 
   /**
@@ -244,26 +255,9 @@ class Actor extends Serializable {
   }
 
   /**
-    * This runs the stepFunction until the timer > until
-    * @param until how long the code should be executed
-    * @return the actor itself
+    * Stub, gets overriden by generated code 
     */
-  def run_until(until: Int): Actor = {
-    while (currentTurn <= until) {
-      println(this.getClass.getSimpleName, currentTurn, until, current_pos)
-      val (a, b) = stepFunction
-      current_pos = a
-      currentTurn = b
-    }
+  def run(): Actor = {
     this
   }
-
-  /**
-    * Executes one step in the simulation.
-    * By default it does not change the pos and increases the timer at 1 (next step)
-    * @return a function, which takes the position and timer and
-    *         returns the next position and timer which should be passed again
-    *         when calling this function the next time.
-    */
-  def stepFunction: (Int, Int) = (current_pos, currentTurn + SimRuntime.proceedLabel("turn").asInstanceOf[Int])
 }

@@ -6,6 +6,7 @@ import scala.collection.mutable.ListBuffer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import meta.classLifting.SpecialInstructions.Time
+import scala.util.Random 
 
 class SimulationSpark(val config: SimulationConfig) extends Simulation {
 
@@ -36,11 +37,6 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
     currentTurn = currentTurn + proceedLabel("turn").asInstanceOf[Int]
     currentTime = currentTime + proceedLabel("time")
 
-    actors = actors.mapValues(i => {
-      i.currentTime = currentTime
-      i.currentTurn = currentTurn
-      i
-    })
     actors.count()
   }
 
@@ -71,8 +67,8 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
       actors = actors
         .leftOuterJoin(messageMap)
         .mapValues { x =>
-          x._1.addReceiveMessages(x._2.getOrElse(List()))
-            .cleanSendMessage.addInterrupts(currentTime).run_until(currentTurn)
+          x._1.addReceiveMessages(Random.shuffle(x._1.proxyIds.flatMap(id => x._2.getOrElse(List()))))
+            .cleanSendMessage.addInterrupts(currentTime).run()
         }.cache()
       actors.count()
     })
@@ -81,7 +77,6 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
   }
 
   def collect(): Unit = {
-    newActors.map(i => i.currentTurn = currentTurn)
     actors = (actors ++ sc.parallelize(newActors).map(x => (x.id, x)))
     newActors.clear()
   }
