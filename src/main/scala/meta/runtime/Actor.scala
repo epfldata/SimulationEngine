@@ -103,8 +103,55 @@ case class Future[+T](var isCompleted: Boolean = false,
   }
 }
 
+/**
+ * A container agent holds a collection of agents 
+ */ 
 class Container extends Actor {
   var containedAgents: List[Actor] = List()
+
+  var internalMessages: List[Message] = List()
+
+  // When add agents to a container, also update the proxyIds 
+  def addAgents(as: List[Actor]): Unit = {
+    containedAgents = as ::: containedAgents 
+    proxyIds = as.flatMap(x => x.proxyIds) ::: proxyIds
+  }
+
+  var mx = receivedMessages.groupBy(_.receiverId)
+  var messageBuffer: List[Message] = List() 
+
+  // proxyIds initialized after addAgents. Therefore init again inside run
+  var unblockAgents: List[Actor.AgentId] = proxyIds 
+
+  // Assume each wait in main follows a handleMessage 
+  override def run(): Actor = {
+    unblockAgents = proxyIds 
+    cleanSendMessage
+    do {
+      containedAgents = containedAgents.map(a => {
+        if (unblockAgents.contains(a.id)) {
+          a.cleanSendMessage 
+         .addReceiveMessages(mx.getOrElse(a.id, List()))
+         .run()
+        } else {
+          a 
+        }
+      })
+
+      // get all the messages  
+      messageBuffer = containedAgents.flatMap(_.getSendMessages)
+      // filter out the internal messages 
+      internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
+      // append the external messages to the outgoing mailbox  
+      sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages 
+      // update the unblockAgent indexes to selectively deliver the internal blocking messages
+      unblockAgents = internalMessages.flatMap(x => List(x.receiverId, x.senderId))
+      // update the messages to deliver for the selected unblocking agents
+      mx = internalMessages.groupBy(_.receiverId)
+    } while (internalMessages.nonEmpty)
+
+    this 
+  }
 }
 
 /**
@@ -116,8 +163,6 @@ class Actor extends Serializable {
   import Actor.AgentId
   var id: AgentId = Actor.getNextAgentId
   var proxyIds: List[Actor.AgentId] = List(id)
-  // var currentTurn: Int = 0
-  // var currentTime: Double = 0
   var deleted: Boolean = false
   
 //  val logger = LoggerFactory.getLogger(this.getClass.getName())
@@ -159,16 +204,13 @@ class Actor extends Serializable {
     *
     * @param messages Actions with receiver matching the agent from the previous step
     */
-  final def addReceiveMessages(messages: List[Message]): Actor = {
-    // println("Add receive message! " + messages + " for agent " + id)
+  def addReceiveMessages(messages: List[Message]): Actor = {
     this.receivedMessages = this.receivedMessages ::: messages.filter(
       x =>
         x.isInstanceOf[RequestMessage] || responseListeners
           .get(x.sessionId)
           .isEmpty)
-    // Only invoke handler callback If the agent is not a proxy
-    // println(s"Proxy id: ${proxyIds}  Messages " + messages)
-
+    // Only invoke handler callback If the agent is not a container agent
     if (proxyIds.size == 1) {
       messages
       .filter(
@@ -177,7 +219,6 @@ class Actor extends Serializable {
             .isInstanceOf[ResponseMessage])
       .foreach(x => {
         val handler = responseListeners(x.sessionId)
-        // println("Invoke response handler of message " + x.sessionId)
         responseListeners.remove(x.sessionId)
         handler(x)
       })
