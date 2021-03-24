@@ -9,7 +9,7 @@ object SimRuntime {
   /**
    * A map tracks the status of the future objects. Each future object is indexed by its own id. 
    */ 
-  var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
+  private var async_messages: Map[String, Future[Any]] = Map[String, Future[Any]]()
 
   // track the number of Sims waiting for each label at each iteration. Set once
   private val waitLabels: Map[String, Long] = Map[String, Long]()
@@ -20,6 +20,13 @@ object SimRuntime {
 
   def registerLabel(group: waitMode, totalSubscribers: Long): Unit = {
     waitLabels += (group.toString -> totalSubscribers)
+  }
+
+  /**
+   * Add a future object to the async_messages map 
+   */ 
+  def addFuture(id: String, future: Future[Any]) = {
+    async_messages += (id -> future)
   }
 
   /**
