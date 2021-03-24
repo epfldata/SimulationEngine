@@ -52,7 +52,7 @@ We use Squid meta-programming framework. As of now, you need to build Squid loca
     * The optimization has to be applied before using the EdgeMerge Optimization, since it requires the original graph
 * Following structures are lifted by default: 
   * while(cond) {code}
-  * var x = code
+  * val x = code
   * list.foreach(code)
   * list.map(code)
   * list.flatMap(code)
@@ -71,14 +71,16 @@ We use Squid meta-programming framework. As of now, you need to build Squid loca
  Once you have written your meta-programs and translated them to object programs, you can start simulation. The object programs are in folder `/generated/src/main/scala/$packageName$`. To start a simulation, first define you simulation configuration: the total turns and time you want to run the simulation for. Next, decide whether you want to use Spark to parallelize your agents. When running locally, Spark consumes more memory and often results in slower simulation. Afterwards, simply pass the configuration to the simulation driver and invoke `run()`. 
 ```
 // Define the configuration for your simulation
-val c: Config = new Config(InitData.initActors, 0, 100, 0, 10)
-// Pass the configuration to default simulation 
-val result: SimulationSnapshot = new Simulation(c).run()
+val c: SimulationConfig = SimulationConfig(totalTurn=3)
+// Run the initialization method 
+generated.*yourExample*.initActors()
+// Add the configuration to the simulation 
+val result: SimulationSnapshot = new Default(c).run()
 // Pass the configuration to Spark simulation 
 val result2: SimulationSnapshot = new SimulationSpark(c).run()
 ```
  
- You can also reference the test scripts in `/generated/src/test/scala`
+ You can also reference the test scripts in `/src/test/scala`
  
 ### <a name="Folder"></a> Folder Structure 
 - `ecosim/` contains the legacy implementation of the simulation framework without using message passing 
