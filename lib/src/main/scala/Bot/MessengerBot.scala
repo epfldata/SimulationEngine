@@ -8,20 +8,19 @@ import squid.quasi.lift
 @lift
 class MessengerBot() extends Actor {
 
-  def waitUntilAllReceive(future_objs: List[Option[Future[Any]]]): Unit = {
-    while (!(future_objs.nonEmpty && future_objs.forall(x => SimRuntime.isCompleted(x.get)))) {
+  def waitUntilAllReceive(future_objs: List[Future[Any]]): Unit = {
+    while (!(future_objs.nonEmpty && future_objs.forall(x => x.isCompleted))) {
       waitLabel(Turn,1)
     }
-    future_objs.foreach(o => SimRuntime.clearFutureObj(o.get))
+    future_objs.foreach(o => o.popValue(o))
     deleted = true
   }
 
-  def waitUntilAllReply(future_objs: List[Option[Future[Any]]]): List[Any] = {
-    while (!(future_objs.nonEmpty && future_objs.forall(x => SimRuntime.isCompleted(x.get)))) {
+  def waitUntilAllReply(future_objs: List[Future[Any]]): List[Any] = {
+    while (!(future_objs.nonEmpty && future_objs.forall(x => x.isCompleted))) {
       waitLabel(Turn,1)
     }
-    val ans: List[Any] = future_objs.map(o => SimRuntime.getFutureValue[Any](o.get))
-    future_objs.foreach(o => SimRuntime.clearFutureObj(o.get))
+    val ans: List[Any] = future_objs.map(o => o.popValue.get)
     deleted = true
     ans
   }
