@@ -73,6 +73,7 @@ class B() extends Actor {
 
     def main(): Unit = {
         while(true) {
+            println("This is agent " + id)
             if (neighbors.nonEmpty){
                 foo = Random.nextInt(90)
                 neighbors.foreach(n => {
@@ -84,7 +85,7 @@ class B() extends Actor {
                 } 
                 futures.foreach(x => println(x.popValue))
                 println("Hear back all the responses!")
-                
+                futures = List()
                 // neighbors.foreach(n => {
                 //     println("Send message! Set value to " + foo)
                 //     n.setVal(foo)
@@ -168,9 +169,9 @@ class BCompile extends FlatSpec {
   }
 }
 
-// class BRun extends FlatSpec {
-//   "The generated code B" should "run" in {
-//     generated.meta.test.mergeBroadcast.InitData.initActors()
-//     new Default(SimulationConfig(actors = List(), totalTurn = 3)).run()
-//   }
-// }
+class BRun extends FlatSpec {
+  "The generated code B" should "run" in {
+    generated.meta.test.mergeBroadcast.InitData.initActors()
+    new Default(SimulationConfig(actors = List(), totalTurn = 3)).run()
+  }
+}
