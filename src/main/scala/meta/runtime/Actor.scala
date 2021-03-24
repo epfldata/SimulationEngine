@@ -63,7 +63,6 @@ case class RequestMessage(override val senderId: Actor.AgentId,
                           argss: List[List[Any]])
     extends Message {
 
-  var future: Future[Any] = Future[Any]()
   /**
     * this functions simplified the replying to a method
     * @param owner the sender of the reply message
@@ -87,19 +86,26 @@ case class ResponseMessage(override val senderId: Actor.AgentId,
                            arg: Any)
     extends Message
 
-
 /**
-  * Future is the return type of an asynchronous call
-  * @param isCompleted: whether the previous call has completed
-  * @param value: the return value of the future object, when completed
+  * An asynchronous call returns a future object
   * @param id: a unique id, used to distinguish different future obj in the same turn
+  * @param value: the return value of the future object, when completed
   * @tparam T: the return type
   */
-case class Future[+T](var isCompleted: Boolean = false,
-                      val value: Option[T] = None,
-                      val id: String = UUID.randomUUID().toString){
+case class Future[+T](val id: String, 
+                      val value: Option[T] = None){
+
   def setValue[U >: T](y: U): Future[U] ={
-    Future(true, Some(y), id)
+    Future(id, Some(y))
+  }
+
+  def isCompleted: Boolean = {
+    SimRuntime.isCompleted(this)
+  }
+
+  // Single-entry 
+  def popValue: Option[T] = {
+    SimRuntime.popFutureValue(this) 
   }
 }
 
@@ -207,7 +213,7 @@ class Actor extends Serializable {
     * @param messages Actions with receiver matching the agent from the previous step
     */
   def addReceiveMessages(messages: List[Message]): Actor = {
-
+    // println(s"Add receive messages for ${id}: ${messages}")
     this.receivedMessages = this.receivedMessages ::: messages.filter(
       x =>
         x.isInstanceOf[RequestMessage] || responseListeners

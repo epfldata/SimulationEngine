@@ -45,7 +45,7 @@ object SpecialInstructions {
     * @tparam T the return type of the message method
     * @return a Future object that holds the return value of the async message for later retrieval
     */
-  def asyncMessage[T](message: (()=>T)): Option[Future[T]] = ???
+  def asyncMessage[T](message: (()=>T)): Future[T] = ???
 
   /**
     * The syntax for Sim to check its mailbox.
