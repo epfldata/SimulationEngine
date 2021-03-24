@@ -42,11 +42,11 @@ class Container extends Actor {
   var messageBuffer: List[Message] = List() 
 
   // proxyIds initialized after addAgents. Therefore init again inside run
-  var unblockAgents: List[Actor.AgentId] = proxyIds 
+  var unblockAgents: Set[Actor.AgentId] = Set()
 
   // Assume each wait in main follows a handleMessage 
   override def run(): Actor = {
-    unblockAgents = proxyIds 
+    unblockAgents = proxyIds.toSet 
     cleanSendMessage
     do {
       containedAgents = containedAgents.map(a => {
@@ -68,8 +68,9 @@ class Container extends Actor {
       // append the external messages to the outgoing mailbox  
       sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages 
       // update the unblockAgent indexes to selectively deliver the internal blocking messages
-      unblockAgents = internalMessages.flatMap(x => List(x.receiverId))
+      unblockAgents = internalMessages.flatMap(x => List(x.receiverId)).toSet  
       // update the messages to deliver for the selected unblocking agents
+      // println(s"Unblock agents: ${unblockAgents} + Messages: ${internalMessages}")
       mx = internalMessages.groupBy(_.receiverId)
     } while (internalMessages.nonEmpty)
 
