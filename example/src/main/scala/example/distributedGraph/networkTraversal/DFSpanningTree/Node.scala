@@ -27,7 +27,7 @@ class Node(val root: Boolean) extends TreeNode {
   def init(): Unit = {
     // Nodes learn who their neighbors are at the same turn
     val mBot = new MessengerBot()
-    val ns: List[Option[Future[Option[TreeNode]]]] = channels.map(c => asyncMessage(() => c.getNeighbor(id)))
+    val ns: List[Future[Option[TreeNode]]] = channels.map(c => asyncMessage(() => c.getNeighbor(id)))
 
     neighbors = mBot.waitUntilAllReply(ns)
     .map(x => x.asInstanceOf[Option[Node]])

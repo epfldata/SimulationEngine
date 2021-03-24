@@ -80,7 +80,7 @@ class Child(val isMuddy: Boolean) extends Actor {
   // non-RPC
   private def see(): List[P[ChildStatus]] = {
     val messenger: MessengerBot = new MessengerBot()
-    val wReply: List[Option[Future[P[ChildStatus]]]] = neighbors.map(c => asyncMessage(() => c.tell()))
+    val wReply: List[Future[P[ChildStatus]]] = neighbors.map(c => asyncMessage(() => c.tell()))
 
     // send out the batched messages
     waitLabel(Turn,1)

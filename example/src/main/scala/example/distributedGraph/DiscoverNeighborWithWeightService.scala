@@ -15,7 +15,7 @@ class DiscoverNeighborWithWeightService() extends Actor {
 
     def getNeighbor(senderId: AgentId, channels: List[WeightedChannel]): List[(TreeNode, Int)] = {
         val mBot = new MessengerBot()
-        val ns: List[Option[Future[Option[(TreeNode, Int)]]]] = channels
+        val ns: List[Future[Option[(TreeNode, Int)]]] = channels
             .map(c => asyncMessage(() => c.getNeighbor(senderId)))
         mBot.waitUntilAllReply(ns)
             .map(x => x.asInstanceOf[Option[(TreeNode, Int)]])

@@ -11,6 +11,8 @@ class LoggerBotTimeseries(val item: String,
   var latest: Double = 0
   var timeseries: List[(Double, Double)] = List()
 
+  var currentTurn: Int = 0 
+
   def append(v: Double): Unit = {
     timeseries = (currentTurn.asInstanceOf[Double], v) :: timeseries
     latest = v
@@ -27,6 +29,7 @@ class LoggerBotTimeseries(val item: String,
       handleMessages()
       printLogInfo()
       waitLabel(Turn, 1)
+      currentTurn = currentTurn + 1
     }
   }
 }

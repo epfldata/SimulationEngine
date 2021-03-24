@@ -12,7 +12,7 @@ class MessengerBot() extends Actor {
     while (!(future_objs.nonEmpty && future_objs.forall(x => x.isCompleted))) {
       waitLabel(Turn,1)
     }
-    future_objs.foreach(o => o.popValue(o))
+    future_objs.foreach(o => o.popValue)
     deleted = true
   }
 

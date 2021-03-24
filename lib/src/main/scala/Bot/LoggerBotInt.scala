@@ -11,6 +11,7 @@ class LoggerBotInt(val item: String,
 
   var timeseries: List[Int] = List()
   var sum: Int = 0
+  var currentTurn: Int = 0 
 
   def log(v: Int): Unit = {
     sum = sum + v
@@ -36,6 +37,7 @@ class LoggerBotInt(val item: String,
       handleMessages()
       printLogInfo()
       waitLabel(Turn, 1)
+      currentTurn = currentTurn + 1
     }
   }
 }
