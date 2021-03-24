@@ -140,12 +140,14 @@ class Container extends Actor {
 
       // get all the messages  
       messageBuffer = containedAgents.flatMap(_.getSendMessages)
+      // remove the sent messages from the agents 
+      containedAgents = containedAgents.map(_.cleanSendMessage)
       // filter out the internal messages 
       internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
       // append the external messages to the outgoing mailbox  
       sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages 
       // update the unblockAgent indexes to selectively deliver the internal blocking messages
-      unblockAgents = internalMessages.flatMap(x => List(x.receiverId, x.senderId))
+      unblockAgents = internalMessages.flatMap(x => List(x.receiverId))
       // update the messages to deliver for the selected unblocking agents
       mx = internalMessages.groupBy(_.receiverId)
     } while (internalMessages.nonEmpty)
@@ -205,6 +207,7 @@ class Actor extends Serializable {
     * @param messages Actions with receiver matching the agent from the previous step
     */
   def addReceiveMessages(messages: List[Message]): Actor = {
+
     this.receivedMessages = this.receivedMessages ::: messages.filter(
       x =>
         x.isInstanceOf[RequestMessage] || responseListeners
