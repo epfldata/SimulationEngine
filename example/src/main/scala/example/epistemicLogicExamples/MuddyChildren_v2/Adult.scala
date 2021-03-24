@@ -28,7 +28,7 @@ class Adult(val children: List[Child]) extends Actor {
 
   private def see(): Unit = {
     val messenger: MessengerBot = new MessengerBot()
-    val wReply: List[Option[Future[P[ChildStatus]]]] = children.map(c => asyncMessage(() => c.tell()))
+    val wReply: List[Future[P[ChildStatus]]] = children.map(c => asyncMessage(() => c.tell()))
     val ans: List[P[ChildStatus]] = messenger.waitUntilAllReply(wReply).asInstanceOf[List[P[ChildStatus]]]
 
     ans.foreach(c => {
@@ -41,7 +41,7 @@ class Adult(val children: List[Child]) extends Actor {
   // Return whether each child is aware or not, indexed by their ids
   private def ask(): Option[List[(Actor.AgentId, Boolean)]] = {
     val messenger: MessengerBot = new MessengerBot()
-    val wReceive: List[Option[Future[Option[(Actor.AgentId, Boolean)]]]] = children.map(c => asyncMessage(() => c.answer()))
+    val wReceive: List[Future[Option[(Actor.AgentId, Boolean)]]] = children.map(c => asyncMessage(() => c.answer()))
     val replies: List[Option[(Actor.AgentId, Boolean)]] = messenger.waitUntilAllReply(wReceive).asInstanceOf[List[Option[(Actor.AgentId, Boolean)]]]
     if (replies.contains(None)) {
       None
@@ -53,7 +53,7 @@ class Adult(val children: List[Child]) extends Actor {
   // Tell children who is aware at the end of each round 
   private def announce(): Unit = {
     val messenger: MessengerBot = new MessengerBot()
-    val wReceive: List[Option[Future[Unit]]] = children.map(c => asyncMessage(() => c.think(childrenStatus)))
+    val wReceive: List[Future[Unit]] = children.map(c => asyncMessage(() => c.think(childrenStatus)))
     messenger.waitUntilAllReply(wReceive)
   }
 

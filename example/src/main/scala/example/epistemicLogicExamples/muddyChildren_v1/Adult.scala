@@ -23,7 +23,7 @@ class Adult(val children: List[Child]) extends Actor {
     knowledgeBase.forgetAll()
 
     val messenger: MessengerBot = new MessengerBot()
-    val wReply: List[Option[Future[P[ChildStatus]]]] = children.map(c => asyncMessage(() => c.tell()))
+    val wReply: List[Future[P[ChildStatus]]] = children.map(c => asyncMessage(() => c.tell()))
     val ans: List[P[ChildStatus]] = messenger.waitUntilAllReply(wReply).asInstanceOf[List[P[ChildStatus]]]
 
     ans.foreach(c => {
@@ -39,7 +39,7 @@ class Adult(val children: List[Child]) extends Actor {
   // Ask all children simultaneously, and wait for all children to answer
   private def ask(): Unit = {
     val messenger: MessengerBot = new MessengerBot()
-    val wReceive: List[Option[Future[Unit]]] = children.map(c => asyncMessage(() => c.answer()))
+    val wReceive: List[Future[Unit]] = children.map(c => asyncMessage(() => c.answer()))
     messenger.waitUntilAllReceive(wReceive)
   }
 
