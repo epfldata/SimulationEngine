@@ -16,11 +16,11 @@ import meta.deep.member.VarWrapper
 object AlgoInfo {
 
   /**
-    * Variable containing the current execution time.
-    * Need to be increased, if some waiting has to be done after
+    * Variable indicates whether to proceed
+    * Set to false if waiting 
     * finishing the current step
     */
-  val timeVar: Variable[MutVar[Int]] = Variable[MutVar[Int]]
+  val unblockFlag: Variable[MutVar[Boolean]] = Variable[MutVar[Boolean]]
 
   /**
     * Variable containing the current position of the program.

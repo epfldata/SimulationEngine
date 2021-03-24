@@ -28,7 +28,7 @@ object SpecialInstructions {
     * @param l the group name. Need to define at compile time (in MainInit) the size of the group
     */
   case class Group(l: String) extends waitMode {
-    assert(l != "time" && l != "turn")
+    assert(l.toLowerCase != "time" && l.toLowerCase != "turn")
     override def toString: String = l
   }
 
@@ -45,7 +45,7 @@ object SpecialInstructions {
     * @tparam T the return type of the message method
     * @return a Future object that holds the return value of the async message for later retrieval
     */
-  def asyncMessage[T](message: (()=>T)): Option[Future[T]] = ???
+  def asyncMessage[T](message: (()=>T)): Future[T] = ???
 
   /**
     * The syntax for Sim to check its mailbox.

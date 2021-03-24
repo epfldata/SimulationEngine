@@ -75,14 +75,15 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       this.generateMutVarInit(
         compiledActorGraph.variables,
         code"""
-              val ${AlgoInfo.timeVar} = squid.lib.MutVar(0)
+              val ${AlgoInfo.unblockFlag} = squid.lib.MutVar(true)
               val ${AlgoInfo.positionVar} = squid.lib.MutVar(0)
               meta.deep.algo.Instructions.splitter
               val getCommands = () => $code
               val commands = getCommands()
               meta.deep.algo.Instructions.splitter
-              (until: Int) => {
-                while ((${AlgoInfo.timeVar}!) <= until && (${AlgoInfo.positionVar}!) < commands.length) {
+              () => {
+                ${AlgoInfo.unblockFlag} := true 
+                while (${AlgoInfo.unblockFlag}.! && (${AlgoInfo.positionVar}!) < commands.length) {
                   val command = commands((${AlgoInfo.positionVar}!))
                   command()
                 }
@@ -106,24 +107,18 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.(\\w+)\\.Coll(.*)".r
 
       // type that contains List.Coll
-      val timerNamePattern = s"(var timeVar_[0-9]*)".r      // name pattern of timer
 
       code.split("\n").map(s => {
         s match {
           case varPattern(f1, f2, f3, f4) =>
-            f2 match {
-              case timerNamePattern(a) =>
-                this.typesReplaceWith = (a.substring(4), "currentTurn") :: this.typesReplaceWith
-                ""
-              case _ =>
-                f1 + (f3 match {
-                    case iterTypPattern(a1) =>
-                      "@transient "
-                    case lCollTypePattern(a1, a2, a3) =>
-                      "@transient "
-                    case _ => ""
-                  }) + "private " + f2 + ": " + f3 + " = " + f4
-            }
+            f1 + (f3 match {
+                case iterTypPattern(a1) =>
+                  "@transient "
+                case lCollTypePattern(a1, a2, a3) =>
+                  "@transient "
+                case _ => ""
+              }) + "private " + f2 + ": " + f3 + " = " + f4
+            
           case valPattern(f1, f2, f3) =>
             f1 + "private " + f2 + " = " + f3
           case x => x
@@ -139,7 +134,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)) + parts(1))
 
     //This ugly syntax is needed to replace the received code with a correct function definition
-    val run_until = "  override def run_until" + changeTypes(parts(2))
+    val run_until = "  override def run" + changeTypes(parts(2))
       .trim()
       .substring(1)
       .replaceFirst("=>", ": meta.runtime.Actor = ")
@@ -286,11 +281,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
         //Add wait at end, if there is a wait on that edge
         if (edge.waitEdge) {
           code(currentCodePos) =
-            code"${code(currentCodePos)}; ${AlgoInfo.timeVar} := (${AlgoInfo.timeVar}!) + 1"
+            code"${code(currentCodePos)}; ${AlgoInfo.unblockFlag} := !(${AlgoInfo.unblockFlag}!)"
         }
-
-//        code(currentCodePos) =
-//          code"println(${Const(currentCodePos)}); ${code(currentCodePos)}"
 
       })
     }
@@ -430,7 +422,6 @@ $run_until
     result = typedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
 
     nonTypedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
-    
   }
 
 

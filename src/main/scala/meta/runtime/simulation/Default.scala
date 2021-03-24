@@ -19,7 +19,6 @@ class Default(val config: SimulationConfig) extends Simulation {
   }
 
   def collect(): Unit = {
-    newActors.map(i => i.currentTurn = currentTurn)
     actors = actors ::: newActors.toList
     newActors.clear()
   }
@@ -27,13 +26,6 @@ class Default(val config: SimulationConfig) extends Simulation {
   def proceed(): Unit = {
     proceedGroups()
     currentTurn += proceedLabel("turn").asInstanceOf[Int]
-    currentTime += proceedLabel("time")
-
-    // update the turn counter for Sims
-    actors.foreach(i => {
-      i.currentTime = currentTime
-      i.currentTurn = currentTurn
-    })
   }
 
   def scheduleEvents(): List[()=> Unit] = {
@@ -50,8 +42,8 @@ class Default(val config: SimulationConfig) extends Simulation {
       {
         a.cleanSendMessage
           .addInterrupts(currentTime)
-          .addReceiveMessages(Random.shuffle(mx.getOrElse(a.id, List())))
-          .run_until(currentTurn)
+          .addReceiveMessages(Random.shuffle(a.proxyIds.flatMap(id => mx.getOrElse(id, List()))))
+          .run()
       }}
     })
     events.append(() => proceed())

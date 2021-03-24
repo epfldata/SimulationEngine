@@ -25,81 +25,55 @@ object Actor {
 }
 
 /**
-  * This class is the supertype of the messages
-  */
-abstract class Message extends Serializable {
+ * A container agent holds a collection of agents 
+ */ 
+class Container extends Actor {
+  var containedAgents: List[Actor] = List()
 
-  /**
-    * The sender of the message
-    */
-  val senderId: Actor.AgentId
+  var internalMessages: List[Message] = List()
 
-  /**
-    * The receiver of the message
-    */
-  val receiverId: Actor.AgentId
-
-  /**
-    * A unique id for the message-communication (request/response)
-    */
-  var sessionId: String = UUID.randomUUID().toString
-
-  override def toString: String = {
-    "Message: " + senderId + " -> " + receiverId + "(" + sessionId + ")"
+  // When add agents to a container, also update the proxyIds 
+  def addAgents(as: List[Actor]): Unit = {
+    containedAgents = as ::: containedAgents 
+    proxyIds = as.flatMap(x => x.proxyIds) ::: proxyIds
   }
-}
 
+  var mx = receivedMessages.groupBy(_.receiverId)
+  var messageBuffer: List[Message] = List() 
 
-/**
-  * This represents a message, which is used for sending something to another actor
-  * @param senderId the id of the sender
-  * @param receiverId the id of the receiver
-  * @param methodId the id of the method which should be called
-  * @param argss the arguments of the method
-  */
-case class RequestMessage(override val senderId: Actor.AgentId,
-                          override val receiverId: Actor.AgentId,
-                          methodId: Int,
-                          argss: List[List[Any]])
-    extends Message {
+  // proxyIds initialized after addAgents. Therefore init again inside run
+  var unblockAgents: List[Actor.AgentId] = proxyIds 
 
-  var future: Future[Any] = Future[Any]()
-  /**
-    * this functions simplified the replying to a method
-    * @param owner the sender of the reply message
-    * @param returnValue the return value/answer for the request message
-    */
-  def reply(owner: Actor, returnValue: Any): Unit = {
-    val msg = ResponseMessage(receiverId, senderId, returnValue)
-    msg.sessionId = this.sessionId
-    owner.sendMessage(msg)
-  }
-}
+  // Assume each wait in main follows a handleMessage 
+  override def run(): Actor = {
+    unblockAgents = proxyIds 
+    cleanSendMessage
+    do {
+      containedAgents = containedAgents.map(a => {
+        if (unblockAgents.contains(a.id)) {
+          a.cleanSendMessage 
+         .addReceiveMessages(mx.getOrElse(a.id, List()))
+         .run()
+        } else {
+          a 
+        }
+      })
 
-/**
-  * This class is used to answer to a received message.
-  * @param senderId the id of the sender
-  * @param receiverId the id of the receiver
-  * @param arg the return value of the method/answer of the request message
-  */
-case class ResponseMessage(override val senderId: Actor.AgentId,
-                           override val receiverId: Actor.AgentId,
-                           arg: Any)
-    extends Message
+      // get all the messages  
+      messageBuffer = containedAgents.flatMap(_.getSendMessages)
+      // remove the sent messages from the agents 
+      containedAgents = containedAgents.map(_.cleanSendMessage)
+      // filter out the internal messages 
+      internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
+      // append the external messages to the outgoing mailbox  
+      sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages 
+      // update the unblockAgent indexes to selectively deliver the internal blocking messages
+      unblockAgents = internalMessages.flatMap(x => List(x.receiverId))
+      // update the messages to deliver for the selected unblocking agents
+      mx = internalMessages.groupBy(_.receiverId)
+    } while (internalMessages.nonEmpty)
 
-
-/**
-  * Future is the return type of an asynchronous call
-  * @param isCompleted: whether the previous call has completed
-  * @param value: the return value of the future object, when completed
-  * @param id: a unique id, used to distinguish different future obj in the same turn
-  * @tparam T: the return type
-  */
-case class Future[+T](var isCompleted: Boolean = false,
-                      val value: Option[T] = None,
-                      val id: String = UUID.randomUUID().toString){
-  def setValue[U >: T](y: U): Future[U] ={
-    Future(true, Some(y), id)
+    this 
   }
 }
 
@@ -111,11 +85,9 @@ case class Future[+T](var isCompleted: Boolean = false,
 class Actor extends Serializable {
   import Actor.AgentId
   var id: AgentId = Actor.getNextAgentId
-  var currentTurn: Int = 0
-  var currentTime: Double = 0
-  var current_pos: Int = 0
+  var proxyIds: List[Actor.AgentId] = List(id)
   var deleted: Boolean = false
-
+  
 //  val logger = LoggerFactory.getLogger(this.getClass.getName())
 
   /**
@@ -155,13 +127,16 @@ class Actor extends Serializable {
     *
     * @param messages Actions with receiver matching the agent from the previous step
     */
-  final def addReceiveMessages(messages: List[Message]): Actor = {
+  def addReceiveMessages(messages: List[Message]): Actor = {
+    // println(s"Add receive messages for ${id}: ${messages}")
     this.receivedMessages = this.receivedMessages ::: messages.filter(
       x =>
         x.isInstanceOf[RequestMessage] || responseListeners
           .get(x.sessionId)
           .isEmpty)
-    messages
+    // Only invoke handler callback If the agent is not a container agent
+    if (proxyIds.size == 1) {
+      messages
       .filter(
         x =>
           responseListeners.get(x.sessionId).isDefined && x
@@ -171,7 +146,8 @@ class Actor extends Serializable {
         responseListeners.remove(x.sessionId)
         handler(x)
       })
-    this
+    }
+    this 
   }
 
   /**
@@ -244,26 +220,9 @@ class Actor extends Serializable {
   }
 
   /**
-    * This runs the stepFunction until the timer > until
-    * @param until how long the code should be executed
-    * @return the actor itself
+    * Stub, gets overriden by generated code 
     */
-  def run_until(until: Int): Actor = {
-    while (currentTurn <= until) {
-      println(this.getClass.getSimpleName, currentTurn, until, current_pos)
-      val (a, b) = stepFunction
-      current_pos = a
-      currentTurn = b
-    }
+  def run(): Actor = {
     this
   }
-
-  /**
-    * Executes one step in the simulation.
-    * By default it does not change the pos and increases the timer at 1 (next step)
-    * @return a function, which takes the position and timer and
-    *         returns the next position and timer which should be passed again
-    *         when calling this function the next time.
-    */
-  def stepFunction: (Int, Int) = (current_pos, currentTurn + SimRuntime.proceedLabel("turn").asInstanceOf[Int])
 }

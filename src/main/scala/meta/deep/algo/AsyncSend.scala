@@ -28,13 +28,13 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
         val sender = $actorFrom;
         val receiver = $actorRef;
         val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
-        requestMessage.future = requestMessage.future.asInstanceOf[meta.runtime.Future[$T]]
+        var future = meta.runtime.Future[$T](requestMessage.sessionId); 
         sender.sendMessage(requestMessage);
         sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.runtime.Message) => {
-          requestMessage.future = requestMessage.future.setValue((response.asInstanceOf[meta.runtime.ResponseMessage]).arg).asInstanceOf[meta.runtime.Future[$T]]
-         meta.runtime.SimRuntime.async_messages = meta.runtime.SimRuntime.async_messages + (requestMessage.future.id -> requestMessage.future)
+          future = future.setValue(response.asInstanceOf[meta.runtime.ResponseMessage].arg).asInstanceOf[meta.runtime.Future[$T]]
+          meta.runtime.SimRuntime.addFuture(future.id, future)
         })
-        ${AlgoInfo.returnValue} := Some(requestMessage.future)
+        ${AlgoInfo.returnValue} := future
         ()"""
 
       AlgoInfo.stateGraph.append(
