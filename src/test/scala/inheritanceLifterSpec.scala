@@ -164,9 +164,9 @@ class inheritanceE2ECompile extends FlatSpec {
   }
 }
 
-class inheritanceE2ERun extends FlatSpec {
-  "The generated code" should "run" in {
-    generated.meta.test.inheritance.InitData.initActors() 
-    new Default(SimulationConfig(totalTurn = 5)).run()
-  }
-}
+// class inheritanceE2ERun extends FlatSpec {
+//   "The generated code" should "run" in {
+//     generated.meta.test.inheritance.InitData.initActors() 
+//     new Default(SimulationConfig(totalTurn = 5)).run()
+//   }
+// }

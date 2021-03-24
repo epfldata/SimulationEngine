@@ -123,10 +123,10 @@ class ssoCompile extends FlatSpec {
   }
 }
 
-class ssoRun extends FlatSpec {
-  "The generated code" should "run" in {
+// class ssoRun extends FlatSpec {
+//   "The generated code" should "run" in {
     
-    generated.meta.test.SSO.InitData.initActors()
-    new Default(SimulationConfig(actors = List(), totalTurn = 10)).run()
-  }
-}
+//     generated.meta.test.SSO.InitData.initActors()
+//     new Default(SimulationConfig(actors = List(), totalTurn = 10)).run()
+//   }
+// }

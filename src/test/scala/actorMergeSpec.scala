@@ -168,9 +168,9 @@ class BCompile extends FlatSpec {
   }
 }
 
-class BRun extends FlatSpec {
-  "The generated code B" should "run" in {
-    generated.meta.test.mergeBroadcast.InitData.initActors()
-    new Default(SimulationConfig(actors = List(), totalTurn = 3)).run()
-  }
-}
+// class BRun extends FlatSpec {
+//   "The generated code B" should "run" in {
+//     generated.meta.test.mergeBroadcast.InitData.initActors()
+//     new Default(SimulationConfig(actors = List(), totalTurn = 3)).run()
+//   }
+// }
