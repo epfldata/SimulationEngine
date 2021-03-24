@@ -58,8 +58,10 @@ class ACompile extends FlatSpec {
     val init = code"""
       val a1: A = new A() 
       val a2: A = new A()
+      val a3: A = new A()
 
       a1.neighbors = List(a2)
+      a2.neighbors = List(a3)
 
       // newActors in SimRuntime contains the new agents a1, and a2. We add them to the container agent instead. 
 
@@ -83,6 +85,6 @@ class ACompile extends FlatSpec {
 class ARun extends FlatSpec {
   "The generated code" should "run" in {
     generated.meta.test.merge.InitData.initActors()
-    new Default(SimulationConfig(actors = List(), totalTurn = 3)).run()
+    new Default(SimulationConfig(actors = List(), totalTurn = 5)).run()
   }
 }
