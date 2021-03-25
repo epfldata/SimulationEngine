@@ -500,9 +500,9 @@ object Lifter {
         warning(s"Main ${mtdName} does not contain wait or handleMessages!")
       }
 
-      // In most cases, we don't want to have wait or handleMessages in regular methods 
-      if (!isMain && (containWaits || processMessages)) {
-        warning(s"Method ${mtdName} contains wait or handleMessages!")
+      // In most cases, we don't want to have handleMessages in any regular method 
+      if (!isMain && processMessages) {
+        warning(s"Method ${mtdName} contains handleMessages!")
       }
       
       containWaits || processMessages || issueCalls || issueInterrupts 
