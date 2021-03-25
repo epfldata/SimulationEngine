@@ -8,6 +8,9 @@ debug/*
 generated/*
 src/test/scala/generated/*
 
+### Build server support ###
+.bsp/*
+
 ### VSCode ###
 .vscode/*
 .metals/*
