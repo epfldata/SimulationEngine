@@ -36,9 +36,9 @@ case class LetBinding[V, A: CodeType, T: CodeType](
           code"""$x := ((${AlgoInfo.returnValue}!).asInstanceOf[T]); ()"""
         AlgoInfo.variables = VarWrapper(null, x) :: AlgoInfo.variables
         AlgoInfo.stateGraph.append(
-          AlgoInfo.EdgeInfo("LetBinding met2",
-                            AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                            AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+          EdgeInfo("LetBinding met2",
+                            CodeNodePos(AlgoInfo.posCounter),
+                            CodeNodePos(AlgoInfo.posCounter + 1),
                             met2))
         AlgoInfo.nextPos()
 
@@ -63,9 +63,9 @@ case class LetBinding[V, A: CodeType, T: CodeType](
         val met2 =
           code"""$bindingMutFinal := ((${AlgoInfo.returnValue}!).asInstanceOf[V]); ()"""
         AlgoInfo.stateGraph.append(
-          AlgoInfo.EdgeInfo("LetBinding met2",
-                            AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                            AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+          EdgeInfo("LetBinding met2",
+                            CodeNodePos(AlgoInfo.posCounter),
+                            CodeNodePos(AlgoInfo.posCounter + 1),
                             met2))
         AlgoInfo.nextPos()
 

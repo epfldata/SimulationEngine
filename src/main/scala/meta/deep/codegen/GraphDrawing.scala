@@ -5,9 +5,9 @@ import java.io.File
 import guru.nidi.graphviz.attribute.{Color, Label, RankDir}
 import guru.nidi.graphviz.engine.{Format, Graphviz}
 import guru.nidi.graphviz.model.{Factory, Graph}
-import meta.deep.algo.AlgoInfo.EdgeInfo
+import meta.deep.member.EdgeInfo
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.ListBuffer
 
 object GraphDrawing {
 
@@ -18,7 +18,7 @@ object GraphDrawing {
     * @param graph graph which should be drawn
     * @param name  some name to make file name unique
     */
-  def drawGraph(graph: ArrayBuffer[EdgeInfo], name: String = ""): Unit = {
+  def drawGraph(graph: ListBuffer[EdgeInfo], name: String = ""): Unit = {
     var g: Graph = Factory
       .graph("ExecutionGraph")
       .directed()
@@ -65,7 +65,7 @@ object GraphDrawing {
     * @param graph graph which should be drawn
     * @param name  some name to make file name unique
     */
-  def drawMergeGraph(graph: ArrayBuffer[MergeInfo], name: String = ""): Unit = {
+  def drawMergeGraph(graph: ListBuffer[MergeInfo], name: String = ""): Unit = {
     var g: Graph = Factory
       .graph("ExecutionGraph")
       .directed()

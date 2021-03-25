@@ -9,9 +9,9 @@ case class Wait() extends Algo[Unit] {
 
   override def codegen(): Unit = {
     AlgoInfo.stateGraph.append(
-      AlgoInfo.EdgeInfo("wait",
-                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+      EdgeInfo("wait",
+                        CodeNodePos(AlgoInfo.posCounter),
+                        CodeNodePos(AlgoInfo.posCounter + 1),
                         code"()",
                         waitEdge = true))
     AlgoInfo.nextPos()

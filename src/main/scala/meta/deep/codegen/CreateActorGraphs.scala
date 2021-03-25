@@ -1,13 +1,14 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
+import meta.deep.member.{CodeNodePos, EdgeInfo}
 import meta.deep.algo.{Algo, AlgoInfo, NoOp, ScalaCode}
 import meta.deep.member._
 import squid.lib.MutVar
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import meta.Util._
 
 object CreateActorGraphs {
 
@@ -57,7 +58,10 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
 
   override def run(): List[CompiledActorGraph] = {
     val graphs = actorTypes.map(createCompiledActorGraph)
-    //graphs.foreach(g => GraphDrawing.drawGraph(g.graph, g.name + "_original"))
+
+    // graphs.foreach(g => GraphDrawing.drawGraph(g.graph, g.name + "_original"))
+    debug("Create actor graph, before edge merging")
+    debug(graphs.head.graph.filter(x => x.isMethod).mkString("\n"))
     graphs
   }
 

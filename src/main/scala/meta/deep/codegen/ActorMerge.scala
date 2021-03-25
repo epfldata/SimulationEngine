@@ -1,7 +1,7 @@
 package meta.deep.codegen
 
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.{CodeNodePos, CodeNodeMtd, EdgeInfo}
+import meta.deep.member.{CodeNodePos, CodeNodeMtd, EdgeInfo}
 import meta.deep.algo.{AlgoInfo, CallMethod, Send}
 import meta.deep.codegen.CreateActorGraphs.MutVarType
 import meta.deep.member._

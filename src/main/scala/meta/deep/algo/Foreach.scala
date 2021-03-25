@@ -28,16 +28,16 @@ case class Foreach[E, R: CodeType](ls: OpenCode[List[E]],
     val f1 = code"""$iterMut := $ls.iterator; ()"""
 
     AlgoInfo.stateGraph.append(
-      AlgoInfo.EdgeInfo("Foreach f1",
-                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+      EdgeInfo("Foreach f1",
+                        CodeNodePos(AlgoInfo.posCounter),
+                        CodeNodePos(AlgoInfo.posCounter + 1),
                         f1))
     AlgoInfo.nextPos()
 
     AlgoInfo.stateGraph.append(
-      AlgoInfo.EdgeInfo("Foreach f2 if",
-                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+      EdgeInfo("Foreach f2 if",
+                        CodeNodePos(AlgoInfo.posCounter),
+                        CodeNodePos(AlgoInfo.posCounter + 1),
                         code"$listValMut := $iter.next; ()",
                         cond = code"$iter.hasNext"))
 //    AlgoInfo.nextPos()
@@ -48,16 +48,16 @@ case class Foreach[E, R: CodeType](ls: OpenCode[List[E]],
     f.codegen()
 
     AlgoInfo.stateGraph.append(
-      AlgoInfo.EdgeInfo("go back to foreach",
-                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                        AlgoInfo.CodeNodePos(tmpPos),
+      EdgeInfo("go back to foreach",
+                        CodeNodePos(AlgoInfo.posCounter),
+                        CodeNodePos(tmpPos),
                         code"()")
     )
 
     AlgoInfo.stateGraph.append(
-      AlgoInfo.EdgeInfo("Foreach f2 else",
-                        AlgoInfo.CodeNodePos(tmpPos),
-                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+      EdgeInfo("Foreach f2 else",
+                        CodeNodePos(tmpPos),
+                        CodeNodePos(AlgoInfo.posCounter + 1),
                         code"()",
                         cond = code"!($iter.hasNext)"))
 

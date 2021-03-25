@@ -35,9 +35,9 @@ case class Interrupt[R](actor: OpenCode[Actor],
         ()"""
 
     AlgoInfo.stateGraph.append(
-      AlgoInfo.EdgeInfo("Interrupt",
-        AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-        AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+      EdgeInfo("Interrupt",
+        CodeNodePos(AlgoInfo.posCounter),
+        CodeNodePos(AlgoInfo.posCounter + 1),
         f1
       ))
 

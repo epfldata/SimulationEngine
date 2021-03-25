@@ -26,22 +26,22 @@ case class IfThenElse[A](cond: OpenCode[Boolean],
     elseBody.codegen()
 
     AlgoInfo.stateGraph.append(
-      AlgoInfo.EdgeInfo("IfThenElse cond valid",
-                        AlgoInfo.CodeNodePos(tmpPosMet1),
-                        AlgoInfo.CodeNodePos(tmpPosMet1 + 1),
+      EdgeInfo("IfThenElse cond valid",
+                        CodeNodePos(tmpPosMet1),
+                        CodeNodePos(tmpPosMet1 + 1),
                         code"()",
                         cond = code"$cond"))
     AlgoInfo.stateGraph.append(
-      AlgoInfo.EdgeInfo("IfThenElse cond invalid",
-                        AlgoInfo.CodeNodePos(tmpPosMet1),
-                        AlgoInfo.CodeNodePos(tmpPosMetInner + 1),
+      EdgeInfo("IfThenElse cond invalid",
+                        CodeNodePos(tmpPosMet1),
+                        CodeNodePos(tmpPosMetInner + 1),
                         code"()",
                         cond = code"!$cond"))
 
     AlgoInfo.stateGraph.append(
-      AlgoInfo.EdgeInfo("IfThenElse jump end else",
-                        AlgoInfo.CodeNodePos(tmpPosMetInner),
-                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
+      EdgeInfo("IfThenElse jump end else",
+                        CodeNodePos(tmpPosMetInner),
+                        CodeNodePos(AlgoInfo.posCounter),
                         code"()"))
 
   }

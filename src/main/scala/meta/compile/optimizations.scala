@@ -7,3 +7,7 @@ object Optimization {
     // this flag indicates whether we copy stateless methods to the sender agents
     var sso: Boolean = false
 }
+
+object Development {
+    val debug: Boolean = false 
+}

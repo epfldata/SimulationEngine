@@ -60,16 +60,16 @@ case class Send[R](actorFrom: OpenCode[Actor],
          ()"""
 
       AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo("Send b f1",
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+        EdgeInfo("Send b f1",
+                          CodeNodePos(AlgoInfo.posCounter),
+                          CodeNodePos(AlgoInfo.posCounter + 1),
                           f1,
                           sendInfo = (this, true)))
       AlgoInfo.nextPos()
       AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo("Send b f2",
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+        EdgeInfo("Send b f2",
+                          CodeNodePos(AlgoInfo.posCounter),
+                          CodeNodePos(AlgoInfo.posCounter + 1),
                           f2,
                           waitEdge = true,
                           sendInfo = (this, false)))
@@ -81,25 +81,25 @@ case class Send[R](actorFrom: OpenCode[Actor],
       // Foreach(code"$actorFrom.popWaitMessage", p1, fwait).codegen()
       AlgoInfo.nextPos()
       AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo("Send b f3 get response",
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+        EdgeInfo("Send b f3 get response",
+                          CodeNodePos(AlgoInfo.posCounter),
+                          CodeNodePos(AlgoInfo.posCounter + 1),
                           f3,
                           cond = code"(${AlgoInfo.responseMessage}!) != null",
                           sendInfo = (this, false)))
       AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo("Send b f4 no response",
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter - 1),
+        EdgeInfo("Send b f4 no response",
+                          CodeNodePos(AlgoInfo.posCounter),
+                          CodeNodePos(AlgoInfo.posCounter - 1),
                           f4,
                           cond = code"(${AlgoInfo.responseMessage}!) == null",
                           sendInfo = (this, false)))
       AlgoInfo.nextPos()
 
       AlgoInfo.stateGraph.append(
-        AlgoInfo.EdgeInfo("Send b f5",
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                          AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+        EdgeInfo("Send b f5",
+                          CodeNodePos(AlgoInfo.posCounter),
+                          CodeNodePos(AlgoInfo.posCounter + 1),
                           f5,
                           sendInfo = (this, false)))
       AlgoInfo.nextPos()
@@ -113,9 +113,9 @@ case class Send[R](actorFrom: OpenCode[Actor],
             ${AlgoInfo.returnValue} := None
             ()"""
         AlgoInfo.stateGraph.append(
-          AlgoInfo.EdgeInfo("Async wo_reply f1",
-                            AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                            AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+          EdgeInfo("Async wo_reply f1",
+                            CodeNodePos(AlgoInfo.posCounter),
+                            CodeNodePos(AlgoInfo.posCounter + 1),
                             f1,
                             sendInfo = (this, true)))
         AlgoInfo.nextPos()

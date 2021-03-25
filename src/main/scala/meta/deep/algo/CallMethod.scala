@@ -39,15 +39,15 @@ case class CallMethod[R: CodeType](methodId: Int,
           ()
           """
 
-    val a2 = AlgoInfo.EdgeInfo("Method Call (" + methodId + ") Method to f2",
-                              AlgoInfo.CodeNodeMtd(methodId, end = true),
-                              AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+    val a2 = EdgeInfo("Method Call (" + methodId + ") Method to f2",
+                              CodeNodeMtd(methodId, end = true),
+                              CodeNodePos(AlgoInfo.posCounter + 1),
                               code"()",
                               methodCallInfo = (this, 1))
 
-    val a1 = AlgoInfo.EdgeInfo("Method Call (" + methodId + ") f1",
-                              AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                              AlgoInfo.CodeNodeMtd(methodId),
+    val a1 = EdgeInfo("Method Call (" + methodId + ") f1",
+                              CodeNodePos(AlgoInfo.posCounter),
+                              CodeNodeMtd(methodId),
                               f1,
                               storePosRef = List(List(a2)),
                               methodCallInfo = (this, 0))
@@ -56,9 +56,9 @@ case class CallMethod[R: CodeType](methodId: Int,
     AlgoInfo.nextPos()
     AlgoInfo.stateGraph.append(a2)
     AlgoInfo.stateGraph.append(
-      AlgoInfo.EdgeInfo("Method (" + methodId + ") f2",
-                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter),
-                        AlgoInfo.CodeNodePos(AlgoInfo.posCounter + 1),
+      EdgeInfo("Method (" + methodId + ") f2",
+                        CodeNodePos(AlgoInfo.posCounter),
+                        CodeNodePos(AlgoInfo.posCounter + 1),
                         f2,
                         methodCallInfo = (this, 2)))
     AlgoInfo.nextPos()

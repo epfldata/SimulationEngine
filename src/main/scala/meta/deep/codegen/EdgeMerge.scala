@@ -2,7 +2,7 @@ package meta.deep.codegen
 
 //import com.sun.tools.javac.util.Position
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.{CodeNodePos, EdgeInfo}
+import meta.deep.member.{CodeNodePos, EdgeInfo}
 
 import scala.collection.mutable.ListBuffer
 import meta.deep.member.CompiledActorGraph
@@ -21,6 +21,10 @@ class EdgeMerge() extends StateMachineElement() {
       element
     })
     //graphs.foreach(g => GraphDrawing.drawGraph(g.graph, g.name + "_commandmerged"))
+
+    
+    meta.Util.debug(graphs.head.graph.filter(x => x.isMethod).mkString("\n"))
+
     graphs
   }
 

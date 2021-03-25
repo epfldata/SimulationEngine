@@ -2,7 +2,6 @@ package meta.deep.member
 
 import scala.collection.mutable.ListBuffer
 import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo.EdgeInfo
 import squid.lib.MutVar
 import meta.runtime.ResponseMessage
 

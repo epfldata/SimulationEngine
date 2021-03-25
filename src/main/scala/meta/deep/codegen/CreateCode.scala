@@ -5,8 +5,7 @@ import java.io.{BufferedWriter, File, FileWriter}
 import meta.deep.IR
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
-import meta.deep.algo.AlgoInfo.EdgeInfo
-import meta.deep.member.{CompiledActorGraph, VarValue, VarWrapper}
+import meta.deep.member.{EdgeInfo, CompiledActorGraph, VarValue, VarWrapper}
 import meta.runtime.Actor
 
 import scala.collection.mutable.ListBuffer
@@ -201,6 +200,9 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     var posEdgeSaving: Map[(Int, Int), Int] = Map()
     var edgeSaving: Map[(Int, Int), Int] = Map()
 
+    // debug 
+    // graph.filter(x => x.isMethod).foreach(println)
+
     def generateCodeInner(node: Int): Unit = {
 
       positionMap = positionMap + (node -> code.length)
@@ -342,6 +344,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     })
 
     //Rewrite variables to replaced ones
+    // println(s"Compiled actor graph variables: ${compiledActorGraph.variables}")
     code = code.map(x => {
       var y = x
       compiledActorGraph.variables.foreach({
