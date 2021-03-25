@@ -20,7 +20,9 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
   var typesReplaceWith: List[(String, String)] = List[(String, String)]()
 
-  var initClass: Boolean = false 
+  var handlerEntryMap: Map[String, Int] = Map[String, Int]()
+
+  var instRegMap: Map[String, String] = Map[String, String]()
 
   override def run(compiledActorGraphs: List[CompiledActorGraph])
     : List[CompiledActorGraph] = {
@@ -41,10 +43,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
     val c: String = initCode.Typ.rep.toString() match {
       case "Unit" => 
-        initClass = false 
         IR.showScala(initCode.rep).substring(1).dropRight(1)
       case "List[meta.runtime.Actor]" =>  // compatibility
-        initClass = true 
         IR.showScala(initCode.rep)
       case _ => throw new Exception("Invalid init code!")
     }
@@ -80,6 +80,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
               val getCommands = () => $code
               val commands = getCommands()
               meta.deep.algo.Instructions.splitter
+              ${AlgoInfo.positionVar}.!
+              meta.deep.algo.Instructions.splitter
               () => {
                 ${AlgoInfo.unblockFlag} := true 
                 while (${AlgoInfo.unblockFlag}.! && (${AlgoInfo.positionVar}!) < commands.length) {
@@ -94,8 +96,13 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
     val scalaCode = IR.showScala(codeWithInit.rep)
 
+    // hardcode the extraction of instruction pointer (algo)
+    
     // split into three sections: variable declarations, commands, driver code
     val parts = scalaCode.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
+
+    // parts(2) is the position variable in the context 
+    instRegMap += compiledActorGraph.name -> (parts(2).trim().split(";").head)
 
     // Some generated variables cause compile error (also dead code), such as List.Coll, thus track for deletion
 
@@ -133,7 +140,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)) + parts(1))
 
     //This ugly syntax is needed to replace the received code with a correct function definition
-    val run_until = "  override def run" + changeTypes(parts(2))
+
+    val run_until = "  override def run" + changeTypes(parts(3))
       .trim()
       .substring(1)
       .replaceFirst("=>", ": meta.runtime.Actor = ")
@@ -199,9 +207,6 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     var requiredSavings: List[Int] = List()
     var posEdgeSaving: Map[(Int, Int), Int] = Map()
     var edgeSaving: Map[(Int, Int), Int] = Map()
-
-    // debug 
-    // graph.filter(x => x.isMethod).foreach(println)
 
     def generateCodeInner(node: Int): Unit = {
 
@@ -285,7 +290,6 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
           code(currentCodePos) =
             code"${code(currentCodePos)}; ${AlgoInfo.unblockFlag} := !(${AlgoInfo.unblockFlag}!)"
         }
-
       })
     }
 
@@ -358,7 +362,47 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       y
     })
 
+    
+    // meta.Util.debug(s"Position map: ${positionMap.toString()}")
+    // meta.Util.debug(s"Grouped graph: ${graph.filter(x => x.methodId1==2).map(x => x.from.getNativeId).map(x => positionMap(x))}")
+
+    assert(meta.classLifting.Lifter.methodsIdMap.get(compiledActorGraph.name + ".handleMessages").isDefined)
+
+    // Get from the lifter the method id of the handleMessage for the given agent graph 
+    val handleMessageMethodId: Int = meta.classLifting.Lifter.methodsIdMap(compiledActorGraph.name + ".handleMessages")
+
+    // The entry point for the handler is the first node position
+    val handlerEntry: Int = graph.filter(x => x.methodId1 == handleMessageMethodId).map(x => x.from.getNativeId).map(x => positionMap(x)).min 
+    
+    // Update the handlerEntryMap 
+    this.handlerEntryMap += compiledActorGraph.name -> handlerEntry
+
     code.toList
+  }
+
+  def genReflectionCode(agentName: String): String = {
+    // Get the entrance point for handleMessages
+    val instructionRegister: String = instRegMap(agentName)
+
+  // set the IR and return the previous IR 
+  val getIR: String = s"""
+  def getInstructionPointer(): Int = {
+    ${instructionRegister}
+  }"""
+
+  val setIR: String = s"""
+  def setInstructionPointer(new_ir: Int): Int = {
+    val prev_ir: Int = ${instructionRegister}
+    ${instructionRegister} = new_ir 
+    prev_ir 
+  }"""
+
+  val handleMsg: String = s"""
+  def handleMessagePointer(): Int = {
+    ${handlerEntryMap(agentName)}
+  }"""
+
+    List(getIR, setIR, handleMsg).mkString("\n")
   }
 
   /**
@@ -376,6 +420,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
                   initVars: String,
                   run_until: String,
                   parents: String): Unit = {
+
+    val agentName: String = className.split("\\.").last            
     val classString =
       s"""package ${generatedPackage}
 
@@ -383,6 +429,7 @@ class ${className} (${parameters}) extends ${parents} {
 $initParams
 $initVars
 $run_until
+${genReflectionCode(agentName)}
 }
 """
 
