@@ -3,59 +3,57 @@ package meta.deep.codegen
 //import com.sun.tools.javac.util.Position
 import meta.deep.IR.Predef._
 import meta.deep.member.{CodeNodePos, EdgeInfo}
-
 import scala.collection.mutable.ListBuffer
 import meta.deep.member.CompiledActorGraph
+
 /**
   * This class merges edges from the graph, if a program path cannot change between the edges.
   * This means, when we look at a graph of the format: n1-e1-n2-e2-n3 (where n denotes a node
   * and e denotes a edge) that n2 has no other edge e, which points to n2 or has no other edge
   *  e, which points from n2.
   */
+
 class EdgeMerge() extends StateMachineElement() {
+
+  case class MergeInfo(startNode: Int, middleNode: Int, endNode: Int)
+
+  var mergeList: List[MergeInfo] = List()
 
   override def run(compiledActorGraphs: List[CompiledActorGraph])
     : List[CompiledActorGraph] = {
+
     val graphs = compiledActorGraphs.map(element => {
-      element.graph = optimizeCode(element.graph)
+      element.graph = iterativeOpt(element.graph)(2)
       element
     })
     //graphs.foreach(g => GraphDrawing.drawGraph(g.graph, g.name + "_commandmerged"))
-
-    
-    meta.Util.debug(graphs.head.graph.filter(x => x.isMethod).mkString("\n"))
-
     graphs
   }
 
-  /**
-    * This function removes unnecessary nodes by combining two edges into one
-    * @param graph which should be optimized
-    * @return new graph with optimized code
-    */
-  def optimizeCode(graph: ListBuffer[EdgeInfo]): ListBuffer[EdgeInfo] = {
-    val nodeCount: Int =
-      graph.flatMap(x => List(x.from.getId, x.to.getId)).distinct.length
+  def iterativeOpt(graph: ListBuffer[EdgeInfo])(remainAttempts: Int): ListBuffer[EdgeInfo] = {
+    if (remainAttempts <= 0 ){
+      graph
+    } else {
+      val groupedGraph = preprocess(graph)
+      // meta.Util.debug(s"Iterative optimization attempt ${remainAttempts}. Find ${mergeList.size} optimization(s)!")
+      if (mergeList.nonEmpty){
+        iterativeOpt(optimizeCode(groupedGraph))(remainAttempts - 1)
+      } else {
+        graph 
+      }
+    }
+  }
 
-    //Create matrix of incoming and outgoing edges
-    //Each row contains outgoing edges to other
-    //Each column contains incoming edges from others
-    val m = Array.fill[Array[Int]](nodeCount)(Array.fill[Int](nodeCount)(0))
-    graph.foreach(x => {
-      m(x.from.getNativeId)(x.to.getNativeId) = 1
-    })
+  // Fill in the merge list and return groupedGraphStart 
+  def preprocess(graph: ListBuffer[EdgeInfo]): Map[Int, ListBuffer[EdgeInfo]] = {
+    // Reset mergeList to empty 
+    mergeList = List() 
 
-    val outgoing = m.map(_.sum)
-    val incoming = m.transpose.map(_.sum)
+    val nodes: List[Int] =
+      graph.toList.flatMap(x => List(x.from.getNativeId, x.to.getNativeId)).distinct 
 
     val groupedGraphStart = graph.groupBy(_.from.getNativeId)
     val groupedGraphEnd = graph.groupBy(_.to.getNativeId)
-
-    //This class is used to represent a triple of nodes (n1,n2,n3), where n2 can be removed
-    case class MergeInfo(startNode: Int, middleNode: Int, endNode: Int)
-
-    //This list saves all
-    var mergeList: List[MergeInfo] = List()
 
     /** The code is executed between three nodes:
       * This means, that code can be merged between 3 nodes if following is fulfilled:
@@ -65,27 +63,44 @@ class EdgeMerge() extends StateMachineElement() {
       * * Not allowed to merge, if the state of the edges is different
       *      (that means, they are from different original actors, thus different registers are used in the edge)
       */
-    // TODO Cycle detection not implemented, since wait removes cycles
+    // Return MergeInfo if a node is eligible for merging 
+    def eligibleNodes(nodeId: Int): Option[MergeInfo] = {
+      if (groupedGraphEnd.get(nodeId).isDefined &&
+          groupedGraphEnd(nodeId).size==1 && 
+          groupedGraphStart.get(nodeId).isDefined &&
+          groupedGraphStart(nodeId).size==1 && 
+          (!groupedGraphEnd(nodeId).head.waitEdge) &&
+          (groupedGraphStart(nodeId).head.cond == null) &&
+          (groupedGraphEnd(nodeId).head.edgeState == groupedGraphStart(nodeId).head.edgeState) &&
+          (groupedGraphEnd(nodeId).head.positionStack == groupedGraphStart(nodeId).head.positionStack) && 
+          groupedGraphEnd(nodeId).head.methodId1 == groupedGraphStart(nodeId).head.methodId1) { // Preserve the method boundary 
+            Some(MergeInfo(
+              groupedGraphEnd(nodeId)(0).from.getNativeId,
+              nodeId,
+              groupedGraphStart(nodeId)(0).to.getNativeId))
+      } else {
+        None 
+      }
+    }
 
-    outgoing.zipWithIndex
-      .filter(_._1==1)
-      .map(_._2)
-      .filter(nodeId =>
-        groupedGraphEnd.get(nodeId).isDefined &&
-        groupedGraphStart.get(nodeId).isDefined &&
-        (!groupedGraphEnd(nodeId)(0).waitEdge) &&
-        (groupedGraphStart(nodeId)(0).cond == null) &&
-        (groupedGraphEnd(nodeId)(0).edgeState == groupedGraphStart(nodeId)(0).edgeState) &&
-        (groupedGraphEnd(nodeId)(0).positionStack == groupedGraphStart(nodeId)(0).positionStack) &&
-        incoming(nodeId)==1)
-      .foreach(nodeId => {
-          mergeList = MergeInfo(
-            groupedGraphEnd(nodeId)(0).from.getNativeId,
-            nodeId,
-            groupedGraphStart(nodeId)(0).to.getNativeId) :: mergeList
-        }
-      )
+    nodes.foreach(i =>
+      if (eligibleNodes(i).isDefined){
+        mergeList = eligibleNodes(i).get :: mergeList 
+      }
+    )
 
+    groupedGraphStart
+  }
+
+  /**
+    * This function removes unnecessary nodes by combining two edges into one
+    * Preserve the method boundary. 
+    * @param graph which should be optimized
+    * @return new graph with optimized code
+    */
+  def optimizeCode(groupedGraphStart: Map[Int, ListBuffer[EdgeInfo]]): ListBuffer[EdgeInfo] = {
+
+    assert(mergeList.nonEmpty)    
     mergeList = mergeList.sortBy(_.startNode)
     var replacedNodes: Map[Int, Int] = Map()
 
@@ -94,6 +109,7 @@ class EdgeMerge() extends StateMachineElement() {
 
     for (entryOriginal <- mergeList) {
       var entry = entryOriginal
+
       val replacedNodeStart = replacedNodes.get(entry.startNode)
       val replacedNodeEnd = replacedNodesEnd.get(entry.endNode)
 
@@ -112,33 +128,36 @@ class EdgeMerge() extends StateMachineElement() {
                           replacedNodeEnd.get)
       }
 
-      //isMethod is not relevant anymore, just interested in first graph for different color
       // Create a new edgeInfo for the merged edge (newEdge)
       val firstEdge: EdgeInfo = groupedGraphStart(entry.startNode)
         .find(_.to.getNativeId == entry.middleNode)
         .get
-      val secondEdge: EdgeInfo = groupedGraphStart(entry.middleNode)(0)
+      val secondEdge: EdgeInfo = groupedGraphStart(entry.middleNode).head 
+
+      assert(firstEdge.methodId1 == secondEdge.methodId1)
+      assert(firstEdge.edgeState == secondEdge.edgeState)
+      assert(secondEdge.to.getNativeId == entry.endNode)
+      
       val newEdge: EdgeInfo = EdgeInfo(
         firstEdge.label + ", " + secondEdge.label,
         firstEdge.from,
         secondEdge.to,
         code"${firstEdge.code}; ${secondEdge.code}",
         secondEdge.waitEdge,
-        isMethod = false,
+        firstEdge.isMethod,
         firstEdge.cond,
         firstEdge.storePosRef ::: secondEdge.storePosRef,
         firstEdge.edgeState,
-        -1,
-        firstEdge.positionStack
+        graphId = -1, 
+        firstEdge.positionStack, 
+        methodId1 = firstEdge.methodId1 
       )
-      assert(firstEdge.edgeState == secondEdge.edgeState)
-      assert(secondEdge.to.getNativeId == entry.endNode)
+    
+      val edgesShareStart = groupedGraphStart.get(entry.startNode)
+      edgesShareStart.get.remove(edgesShareStart.get.indexOf(firstEdge))
 
-      // Remove old edgeInfo and inserted new created ones
-      groupedGraphStart(entry.startNode)
-        .remove(groupedGraphStart(entry.startNode).indexOf(firstEdge))
       groupedGraphStart(entry.middleNode).remove(0)
-      groupedGraphStart(entry.startNode).append(newEdge)
+      edgesShareStart.get.append(newEdge)
 
       //Keep references of replaced nodes updated
       replacedNodes = replacedNodes + (entry.middleNode -> entry.startNode)
