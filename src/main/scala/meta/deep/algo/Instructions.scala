@@ -5,19 +5,7 @@ import scala.annotation.compileTimeOnly
 object Instructions {
 
   /**
-    * sets the register of the method with the given argument
-    *
-    * @param methodId id of method you call
-    * @param argPos   position of argument (Starting with 0, if multiple lists, just continue counting)
-    * @param arg      value of argument
-    */
-  @compileTimeOnly("This function can only be called at compile time")
-  def setMethodParam(methodId: Int, argPos: Int, arg: Any): Unit = {
-    ???
-  }
-
-  /**
-    * Pushed the arg on the stack for the given method and argument position
+    * Saves the arguments of the method into registers and pushes them on the stack for the given method and argument position
     *
     * @param methodId id of method you want to put the argument on the stack
     * @param argPos   position of argument (Starting with 0, if multiple lists, just continue counting)
@@ -29,7 +17,7 @@ object Instructions {
   }
 
   /**
-    * Restores saved method params of the given method id.
+    * Pops saved method params of the given method id off the stack
     *
     * @param methodId id of method you want to restore the saved arguments
     */
