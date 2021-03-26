@@ -22,7 +22,11 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
   var handlerEntryMap: Map[String, Int] = Map[String, Int]()
 
+  // a map between the agent name and its instruction pointer register's name 
   var instRegMap: Map[String, String] = Map[String, String]()
+
+  // a map between the agent name and its unblock flag register's name 
+  var unblockRegMap: Map[String, String] = Map[String, String]()
 
   override def run(compiledActorGraphs: List[CompiledActorGraph])
     : List[CompiledActorGraph] = {
@@ -66,8 +70,12 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     val code = this.createCommandOpenCode(commands)
     // debug.toFile(code.toString(), "gcode")
 
+    val actorName: String = compiledActorGraph.name
+
     // GraphDrawing.drawGraph(compiledActorGraph.graph, s"${self_name.values.toList}_prepareClass")
-    println(s"Compiled Sim ${compiledActorGraph.name} has states: ${commands.length}")
+    val memorySize: Int = commands.length 
+
+    println(s"Compiled Sim ${compiledActorGraph.name} has states: ${memorySize}")
 
     val codeWithInit = this.generateVarInit(
       compiledActorGraph.variables2,
@@ -82,14 +90,9 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
               meta.deep.algo.Instructions.splitter
               ${AlgoInfo.positionVar}.!
               meta.deep.algo.Instructions.splitter
-              () => {
-                ${AlgoInfo.unblockFlag} := true 
-                while (${AlgoInfo.unblockFlag}.! && (${AlgoInfo.positionVar}!) < commands.length) {
-                  val command = commands((${AlgoInfo.positionVar}!))
-                  command()
-                }
-                ${compiledActorGraph.actorTypes.head.self}
-              }
+              ${AlgoInfo.unblockFlag}.!
+              meta.deep.algo.Instructions.splitter
+              () 
           """
       )
     )
@@ -99,10 +102,11 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     // hardcode the extraction of instruction pointer (algo)
     
     // split into three sections: variable declarations, commands, driver code
-    val parts = scalaCode.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
+    val parts: Array[String] = scalaCode.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
 
     // parts(2) is the position variable in the context 
-    instRegMap += compiledActorGraph.name -> (parts(2).trim().split(";").head)
+    instRegMap += actorName -> (parts(2).trim().split(";").head)
+    unblockRegMap += actorName -> (parts(3).trim().split(";").head)
 
     // Some generated variables cause compile error (also dead code), such as List.Coll, thus track for deletion
 
@@ -139,15 +143,45 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
     val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)) + parts(1))
 
-    //This ugly syntax is needed to replace the received code with a correct function definition
+    // get the reference to memory
+    val memAddr: String = parts(1).split(" = ").head.trim().split(" ").find(x => x.startsWith("commands_")).get 
 
-    val run_until = "  override def run" + changeTypes(parts(3))
-      .trim()
-      .substring(1)
-      .replaceFirst("=>", ": meta.runtime.Actor = ")
-      .dropRight(1)
-      .trim
-      .dropRight(1)
+    val instructionRegister: String = instRegMap(actorName)
+    
+    // set the IR and return the previous IR 
+    val getIR: String = s"""
+    override def getInstructionPointer: Int = {
+      ${instructionRegister}
+    }"""
+
+    val setIR: String = s"""
+    override def setInstructionPointer(new_ir: Int): Int = {
+      if (new_ir >= ${memorySize} || new_ir <0) {
+        throw new Exception("Agent " + id + " attemps to access illegal memory reference " + new_ir)
+      }
+      val prev_ir: Int = ${instructionRegister}
+      ${instructionRegister} = new_ir 
+      prev_ir 
+    }"""
+
+    val handleMsg: String = s"""
+    override def gotoHandleMessage(): Int = {
+      val nextPtr: Int = ${handlerEntryMap(actorName)} 
+      setInstructionPointer(nextPtr)
+    }
+    """
+
+    val run_until: String = s"""
+    override def run(): meta.runtime.Actor = {
+      ${unblockRegMap(actorName)} = true
+      while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
+        ${memAddr}(${instructionRegister})() 
+      }
+      this
+    }
+    """
+
+    val methods: String = s"${run_until}${getIR}${setIR}${handleMsg}"
 
     // "classname_" is for merging optimization
     // Add to resolve package object
@@ -185,7 +219,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       s"${parentNames.head}${parentNames.tail.foldLeft("")((a,b) => a + " with " + changeTypes(b))}"
     }
 
-    createClass(compiledActorGraph.name, parameters, initParams, initVars, run_until, parents);
+    createClass(compiledActorGraph.name, parameters, initParams, initVars, methods, parents);
   }
 
   /**
@@ -387,32 +421,32 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     code.toList
   }
 
-  def genReflectionCode(agentName: String): String = {
+  // def genReflectionCode(agentName: String): String = {
     // Get the entrance point for handleMessages
-    val instructionRegister: String = instRegMap(agentName)
+  //   val instructionRegister: String = instRegMap(agentName)
 
-  // set the IR and return the previous IR 
-  val getIR: String = s"""
-  override def getInstructionPointer: Int = {
-    ${instructionRegister}
-  }"""
+  // // set the IR and return the previous IR 
+  // val getIR: String = s"""
+  // override def getInstructionPointer: Int = {
+  //   ${instructionRegister}
+  // }"""
 
-  val setIR: String = s"""
-  override def setInstructionPointer(new_ir: Int): Int = {
-    val prev_ir: Int = ${instructionRegister}
-    ${instructionRegister} = new_ir 
-    prev_ir 
-  }"""
+  // val setIR: String = s"""
+  // override def setInstructionPointer(new_ir: Int): Int = {
+  //   val prev_ir: Int = ${instructionRegister}
+  //   ${instructionRegister} = new_ir 
+  //   prev_ir 
+  // }"""
 
-  val handleMsg: String = s"""
-  override def gotoHandleMessage(): Int = {
-    val nextPtr: Int = ${handlerEntryMap(agentName)} 
-    setInstructionPointer(nextPtr)
-  }
-  """
+  // val handleMsg: String = s"""
+  // override def gotoHandleMessage(): Int = {
+  //   val nextPtr: Int = ${handlerEntryMap(agentName)} 
+  //   setInstructionPointer(nextPtr)
+  // }
+  // """
 
-    List(getIR, setIR, handleMsg).mkString("\n")
-  }
+  //   List(getIR, setIR, handleMsg).mkString("\n")
+  // }
 
   /**
     * Creates the class file
@@ -438,7 +472,6 @@ class ${className} (${parameters}) extends ${parents} {
 $initParams
 $initVars
 $run_until
-${genReflectionCode(agentName)}
 }
 """
 
