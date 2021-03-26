@@ -25,60 +25,6 @@ object Actor {
 }
 
 /**
- * A container agent holds a collection of agents 
- */ 
-class Container extends Actor {
-  var containedAgents: List[Actor] = List()
-
-  var internalMessages: List[Message] = List()
-
-  // When add agents to a container, also update the proxyIds 
-  def addAgents(as: List[Actor]): Unit = {
-    containedAgents = as ::: containedAgents 
-    proxyIds = as.flatMap(x => x.proxyIds) ::: proxyIds
-  }
-
-  var mx = receivedMessages.groupBy(_.receiverId)
-  var messageBuffer: List[Message] = List() 
-
-  // proxyIds initialized after addAgents. Therefore init again inside run
-  var unblockAgents: Set[Actor.AgentId] = Set()
-
-  // Assume each wait in main follows a handleMessage 
-  override def run(): Actor = {
-    unblockAgents = proxyIds.toSet 
-    cleanSendMessage
-    do {
-      containedAgents = containedAgents.map(a => {
-        if (unblockAgents.contains(a.id)) {
-          a.cleanSendMessage 
-         .addReceiveMessages(mx.getOrElse(a.id, List()))
-         .run()
-        } else {
-          a 
-        }
-      })
-
-      // get all the messages  
-      messageBuffer = containedAgents.flatMap(_.getSendMessages)
-      // remove the sent messages from the agents 
-      containedAgents = containedAgents.map(_.cleanSendMessage)
-      // filter out the internal messages 
-      internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
-      // append the external messages to the outgoing mailbox  
-      sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages 
-      // update the unblockAgent indexes to selectively deliver the internal blocking messages
-      unblockAgents = internalMessages.flatMap(x => List(x.receiverId)).toSet  
-      // update the messages to deliver for the selected unblocking agents
-      // println(s"Unblock agents: ${unblockAgents} + Messages: ${internalMessages}")
-      mx = internalMessages.groupBy(_.receiverId)
-    } while (internalMessages.nonEmpty)
-
-    this 
-  }
-}
-
-/**
   * This class represents the main class of the generated classes
   * It contains the logic for message handling and defines the
   * functions for a step-wise simulation
@@ -89,8 +35,6 @@ class Actor extends Serializable {
   var proxyIds: List[Actor.AgentId] = List(id)
   var deleted: Boolean = false
   
-//  val logger = LoggerFactory.getLogger(this.getClass.getName())
-
   /**
     * Contains the received messages from the previous step
     */
@@ -226,4 +170,17 @@ class Actor extends Serializable {
   def run(): Actor = {
     this
   }
+
+  /**
+    * Reflection code 
+    */
+
+  // Return the current value of the instruction pointer  
+  def getInstructionPointer: Int = ???
+
+  // Move the instruction pointer to another location, and return the previous location 
+  def setInstructionPointer(new_ir: Int): Int = ???
+
+  // Get the code position of the handleMessage and go to that location. Return the previous instruction pointer 
+  def gotoHandleMessage: Int = ??? 
 }
