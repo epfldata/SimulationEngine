@@ -197,6 +197,9 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       compiledActorGraph: CompiledActorGraph): List[OpenCode[Unit]] = {
     val graph: ListBuffer[EdgeInfo] = compiledActorGraph.graph
     //Reassign positions
+    val handleMessageMethodId: Int = meta.classLifting.Lifter.methodsIdMap(compiledActorGraph.name + ".handleMessages")
+    assert(graph.filter(x => x.methodId1 == handleMessageMethodId).nonEmpty)
+
     var positionMap: Map[Int, Int] = Map()
 
     val groupedGraph = graph.groupBy(_.from.getNativeId)
@@ -293,7 +296,27 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       })
     }
 
+    // Generate code starting from root node position. Unreachable node is not generated.  
     generateCodeInner(0)
+
+    // Check whether the generated code contains handleMessage. If not (the main doesn't call handleMessage), generate code for it. 
+    // The node positions of the handleMessage method 
+    val handlerNodePos: List[Int] = graph.filter(x => x.methodId1 == handleMessageMethodId).toList.map(x => x.from.getNativeId)
+    
+    // meta.Util.debug(s"Debug: The position map before generate code for handleMessage:\n ${positionMap.toString}")
+
+    if (handlerNodePos.exists(n => positionMap.get(n).isEmpty)){
+      generateCodeInner(handlerNodePos.min)
+    }
+
+    // meta.Util.debug(s"Debug: The position map: ${positionMap}")
+
+    assert(handlerNodePos.forall(n => positionMap.get(n).isDefined))
+    // Lookup the code position of the nodes. The entry point for the handler is the first code position of the handleMessage
+    val handlerEntry = handlerNodePos.map(x => positionMap(x)).min 
+    
+    // Update the handlerEntryMap 
+    this.handlerEntryMap += compiledActorGraph.name -> handlerEntry
 
     // Add position storing for the code elements, where required
     changeCodePos.foreach(x => {
@@ -361,22 +384,6 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       })
       y
     })
-
-    
-    // meta.Util.debug(s"Position map: ${positionMap.toString()}")
-    // meta.Util.debug(s"Grouped graph: ${graph.filter(x => x.methodId1==2).map(x => x.from.getNativeId).map(x => positionMap(x))}")
-
-    assert(meta.classLifting.Lifter.methodsIdMap.get(compiledActorGraph.name + ".handleMessages").isDefined)
-
-    // Get from the lifter the method id of the handleMessage for the given agent graph 
-    val handleMessageMethodId: Int = meta.classLifting.Lifter.methodsIdMap(compiledActorGraph.name + ".handleMessages")
-
-    // The entry point for the handler is the first node position
-    val handlerEntry: Int = graph.filter(x => x.methodId1 == handleMessageMethodId).map(x => x.from.getNativeId).map(x => positionMap(x)).min 
-    
-    // Update the handlerEntryMap 
-    this.handlerEntryMap += compiledActorGraph.name -> handlerEntry
-
     code.toList
   }
 
@@ -386,21 +393,23 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
   // set the IR and return the previous IR 
   val getIR: String = s"""
-  def getInstructionPointer(): Int = {
+  override def getInstructionPointer: Int = {
     ${instructionRegister}
   }"""
 
   val setIR: String = s"""
-  def setInstructionPointer(new_ir: Int): Int = {
+  override def setInstructionPointer(new_ir: Int): Int = {
     val prev_ir: Int = ${instructionRegister}
     ${instructionRegister} = new_ir 
     prev_ir 
   }"""
 
   val handleMsg: String = s"""
-  def handleMessagePointer(): Int = {
-    ${handlerEntryMap(agentName)}
-  }"""
+  override def gotoHandleMessage(): Int = {
+    val nextPtr: Int = ${handlerEntryMap(agentName)} 
+    setInstructionPointer(nextPtr)
+  }
+  """
 
     List(getIR, setIR, handleMsg).mkString("\n")
   }
