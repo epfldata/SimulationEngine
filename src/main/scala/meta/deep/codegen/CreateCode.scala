@@ -157,7 +157,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     val setIR: String = s"""
     override def setInstructionPointer(new_ir: Int): Int = {
       if (new_ir >= ${memorySize} || new_ir <0) {
-        throw new Exception("Agent " + id + " attemps to access illegal memory reference " + new_ir)
+        throw new Exception("Invalid address pointer " + new_ir + " for agent " + id)
       }
       val prev_ir: Int = ${instructionRegister}
       ${instructionRegister} = new_ir 
@@ -339,7 +339,9 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     
     // meta.Util.debug(s"Debug: The position map before generate code for handleMessage:\n ${positionMap.toString}")
 
-    if (handlerNodePos.exists(n => positionMap.get(n).isEmpty)){
+    val handleMessageAsAddOn: Boolean = handlerNodePos.exists(n => positionMap.get(n).isEmpty) 
+
+    if (handleMessageAsAddOn){
       generateCodeInner(handlerNodePos.min)
     }
 
@@ -349,8 +351,14 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     // Lookup the code position of the nodes. The entry point for the handler is the first code position of the handleMessage
     val handlerEntry = handlerNodePos.map(x => positionMap(x)).min 
     
-    // Update the handlerEntryMap 
-    this.handlerEntryMap += compiledActorGraph.name -> handlerEntry
+
+    // If the generated code contains handleMessage (not as add-on), then it goes through the standard stack preparation, go to code, pop the stack cycle. As add-on, we know that handleMessage doesn't take parameter, therefore no need to save any arg to the stack before the call or free afterwards. Thus the standard (defined in the main body) handleMessage entry point is one before that of the add-on
+    if (handleMessageAsAddOn){
+      this.handlerEntryMap += compiledActorGraph.name -> handlerEntry
+    } else {
+      this.handlerEntryMap += compiledActorGraph.name -> (handlerEntry-1)
+    }
+    
 
     // Add position storing for the code elements, where required
     changeCodePos.foreach(x => {
@@ -421,32 +429,6 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     code.toList
   }
 
-  // def genReflectionCode(agentName: String): String = {
-    // Get the entrance point for handleMessages
-  //   val instructionRegister: String = instRegMap(agentName)
-
-  // // set the IR and return the previous IR 
-  // val getIR: String = s"""
-  // override def getInstructionPointer: Int = {
-  //   ${instructionRegister}
-  // }"""
-
-  // val setIR: String = s"""
-  // override def setInstructionPointer(new_ir: Int): Int = {
-  //   val prev_ir: Int = ${instructionRegister}
-  //   ${instructionRegister} = new_ir 
-  //   prev_ir 
-  // }"""
-
-  // val handleMsg: String = s"""
-  // override def gotoHandleMessage(): Int = {
-  //   val nextPtr: Int = ${handlerEntryMap(agentName)} 
-  //   setInstructionPointer(nextPtr)
-  // }
-  // """
-
-  //   List(getIR, setIR, handleMsg).mkString("\n")
-  // }
 
   /**
     * Creates the class file
