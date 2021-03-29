@@ -5,26 +5,34 @@ package meta.runtime
  * The internal messages among the agents are non-blocking. 
  */ 
 class Container extends Actor {
-  var position: Int = 0 
+  private var position: Int = 0 
 
-  var containedAgents: List[Actor] = List()
-  var internalMessages: List[Message] = List()
+  private var containedAgents: List[Actor] = List()
+  private var internalMessages: List[Message] = List()
 
   // When add agents to a container, also update the proxyIds 
+  // An RPC method that other containers can use to migrate their agents over 
   def addAgents(as: List[Actor]): Unit = {
     containedAgents = as ::: containedAgents 
     proxyIds = as.flatMap(x => x.proxyIds) ::: proxyIds
   }
 
+  // // Reply a request message corresponding to addAgents
+
+  // If an agent communicates much more frequently with an external container, then offer it to that container; if an agent doesn't communicate much and the container's capacity is close to full, then we migrate it 
+  // We need an index container which monitors the total agents in each container agent, and warns any imbalance, forwarding references of the container agents to each other to balance the traffic.
+
   // Group messages by receiver id 
-  var mx = receivedMessages.groupBy(_.receiverId)
-  var messageBuffer: List[Message] = List() 
+  private var mx = receivedMessages.groupBy(_.receiverId)
+  private var messageBuffer: List[Message] = List() 
 
   // proxyIds initialized after addAgents. Therefore init again inside run. An optimization (if large number of agents don't send internal messages), not required
-  var unblockAgents: Set[Actor.AgentId] = Set()
+  private var unblockAgents: Set[Actor.AgentId] = Set()
 
-  val commands: List[() => Unit] = List(
+  private val commands: List[() => Unit] = List(
     () => {
+        mx = receivedMessages.groupBy(_.receiverId)
+
         unblockAgents = proxyIds.toSet 
         cleanSendMessage
 
@@ -56,11 +64,12 @@ class Container extends Actor {
         } else a)
 
         } while (internalMessages.nonEmpty)
+
     }
   )
 
   // Assume each wait in main follows a handleMessage 
-  override def run(): Actor = {
+  override def run(): Actor = {    
     commands(position)()
     this 
   }
