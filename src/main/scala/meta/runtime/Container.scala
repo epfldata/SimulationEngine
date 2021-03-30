@@ -1,7 +1,5 @@
 package meta.runtime
 
-import spire.std.int
-
 /**
  * A container agent holds a collection of agents. 
  * The internal messages among the agents are non-blocking. 
@@ -20,8 +18,6 @@ class Container extends Actor {
     println(s"Proxy ids of agent ${id} are ${proxyIds}")
   }
 
-  // // Reply a request message corresponding to addAgents
-
   // If an agent communicates much more frequently with an external container, then offer it to that container; if an agent doesn't communicate much and the container's capacity is close to full, then we migrate it 
   // We need an index container which monitors the total agents in each container agent, and warns any imbalance, forwarding references of the container agents to each other to balance the traffic.
 
@@ -33,6 +29,8 @@ class Container extends Actor {
   private var unblockAgents: Set[Actor.AgentId] = Set()
 
   private var internalReqAgents: Set[Actor.AgentId] = Set()
+
+  // private var internalReqSessions: Set[String] = Set()
 
   private val commands: List[() => Unit] = List(
     () => {
@@ -55,13 +53,8 @@ class Container extends Actor {
             .map(_.cleanSendMessage)
           // filter out the internal messages 
           internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
-          // Update the internal request agents
-          internalReqAgents = internalMessages
-            .filter(x => x.isInstanceOf[RequestMessage])
-            .filter(x => x.asInstanceOf[RequestMessage].blocking)
-            .map(x => x.senderId)
-            .toSet.union(internalReqAgents)
 
+          // println(s"Internal req agents: ${internalReqAgents}")  
           // append the external messages to the outgoing mailbox  
           sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages 
           // update the unblockAgent indexes to selectively deliver the internal blocking messages
@@ -69,17 +62,18 @@ class Container extends Actor {
           // update the messages to deliver for the selected unblocking agents
           mx = internalMessages.groupBy(_.receiverId)
 
+          // println(s"Unblock agents: ${unblockAgents}, internalReqAgents: ${internalReqAgents}")
           containedAgents = containedAgents.map(a => {
             if (unblockAgents.contains(a.id)) {
-              val currentPtr: Int = a.gotoHandleMessage
-              val b: Actor = a.addReceiveMessages(mx.getOrElse(a.id, List())).run()
-              b.setInstructionPointer(currentPtr)
+              val msgs: List[Message] = mx.getOrElse(a.id, List())
+              val b: Actor = a.addReceiveMessages(msgs)
+              
               // If the receiver agent was waiting for a blocking request, unblock it
-              if (internalReqAgents.contains(a.id)){  
-                internalReqAgents -= a.id 
+              if (msgs.exists(x => (x.isInstanceOf[ResponseMessage] && x.blocking))) {  
                 b.run()
               } else {
-                b 
+                val currentPtr: Int = b.getInstructionPointer
+                b.gotoHandleMessage.run().setInstructionPointer(currentPtr)
               }
             }
             else {
@@ -99,15 +93,14 @@ class Container extends Actor {
   }
 
   // Implement the reflection API  
-  override def gotoHandleMessage: Int = 0 
+  override def gotoHandleMessage = this 
 
   override def getInstructionPointer: Int = 0
 
-  override def setInstructionPointer(new_ir: Int): Int = {
+  override def setInstructionPointer(new_ir: Int) = {
     if (new_ir!=0) {
         throw new Exception(s"Invalid address pointer ${new_ir} for agent ${id}")
-    } else {
-        0
     }
+    this 
   }
 }
