@@ -73,7 +73,6 @@ class Actor extends Serializable {
     * @param messages Actions with receiver matching the agent from the previous step
     */
   def addReceiveMessages(messages: List[Message]): Actor = {
-    // println(s"Add receive messages for ${id}: ${messages}")
     this.receivedMessages = this.receivedMessages ::: messages.filter(
       x =>
         x.isInstanceOf[RequestMessage] || responseListeners
@@ -92,6 +91,8 @@ class Actor extends Serializable {
         handler(x)
       })
     }
+    // println(s"Add receive messages for ${id}: ${messages}")
+
     this 
   }
 
@@ -141,7 +142,7 @@ class Actor extends Serializable {
     * and returns them to the method caller
     * @return a list of receivedMessages of type RequestMessage
     */
-  final def popRequestMessages: List[RequestMessage] = {
+  def popRequestMessages: List[RequestMessage] = {
     val rM = this.receivedMessages
       .filter(_.isInstanceOf[RequestMessage])
       .map(_.asInstanceOf[RequestMessage])
@@ -155,7 +156,7 @@ class Actor extends Serializable {
     * and returns them to the method caller
     * @return a list of receivedMessages of type ResponseMessage
     */
-  final def popResponseMessages: List[ResponseMessage] = {
+  def popResponseMessages: List[ResponseMessage] = {
     val rM = this.receivedMessages
       .filter(_.isInstanceOf[ResponseMessage])
       .map(_.asInstanceOf[ResponseMessage])
@@ -179,8 +180,8 @@ class Actor extends Serializable {
   def getInstructionPointer: Int = ???
 
   // Move the instruction pointer to another location, and return the previous location 
-  def setInstructionPointer(new_ir: Int): Int = ???
+  def setInstructionPointer(new_ir: Int): Actor = ???
 
-  // Get the code position of the handleMessage and go to that location. Return the previous instruction pointer 
-  def gotoHandleMessage: Int = ??? 
+  // Get the code position of the handleMessage and go to that location. Return an actor with the updated instruction pointer
+  def gotoHandleMessage: Actor = ??? 
 }

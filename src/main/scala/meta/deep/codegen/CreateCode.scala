@@ -155,18 +155,18 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     }"""
 
     val setIR: String = s"""
-    override def setInstructionPointer(new_ir: Int): Int = {
+    override def setInstructionPointer(new_ir: Int) = {
       if (new_ir >= ${memorySize} || new_ir <0) {
         throw new Exception("Invalid address pointer " + new_ir + " for agent " + id)
       }
       val prev_ir: Int = ${instructionRegister}
-      ${instructionRegister} = new_ir 
-      prev_ir 
+      ${instructionRegister} = new_ir
+      this
     }"""
 
     val handleMsg: String = s"""
-    override def gotoHandleMessage(): Int = {
-      val nextPtr: Int = ${handlerEntryMap(actorName)} 
+    override def gotoHandleMessage() = {
+      val nextPtr: Int = ${handlerEntryMap(actorName)}
       setInstructionPointer(nextPtr)
     }
     """
