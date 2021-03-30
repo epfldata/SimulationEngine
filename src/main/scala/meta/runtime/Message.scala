@@ -23,6 +23,8 @@ abstract class Message extends Serializable {
     */
   var sessionId: String = UUID.randomUUID().toString
 
+  val blocking: Boolean
+
   override def toString: String = {
     "Message: " + senderId + " -> " + receiverId + "(" + sessionId + ")"
   }
@@ -49,7 +51,7 @@ case class RequestMessage(override val senderId: Actor.AgentId,
     * @param returnValue the return value/answer for the request message
     */
   def reply(owner: Actor, returnValue: Any): Unit = {
-    val msg = ResponseMessage(receiverId, senderId, returnValue)
+    val msg = ResponseMessage(receiverId, senderId, returnValue, blocking)
     msg.sessionId = this.sessionId
     owner.sendMessage(msg)
   }
@@ -63,5 +65,6 @@ case class RequestMessage(override val senderId: Actor.AgentId,
   */
 case class ResponseMessage(override val senderId: Actor.AgentId,
                            override val receiverId: Actor.AgentId,
-                           arg: Any)
+                           arg: Any, 
+                           blocking: Boolean)
     extends Message
