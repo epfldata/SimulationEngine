@@ -52,8 +52,6 @@ class Actor extends Serializable {
   var responseListeners
     : Map[String, Message => Unit] = Map()
 
-  var interrupts: Map[Double, List[Message]] = Map()
-
   /**
     * Adds one message to the sendActions list, which will be collected and distributed at the end of the step
     *
@@ -94,19 +92,6 @@ class Actor extends Serializable {
     // println(s"Add receive messages for ${id}: ${messages}")
 
     this 
-  }
-
-  /**
-    * Add registered interrupts to receivedMessages if time is up
-    * @param time
-    * @return
-    */
-  final def addInterrupts(time: Double): Actor = {
-    val registeredInterrupts: Option[List[Message]] = interrupts.remove(time)
-    if (registeredInterrupts.isDefined){
-      receivedMessages = receivedMessages ::: registeredInterrupts.get
-    }
-    this
   }
 
   /**

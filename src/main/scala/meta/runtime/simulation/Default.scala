@@ -38,10 +38,10 @@ class Default(val config: SimulationConfig) extends Simulation {
     events.append(() => registerLabel(Time, actors.length))
     events.append(() => {
       val mx = actors.flatMap(_.getSendMessages).groupBy(_.receiverId)
+      // println(s"Get send messages mx in default ${mx}")
       actors = actors.filterNot(x => x.deleted).map { a =>
       {
         a.cleanSendMessage
-          .addInterrupts(currentTime)
           .addReceiveMessages(Random.shuffle(a.proxyIds.flatMap(id => mx.getOrElse(id, List()))))
           .run()
       }}

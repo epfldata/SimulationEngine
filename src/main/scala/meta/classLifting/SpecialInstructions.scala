@@ -51,11 +51,4 @@ object SpecialInstructions {
     * The syntax for Sim to check its mailbox.
     */
   def handleMessages(): Unit = ???
-
-  /**
-    * The syntax for Sim to define an interrupt. Sim places the message in its interrupt mailbox and runtime delivers the message at the specified interval. Currently only defined for Time waitMode
-    * @param interval
-    * @param method
-    */
-  def interrupt(interval: Double, method: (()=>Any)): Unit = ???
 }

@@ -68,7 +68,8 @@ class SimulationSpark(val config: SimulationConfig) extends Simulation {
         .leftOuterJoin(messageMap)
         .mapValues { x =>
           x._1.addReceiveMessages(Random.shuffle(x._1.proxyIds.flatMap(id => x._2.getOrElse(List()))))
-            .cleanSendMessage.addInterrupts(currentTime).run()
+            .cleanSendMessage
+            .run()
         }.cache()
       actors.count()
     })

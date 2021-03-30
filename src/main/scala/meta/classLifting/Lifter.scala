@@ -322,15 +322,7 @@ object Lifter {
         case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
           val f = WaitLabel[T](code"$x.toString()", y)
           cache += (cde -> f)
-          f 
-
-        case code"SpecialInstructions.interrupt($interval: Double, (() => ${MethodApplication(msg)}))" =>
-          val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
-          var mtd: String = msg.symbol.toString()
-          Interrupt(actorSelfVariable.toCode,
-                    interval,
-                    methodsIdMap(mtd),
-                    List(argss.toList))
+          f
 
         // asynchronously call a remote method
         case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" =>
@@ -492,7 +484,6 @@ object Lifter {
       var containWaits: Boolean = false 
       var processMessages: Boolean = false 
       var issueCalls: Boolean = false 
-      var issueInterrupts: Boolean = false 
       val isMain: Boolean = mtdName.endsWith(".main")
 
       cde analyse {
@@ -502,8 +493,6 @@ object Lifter {
           processMessages = true 
         case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" => 
           issueCalls = true 
-        case code"SpecialInstructions.interrupt($interval: Double, (() => ${MethodApplication(msg)}))" => 
-          issueInterrupts = true 
         case code"${MethodApplication(ma)}:Any " => 
           if (methodsIdMap.get(ma.symbol.toString()).isDefined){
             issueCalls = true 
@@ -520,7 +509,7 @@ object Lifter {
         warning(s"Method ${mtdName} contains handleMessages!")
       }
       
-      containWaits || processMessages || issueCalls || issueInterrupts 
+      containWaits || processMessages || issueCalls 
     }
 
     /** Used for operations that were not covered in [[liftCode]]. Lifts an [[OpenCode]](expression) into its deep representation [[Algo]]
