@@ -38,6 +38,7 @@ abstract class Message extends Serializable {
   */
 case class RequestMessage(override val senderId: Actor.AgentId,
                           override val receiverId: Actor.AgentId,
+                          blocking: Boolean, 
                           methodId: Int,
                           argss: List[List[Any]])
     extends Message {

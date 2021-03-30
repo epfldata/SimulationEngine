@@ -27,7 +27,7 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
       code"""
         val sender = $actorFrom;
         val receiver = $actorRef;
-        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, $methodIdC, $convertedArgs);
+        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, $methodIdC, $convertedArgs);
         var future = meta.runtime.Future[$T](requestMessage.sessionId); 
         sender.sendMessage(requestMessage);
         sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.runtime.Message) => {
