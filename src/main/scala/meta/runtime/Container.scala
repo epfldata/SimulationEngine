@@ -1,5 +1,7 @@
 package meta.runtime
 
+import spire.std.int
+
 /**
  * A container agent holds a collection of agents. 
  * The internal messages among the agents are non-blocking. 
@@ -15,6 +17,7 @@ class Container extends Actor {
   def addAgents(as: List[Actor]): Unit = {
     containedAgents = as ::: containedAgents 
     proxyIds = as.flatMap(x => x.proxyIds) ::: proxyIds
+    println(s"Proxy ids of agent ${id} are ${proxyIds}")
   }
 
   // // Reply a request message corresponding to addAgents
@@ -29,39 +32,60 @@ class Container extends Actor {
   // proxyIds initialized after addAgents. Therefore init again inside run. An optimization (if large number of agents don't send internal messages), not required
   private var unblockAgents: Set[Actor.AgentId] = Set()
 
+  private var internalReqAgents: Set[Actor.AgentId] = Set()
+
   private val commands: List[() => Unit] = List(
     () => {
         mx = receivedMessages.groupBy(_.receiverId)
 
-        unblockAgents = proxyIds.toSet 
+        unblockAgents = proxyIds.toSet
         cleanSendMessage
 
         containedAgents = containedAgents.map(a => {
-        a.cleanSendMessage 
-        .addReceiveMessages(mx.getOrElse(a.id, List()))
-        .run()
+          a.cleanSendMessage
+          .addReceiveMessages(a.proxyIds.flatMap(id => mx.getOrElse(id, List())))
+          .run()
         })
 
         do {
-        // get all the messages  
-        messageBuffer = containedAgents.flatMap(_.getSendMessages)
-        // remove the sent messages from the agents 
-        containedAgents = containedAgents.map(_.cleanSendMessage)
-        // filter out the internal messages 
-        internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
-        // append the external messages to the outgoing mailbox  
-        sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages 
-        // update the unblockAgent indexes to selectively deliver the internal blocking messages
-        unblockAgents = internalMessages.flatMap(x => List(x.receiverId)).toSet  
-        // update the messages to deliver for the selected unblocking agents
-        mx = internalMessages.groupBy(_.receiverId)
-        
-        containedAgents = containedAgents.map(a => if (unblockAgents.contains(a.id)) {
-            val currentPtr: Int = a.gotoHandleMessage
-            val b: Actor = a.addReceiveMessages(mx.getOrElse(a.id, List())).run()
-            b.setInstructionPointer(currentPtr)
-            b 
-        } else a)
+          // get all the messages  
+          messageBuffer = containedAgents.flatMap(_.getSendMessages)
+          // remove the sent messages from the agents 
+          containedAgents = containedAgents
+            .map(_.cleanSendMessage)
+          // filter out the internal messages 
+          internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
+          // Update the internal request agents
+          internalReqAgents = internalMessages
+            .filter(x => x.isInstanceOf[RequestMessage])
+            .filter(x => x.asInstanceOf[RequestMessage].blocking)
+            .map(x => x.senderId)
+            .toSet.union(internalReqAgents)
+
+          // append the external messages to the outgoing mailbox  
+          sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages 
+          // update the unblockAgent indexes to selectively deliver the internal blocking messages
+          unblockAgents = internalMessages.flatMap(x => List(x.receiverId)).toSet
+          // update the messages to deliver for the selected unblocking agents
+          mx = internalMessages.groupBy(_.receiverId)
+
+          containedAgents = containedAgents.map(a => {
+            if (unblockAgents.contains(a.id)) {
+              val currentPtr: Int = a.gotoHandleMessage
+              val b: Actor = a.addReceiveMessages(mx.getOrElse(a.id, List())).run()
+              b.setInstructionPointer(currentPtr)
+              // If the receiver agent was waiting for a blocking request, unblock it
+              if (internalReqAgents.contains(a.id)){  
+                internalReqAgents -= a.id 
+                b.run()
+              } else {
+                b 
+              }
+            }
+            else {
+              a
+            }
+          })
 
         } while (internalMessages.nonEmpty)
 
