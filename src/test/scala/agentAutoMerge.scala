@@ -36,21 +36,15 @@ class B() extends Actor {
     }
 
     def main(): Unit = {
-        println("Agent " + id + " neighbors " + neighbors)
         while(true) {
             println("This is " + id)
+            // randomly delay an agent so that agents merge at different pace
+            // if (Random.nextBoolean()) {
+            //   waitLabel(Turn, 10)
+            // }
+
             if (neighbors.nonEmpty){
                 foo = Random.nextInt(90)
-                // neighbors.foreach(n => {
-                //     println("Send message! Set value to " + foo)
-                //     futures = asyncMessage(() => n.setVal(foo)) :: futures
-                // })
-                // while (!futures.forall(x => x.isCompleted)){
-                //     waitLabel(Turn, 1)
-                // } 
-                // futures.foreach(x => println(x.popValue))
-                // println("Hear back all the responses! " + id)
-                // futures = List()
                 neighbors.foreach(n => {
                     println(id + " Send message! Set value to " + foo)
                     n.setVal(foo)
@@ -63,7 +57,6 @@ class B() extends Actor {
     }
 }
 
-
 class BCompile extends FlatSpec {
   import meta.compile._
   import meta.deep.IR.Predef._ 
@@ -75,10 +68,10 @@ class BCompile extends FlatSpec {
       val a3: B = new B()
 
       a1.neighbors = List(a2, a3)
+      a2.neighbors = List(a3)
 
       val a4: B = new B()
       val a5: B = new B()
-
       a4.neighbors = List(a5)
     """
   
@@ -87,13 +80,34 @@ class BCompile extends FlatSpec {
     compileSims(List(c1),
       mainInit = Some(init),  
       initPkgName = this.getClass().getPackage().getName(), 
-      destFolder = "src/test/scala/generated/mergeAuto")  
+      destFolder = "src/test/scala/generated/mergeAuto")
   }
 }
 
-class BRun extends FlatSpec {
-  "The generated code B" should "run" in {
-    generated.meta.test.merge.auto.InitData.initActors()
-    new Default(SimulationConfig(actors = List(), totalTurn = 50)).run()
-  }
-}
+// class BRun extends FlatSpec {
+//   "The generated code B" should "run" in {
+//     generated.meta.test.merge.auto.InitData.initActors()
+//     new Default(SimulationConfig(actors = List(), totalTurn = 50)).run()
+//   }
+// }
+
+
+// Expected output when stabilized: 
+// (at a single iteration)
+// This is 3
+// This is 2
+// 2 Send message! Set value to 35
+// This is 1
+// 1 Send message! Set value to 67
+// Larger than 30!
+// Larger than 30!
+// 2 Hear back the response!
+// 1 Hear back the response!
+// 1 Send message! Set value to 67
+// Larger than 30!
+// 1 Hear back the response!
+// This is 5
+// This is 4
+// 4 Send message! Set value to 45
+// Larger than 30!
+// 4 Hear back the response!
