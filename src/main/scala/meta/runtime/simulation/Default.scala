@@ -12,6 +12,7 @@ class Default(val config: SimulationConfig) extends Simulation {
   private var currentTurn: Int = config.startTurn
   private var currentTime: Double = config.startTime
   private val mergeFrequency: Int = 5
+  private val chattyAgents = new ChattyAgents(10)
 
   // Track the agent and the container agent it merges to
   private val runtimeContainer: MutMap[Actor.AgentId, Actor.AgentId] = MutMap[Actor.AgentId, Actor.AgentId]()
@@ -48,7 +49,7 @@ class Default(val config: SimulationConfig) extends Simulation {
       // Record the communication pattern
       if (meta.compile.Optimization.runtimeMerging){
         mx.foreach(x => {
-          x._2.foreach(m => MessagingStats.recordMessage(m.senderId, m.receiverId))
+          x._2.foreach(m => chattyAgents.recordMessage(m.senderId, m.receiverId))
         })
       }
       
@@ -64,8 +65,8 @@ class Default(val config: SimulationConfig) extends Simulation {
     if (meta.compile.Optimization.runtimeMerging) {
       events.append(() => {
         if (currentTurn % mergeFrequency == 0) {
-          val candidates = MessagingStats.getMergeCandidates
-          // meta.Util.debug(s"Merge agents: ${candidates} ${MessagingStats.getSketch}")
+          val candidates = chattyAgents.getMergeCandidates
+          // meta.Util.debug(s"Merge agents: ${candidates}")
           candidates.foreach(x => {
             val c1 = new Container()
             if (!x.exists(a => runtimeContainer.keySet.contains(a))) {
@@ -112,7 +113,7 @@ class Default(val config: SimulationConfig) extends Simulation {
             assert(c1.getAgents.flatMap(x => x.receivedMessages).isEmpty)
             newActors.append(c1)
           })
-          MessagingStats.clearMergeCandidates
+          chattyAgents.clearMergeCandidates
         }
       })
     }
