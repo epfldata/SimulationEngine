@@ -10,6 +10,8 @@ object MessagingStats {
   private var mergeThreshold: Int = 10
   private var mergeCandidates: ListBuffer[Set[AgentId]] = new ListBuffer()
 
+  def getSketch: Set[(AgentId, Map[AgentId, Int])] = sketch.map(x => (x._1, x._2.toMap)).toSet
+
   // the threshold beyond which we kick in the merging mechanism
   def setMergeThreshold(threshold: Int) = {
       mergeThreshold = threshold
