@@ -15,8 +15,10 @@ class Container extends Actor {
   def addAgents(as: List[Actor]): Unit = {
     containedAgents = as ::: containedAgents 
     proxyIds = as.flatMap(x => x.proxyIds) ::: proxyIds
-    println(s"Proxy ids of agent ${id} are ${proxyIds}")
+    // println(s"Proxy ids of agent ${id} are ${proxyIds}")
   }
+
+  def getAgents: List[Actor] = containedAgents
 
   // If an agent communicates much more frequently with an external container, then offer it to that container; if an agent doesn't communicate much and the container's capacity is close to full, then we migrate it 
   // We need an index container which monitors the total agents in each container agent, and warns any imbalance, forwarding references of the container agents to each other to balance the traffic.
@@ -25,17 +27,12 @@ class Container extends Actor {
   private var mx = receivedMessages.groupBy(_.receiverId)
   private var messageBuffer: List[Message] = List() 
 
-  // proxyIds initialized after addAgents. Therefore init again inside run. An optimization (if large number of agents don't send internal messages), not required
   private var unblockAgents: Set[Actor.AgentId] = Set()
-
-  private var internalReqAgents: Set[Actor.AgentId] = Set()
-
-  // private var internalReqSessions: Set[String] = Set()
 
   private val commands: List[() => Unit] = List(
     () => {
         mx = receivedMessages.groupBy(_.receiverId)
-
+        receivedMessages = List()
         unblockAgents = proxyIds.toSet
         cleanSendMessage
 
@@ -51,29 +48,28 @@ class Container extends Actor {
           // remove the sent messages from the agents 
           containedAgents = containedAgents
             .map(_.cleanSendMessage)
+          // println(s"Looping inside container agent! Message buffer: ${messageBuffer}")
           // filter out the internal messages 
           internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
-
-          // println(s"Internal req agents: ${internalReqAgents}")  
           // append the external messages to the outgoing mailbox  
-          sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages 
+          sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages
           // update the unblockAgent indexes to selectively deliver the internal blocking messages
           unblockAgents = internalMessages.flatMap(x => List(x.receiverId)).toSet
           // update the messages to deliver for the selected unblocking agents
           mx = internalMessages.groupBy(_.receiverId)
 
-          // println(s"Unblock agents: ${unblockAgents}, internalReqAgents: ${internalReqAgents}")
           containedAgents = containedAgents.map(a => {
             if (unblockAgents.contains(a.id)) {
               val msgs: List[Message] = mx.getOrElse(a.id, List())
-              val b: Actor = a.addReceiveMessages(msgs)
               
               // If the receiver agent was waiting for a blocking request, unblock it
               if (msgs.exists(x => (x.isInstanceOf[ResponseMessage] && x.blocking))) {  
-                b.run()
+                a.addReceiveMessages(msgs).run()
               } else {
-                val currentPtr: Int = b.getInstructionPointer
-                b.gotoHandleMessage.run().setInstructionPointer(currentPtr)
+                val currentPtr: Int = a.getInstructionPointer
+                a.addReceiveMessages(msgs)
+                  .gotoHandleMessage.run()
+                  .setInstructionPointer(currentPtr)
               }
             }
             else {
@@ -88,8 +84,14 @@ class Container extends Actor {
 
   // Assume each wait in main follows a handleMessage 
   override def run(): Actor = {    
+    // meta.Util.debug(s"Agent ${id} received messages: ${receivedMessages}")
     commands(position)()
-    this 
+    // meta.Util.debug(s"Agent ${id} sent messages: ${sendMessages}")
+    this
+  }
+
+  override def getSendMessages: List[Message] = {
+    containedAgents.flatMap(_.getSendMessages) ::: sendMessages
   }
 
   // Implement the reflection API  

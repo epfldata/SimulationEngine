@@ -98,7 +98,7 @@ class Actor extends Serializable {
     * This returns all messages, which are sent via sendMessage
     * @return the actor itself
     */
-  final def getSendMessages: List[Message] = {
+  def getSendMessages: List[Message] = {
     sendMessages
   }
 
