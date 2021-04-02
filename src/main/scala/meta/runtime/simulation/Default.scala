@@ -13,8 +13,6 @@ class Default(val config: SimulationConfig) extends Simulation {
   private var currentTime: Double = config.startTime
   private val mergeFrequency: Int = 5
 
-  private var mx: Map[Actor.AgentId, Iterable[Message]] = Map()
-
   // Track the agent and the container agent it merges to
   private val runtimeContainer: MutMap[Actor.AgentId, Actor.AgentId] = MutMap[Actor.AgentId, Actor.AgentId]()
 
@@ -45,7 +43,7 @@ class Default(val config: SimulationConfig) extends Simulation {
     // If new actors are added, time takes them into account as well
     events.append(() => registerLabel(Time, actors.size))
     events.append(() => {
-      mx = actors.flatMap(_._2.getSendMessages).groupBy(_.receiverId)
+      val mx = actors.flatMap(_._2.getSendMessages).groupBy(_.receiverId)
       // meta.Util.debug(s"Messages at root ${mx}")
       // Record the communication pattern
       if (meta.compile.Optimization.runtimeMerging){
