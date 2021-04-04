@@ -31,10 +31,18 @@ object Actor {
   */
 class Actor extends Serializable {
   import Actor.AgentId
+  
   var id: AgentId = Actor.getNextAgentId
-  var proxyIds: List[Actor.AgentId] = List(id)
+
+  protected var proxyIds: ListBuffer[AgentId] = new ListBuffer[AgentId]()
+
   var deleted: Boolean = false
   
+  var connectedAgents: List[Actor] = Nil 
+
+  // a variable denoting whether we can relax the consistency constraint and allow concurrent copies 
+  var relaxConsistency: Boolean = false 
+
   /**
     * Contains the received messages from the previous step
     */
@@ -57,6 +65,14 @@ class Actor extends Serializable {
     *
     * @param message Action, which should be sent to a different Agent
     */
+  proxyIds += id
+
+  final def getProxyIds: List[AgentId] = proxyIds.toList 
+
+  final def addProxyIds(ids: List[AgentId]): Unit = {
+    proxyIds ++= ids 
+  }
+
   final def sendMessage(message: Message): Unit = {
     if (message.receiverId == this.id) {
       addReceiveMessages(List(message))
@@ -154,6 +170,16 @@ class Actor extends Serializable {
     * Stub, gets overriden by generated code 
     */
   def run(): Actor = {
+    this
+  }
+
+  /**
+    * Stub, overriden by generated code. 
+    * Clone an agent with the same connectedAgents, but a new id and fresh mailbox
+    *
+    * @return
+    */
+  def deepClone(): Actor = {
     this
   }
 
