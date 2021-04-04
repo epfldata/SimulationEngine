@@ -181,8 +181,6 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     }
     """
 
-    val methods: String = s"${run_until}${getIR}${setIR}${handleMsg}"
-
     // "classname_" is for merging optimization
     // Add to resolve package object
     this.typesReplaceWith = ("\\.package\\.", "\\.`package`\\.") :: this.typesReplaceWith
@@ -209,6 +207,20 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       })
     }).mkString(", ")
 
+    val parameterApplication: String = parameters.split(",").map(x => {
+      x.split(" ")(1).stripSuffix(":")
+    }).mkString(", ")
+
+    meta.Util.debug(parameterApplication)
+
+    val deepClone: String = s"""
+    override def deepClone(): meta.runtime.Actor = {
+      val cloner = new ${compiledActorGraph.name}(${parameterApplication})
+      cloner.connectedAgents = connectedAgents
+      cloner
+    }
+    """
+
     def parents: String = {
       var parentNames: List[String] = compiledActorGraph.parentNames
 
@@ -218,6 +230,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
         
       s"${parentNames.head}${parentNames.tail.foldLeft("")((a,b) => a + " with " + changeTypes(b))}"
     }
+
+    val methods: String = s"${deepClone}${run_until}${getIR}${setIR}${handleMsg}"
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars, methods, parents);
   }
@@ -461,6 +475,7 @@ $run_until
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(classString)
     bw.close()
+    println(s"Created class file ${className}")
   }
 
   
@@ -562,8 +577,8 @@ object InitData  {
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(classString)
     bw.close()
+    println("Created InitData")
   }
-
 
   /**
     * Generates init code of one variable of type VarWrapper
