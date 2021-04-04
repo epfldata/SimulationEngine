@@ -16,6 +16,8 @@ class Default(val config: SimulationConfig) extends Simulation {
   private val mergeFrequency: Int = 5
   private val chattyAgents = new ChattyAgents(10)
 
+  private var retiredActors: MutMap[AgentId, Actor] = MutMap()
+
   // test only, should get it from Spark (in the Spark implementation)
   private val migrateThreshold: Int = 3
 
@@ -48,8 +50,10 @@ class Default(val config: SimulationConfig) extends Simulation {
 
     meta.Util.debug(s"Communication frequency ${sortedCandidacyFrequency}")
 
-    val hottestCandidateMeta = sortedCandidacyFrequency.head 
-    val hottestCandidateAgent = actors(hottestCandidateMeta._1)
+    val hottestCandidateMeta = sortedCandidacyFrequency.head
+    val hottestCandidateAgent = 
+      actors.getOrElse(hottestCandidateMeta._1, retiredActors.getOrElse(hottestCandidateMeta._1, throw new Exception("Agent not found!")))
+      
     // Heuristic: if the highest hit agent is more than migrate threshold times comparint to the next high frequency agent and it is a minimal agent with relaxed consistency and no connections, then for each agent that communicates with it, we assign them a copy 
     if (hottestCandidateMeta._2 >= migrateThreshold*(sortedCandidacyFrequency.tail.head._2) && hottestCandidateAgent.relaxConsistency && hottestCandidateAgent.connectedAgents.isEmpty) {
       val connectionOfHottestCandidate = candidates.filter(x => x.contains(hottestCandidateMeta._1)).flatten.filterNot(_==hottestCandidateMeta._1).toSet
@@ -79,9 +83,13 @@ class Default(val config: SimulationConfig) extends Simulation {
     candidates.foreach(x => {
       val c1 = new Container()
       if (!x.exists(a => runtimeContainer.keySet.contains(a))) {
-        c1.addAgents(x.map(a => {
-          assert(actors.get(a).isDefined)
-          actors.remove(a).get
+        c1.addAgents(x.map(aId => {
+          assert(actors.get(aId).isDefined)
+          val sim = actors.remove(aId).get
+          if (!sim.isInstanceOf[Container]) {
+            retiredActors += (aId -> sim)
+          }
+          sim
         }))
       } else {
         // the ids of containers who hold at least one candidate agent
@@ -101,7 +109,10 @@ class Default(val config: SimulationConfig) extends Simulation {
         // meta.Util.debug(s"x contains at least one merged agent! ${x}\nexisting containers are ${existingContainerIds}\nindependent agents are ${independentAgentIds}")
 
         // Remove the references of existing containers and independent agents from actors 
-        (existingContainerIds ::: independentAgentIds).foreach(c => {
+        existingContainerIds.foreach(actors -= _)
+
+        independentAgentIds.foreach(c => {
+          retiredActors += (c -> actors(c))
           actors -= c
         })
 
@@ -153,10 +164,6 @@ class Default(val config: SimulationConfig) extends Simulation {
     if (meta.compile.Optimization.runtimeMerging) {
       events.append(() => {
         if (currentTurn % mergeFrequency == 0) {
-          // List of fused merge candidates, e.g. List(Set(1, 2, 3, 4))
-          // val candidates = chattyAgents.getFusedMergeCandidates
-          
-          // List of paired merge candidates, e.g. List(Set(1, 2), Set(1, 3), Set(1, 4))
           val pairCandidates = chattyAgents.getPairedMergeCandidates
           if (!pairCandidates.isEmpty) {
             inlineAgents(pairCandidates)
