@@ -206,9 +206,13 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
         }
       })
     }).mkString(", ")
-
+    
     val parameterApplication: String = parameters.split(",").map(x => {
-      x.split(" ")(1).stripSuffix(":")
+      if (x.isEmpty()){
+        ""
+      } else {
+        x.split(" ")(1).stripSuffix(":")
+      }
     }).mkString(", ")
 
     meta.Util.debug(parameterApplication)
