@@ -15,11 +15,12 @@ class Container extends Actor {
 
   private val chattyAgents: ChattyAgents = new ChattyAgents(50)
 
-  // When add agents to a container, also update the proxyIds 
-  // An RPC method that other containers can use to migrate their agents over 
-  def addAgents(as: List[Actor]): Unit = {
-    containedAgents ++= as
-    addProxyIds(as.flatMap(x => x.getProxyIds))
+  // When add agents to a container, also update the proxyIds, and transfer the messages 
+  def addAgents(sims: List[Actor]): Unit = {
+    val simsMessages = sims.flatMap(_.getSendMessages)
+    sendMessages = simsMessages ::: sendMessages
+    containedAgents ++= sims.map(_.cleanSendMessage)
+    addProxyIds(sims.flatMap(x => x.getProxyIds))
     // println(s"Proxy ids of agent ${id} are ${proxyIds}")
   }
 
@@ -68,6 +69,7 @@ class Container extends Actor {
 
   private val commands: List[() => Unit] = List(
     () => {
+        // println(s"First run: received messages ${receivedMessages}")
         mx = receivedMessages.groupBy(_.receiverId)
         receivedMessages = List()
         unblockAgents = proxyIds.toSet
@@ -79,8 +81,9 @@ class Container extends Actor {
           .run()
         })
 
+        // println("Run has completed!")
         do {
-          // get all the messages  
+          // get all the messages
           messageBuffer = (containedAgents.flatMap(_.getSendMessages)).toList
           // remove the sent messages from the agents 
           containedAgents = containedAgents
@@ -97,14 +100,17 @@ class Container extends Actor {
           // update the messages to deliver for the selected unblocking agents
           mx = internalMessages.groupBy(_.receiverId)
 
+          // println(s"Internal messages are ${mx}")
           containedAgents = containedAgents.map(a => {
             if (unblockAgents.contains(a.id)) {
               val msgs: List[Message] = mx.getOrElse(a.id, List())
               
               // If the receiver agent was waiting for a blocking request, unblock it
               if (msgs.exists(x => (x.isInstanceOf[ResponseMessage] && x.blocking))) {  
+                // meta.Util.debug(s"Unblock agent ${a.id} to run")
                 a.addReceiveMessages(msgs).run()
               } else {
+                // meta.Util.debug(s"Unblock agent ${a.id} to handle message")
                 val currentPtr: Int = a.getInstructionPointer
                 a.addReceiveMessages(msgs)
                   .gotoHandleMessage.run()
@@ -128,10 +134,6 @@ class Container extends Actor {
     this
   }
 
-  override def getSendMessages: List[Message] = {
-    containedAgents.flatMap(_.getSendMessages).toList ::: sendMessages
-  }
-
   // Implement the reflection API  
   override def gotoHandleMessage = this 
 
@@ -141,6 +143,6 @@ class Container extends Actor {
     if (new_ir!=0) {
         throw new Exception(s"Invalid address pointer ${new_ir} for agent ${id}")
     }
-    this 
+    this
   }
 }

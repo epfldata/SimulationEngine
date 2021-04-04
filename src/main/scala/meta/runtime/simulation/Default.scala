@@ -90,8 +90,7 @@ class Default(val config: SimulationConfig) extends Simulation {
       if (!x.exists(a => runtimeContainer.keySet.contains(a))) {
         c1.addAgents(x.map(aId => {
           assert(actors.get(aId).isDefined)
-          val sim = actors.remove(aId).get
-          c1.sendMessages = sim.getSendMessages ::: c1.sendMessages
+          var sim = actors.remove(aId).get
           if (!sim.isInstanceOf[Container]) {
             retiredActors += (aId -> sim)
           }
@@ -118,31 +117,34 @@ class Default(val config: SimulationConfig) extends Simulation {
         // Remove the references of existing containers and independent agents from actors 
         existingContainerIds.foreach(actors -= _)
 
+        // The agents moved from a previous container to the new one has already been removed from the actors map
+        // Move the independent agents to retired map, in case needed later for inlining. A cloner doesn't copy any message, so no need to clean send messages before adding to the retired map
         independentAgentIds.foreach(c => {
           retiredActors += (c -> actors(c))
           actors -= c
         })
 
-        // list of agents reside in the containers
-        val mergedAgents = existingContainers.flatMap(_.getAgents).toList
-        
-        // flatten out the agents and add them to the new container 
-        c1.addAgents(mergedAgents ::: independentAgents)
-
         val messagesFromContainer = (existingContainers.toList).flatMap(x => x.getSendMessages)
 
-        val messagesFromLeafAgents = (mergedAgents ::: independentAgents).flatMap(x => x.getSendMessages)
+        val agentsToAdd = existingContainers.flatMap(_.getAgents).toList ::: independentAgents
 
-        // Messages collected in containers and leaf agents should not intersect
-        assert(messagesFromLeafAgents.intersect(messagesFromContainer).isEmpty)
+        // flatten out the agents and add them to the new container 
+        c1.addAgents(agentsToAdd)
 
-        c1.sendMessages ++= (messagesFromContainer ::: messagesFromLeafAgents)
+        assert(messagesFromContainer.intersect(c1.sendMessages).isEmpty)
+        // we flatten out the containers, but need to include their messages in the new container 
+        c1.sendMessages = messagesFromContainer ::: c1.sendMessages
+        // add any messages contained in the previous containers
+
+        // meta.Util.debug(s"Existing container send messages: ${messagesFromContainer}")
       }
     
       c1.getProxyIds.foreach(i => {
         runtimeContainer += (i -> c1.id)
       })
-      
+
+      // meta.Util.debug("Sent messages in merged container agent " + c1.sendMessages)
+      // assert(c1.getAgents.flatMap(x => x.receivedMessages).isEmpty)
       actors += (c1.id -> c1)
     })
   }
