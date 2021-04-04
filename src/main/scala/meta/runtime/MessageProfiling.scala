@@ -16,7 +16,16 @@ class MessageProfiling {
     }
   }
 
+  def clearSketch(sim1: AgentId, sim2: AgentId): Unit = {
+    if (sim1 < sim2) {
+      sketch(sim1) -= sim2 
+    } else {
+      sketch(sim2) -= sim1
+    }
+  }
+
   // todo: add overflow logic 
+  // record message one at a time
   def recordMessage(sim1: AgentId, sim2: AgentId): Unit = {
 
     val simPair = List(sim1, sim2).sorted
