@@ -50,28 +50,32 @@ class Default(val config: SimulationConfig) extends Simulation {
 
     meta.Util.debug(s"Communication frequency ${sortedCandidacyFrequency}")
 
-    val hottestCandidateMeta = sortedCandidacyFrequency.head
-    val hottestCandidateAgent = 
-      actors.getOrElse(hottestCandidateMeta._1, retiredActors.getOrElse(hottestCandidateMeta._1, throw new Exception("Agent not found!")))
+    val hotAgentMeta = sortedCandidacyFrequency.head
+    val hotAgent = 
+      actors.getOrElse(hotAgentMeta._1, retiredActors.getOrElse(hotAgentMeta._1, throw new Exception("Agent not found!")))
       
     // Heuristic: if the highest hit agent is more than migrate threshold times comparint to the next high frequency agent and it is a minimal agent with relaxed consistency and no connections, then for each agent that communicates with it, we assign them a copy 
-    if (hottestCandidateMeta._2 >= migrateThreshold*(sortedCandidacyFrequency.tail.head._2) && hottestCandidateAgent.relaxConsistency && hottestCandidateAgent.connectedAgents.isEmpty) {
-      val connectionOfHottestCandidate = candidates.filter(x => x.contains(hottestCandidateMeta._1)).flatten.filterNot(_==hottestCandidateMeta._1).toSet
-      meta.Util.debug(s"Found a hot candidate! ${hottestCandidateMeta._1}")
-      meta.Util.debug(s"Connections of a hot candidate: ${connectionOfHottestCandidate}")
+    if (hotAgentMeta._2 >= migrateThreshold*(sortedCandidacyFrequency.tail.head._2) && hotAgent.relaxConsistency && hotAgent.connectedAgents.isEmpty) {
+      val sendersToHotAgent = candidates.filter(x => x.contains(hotAgentMeta._1)).flatten.filterNot(_==hotAgentMeta._1).toSet
+      meta.Util.debug(s"Found a hot candidate! ${hotAgentMeta._1}")
+      // meta.Util.debug(s"Connections of a hot candidate: ${sendersToHotAgent}")
 
-      connectionOfHottestCandidate.foreach(c => {
+      sendersToHotAgent.foreach(c => {
         var recipientActor = actors(c)
-        val cloner = actors(hottestCandidateMeta._1).deepClone()
+        val cloner = actors(hotAgentMeta._1).deepClone()
 
-        recipientActor.connectedAgents = cloner :: recipientActor.connectedAgents.filterNot(x => x.id == hottestCandidateMeta._1)
+        recipientActor.connectedAgents = cloner :: recipientActor.connectedAgents.filterNot(x => x.id == hotAgentMeta._1)
         
-        meta.Util.debug(s"Cloner created for agent ${hottestCandidateMeta._1} with id ${cloner.id}!")
-        meta.Util.debug(s"Recipient agent's connection has been updated: ${recipientActor.connectedAgents.map(x => x.id)}")
+        meta.Util.debug(s"Cloner created for agent ${hotAgentMeta._1} with id ${cloner.id}!")
+        // meta.Util.debug(s"Recipient agent's connection has been updated: ${recipientActor.connectedAgents.map(x => x.id)}")
         actors += (cloner.id -> cloner)
         fuseAgents(List(List(c, cloner.id)))
       })
-      fuseAgents(candidates.filterNot(x => x.contains(hottestCandidateMeta._1)))
+
+      retiredActors += (hotAgentMeta._1 -> hotAgent)
+      actors -= hotAgentMeta._1 
+
+      fuseAgents(candidates.filterNot(x => x.contains(hotAgentMeta._1)))
     } else {
       fuseAgents(candidates)
     }
@@ -79,7 +83,8 @@ class Default(val config: SimulationConfig) extends Simulation {
 
   private def fuseAgents(candidates: List[List[AgentId]]): Unit = {
     meta.Util.debug(s"Fuse agents: ${candidates}")
-    meta.Util.debug(s"Current actors: ${actors}")
+    // meta.Util.debug(s"${candidates.flatten.map(x => actors(x).receivedMessages)}")
+
     candidates.foreach(x => {
       val c1 = new Container()
       if (!x.exists(a => runtimeContainer.keySet.contains(a))) {
@@ -130,7 +135,7 @@ class Default(val config: SimulationConfig) extends Simulation {
       })
 
       // meta.Util.debug("Sent messages in merged container agent " + c1.sendMessages)
-      assert(c1.getAgents.flatMap(x => x.receivedMessages).isEmpty)
+      // assert(c1.getAgents.flatMap(x => x.receivedMessages).isEmpty)
       actors += (c1.id -> c1)
     })
   }
