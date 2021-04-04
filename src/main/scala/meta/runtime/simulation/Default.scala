@@ -91,6 +91,7 @@ class Default(val config: SimulationConfig) extends Simulation {
         c1.addAgents(x.map(aId => {
           assert(actors.get(aId).isDefined)
           val sim = actors.remove(aId).get
+          c1.sendMessages = sim.getSendMessages ::: c1.sendMessages
           if (!sim.isInstanceOf[Container]) {
             retiredActors += (aId -> sim)
           }
@@ -98,10 +99,11 @@ class Default(val config: SimulationConfig) extends Simulation {
         }))
       } else {
         // the ids of containers who hold at least one candidate agent
+        // Use set to remove duplicates
         val existingContainerIds = x.toList
           .map(a => runtimeContainer.get(a))
           .filter(n => n.isDefined)
-          .map(n => n.get)
+          .map(n => n.get).toSet
         // the ids of the candidate agents who are not in any container 
         val independentAgentIds = x.filter(a => runtimeContainer.get(a).isEmpty)
 
@@ -126,16 +128,21 @@ class Default(val config: SimulationConfig) extends Simulation {
         
         // flatten out the agents and add them to the new container 
         c1.addAgents(mergedAgents ::: independentAgents)
-        // add any messages contained in the previous containers
-        c1.sendMessages ++= (existingContainers.toList).flatMap(x => x.getSendMessages)
+
+        val messagesFromContainer = (existingContainers.toList).flatMap(x => x.getSendMessages)
+
+        val messagesFromLeafAgents = (mergedAgents ::: independentAgents).flatMap(x => x.getSendMessages)
+
+        // Messages collected in containers and leaf agents should not intersect
+        assert(messagesFromLeafAgents.intersect(messagesFromContainer).isEmpty)
+
+        c1.sendMessages ++= (messagesFromContainer ::: messagesFromLeafAgents)
       }
     
       c1.getProxyIds.foreach(i => {
         runtimeContainer += (i -> c1.id)
       })
-
-      // meta.Util.debug("Sent messages in merged container agent " + c1.sendMessages)
-      // assert(c1.getAgents.flatMap(x => x.receivedMessages).isEmpty)
+      
       actors += (c1.id -> c1)
     })
   }
