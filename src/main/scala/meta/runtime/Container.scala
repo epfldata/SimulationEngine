@@ -1,24 +1,47 @@
 package meta.runtime
+import scala.collection.mutable.ListBuffer
 
+import Actor.AgentId
 /**
  * A container agent holds a collection of agents. 
  * The internal messages among the agents are non-blocking. 
  */ 
 class Container extends Actor {
-  private var position: Int = 0 
+  private var position: Int = 0
 
-  private var containedAgents: List[Actor] = List()
+  // Use a list buffer to remove agents
+  private var containedAgents: ListBuffer[Actor] = new ListBuffer()
   private var internalMessages: List[Message] = List()
+
+  private val chattyAgents: ChattyAgents = new ChattyAgents(50)
 
   // When add agents to a container, also update the proxyIds 
   // An RPC method that other containers can use to migrate their agents over 
   def addAgents(as: List[Actor]): Unit = {
-    containedAgents = as ::: containedAgents 
-    proxyIds = as.flatMap(x => x.proxyIds) ::: proxyIds
+    containedAgents ++= as
+    addProxyIds(as.flatMap(x => x.getProxyIds))
     // println(s"Proxy ids of agent ${id} are ${proxyIds}")
   }
 
-  def getAgents: List[Actor] = containedAgents
+  // Root can propose to migrate an agent based on profiling data. 
+  // None if the agent is hot or warmup not completed, and we prefer to keep it internal
+  // Otherwise return the agent to the root, and remove it. Upon removal, we also reset the chattyAgent monitor to clear the proposed merged agents
+  def migrateAgent(a: AgentId): Option[Actor] = {
+    var silentAgents: List[AgentId] = List()
+    // if no merge candidates, then stil in the warm-up phase
+    val hotAgents = chattyAgents.getPairedMergeCandidates.flatten
+    if (hotAgents.nonEmpty) {
+      silentAgents = getProxyIds.filterNot(_ == id).diff(hotAgents)
+    }
+    // println(s"Silent agents of the turn: ${silentAgents}")
+
+    silentAgents.contains(a) match {
+      case true => removeAgent(a)
+      case false => None
+    }
+  }
+
+  def getAgents: List[Actor] = containedAgents.toList
 
   // If an agent communicates much more frequently with an external container, then offer it to that container; if an agent doesn't communicate much and the container's capacity is close to full, then we migrate it 
   // We need an index container which monitors the total agents in each container agent, and warns any imbalance, forwarding references of the container agents to each other to balance the traffic.
@@ -29,6 +52,20 @@ class Container extends Actor {
 
   private var unblockAgents: Set[Actor.AgentId] = Set()
 
+  // Remove an agent from the contained agents and drop its id from proxyId
+  // Return the agent
+  private def removeAgent(a: AgentId): Option[Actor] = {
+    val idx = proxyIds.indexOf(a)
+    if (idx == -1) {
+      None
+    } else {
+      // Clear the ChattyAgent monitor after removing a silent agent
+      chattyAgents.clearMergeCandidates()
+      proxyIds.remove(idx)
+      Some(containedAgents.remove(idx))
+    }
+  }
+
   private val commands: List[() => Unit] = List(
     () => {
         mx = receivedMessages.groupBy(_.receiverId)
@@ -38,19 +75,21 @@ class Container extends Actor {
 
         containedAgents = containedAgents.map(a => {
           a.cleanSendMessage
-          .addReceiveMessages(a.proxyIds.flatMap(id => mx.getOrElse(id, List())))
+          .addReceiveMessages(a.getProxyIds.flatMap(id => mx.getOrElse(id, List())))
           .run()
         })
 
         do {
           // get all the messages  
-          messageBuffer = containedAgents.flatMap(_.getSendMessages)
+          messageBuffer = (containedAgents.flatMap(_.getSendMessages)).toList
           // remove the sent messages from the agents 
           containedAgents = containedAgents
             .map(_.cleanSendMessage)
           // println(s"Looping inside container agent! Message buffer: ${messageBuffer}")
           // filter out the internal messages 
           internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
+          // profile internal messages
+          chattyAgents.recordMessage(internalMessages)
           // append the external messages to the outgoing mailbox  
           sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages
           // update the unblockAgent indexes to selectively deliver the internal blocking messages
@@ -78,7 +117,6 @@ class Container extends Actor {
           })
 
         } while (internalMessages.nonEmpty)
-
     }
   )
 
@@ -91,7 +129,7 @@ class Container extends Actor {
   }
 
   override def getSendMessages: List[Message] = {
-    containedAgents.flatMap(_.getSendMessages) ::: sendMessages
+    containedAgents.flatMap(_.getSendMessages).toList ::: sendMessages
   }
 
   // Implement the reflection API  
