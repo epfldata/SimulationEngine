@@ -159,7 +159,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     val getIR: String = s"""
     override def getInstructionPointer: Int = {
       ${instructionRegister}
-    }"""
+    }
+    """
 
     val setIR: String = s"""
     override def setInstructionPointer(new_ir: Int) = {
@@ -169,7 +170,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       val prev_ir: Int = ${instructionRegister}
       ${instructionRegister} = new_ir
       this
-    }"""
+    }
+    """
 
     // "classname_" is for merging optimization
     // Add to resolve package object
@@ -197,19 +199,24 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     val handleMsg: String = s"""
     // default to the entry point of handle message
     // allow for re-entry from previous location, to handle waits in methods
-
     override def gotoHandleMessage(new_ir: Int = ${handlerEntryMap(actorName)}): meta.runtime.Actor = {
       // first entry, save the current IR to reflectionIR
+      ${unblockRegMap(actorName)} = true
+
       if (${reflectionIR} == -1){
         ${reflectionIR} = ${instructionRegister}
         ${instructionRegister} = new_ir
       }
 
-      while (${instructionRegister} <= ${handlerEndMap(actorName)}) {
+      while (${instructionRegister} <= ${handlerEndMap(actorName)} && ${unblockRegMap(actorName)}) {
         ${memAddr}(${instructionRegister})()
       }
-      ${instructionRegister} = ${reflectionIR}
-      ${reflectionIR} = -1
+
+      // reset instruction register when finishes processing
+      if (${instructionRegister} > ${handlerEndMap(actorName)}) {
+        ${instructionRegister} = ${reflectionIR}
+        ${reflectionIR} = -1
+      }
       this
     }
     """
@@ -218,7 +225,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     override def run(): meta.runtime.Actor = {
       ${unblockRegMap(actorName)} = true
       (${reflectionIR} != -1) match {
-        case true => gotoHandleMessage(${instructionRegister})
+        case true => gotoHandleMessage()
         case false => 
           while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
             ${memAddr}(${instructionRegister})() 

@@ -47,9 +47,9 @@ class Container extends Actor {
   // If an agent communicates much more frequently with an external container, then offer it to that container; if an agent doesn't communicate much and the container's capacity is close to full, then we migrate it 
   // We need an index container which monitors the total agents in each container agent, and warns any imbalance, forwarding references of the container agents to each other to balance the traffic.
 
-  // Group messages by receiver id 
+  // Group messages by receiver id
   private var mx = receivedMessages.groupBy(_.receiverId)
-  private var messageBuffer: List[Message] = List() 
+  private var messageBuffer: List[Message] = List()
 
   private var unblockAgents: Set[Actor.AgentId] = Set()
 
@@ -81,7 +81,6 @@ class Container extends Actor {
           .run()
         })
 
-        // println("Run has completed!")
         do {
           // get all the messages
           messageBuffer = (containedAgents.flatMap(_.getSendMessages)).toList
@@ -100,20 +99,18 @@ class Container extends Actor {
           // update the messages to deliver for the selected unblocking agents
           mx = internalMessages.groupBy(_.receiverId)
 
-          // println(s"Internal messages are ${mx}")
           containedAgents = containedAgents.map(a => {
             if (unblockAgents.contains(a.id)) {
               val msgs: List[Message] = mx.getOrElse(a.id, List())
-              
+              var b = a.addReceiveMessages(msgs)
               // If the receiver agent was waiting for a blocking request, unblock it
               if (msgs.exists(x => (x.isInstanceOf[ResponseMessage] && x.blocking))) {  
                 meta.Util.debug(s"Unblock agent ${a.id} to run")
-                a.addReceiveMessages(msgs).run()
+                b.run()
               } else {
-                meta.Util.debug(s"Unblock agent ${a.id} to handle message")
-                val currentPtr: Int = a.getInstructionPointer
-                a.addReceiveMessages(msgs)
-                  .gotoHandleMessage()
+                meta.Util.debug(s"Unblock agent ${a.id} to handle message.")
+                
+                b.gotoHandleMessage()
               }
             }
             else {
