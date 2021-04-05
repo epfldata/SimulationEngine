@@ -198,5 +198,5 @@ class Actor extends Serializable {
   def setInstructionPointer(new_ir: Int): Actor = ???
 
   // Get the code position of the handleMessage and go to that location. Process the code related to handle message, reset the instruction pointer, and return the agent
-  def gotoHandleMessage: Actor = ??? 
+  def gotoHandleMessage(new_ir: Int = -1): Actor = ??? 
 }

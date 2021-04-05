@@ -107,13 +107,13 @@ class Container extends Actor {
               
               // If the receiver agent was waiting for a blocking request, unblock it
               if (msgs.exists(x => (x.isInstanceOf[ResponseMessage] && x.blocking))) {  
-                // meta.Util.debug(s"Unblock agent ${a.id} to run")
+                meta.Util.debug(s"Unblock agent ${a.id} to run")
                 a.addReceiveMessages(msgs).run()
               } else {
-                // meta.Util.debug(s"Unblock agent ${a.id} to handle message")
+                meta.Util.debug(s"Unblock agent ${a.id} to handle message")
                 val currentPtr: Int = a.getInstructionPointer
                 a.addReceiveMessages(msgs)
-                  .gotoHandleMessage
+                  .gotoHandleMessage()
               }
             }
             else {
@@ -134,7 +134,7 @@ class Container extends Actor {
   }
 
   // Implement the reflection API  
-  override def gotoHandleMessage = this 
+  override def gotoHandleMessage(new_ir: Int = 0) = this 
 
   override def getInstructionPointer: Int = 0
 

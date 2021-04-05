@@ -10,6 +10,7 @@ import meta.runtime.Actor
 
 import scala.collection.mutable.ListBuffer
 import meta.compile.CompilationMode
+import scala.util.Random
 
 class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: CompilationMode)
     extends StateMachineElement() {
@@ -148,6 +149,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
     val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)) + parts(1))
 
+
     // get the reference to memory
     val memAddr: String = parts(1).split(" = ").head.trim().split(" ").find(x => x.startsWith("commands_")).get 
 
@@ -169,34 +171,11 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       this
     }"""
 
-    val handleMsg: String = s"""
-    override def gotoHandleMessage: meta.runtime.Actor = {
-      val new_ir: Int = ${handlerEntryMap(actorName)}
-      val prev_ir: Int = ${instructionRegister}
-      ${instructionRegister} = new_ir
-      while (${instructionRegister} <= ${handlerEndMap(actorName)}) {
-        ${memAddr}(${instructionRegister})() 
-      }
-      ${instructionRegister} = prev_ir
-      this
-    }
-    """
-
-    val run_until: String = s"""
-    override def run(): meta.runtime.Actor = {
-      ${unblockRegMap(actorName)} = true
-      while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
-        ${memAddr}(${instructionRegister})() 
-      }
-      this
-    }
-    """
-
     // "classname_" is for merging optimization
     // Add to resolve package object
     this.typesReplaceWith = ("\\.package\\.", "\\.`package`\\.") :: this.typesReplaceWith
 
-    val initParams: String = changeTypes(
+    var initParams: String = changeTypes(
       "\n" + compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.filterNot(x => x.parameter).map(s =>{
         if (s.mutable) {
@@ -207,6 +186,47 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
         //        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
       })}).mkString("\n"))
+
+    // Add the registers related to reflection to the initParams
+    // val reflectionModeRegister: String = "reflectionMode_" + Random.nextInt(100)
+    val reflectionIR: String = "reflectionIR_" + Random.nextInt(100)
+
+    // initParams += s"  private var  ${reflectionModeRegister}: Boolean = false\n"
+    initParams += s"  private var  ${reflectionIR}: Int = -1 \n"
+  
+    val handleMsg: String = s"""
+    // default to the entry point of handle message
+    // allow for re-entry from previous location, to handle waits in methods
+
+    override def gotoHandleMessage(new_ir: Int = ${handlerEntryMap(actorName)}): meta.runtime.Actor = {
+      // first entry, save the current IR to reflectionIR
+      if (${reflectionIR} == -1){
+        ${reflectionIR} = ${instructionRegister}
+        ${instructionRegister} = new_ir
+      }
+
+      while (${instructionRegister} <= ${handlerEndMap(actorName)}) {
+        ${memAddr}(${instructionRegister})()
+      }
+      ${instructionRegister} = ${reflectionIR}
+      ${reflectionIR} = -1
+      this
+    }
+    """
+
+    val run_until: String = s"""
+    override def run(): meta.runtime.Actor = {
+      ${unblockRegMap(actorName)} = true
+      (${reflectionIR} != -1) match {
+        case true => gotoHandleMessage(${instructionRegister})
+        case false => 
+          while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
+            ${memAddr}(${instructionRegister})() 
+          }
+          this
+      }
+    }
+    """
 
     val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.filter(x => x.parameter).map(s => {
@@ -228,6 +248,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
     meta.Util.debug(parameterApplication)
 
+    // Clone the agent 
+    // The cloner has the same class type with the same connections, but different agent id and clean mailbox
     val deepClone: String = s"""
     override def deepClone(): meta.runtime.Actor = {
       val cloner = new ${compiledActorGraph.name}(${parameterApplication})
