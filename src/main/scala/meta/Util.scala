@@ -9,6 +9,6 @@ object Util {
     val debug: (String) => Unit = 
         (x: String) => 
             if (meta.compile.Development.debug){
-                Console.println(s"${RESET}${RED}DEBUG${RESET}${x}\n\n")
+                Console.println(s"${RESET}${RED}[DEBUG] ${RESET}${x}")
             } 
 }
