@@ -60,8 +60,8 @@ class CreateActorGraphs(actorTypes: List[ActorType[_]])
     val graphs = actorTypes.map(createCompiledActorGraph)
 
     // graphs.foreach(g => GraphDrawing.drawGraph(g.graph, g.name + "_original"))
-    debug("Create actor graph, before edge merging")
-    debug(graphs.head.graph.filter(x => x.isMethod).mkString("\n"))
+    // debug("Create actor graph, before edge merging")
+    // debug(graphs.head.graph.filter(x => x.isMethod).mkString("\n"))
     graphs
   }
 
