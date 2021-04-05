@@ -113,8 +113,7 @@ class Container extends Actor {
                 // meta.Util.debug(s"Unblock agent ${a.id} to handle message")
                 val currentPtr: Int = a.getInstructionPointer
                 a.addReceiveMessages(msgs)
-                  .gotoHandleMessage.run()
-                  .setInstructionPointer(currentPtr)
+                  .gotoHandleMessage
               }
             }
             else {

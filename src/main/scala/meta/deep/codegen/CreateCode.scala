@@ -20,7 +20,12 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
   var typesReplaceWith: List[(String, String)] = List[(String, String)]()
 
+  // The instruction pointer pointing to the start of handleMessage method
+  // String: agent name
   var handlerEntryMap: Map[String, Int] = Map[String, Int]()
+
+  // the instruction pointer pointing to the end of handleMessage method
+  var handlerEndMap: Map[String, Int] = Map[String, Int]()
 
   // a map between the agent name and its instruction pointer register's name 
   var instRegMap: Map[String, String] = Map[String, String]()
@@ -165,9 +170,15 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     }"""
 
     val handleMsg: String = s"""
-    override def gotoHandleMessage() = {
-      val nextPtr: Int = ${handlerEntryMap(actorName)}
-      setInstructionPointer(nextPtr)
+    override def gotoHandleMessage: meta.runtime.Actor = {
+      val new_ir: Int = ${handlerEntryMap(actorName)}
+      val prev_ir: Int = ${instructionRegister}
+      ${instructionRegister} = new_ir
+      while (${instructionRegister} <= ${handlerEndMap(actorName)}) {
+        ${memAddr}(${instructionRegister})() 
+      }
+      ${instructionRegister} = prev_ir
+      this
     }
     """
 
@@ -343,7 +354,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
         //Add wait at end, if there is a wait on that edge
         if (edge.waitEdge) {
           code(currentCodePos) =
-            code"${code(currentCodePos)}; ${AlgoInfo.unblockFlag} := !(${AlgoInfo.unblockFlag}!)"
+            code"${code(currentCodePos)}; ${AlgoInfo.unblockFlag} := false"
+            // code"${code(currentCodePos)}; ${AlgoInfo.unblockFlag} := !(${AlgoInfo.unblockFlag}!)"
         }
       })
     }
@@ -359,6 +371,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
     val handleMessageAsAddOn: Boolean = handlerNodePos.exists(n => positionMap.get(n).isEmpty) 
 
+    // generate fresh code for handleMessage logic, to avoid auto incremental of the next instruction pointer 
     if (handleMessageAsAddOn){
       generateCodeInner(handlerNodePos.min)
     }
@@ -368,13 +381,14 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     assert(handlerNodePos.forall(n => positionMap.get(n).isDefined))
     // Lookup the code position of the nodes. The entry point for the handler is the first code position of the handleMessage
     val handlerEntry = handlerNodePos.map(x => positionMap(x)).min 
-    
-
+    val handlerEnd = handlerNodePos.map(x => positionMap(x)).max 
     // If the generated code contains handleMessage (not as add-on), then it goes through the standard stack preparation, go to code, pop the stack cycle. As add-on, we know that handleMessage doesn't take parameter, therefore no need to save any arg to the stack before the call or free afterwards. Thus the standard (defined in the main body) handleMessage entry point is one before that of the add-on
     if (handleMessageAsAddOn){
       this.handlerEntryMap += compiledActorGraph.name -> handlerEntry
+      this.handlerEndMap += compiledActorGraph.name -> handlerEnd
     } else {
       this.handlerEntryMap += compiledActorGraph.name -> (handlerEntry-1)
+      this.handlerEndMap += compiledActorGraph.name -> (handlerEnd+1)
     }
     
 

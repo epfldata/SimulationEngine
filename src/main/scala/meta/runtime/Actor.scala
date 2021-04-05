@@ -87,6 +87,10 @@ class Actor extends Serializable {
     * @param messages Actions with receiver matching the agent from the previous step
     */
   def addReceiveMessages(messages: List[Message]): Actor = {
+    // if (messages.nonEmpty){
+    //   meta.Util.debug(s"Add messages for ${id}: ${messages}, ${responseListeners}")
+    // }
+    
     this.receivedMessages = this.receivedMessages ::: messages.filter(
       x =>
         x.isInstanceOf[RequestMessage] || responseListeners
@@ -193,6 +197,6 @@ class Actor extends Serializable {
   // Move the instruction pointer to another location, and return the previous location 
   def setInstructionPointer(new_ir: Int): Actor = ???
 
-  // Get the code position of the handleMessage and go to that location. Return an actor with the updated instruction pointer
+  // Get the code position of the handleMessage and go to that location. Process the code related to handle message, reset the instruction pointer, and return the agent
   def gotoHandleMessage: Actor = ??? 
 }
