@@ -6,7 +6,7 @@
 checkpoint/*
 debug/*
 generated/*
-src/test/scala/generated/*
+src/test/*
 
 ### Build server support ###
 .bsp/*
