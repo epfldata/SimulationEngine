@@ -2,6 +2,7 @@ package meta.runtime
 
 import java.util.UUID
 
+import Actor.AgentId
 
 /**
   * This class is the supertype of the messages
@@ -11,12 +12,12 @@ abstract class Message extends Serializable {
   /**
     * The sender of the message
     */
-  val senderId: Actor.AgentId
+  val senderId: AgentId
 
   /**
     * The receiver of the message
     */
-  val receiverId: Actor.AgentId
+  val receiverId: AgentId
 
   /**
     * A unique id for the message-communication (request/response)
@@ -35,11 +36,12 @@ abstract class Message extends Serializable {
   * This represents a message, which is used for sending something to another actor
   * @param senderId the id of the sender
   * @param receiverId the id of the receiver
+  * @param blocking indicates whether the message is a blocking method
   * @param methodId the id of the method which should be called
   * @param argss the arguments of the method
   */
-case class RequestMessage(override val senderId: Actor.AgentId,
-                          override val receiverId: Actor.AgentId,
+case class RequestMessage(override val senderId: AgentId,
+                          override val receiverId: AgentId,
                           blocking: Boolean, 
                           methodId: Int,
                           argss: List[List[Any]])
@@ -63,8 +65,8 @@ case class RequestMessage(override val senderId: Actor.AgentId,
   * @param receiverId the id of the receiver
   * @param arg the return value of the method/answer of the request message
   */
-case class ResponseMessage(override val senderId: Actor.AgentId,
-                           override val receiverId: Actor.AgentId,
+case class ResponseMessage(override val senderId: AgentId,
+                           override val receiverId: AgentId,
                            arg: Any, 
                            blocking: Boolean)
     extends Message
