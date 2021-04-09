@@ -25,7 +25,7 @@ abstract class Message extends Serializable {
   var sessionId: String = UUID.randomUUID().toString
 
   val blocking: Boolean
-
+  
   override def toString: String = {
     "Message: " + senderId + " -> " + receiverId + "(" + sessionId + ")"
   }
@@ -64,6 +64,7 @@ case class RequestMessage(override val senderId: AgentId,
   * @param senderId the id of the sender
   * @param receiverId the id of the receiver
   * @param arg the return value of the method/answer of the request message
+  * @param blocking indicates whether the message is a blocking method
   */
 case class ResponseMessage(override val senderId: AgentId,
                            override val receiverId: AgentId,

@@ -4,6 +4,7 @@ import java.util.UUID
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.{ListBuffer, Map}
+import scala.util.Try 
 
 /**
   * This object handles the unique id generation of an actor
@@ -143,7 +144,7 @@ class Actor extends Serializable {
   }
 
   /**
-    * This function removes all receivedMessages of type RequestMessage from the receivedMessages list
+    * This function removes all receivedMessages of type RequestMessage from the receivedMessages list. Process nonblocking messages first to ensure the causal relationship between the nonblocking messages and blocking messages (if a blocking message follows some non-blocking messages and arbitrary actions in between)
     * and returns them to the method caller
     * @return a list of receivedMessages of type RequestMessage
     */
@@ -151,6 +152,7 @@ class Actor extends Serializable {
     val rM = this.receivedMessages
       .filter(_.isInstanceOf[RequestMessage])
       .map(_.asInstanceOf[RequestMessage])
+      .sortBy(x => x.blocking)  // non-blocking messages are processed first
     this.receivedMessages =
       this.receivedMessages.filterNot(_.isInstanceOf[RequestMessage])
     rM
