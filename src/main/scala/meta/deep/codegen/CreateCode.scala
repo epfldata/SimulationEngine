@@ -249,7 +249,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       if (x.isEmpty()){
         ""
       } else {
-        x.split(" ")(1).stripSuffix(":")
+        x.split(" ").filterNot(_.isEmpty)(1).stripSuffix(":")
       }
     }).mkString(", ")
 

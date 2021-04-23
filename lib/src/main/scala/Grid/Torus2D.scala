@@ -3,8 +3,9 @@ package Grid
 
 import scala.util.Random
 
-class Torus2D(val width: Int, val height: Int) extends Grid[Int] {
+import Torus2D._
 
+class Torus2D(val width: Int, val height: Int) extends Grid[Int] {
   private val capacity: Int = width*height
   private val emptyLoc: Array[Int] = Array.fill[Int](capacity)(1)
   private var currentPlacement: Map[Int, List[Actor]] = Map()
@@ -49,25 +50,27 @@ class Torus2D(val width: Int, val height: Int) extends Grid[Int] {
   }
 
   override def getAgentNeighbors(agentLoc: Int, neighborRadius: Int): List[Actor] = {
-    val neighborCells: List[Int] = getNeighborCells(agentLoc, neighborRadius)
+    val neighborCells: List[Int] = getNeighborCells(width, height)(agentLoc, neighborRadius)
     neighborCells.flatMap(x =>
       currentPlacement.get(x).getOrElse(List()))
   }
+}
 
-  private def getNeighborCells(x: Int, radius: Int): List[Int] = {
+object Torus2D {
+  def getNeighborCells(width: Int, height: Int)(x: Int, radius: Int): List[Int] = {
     if (x < 0 || x >= width * height) {
       throw new IndexOutOfBoundsException
     }
 
     // 4 neighbor cells
-    val neighbor4: Set[Int] = Set("N", "S", "E", "W").map(d => directionalCell(d, x))
+    val neighbor4: Set[Int] = Set("N", "S", "E", "W").map(d => directionalCell(width, height)(d, x))
     // 8 neighbor cells (+ NW, SE, NE, SW)
-    val neighbor8: Set[Int] = Set("W", "E", "N", "S").zip(neighbor4).map(pair => directionalCell(pair._1, pair._2)) ++ neighbor4
+    val neighbor8: Set[Int] = Set("W", "E", "N", "S").zip(neighbor4).map(pair => directionalCell(width, height)(pair._1, pair._2)) ++ neighbor4
 
     val perIt: Set[Int] = neighbor8
 
     if (radius > 1) {
-      perIt ++ perIt.flatMap(c => getNeighborCells(c, radius - 1))
+      perIt ++ perIt.flatMap(c => getNeighborCells(width, height)(c, radius - 1))
     } else {
       perIt
     }
@@ -75,7 +78,7 @@ class Torus2D(val width: Int, val height: Int) extends Grid[Int] {
   }
 
   // Return the cell directly at the given direction of the center idx
-  private def directionalCell(s: String, idx: Int): Int = {
+  def directionalCell(width: Int, height: Int)(s: String, idx: Int): Int = {
     val f = (x: Int, isUpper: Boolean, boundary: Int, wrapped: Int) => {
       if (isUpper) {
         if (x > boundary) wrapped else x
