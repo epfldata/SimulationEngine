@@ -5,7 +5,7 @@ import java.io.{BufferedWriter, File, FileWriter}
 import meta.deep.IR
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
-import meta.deep.member.{EdgeInfo, CompiledActorGraph, VarValue, VarWrapper}
+import meta.deep.member.{EdgeInfo, CompiledActorGraph, VarValue, VarWrapper, MethodInfo}
 import meta.runtime.Actor
 
 import scala.collection.mutable.ListBuffer
@@ -23,7 +23,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
   // The instruction pointer pointing to the start of handleMessage method
   // String: agent name
-  var handlerEntryMap: Map[String, Int] = Map[String, Int]()
+  // var handlerEntryMap: Map[String, Int] = Map[String, Int]()
 
   // the instruction pointer pointing to the end of handleMessage method
   var handlerEndMap: Map[String, Int] = Map[String, Int]()
@@ -104,8 +104,6 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     )
 
     val scalaCode = IR.showScala(codeWithInit.rep)
-
-    // hardcode the extraction of instruction pointer (algo)
     
     // split into three sections: variable declarations, commands, driver code
     val parts: Array[String] = scalaCode.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
@@ -195,37 +193,62 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
     // initParams += s"  private var  ${reflectionModeRegister}: Boolean = false\n"
     initParams += s"  private var  ${reflectionIR}: Int = -1 \n"
-  
+
+    // meta.Util.debug(methodArgs.toString)
+
+    var methodss: String = ""
+
+    val methodCases: String = meta.classLifting.Lifter.methodsIdMap.filterNot(_._1.endsWith("main")).map(x => {
+      val foo = meta.classLifting.Lifter.methodsMap(x._1)
+      methodss += changeTypes(foo.toDeclaration())
+      methodss += changeTypes(foo.toWrapperDeclaration())
+      f"case ${x._2} => ${foo.toWrapperInvocation()}"
+    }).mkString("\n")
+
     val handleMsg: String = s"""
-    // default to the entry point of handle message
-    // allow for re-entry from previous location, to handle waits in methods
-    override def gotoHandleMessage(new_ir: Int = ${handlerEntryMap(actorName)}): meta.runtime.Actor = {
-      // first entry, save the current IR to reflectionIR
-      ${unblockRegMap(actorName)} = true
-
-      if (${reflectionIR} == -1){
-        ${reflectionIR} = ${instructionRegister}
-        ${instructionRegister} = new_ir
-      }
-
-      while (${instructionRegister} <= ${handlerEndMap(actorName)} && ${unblockRegMap(actorName)}) {
-        ${memAddr}(${instructionRegister})()
-      }
-
-      // reset instruction register when finishes processing
-      if (${instructionRegister} > ${handlerEndMap(actorName)}) {
-        ${instructionRegister} = ${reflectionIR}
-        ${reflectionIR} = -1
+    override def handleNonblockingMessages(): meta.runtime.Actor = {
+      val requests = popRequestMessages
+      for (r <- requests) {
+        val args = r.argss.flatten
+        val response = r.methodId match {
+          ${methodCases.split("\n").mkString("\n          ")}
+        }
+        r.reply(this, response)
       }
       this
     }
     """
 
+    // val handleMsg: String = s"""
+    // // default to the entry point of handle message
+    // // allow for re-entry from previous location, to handle waits in methods
+    // override def gotoHandleMessage(new_ir: Int = ${handlerEntryMap(actorName)}): meta.runtime.Actor = {
+    //   // first entry, save the current IR to reflectionIR
+    //   ${unblockRegMap(actorName)} = true
+
+    //   if (${reflectionIR} == -1){
+    //     ${reflectionIR} = ${instructionRegister}
+    //     ${instructionRegister} = new_ir
+    //   }
+
+    //   while (${instructionRegister} <= ${handlerEndMap(actorName)} && ${unblockRegMap(actorName)}) {
+    //     ${memAddr}(${instructionRegister})()
+    //   }
+
+    //   // reset instruction register when finishes processing
+    //   if (${instructionRegister} > ${handlerEndMap(actorName)}) {
+    //     ${instructionRegister} = ${reflectionIR}
+    //     ${reflectionIR} = -1
+    //   }
+    //   this
+    // }
+    // """
+
     val run_until: String = s"""
     override def run(): meta.runtime.Actor = {
       ${unblockRegMap(actorName)} = true
       (${reflectionIR} != -1) match {
-        case true => gotoHandleMessage()
+        case true => handleMessages()
         case false => 
           while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
             ${memAddr}(${instructionRegister})() 
@@ -275,10 +298,13 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       s"${parentNames.head}${parentNames.tail.foldLeft("")((a,b) => a + " with " + changeTypes(b))}"
     }
 
-    val methods: String = s"${deepClone}${run_until}${getIR}${setIR}${handleMsg}"
+    val methods: String = s"${methodss}${deepClone}${run_until}${getIR}${setIR}${handleMsg}"
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars, methods, parents);
   }
+
+  // given method info, generate string corresponding to method definition
+
 
   /**
     * This generates the code of the state machine
@@ -289,8 +315,8 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       compiledActorGraph: CompiledActorGraph): List[OpenCode[Unit]] = {
     val graph: ListBuffer[EdgeInfo] = compiledActorGraph.graph
     //Reassign positions
-    val handleMessageMethodId: Int = meta.classLifting.Lifter.methodsIdMap(compiledActorGraph.name + ".handleMessages")
-    assert(graph.filter(x => x.methodId1 == handleMessageMethodId).nonEmpty)
+    // val handleMessageMethodId: Int = meta.classLifting.Lifter.methodsIdMap(compiledActorGraph.name + ".handleMessages")
+    // assert(graph.filter(x => x.methodId1 == handleMessageMethodId).nonEmpty)
 
     var positionMap: Map[Int, Int] = Map()
 
@@ -394,31 +420,31 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
 
     // Check whether the generated code contains handleMessage. If not (the main doesn't call handleMessage), generate code for it. 
     // The node positions of the handleMessage method 
-    val handlerNodePos: List[Int] = graph.filter(x => x.methodId1 == handleMessageMethodId).toList.map(x => x.from.getNativeId)
+    // val handlerNodePos: List[Int] = graph.filter(x => x.methodId1 == handleMessageMethodId).toList.map(x => x.from.getNativeId)
     
     // meta.Util.debug(s"Debug: The position map before generate code for handleMessage:\n ${positionMap.toString}")
 
-    val handleMessageAsAddOn: Boolean = handlerNodePos.exists(n => positionMap.get(n).isEmpty) 
+    // val handleMessageAsAddOn: Boolean = handlerNodePos.exists(n => positionMap.get(n).isEmpty) 
 
     // generate fresh code for handleMessage logic, to avoid auto incremental of the next instruction pointer 
-    if (handleMessageAsAddOn){
-      generateCodeInner(handlerNodePos.min)
-    }
+    // if (handleMessageAsAddOn){
+    //   generateCodeInner(handlerNodePos.min)
+    // }
 
     // meta.Util.debug(s"Debug: The position map: ${positionMap}")
 
-    assert(handlerNodePos.forall(n => positionMap.get(n).isDefined))
+    // assert(handlerNodePos.forall(n => positionMap.get(n).isDefined))
     // Lookup the code position of the nodes. The entry point for the handler is the first code position of the handleMessage
-    val handlerEntry = handlerNodePos.map(x => positionMap(x)).min 
-    val handlerEnd = handlerNodePos.map(x => positionMap(x)).max 
+    // val handlerEntry = handlerNodePos.map(x => positionMap(x)).min 
+    // val handlerEnd = handlerNodePos.map(x => positionMap(x)).max 
     // If the generated code contains handleMessage (not as add-on), then it goes through the standard stack preparation, go to code, pop the stack cycle. As add-on, we know that handleMessage doesn't take parameter, therefore no need to save any arg to the stack before the call or free afterwards. Thus the standard (defined in the main body) handleMessage entry point is one before that of the add-on
-    if (handleMessageAsAddOn){
-      this.handlerEntryMap += compiledActorGraph.name -> handlerEntry
-      this.handlerEndMap += compiledActorGraph.name -> handlerEnd
-    } else {
-      this.handlerEntryMap += compiledActorGraph.name -> (handlerEntry-1)
-      this.handlerEndMap += compiledActorGraph.name -> (handlerEnd+1)
-    }
+    // if (handleMessageAsAddOn){
+    //   this.handlerEntryMap += compiledActorGraph.name -> handlerEntry
+    //   this.handlerEndMap += compiledActorGraph.name -> handlerEnd
+    // } else {
+    //   this.handlerEntryMap += compiledActorGraph.name -> (handlerEntry-1)
+    //   this.handlerEndMap += compiledActorGraph.name -> (handlerEnd+1)
+    // }
     
 
     // Add position storing for the code elements, where required
