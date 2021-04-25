@@ -32,7 +32,6 @@ class MethodInfo[A0](val symbol: String,
       case Nil => None
       case _ => {
         Some(vparams.head.map(x => {
-          println(f"Arg syms: ${x.rep.show}")
           val recoverName = x.rep.show.split("@").head
           bodyStr = bodyStr.replaceAll(x.rep.show, recoverName)
           (recoverName, x.Typ.rep.toString())
