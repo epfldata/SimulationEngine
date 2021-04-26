@@ -49,7 +49,7 @@ object Lifter {
    */ 
   var ssoMtds: List[String] = List[String]() 
 
-  var ssoEnabled: Boolean = false 
+  var ssoEnabled: Boolean = false
 
   /**
    * We separate between leafActors and branchActors syntactically 
@@ -63,7 +63,7 @@ object Lifter {
     for (c <- initClasses) {
       var mnamess: List[String] = List[String]()  // array of all the symbol names of this class's methods (owner.method) 
       c.methods.foreach({  
-        case method: c.Method[_, _] => 
+        case method: c.Method[_, _] =>
           import method.A 
 
           val mtdName: String = method.symbol.toString()
@@ -314,11 +314,12 @@ object Lifter {
                             liftCode(elseBody))
           f.asInstanceOf[Algo[T]]
         // case code"SpecialInstructions.handleMessages()" =>
-          // ScalaCode("handleMessages")
-          // val handleMessage =
-          //     CallMethod[Unit](handleMessageId, List(List()))
-          // cache += (cde -> handleMessage)    
-          // handleMessage.asInstanceOf[Algo[T]]
+        //   ScalaCode(code"$actorSelfVariable.handleMessageState = true")
+
+        // val handleMessage =
+        //       CallMethod[Unit](handleMessageId, List(List()))
+        //   cache += (cde -> handleMessage)    
+        //   handleMessage.asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
           val f = WaitLabel[T](code"$x.toString()", y)
@@ -330,6 +331,20 @@ object Lifter {
           val f = if (methodsIdMap.get(msg.symbol.toString()).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+
+            // val convertLocal = Variable[Boolean]
+
+            // LetBinding(Some(convertLocal), 
+            //       ScalaCode(code"$actorSelfVariable._env.contains($recipientActorVariable.id)"),
+            //       IfThenElse(code"$convertLocal",
+            //         ScalaCode(cde),
+            //         AsyncSend[T, mt.Typ](
+            //           actorSelfVariable.toCode,
+            //           recipientActorVariable,
+            //           methodsIdMap(msg.symbol.toString()),
+            //           argss)  
+            //       )
+            //     )
 
             AsyncSend[T, mt.Typ](
               actorSelfVariable.toCode,
@@ -385,6 +400,7 @@ object Lifter {
             // println(ScalaCode(cde).toString())
             //extracting arguments and formatting them
             var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+
             val methodName: String = ma.symbol.toString()
 
             val recipientActorVariable =
@@ -431,11 +447,18 @@ object Lifter {
               // }
             // }
             
+            val convertLocal = Variable[Boolean]
+
             val f = if (actorSelfVariable.toCode != recipientActorVariable) {
-              Send[T](actorSelfVariable.toCode,
-                  recipientActorVariable,
-                  methodsIdMap(methodName),
-                  argss, true)
+                LetBinding(Some(convertLocal), 
+                  ScalaCode(code"$actorSelfVariable._env.contains($recipientActorVariable.id)"),
+                  IfThenElse(code"$convertLocal",
+                    ScalaCode(cde),
+                    Send[T](actorSelfVariable.toCode,
+                    recipientActorVariable,
+                    methodsIdMap(methodName),
+                    argss, true))
+                )
             } else {
               ScalaCode(cde)
             }
@@ -459,7 +482,7 @@ object Lifter {
                 c match {
                   case scalacode: ScalaCode[_] => 
                   case _                       =>
-                    //  println(Console.RED + s"Lifter warning: possible unsupported code: $cde" + Console.RESET)
+                    // println(Console.RED + s"Lifter warning: possible unsupported code: $cde" + Console.RESET)
                     throw new Exception("Unsupported code inside " + cde)
                 }
             }

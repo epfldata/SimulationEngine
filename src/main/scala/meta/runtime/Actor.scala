@@ -61,6 +61,9 @@ class Actor extends Serializable {
   var responseListeners
     : Map[String, Message => Unit] = Map()
 
+  var _env: Set[AgentId] = Set()
+
+  var handleMessageState: Boolean = false
   /**
     * Adds one message to the sendActions list, which will be collected and distributed at the end of the step
     *
