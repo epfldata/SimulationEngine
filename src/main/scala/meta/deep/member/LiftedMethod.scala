@@ -8,18 +8,21 @@ import meta.deep.algo.Algo
   * Contains the information of a lifted method
   * Due to current constraints in squid, you have to pass the class and implement mtd of your own.
   *
+  * @param symbol   of lifted method
   * @param cls      of lifted method
   * @param body     algorithm of method
-  * @param blocking if method is blocking or not
+  * @param tparams  method type parameters
+  * @param vparams  method parameters
   * @param methodId unique id of the method inside a cls
-  * @param R        return type of method
+  * @param blocking if method body contains wait or blocking calls B.b()
   * @tparam R type of return value
   */
 class LiftedMethod[R](val symbol: String, 
                       val body: Algo[R],
                       val tparams: List[IR.TypParam],
                       val vparams: List[List[IR.Variable[_]]], 
-                      val methodId: Int)(implicit val R: CodeType[R]) {
+                      val methodId: Int, 
+                      val blocking: Boolean)(implicit val R: CodeType[R]) {
 
   override def hashCode(): Int = symbol.hashCode()
 

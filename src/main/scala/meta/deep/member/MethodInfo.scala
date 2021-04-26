@@ -2,7 +2,6 @@ package meta.deep.member
 
 import meta.deep.IR
 import meta.deep.IR.Predef._
-import breeze.macros.expand
 
 /** contains all info about a method except the body of the method
   * used body methods to gather the needed data when calling this method
@@ -10,15 +9,18 @@ import breeze.macros.expand
   * @param symbol   method symbol
   * @param tparams  method type parameters
   * @param vparams  method parameters
+  * @param body method body
+  * @param blocking indicates if the method body contains wait or blocking calls B.b()
   * @tparam A return value type
   */
 
 class MethodInfo[A0](val symbol: String,
                     val tparams: List[IR.TypParam],
                     val vparams: List[List[IR.Variable[_]]], 
-                    val body: OpenCode[A0])(implicit val A: CodeType[A0]) {
+                    val body: OpenCode[A0], 
+                    val blocking: Boolean)(implicit val A: CodeType[A0]) {
   def replica(newSym: String): MethodInfo[A] = {
-    new MethodInfo[A](newSym, this.tparams, this.vparams, this.body)(A)
+    new MethodInfo[A](newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
   }
 
   val mtdName: String = symbol.split("\\.").tail.mkString(".")
@@ -27,7 +29,7 @@ class MethodInfo[A0](val symbol: String,
   private var bodyStr: String = body.showScala
 
   private val argSyms: Option[List[(String, String)]]
-  =     
+  =
     vparams match {
       case Nil => None
       case _ => {
@@ -53,26 +55,26 @@ class MethodInfo[A0](val symbol: String,
       }
     }
 
-    f"""
-    def wrapper_${mtdName}(args: List[Any]): ${A.rep.toString} = {
-      ${argBinds}
-    }
-    """
+  f"""
+  def wrapper_${mtdName}(args: List[Any]): ${A.rep.toString} = {
+    ${argBinds}
+  }
+  """
   }
 
   def toDeclaration(): String = {
     argSyms match {
-      case None => 
-      f"""
-      def ${mtdName}: ${A.rep.toString} = 
-          ${bodyStr}
-      
-      """
-      case Some(x) => 
-      f"""
-      def ${mtdName}(${x.map(p => p._1 + ": " + p._2).mkString(",")}): ${A.rep.toString} = 
-          ${bodyStr}
-      """
+      case None =>
+  f"""
+  def ${mtdName}: ${A.rep.toString} =
+      ${bodyStr}
+
+  """
+      case Some(x) =>
+  f"""
+  def ${mtdName}(${x.map(p => p._1 + ": " + p._2).mkString(",")}): ${A.rep.toString} = 
+      ${bodyStr}
+  """
     }
   }
 
@@ -82,12 +84,12 @@ class MethodInfo[A0](val symbol: String,
 
   def toInvocation(): String = {
     argSyms match {
-      case None => 
+      case None =>
         f"${mtdName}"
-      case Some(x) => 
+      case Some(x) =>
         f"""${mtdName}(${x.map(p => p._1).mkString(",")})"""
     }
   }
 
-  type A = A0 
+  type A = A0
 }
