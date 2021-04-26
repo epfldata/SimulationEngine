@@ -75,14 +75,15 @@ object Lifter {
             mtdName, 
             method.tparams, 
             method.vparamss, 
-            cde)(method.A))
+            cde, 
+            blockingAnalysis(cde, mtdName))(method.A))
           if (!method.body.toString().contains("this@")) {
             ssoMtds = mtdName :: ssoMtds 
           }
       })
 
       // add the handleMessages to the methodsIdMap and methodsMap 
-      // methodsIdMap += (c.name +".handleMessages" -> Method.getNextMethodId)
+      methodsIdMap += (c.name +".handleMessages" -> Method.getNextMethodId)
 
       if (mnamess.contains(s"${c.name}.main")) {
         leafActors.append(c) 
@@ -187,8 +188,8 @@ object Lifter {
   def liftActor[T <: Actor](clasz: Clasz[T]) = {
     val actorName: String = clasz.name 
     
-    // val handleMessageSym: String = actorName + ".handleMessages"
-    // val handleMessageId: Int = methodsIdMap(handleMessageSym)
+    val handleMessageSym: String = actorName + ".handleMessages"
+    val handleMessageId: Int = methodsIdMap(handleMessageSym)
 
     val discoveredParents: List[String] = clasz.parents.map(parent => 
       parent.rep.toString())
@@ -224,48 +225,53 @@ object Lifter {
     var addedSSOMtd: List[MethodInfo[_]] = List() 
 
     // Add handle message of this actor to the method tables as a special method. Populate the methodsIdMap as well as mehodsMap, but not MMap 
-    // def addHandleMessageMtd(): LiftedMethod[Unit] = {
-    //     //generates an IfThenElse for each of this class' methods, which checks if the called method id is the same
-    //     //as any of this class' methods, and calls the method if it is
-    //     val resultMessageCall = Variable[Any]
+    def addHandleMessageMtd(): LiftedMethod[Unit] = {
+        //generates an IfThenElse for each of this class' methods, which checks if the called method id is the same
+        //as any of this class' methods, and calls the method if it is
+        val resultMessageCall = Variable[Any]
 
-    //     val p1 = Variable[RequestMessage]
+        val p1 = Variable[RequestMessage]
 
-    //     //Default, add back, if message is not for my message handler, it is for a merged actor
-    //     val reqAlgo: Algo[Any] = ScalaCode(
-    //       code"$actorSelfVariable.addReceiveMessages(List($p1))")
+        //Default, add back, if message is not for my message handler, it is for a merged actor
+        val reqAlgo: Algo[Any] = ScalaCode(
+          code"$actorSelfVariable.addReceiveMessages(List($p1))")
 
-    //     // main is not callable 
-    //     val callRequest = MMap(actorName).filterNot(x => x.endsWith(".main")).foldRight(reqAlgo)((actorMtd, rest) => {
-    //       val methodId: Int = methodsIdMap(actorMtd)
-    //       val methodInfo: MethodInfo[_] = methodsMap(actorMtd)
+        // main is not callable 
+        val callRequest = MMap(actorName).filterNot(x => x.endsWith(".main")).foldRight(reqAlgo)((actorMtd, rest) => {
+          val methodId: Int = methodsIdMap(actorMtd)
+          val methodInfo: MethodInfo[_] = methodsMap(actorMtd)
 
-    //       val argss: List[List[OpenCode[_]]] =
-    //         methodInfo.vparams.zipWithIndex.map(x => {
-    //           x._1.zipWithIndex.map(y => {
-    //             code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
-    //           })
-    //         })
+          val argss: List[List[OpenCode[_]]] =
+            methodInfo.vparams.zipWithIndex.map(x => {
+              x._1.zipWithIndex.map(y => {
+                code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
+              })
+            })
+           
+          IfThenElse(
+            code"$p1.methodId==${Const(methodId)}",
+            IfThenElse(
+              code"${Const(methodInfo.blocking)}",
+              LetBinding(
+              Option(resultMessageCall),
+              CallMethod[Any](methodId, argss),
+              ScalaCode(
+                code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")),
+              ScalaCode(code"$actorSelfVariable.handleNonblockingMessage($p1)")
+            ),
+            rest
+          )
+        })
 
-    //       IfThenElse(
-    //         code"$p1.methodId==${Const(methodId)}",
-    //         LetBinding(
-    //           Option(resultMessageCall),
-    //           CallMethod[Any](methodId, argss),
-    //           ScalaCode(
-    //             code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")),
-    //         rest)})
-
-    //     //for each received message, use callCode
-    //     val handleMessage =
-    //         Foreach(
-    //           code"$actorSelfVariable.popRequestMessages",
-    //           p1,
-    //           callRequest
-    //         )
+        //for each received message, use callCode
+        val handleMessage =
+            Foreach(
+              code"$actorSelfVariable.popRequestMessages",
+              p1,
+              callRequest)
         
-    //     new LiftedMethod[Unit](handleMessageSym, handleMessage, List(), List(List()), handleMessageId)
-    // }
+        new LiftedMethod[Unit](handleMessageSym, handleMessage, List(), List(List()), handleMessageId, true)
+    }
 
     // avoid translating same code repeatedly
     def liftCode[T: CodeType](cde: OpenCode[T]): Algo[T] = {
@@ -313,13 +319,13 @@ object Lifter {
                             liftCode(ifBody),
                             liftCode(elseBody))
           f.asInstanceOf[Algo[T]]
-        // case code"SpecialInstructions.handleMessages()" =>
-        //   ScalaCode(code"$actorSelfVariable.handleMessageState = true")
+        case code"SpecialInstructions.handleMessages()" =>
+          ScalaCode(code"$actorSelfVariable.handleMessageState = true")
 
-        // val handleMessage =
-        //       CallMethod[Unit](handleMessageId, List(List()))
-        //   cache += (cde -> handleMessage)    
-        //   handleMessage.asInstanceOf[Algo[T]]
+        val handleMessage =
+              CallMethod[Unit](handleMessageId, List(List()))
+          cache += (cde -> handleMessage)
+          handleMessage.asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
           val f = WaitLabel[T](code"$x.toString()", y)
@@ -506,17 +512,19 @@ object Lifter {
             val cde: OpenCode[m.A] = m.body.asOpenCode 
 
             if (m.symbol.endsWith(".main")) {
-              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol))
+              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), true)
+            } else if (blockingAnalysis(cde, m.symbol)) {
+              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol), mtd.blocking)
             } else {
-              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol))
+              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol), mtd.blocking)
             }
         }
       }
     }
 
-    /**
-     * This method analyses whether a method body contains a special instruction or method call. We also issue warnings about possible programmer mistakes. 
-     */
+    // /**
+    //  * This method analyses whether a method body contains a special instruction or method call. We also issue warnings about possible programmer mistakes. 
+    //  */
     // def preLiftAnalyse(cde: OpenCode[_], mtdName: String): Boolean = {
     //   var containWaits: Boolean = false 
     //   var processMessages: Boolean = false 
@@ -533,7 +541,7 @@ object Lifter {
     //     case code"${MethodApplication(ma)}:Any " => 
     //       if (methodsIdMap.get(ma.symbol.toString()).isDefined){
     //         issueCalls = true 
-    //       } 
+    //       }
     //   }
 
     //   // In general, Main should contain both wait and handleMessages 
@@ -632,14 +640,39 @@ object Lifter {
         Some(lm)
       }}).filter(x => x!=None).toList.map(x => x.get)
     endMethods = endMethods ::: addedSSOMtd.map(m => {liftMethod(m)(cache)})
-    // endMethods = addHandleMessageMtd() :: endMethods 
+    val handleMsg = addHandleMessageMtd()
+    endMethods = handleMsg :: endMethods 
 
+    println(f"Added handle message method is: ${handleMsg.body}" )
     ActorType[T](clasz.name,
                  parentNames,
                  fields,
                  endMethods,
                  mainAlgo,
                  clasz.self.asInstanceOf[Variable[T]])
+  }
+
+  /**
+   * This method analyses whether a method body is blocking: contains either blocking call or wait statements. 
+   */
+  def blockingAnalysis(cde: OpenCode[_], mtdName: String): Boolean = {
+    val mtdNameSegs = mtdName.split("\\.")
+    val mtdSymbolNoPrefix = mtdNameSegs.last
+    val agentPath = mtdNameSegs.dropRight(1).mkString("\\.")
+
+    cde analyse {
+      case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
+        println(f"${mtdName} is blocking!")
+        return true
+      case code"${MethodApplication(ma)}:Any " => 
+        if (methodsIdMap.get(ma.symbol.toString()).isDefined && 
+        (agentPath != ma.symbol.toString.split("\\.").dropRight(1).mkString("\\."))){
+            println(f"${mtdName} is blocking!")
+            return true
+        }
+    }
+
+    false
   }
 
   /** Lifts the code for actor initialization
