@@ -36,13 +36,13 @@ abstract class Message extends Serializable {
   * This represents a message, which is used for sending something to another actor
   * @param senderId the id of the sender
   * @param receiverId the id of the receiver
-  * @param blocking indicates whether the message is a blocking method
+  * @param blocking indicates how the message is sent (whether sender waits for the reply): through A.B() or asyncMessage(() => A.B())
   * @param methodId the id of the method which should be called
   * @param argss the arguments of the method
   */
 case class RequestMessage(override val senderId: AgentId,
                           override val receiverId: AgentId,
-                          blocking: Boolean, 
+                          blocking: Boolean,
                           methodId: Int,
                           argss: List[List[Any]])
     extends Message {
@@ -64,7 +64,7 @@ case class RequestMessage(override val senderId: AgentId,
   * @param senderId the id of the sender
   * @param receiverId the id of the receiver
   * @param arg the return value of the method/answer of the request message
-  * @param blocking indicates whether the message is a blocking method
+  * @param blocking indicates whether the sender waits for the reply
   */
 case class ResponseMessage(override val senderId: AgentId,
                            override val receiverId: AgentId,
