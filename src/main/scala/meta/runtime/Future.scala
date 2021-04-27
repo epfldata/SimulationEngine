@@ -1,12 +1,14 @@
 package meta.runtime
 
+import java.util.UUID
+
 /**
   * An asynchronous call returns a future object
   * @param id: a unique id, used to distinguish different future obj in the same turn
   * @param value: the return value of the future object, when completed
   * @tparam T: the return type
   */
-case class Future[+T](val id: String, 
+case class Future[+T](val id: String = UUID.randomUUID().toString, 
                       val value: Option[T] = None){
 
   // The call back (message handler) of an asynchronous message will call setValue to update the value of the asynchronous call                       
