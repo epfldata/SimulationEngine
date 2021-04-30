@@ -8,26 +8,24 @@ import meta.classLifting.SpecialInstructions.Time
 import meta.runtime.Actor.AgentId
 import scala.collection.immutable.ListMap
 
-class EvenPartition(val c: MergeSimulationConfig) extends Base(c) {
-
-  override def init(): Unit = {
-    initLabelVals()
-    collect()
-    if (c.runtimeMerging) {
-      fuseAgents(RandomCluster.cluster(actors.keySet.toList, c.availableHardware))
+object EvenPartition {
+  def apply(s: Simulation): Simulation = {
+    s.config match {
+      case _: MergeSimulationConfig => {
+        val config = s.config.asInstanceOf[MergeSimulationConfig]
+        val origInit = s.init
+        s.init = () => {
+            origInit()
+            val actorMap: Map[AgentId, Actor] = newActors.map(x => (x.id, x)).toMap
+            if (config.runtimeMerging) {
+              val containerAgents = util.groupAgents(RandomCluster.cluster(newActors.map(_.id).toList, config.availableHardware), actorMap)
+              newActors.clear()
+              newActors ++= containerAgents
+            }
+        }
+        s
+      }
+      case _ => throw new Exception("Invalid configuration file for merging!")
     }
-  }
-
-  def fuseAgents(candidates: List[List[AgentId]]): Unit = {
-    meta.Util.debug(s"Fuse agents: ${candidates}")
-
-    candidates.foreach(x => {
-      val c1 = new Container()
-      c1.addAgents(x.map(aId => actors(aId)))
-      // remove the merged agents from runtime
-      x.foreach(aId => actors.remove(aId))
-      // add the containers to runtime
-      actors += (c1.id -> c1)
-    })
   }
 }

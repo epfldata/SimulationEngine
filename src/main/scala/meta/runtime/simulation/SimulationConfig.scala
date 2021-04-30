@@ -1,6 +1,8 @@
 package meta.runtime
 package simulation
 
+import Actor.AgentId
+
 /**
   * Defines the configuration for a simulation run
   * Simulation terminates when totalTurn or totalTime is reached (or both)

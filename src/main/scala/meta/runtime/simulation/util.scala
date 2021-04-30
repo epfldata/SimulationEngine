@@ -9,10 +9,21 @@ import ch.qos.logback.classic.Level._
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
+import meta.runtime.Actor.AgentId
 
 // source: https://gist.github.com/richdougherty/91649b8efd6304376ed4187cc427a6d0
 
 object util {
+
+  def groupAgents(candidates: List[List[AgentId]], actors: Map[AgentId, Actor]): List[Actor] = {
+    // meta.Util.debug(s"Fuse agents: ${candidates}")
+    candidates.map(x => {
+      val c1 = new Container()
+      c1.addAgents(x.map(aId => actors(aId)))
+      c1
+    })
+  }
+
   private def truncDigit(num: Double): Double = {
       BigDecimal(num).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
   }
