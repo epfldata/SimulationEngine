@@ -7,7 +7,6 @@ import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
 import meta.runtime.{Actor, Message, RequestMessage}
-import meta.compile.Optimization
 import scala.collection.mutable.{Map => MutMap, ListBuffer}
 
 import meta.Util.warning 
@@ -170,7 +169,7 @@ object Lifter {
   def apply(startClasses: List[Clasz[_ <: Actor]])
     : List[ActorType[_]] = {
 
-    ssoEnabled = Optimization.sso    
+    // ssoEnabled = Optimization.sso    
     init(startClasses)
     addRedirectMethods() 
 
