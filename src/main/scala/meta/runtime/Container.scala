@@ -15,6 +15,15 @@ class Container extends Actor {
 
   private val chattyAgents: ChattyAgents = new ChattyAgents(50)
 
+  def initAddAgents(sims: ListBuffer[Actor]): Unit = {
+    containedAgents ++= sims
+    addProxyIds(sims.flatMap(x => x.getProxyIds).toList)
+
+    sims.foreach(s => {
+      s._env = s._env.union(proxyIds.toSet)
+    })
+  }
+  
   // When add agents to a container, also update the proxyIds, and transfer the messages 
   def addAgents(sims: List[Actor]): Unit = {
     val simsMessages = sims.flatMap(_.getSendMessages)
@@ -66,7 +75,7 @@ class Container extends Actor {
       None
     } else {
       // Clear the ChattyAgent monitor after removing a silent agent
-      chattyAgents.clearMergeCandidates()
+      // chattyAgents.clearMergeCandidates()
       proxyIds.remove(idx)
       Some(containedAgents.remove(idx))
     }
@@ -74,7 +83,6 @@ class Container extends Actor {
 
   private val commands: List[() => Unit] = List(
     () => {
-        // println(s"First run: received messages ${receivedMessages}")
         mx = receivedMessages.groupBy(_.receiverId)
         receivedMessages = List()
         unblockAgents = proxyIds.toSet
@@ -87,6 +95,8 @@ class Container extends Actor {
         })
 
         sendMessages = (containedAgents.flatMap(_.getSendMessages)).toList
+        internalMessages = sendMessages.filter(x => proxyIds.contains(x.receiverId))
+        sendMessages = sendMessages.filterNot(x => proxyIds.contains(x.receiverId))
 
         // do {
         //   // get all the messages
