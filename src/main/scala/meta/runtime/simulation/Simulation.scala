@@ -1,22 +1,35 @@
 package meta.runtime
 package simulation
 
+import scala.collection.mutable.ListBuffer
+
 trait Simulation extends Serializable {
 
   val config: SimulationConfig
+  var currentTurn: Int = 0
+  var currentTime: Double = 0
 
-  // return a list of events
-  def init(): List[()=> Unit]
+  val events: ListBuffer[() => Unit]
+
+  var init: ()=> Unit
 
   // discover the newly generated agents
-  def collect(): Unit
+  var collect: ()=> Unit
 
   // go to the next state of the Sim
-  def proceed(): Unit
+  var proceed: ()=> Unit
 
-  // user-defined events
-  def scheduleEvents(): List[()=> Unit]
+  var takeSnapshot: ()=> SimulationSnapshot
 
   // entry point of the simulation
-  def run(): SimulationSnapshot
+  var run: () => SimulationSnapshot = () => {
+    init()
+
+    while (currentTurn <= config.totalTurn && currentTime <= config.totalTime) {
+      util.bench {
+        events.foreach(_())
+      }
+    }
+    takeSnapshot()
+  }
 }

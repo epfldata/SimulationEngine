@@ -31,8 +31,7 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
         var future = meta.runtime.Future[$T](requestMessage.sessionId); 
         sender.sendMessage(requestMessage);
         sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.runtime.Message) => {
-          future = future.setValue(response.asInstanceOf[meta.runtime.ResponseMessage].arg).asInstanceOf[meta.runtime.Future[$T]]
-          meta.runtime.SimRuntime.addFuture(future.id, future)
+          future.setValue(response.asInstanceOf[meta.runtime.ResponseMessage].arg.asInstanceOf[$T])
         })
         ${AlgoInfo.returnValue} := future
         ()"""

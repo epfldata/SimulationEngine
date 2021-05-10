@@ -7,10 +7,12 @@ import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
 import meta.runtime.{Actor, Message, RequestMessage}
-import meta.compile.Optimization
 import scala.collection.mutable.{Map => MutMap, ListBuffer}
 
 import meta.Util.warning 
+
+// An identity transformer that reconstructs the info of async message
+object IdentityTransformer extends IR.SelfTransformer with squid.ir.IdentityTransformer
 
 /** Code lifter
   *
@@ -49,7 +51,7 @@ object Lifter {
    */ 
   var ssoMtds: List[String] = List[String]() 
 
-  var ssoEnabled: Boolean = false 
+  var ssoEnabled: Boolean = false
 
   /**
    * We separate between leafActors and branchActors syntactically 
@@ -63,7 +65,7 @@ object Lifter {
     for (c <- initClasses) {
       var mnamess: List[String] = List[String]()  // array of all the symbol names of this class's methods (owner.method) 
       c.methods.foreach({  
-        case method: c.Method[_, _] => 
+        case method: c.Method[_, _] =>
           import method.A 
 
           val mtdName: String = method.symbol.toString()
@@ -75,7 +77,8 @@ object Lifter {
             mtdName, 
             method.tparams, 
             method.vparamss, 
-            cde)(method.A))
+            cde, 
+            blockingAnalysis(cde, mtdName))(method.A))
           if (!method.body.toString().contains("this@")) {
             ssoMtds = mtdName :: ssoMtds 
           }
@@ -166,7 +169,7 @@ object Lifter {
   def apply(startClasses: List[Clasz[_ <: Actor]])
     : List[ActorType[_]] = {
 
-    ssoEnabled = Optimization.sso    
+    // ssoEnabled = Optimization.sso    
     init(startClasses)
     addRedirectMethods() 
 
@@ -246,25 +249,30 @@ object Lifter {
                 code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
               })
             })
-
+           
           IfThenElse(
             code"$p1.methodId==${Const(methodId)}",
-            LetBinding(
+            IfThenElse(
+              code"${Const(methodInfo.blocking)}",
+              LetBinding(
               Option(resultMessageCall),
               CallMethod[Any](methodId, argss),
               ScalaCode(
                 code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")),
-            rest)})
+              ScalaCode(code"$actorSelfVariable.handleNonblockingMessage($p1)")
+            ),
+            rest
+          )
+        })
 
         //for each received message, use callCode
         val handleMessage =
             Foreach(
               code"$actorSelfVariable.popRequestMessages",
               p1,
-              callRequest
-            )
+              callRequest)
         
-        new LiftedMethod[Unit](handleMessageSym, handleMessage, List(), List(List()), handleMessageId)
+        new LiftedMethod[Unit](handleMessageSym, handleMessage, List(), List(List()), handleMessageId, true)
     }
 
     // avoid translating same code repeatedly
@@ -314,9 +322,11 @@ object Lifter {
                             liftCode(elseBody))
           f.asInstanceOf[Algo[T]]
         case code"SpecialInstructions.handleMessages()" =>
-          val handleMessage =
+          ScalaCode(code"$actorSelfVariable.handleMessageState = true")
+
+        val handleMessage =
               CallMethod[Unit](handleMessageId, List(List()))
-          cache += (cde -> handleMessage)    
+          cache += (cde -> handleMessage)
           handleMessage.asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
@@ -326,105 +336,188 @@ object Lifter {
 
         // asynchronously call a remote method
         case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" =>
-          val f = if (methodsIdMap.get(msg.symbol.toString()).isDefined){
+          meta.Util.debug("Async message is " + msg.symbol + msg.args)
+
+          val rebuildMsg = msg.rebuild(IdentityTransformer).asOpenCode
+          // println(rebuildMsg.toString)
+
+          // rebuildMsg match {
+          //   case code"${MethodApplication(ma)}" => {
+          //     println("Matched method application inside!" + ma.args + ma.symbol)
+          //     var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+
+          //     val methodName: String = ma.symbol.toString()
+
+          //     val recipientActorVariable =
+          //       ma.args.head.head.asInstanceOf[OpenCode[Actor]]
+              
+          //     val convertLocal = Variable[Boolean]
+
+          //     val f = LetBinding(Some(convertLocal),
+          //           ScalaCode(code"$actorSelfVariable._env.contains($recipientActorVariable.id)"),
+          //           IfThenElse(code"$convertLocal",
+          //             ScalaCode(rebuildMsg).asInstanceOf[Algo[T]],
+          //             AsyncSend[T, mt.Typ](
+          //               actorSelfVariable.toCode,
+          //               recipientActorVariable,
+          //               methodsIdMap(methodName),
+          //               argss)))
+
+          //     cache += (cde -> f)
+          //     return f.asInstanceOf[Algo[T]]
+          //   }
+          //   case _ => throw new Exception("Error in async message!")
+          // }
+          
+          if (methodsIdMap.get(msg.symbol.toString()).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
 
-            AsyncSend[T, mt.Typ](
-              actorSelfVariable.toCode,
-              recipientActorVariable,
-              methodsIdMap(msg.symbol.toString()),
-              argss)  
+            val convertLocal = Variable[Boolean]
+
+            val f = LetBinding(Some(convertLocal),
+                  ScalaCode(code"$actorSelfVariable._env.contains($recipientActorVariable.id)"),
+                  IfThenElse(code"$convertLocal",
+                    ScalaCode(
+                      code"""
+                      val future = meta.runtime.Future[$mt](value = Some($rebuildMsg))
+                      future
+                      """
+                    ).asInstanceOf[Algo[T]],
+                    AsyncSend[T, mt.Typ](
+                      actorSelfVariable.toCode,
+                      recipientActorVariable,
+                      methodsIdMap(msg.symbol.toString()),
+                      argss)))
+            cache += (cde -> f)
+            f
           } else {
-            var recipientActorVariable: OpenCode[Actor] = msg.args.last.head.asInstanceOf[OpenCode[Actor]]
-            val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
-            var mtd = msg.symbol.toString()
-            var curriedMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
-            argss.append(msg.args.last.head)
-
-            while (!methodsIdMap.get(mtd).isDefined) {
-              curriedMtd match {
-                case code"($sa: $st) => ${MethodApplication(mtd2)}: Any" => {
-                  mtd = mtd2.symbol.toString() 
-                  if (methodsIdMap.get(mtd).isDefined){
-                    recipientActorVariable = mtd2.args.head.head.asInstanceOf[OpenCode[Actor]]
-                    if (mtd2.args.last.length != argss.length){
-                      // Due to closure, foreach(c => async(c.abc())) is different from async(c.abc()) the first var is the recipient
-                      if (mtd2.args.last.length + 1 == argss.length ) {
-                        recipientActorVariable = argss(0).asInstanceOf[OpenCode[Actor]]
-                        argss.remove(0)
-                      } else {
-                        println(s"msg: $msg, argss: $argss, mtd argss: ${mtd2.args.last}")
-                        throw new Exception("Async msg does't support local variables yet. Please make it a Sim variable instead")
-                      }
-                    }
-                  } else {
-                    argss.append(mtd2.args.last.head)
-                  }
-                  curriedMtd = mtd2.args.head.head
-                }
-                case _ => throw new Exception(s"Error state in asyncMessage! $cde $recipientActorVariable $curriedMtd")
-              }
-            }
-
-            AsyncSend[T, mt.Typ](
-              actorSelfVariable.toCode,
-              recipientActorVariable,
-              methodsIdMap(mtd),
-              List(argss.toList))
+            throw new Exception("Error in async message!")
           }
+
           
-          cache += (cde -> f)
-          f 
+          // else {
+          //   var recipientActorVariable: OpenCode[Actor] = msg.args.last.head.asInstanceOf[OpenCode[Actor]]
+          //   val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
+          //   var mtd = msg.symbol.toString()
+          //   var curriedMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
+          //   argss.append(msg.args.last.head)
+
+          //   while (!methodsIdMap.get(mtd).isDefined) {
+          //     curriedMtd match {
+          //       case code"($sa: $st) => ${MethodApplication(mtd2)}: Any" => {
+          //         mtd = mtd2.symbol.toString() 
+          //         if (methodsIdMap.get(mtd).isDefined){
+          //           recipientActorVariable = mtd2.args.head.head.asInstanceOf[OpenCode[Actor]]
+          //           if (mtd2.args.last.length != argss.length){
+          //             // Due to closure, foreach(c => async(c.abc())) is different from async(c.abc()) the first var is the recipient
+          //             if (mtd2.args.last.length + 1 == argss.length ) {
+          //               recipientActorVariable = argss(0).asInstanceOf[OpenCode[Actor]]
+          //               argss.remove(0)
+          //             } else {
+          //               println(s"msg: $msg, argss: $argss, mtd argss: ${mtd2.args.last}")
+          //               throw new Exception("Async msg does't support local variables yet. Please make it a Sim variable instead")
+          //             }
+          //           }
+          //         } else {
+          //           argss.append(mtd2.args.last.head)
+          //         }
+          //         curriedMtd = mtd2.args.head.head
+          //       }
+          //       case _ => throw new Exception(s"Error state in asyncMessage! $cde $recipientActorVariable $curriedMtd")
+          //     }
+          //   }
+
+          //   // val convertLocal = Variable[Boolean]
+
+          //   AsyncSend[T, mt.Typ](
+          //     actorSelfVariable.toCode,
+          //     recipientActorVariable,
+          //     methodsIdMap(mtd),
+          //     List(argss.toList))
+
+          //   // val convertLocal = Variable[Boolean]
+
+          //   // LetBinding(Some(convertLocal),
+          //   //       ScalaCode(code"$actorSelfVariable._env.contains($recipientActorVariable.id)"),
+          //   //       IfThenElse(code"$convertLocal",
+          //   //         ScalaCode(cde),
+          //   //         AsyncSend[T, mt.Typ](
+          //   //           actorSelfVariable.toCode,
+          //   //           recipientActorVariable,
+          //   //           methodsIdMap(mtd),
+          //   //           List(argss.toList))))
+          // }
 
           // If a method is both redirect and sso? We would like sso to merge it. 
         case code"${MethodApplication(ma)}:Any "
           if methodsIdMap.get(ma.symbol.toString()).isDefined =>
+            // println(cde.toString())
+            // println(ScalaCode(cde).toString())
             //extracting arguments and formatting them
             var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+
             val methodName: String = ma.symbol.toString()
 
             val recipientActorVariable =
               ma.args.head.head.asInstanceOf[OpenCode[Actor]]
 
-            val f = if (redirectMap.contains(methodName)) {
-              val renamedMethods: List[String] = redirectMap(methodName)
+            // val f = if (redirectMap.contains(methodName)) {
+            //   val renamedMethods: List[String] = redirectMap(methodName)
 
-              val redirectedLocalMtdName: String = s"${actorName}.${methodName.split("\\.").last}"
-              val redirectedChildMtdName: String = s"${recipientActorVariable.Typ.rep.toString.split("\\.").last}.${methodName.split("\\.").last}"
+            //   val redirectedLocalMtdName: String = s"${actorName}.${methodName.split("\\.").last}"
+            //   val redirectedChildMtdName: String = s"${recipientActorVariable.Typ.rep.toString.split("\\.").last}.${methodName.split("\\.").last}"
 
-              if (renamedMethods.contains(redirectedLocalMtdName)) {
-                println(s"Redirect ${methodName} to local call ${redirectedLocalMtdName}")
-                CallMethod[T](methodsIdMap(redirectedLocalMtdName), argss)
-              } else if (renamedMethods.contains(redirectedChildMtdName)) {
-                println(s"Redirect ${methodName} to child ${redirectedChildMtdName}")
-                Send[T](actorSelfVariable.toCode,
-                  recipientActorVariable,
-                  methodsIdMap(redirectedChildMtdName),
-                  argss, true)
-              } else {
-                throw new Exception(s"Redirected method ${methodName} to no known dest! ${redirectedLocalMtdName}, ${redirectedChildMtdName}")
-              }
+            //   if (renamedMethods.contains(redirectedLocalMtdName)) {
+            //     println(s"Redirect ${methodName} to local call ${redirectedLocalMtdName}")
+            //     // ScalaCode(cde)
+            //     CallMethod[T](methodsIdMap(redirectedLocalMtdName), argss)
+            //   } else if (renamedMethods.contains(redirectedChildMtdName)) {
+            //     println(s"Redirect ${methodName} to child ${redirectedChildMtdName}")
+            //     Send[T](actorSelfVariable.toCode,
+            //       recipientActorVariable,
+            //       methodsIdMap(redirectedChildMtdName),
+            //       argss, true)
+            //   } else {
+            //     throw new Exception(s"Redirected method ${methodName} to no known dest! ${redirectedLocalMtdName}, ${redirectedChildMtdName}")
+            //   }
+            // } else {
+            //   if (ssoMtds.contains(methodName) && ssoEnabled) {
+            //     val ssoMtdName: String = s"${actorName}.${methodName.split("\\.").last}_sso"
+            //     if (methodsIdMap.get(ssoMtdName).isEmpty) {
+            //       methodsIdMap = methodsIdMap + (ssoMtdName -> Method.getNextMethodId)
+            //       val newMtdInfo = methodsMap(methodName).replica(ssoMtdName)
+            //       methodsMap = methodsMap + (ssoMtdName -> newMtdInfo)
+            //       addedSSOMtd = newMtdInfo :: addedSSOMtd 
+            //     }
+            //     CallMethod[T](methodsIdMap(ssoMtdName), argss)
+            //     // ScalaCode(cde)
+            //   } else 
+            //if (actorSelfVariable.toCode == recipientActorVariable) {
+            //     CallMethod[T](methodsIdMap(methodName), argss)
+            //   } else {
+              //   Send[T](actorSelfVariable.toCode,
+              //     recipientActorVariable,
+              //     methodsIdMap(methodName),
+              //     argss, true)
+              // }
+            // }
+            
+            val convertLocal = Variable[Boolean]
+
+            val f = if (actorSelfVariable.toCode != recipientActorVariable) {
+                LetBinding(Some(convertLocal), 
+                  ScalaCode(code"$actorSelfVariable._env.contains($recipientActorVariable.id)"),
+                  IfThenElse(code"$convertLocal",
+                    ScalaCode(cde),
+                    Send[T](actorSelfVariable.toCode,
+                    recipientActorVariable,
+                    methodsIdMap(methodName),
+                    argss, true))
+                )
             } else {
-              if (ssoMtds.contains(methodName) && ssoEnabled) {
-                val ssoMtdName: String = s"${actorName}.${methodName.split("\\.").last}_sso"
-                if (methodsIdMap.get(ssoMtdName).isEmpty) {
-                  methodsIdMap = methodsIdMap + (ssoMtdName -> Method.getNextMethodId)
-                  val newMtdInfo = methodsMap(methodName).replica(ssoMtdName)
-                  methodsMap = methodsMap + (ssoMtdName -> newMtdInfo)
-                  addedSSOMtd = newMtdInfo :: addedSSOMtd 
-                }
-                CallMethod[T](methodsIdMap(ssoMtdName), argss)
-              } else if (actorSelfVariable.toCode == recipientActorVariable) {
-                CallMethod[T](methodsIdMap(methodName), argss)
-              } else {
-                Send[T](actorSelfVariable.toCode,
-                  recipientActorVariable,
-                  methodsIdMap(methodName),
-                  argss, true)
-              }
+              ScalaCode(cde)
             }
-
             cache += (cde -> f)
             f 
 
@@ -445,7 +538,7 @@ object Lifter {
                 c match {
                   case scalacode: ScalaCode[_] => 
                   case _                       =>
-                    //  println(Console.RED + s"Lifter warning: possible unsupported code: $cde" + Console.RESET)
+                    // println(Console.RED + s"Lifter warning: possible unsupported code: $cde" + Console.RESET)
                     throw new Exception("Unsupported code inside " + cde)
                 }
             }
@@ -468,49 +561,51 @@ object Lifter {
             import m.A 
             val cde: OpenCode[m.A] = m.body.asOpenCode 
 
-            if (preLiftAnalyse(cde, m.symbol)) {
-              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol))
+            if (m.symbol.endsWith(".main")) {
+              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), true)
+            } else if (blockingAnalysis(cde, m.symbol)) {
+              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol), mtd.blocking)
             } else {
-              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol))
+              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol), mtd.blocking)
             }
         }
       }
     }
 
-    /**
-     * This method analyses whether a method body contains a special instruction or method call. We also issue warnings about possible programmer mistakes. 
-     */
-    def preLiftAnalyse(cde: OpenCode[_], mtdName: String): Boolean = {
-      var containWaits: Boolean = false 
-      var processMessages: Boolean = false 
-      var issueCalls: Boolean = false 
-      val isMain: Boolean = mtdName.endsWith(".main")
+    // /**
+    //  * This method analyses whether a method body contains a special instruction or method call. We also issue warnings about possible programmer mistakes. 
+    //  */
+    // def preLiftAnalyse(cde: OpenCode[_], mtdName: String): Boolean = {
+    //   var containWaits: Boolean = false 
+    //   var processMessages: Boolean = false 
+    //   var issueCalls: Boolean = false 
+    //   val isMain: Boolean = mtdName.endsWith(".main")
 
-      cde analyse {
-        case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" => 
-          containWaits = true 
-        case code"SpecialInstructions.handleMessages()" => 
-          processMessages = true 
-        case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" => 
-          issueCalls = true 
-        case code"${MethodApplication(ma)}:Any " => 
-          if (methodsIdMap.get(ma.symbol.toString()).isDefined){
-            issueCalls = true 
-          } 
-      }
+    //   cde analyse {
+    //     case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" => 
+    //       containWaits = true 
+    //     case code"SpecialInstructions.handleMessages()" => 
+    //       processMessages = true 
+    //     case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" => 
+    //       issueCalls = true 
+    //     case code"${MethodApplication(ma)}:Any " => 
+    //       if (methodsIdMap.get(ma.symbol.toString()).isDefined){
+    //         issueCalls = true 
+    //       }
+    //   }
 
-      // In general, Main should contain both wait and handleMessages 
-      if (isMain && !(containWaits && processMessages)) {
-        warning(s"Main ${mtdName} does not contain wait or handleMessages!")
-      }
+    //   // In general, Main should contain both wait and handleMessages 
+    //   if (isMain && !(containWaits && processMessages)) {
+    //     warning(s"Main ${mtdName} does not contain wait or handleMessages!")
+    //   }
 
-      // In most cases, we don't want to have handleMessages in any regular method 
-      if (!isMain && processMessages) {
-        warning(s"Method ${mtdName} contains handleMessages!")
-      }
+    //   // In most cases, we don't want to have handleMessages in any regular method 
+    //   if (!isMain && processMessages) {
+    //     warning(s"Method ${mtdName} contains handleMessages!")
+    //   }
       
-      containWaits || processMessages || issueCalls 
-    }
+    //   containWaits || processMessages || issueCalls 
+    // }
 
     /** Used for operations that were not covered in [[liftCode]]. Lifts an [[OpenCode]](expression) into its deep representation [[Algo]]
       *
@@ -595,7 +690,8 @@ object Lifter {
         Some(lm)
       }}).filter(x => x!=None).toList.map(x => x.get)
     endMethods = endMethods ::: addedSSOMtd.map(m => {liftMethod(m)(cache)})
-    endMethods = addHandleMessageMtd() :: endMethods 
+    val handleMsg = addHandleMessageMtd()
+    endMethods = handleMsg :: endMethods 
 
     ActorType[T](clasz.name,
                  parentNames,
@@ -603,6 +699,29 @@ object Lifter {
                  endMethods,
                  mainAlgo,
                  clasz.self.asInstanceOf[Variable[T]])
+  }
+
+  /**
+   * This method analyses whether a method body is blocking: contains either blocking call or wait statements. 
+   */
+  def blockingAnalysis(cde: OpenCode[_], mtdName: String): Boolean = {
+    val mtdNameSegs = mtdName.split("\\.")
+    val mtdSymbolNoPrefix = mtdNameSegs.last
+    val agentPath = mtdNameSegs.dropRight(1).mkString("\\.")
+
+    cde analyse {
+      case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
+        println(f"${mtdName} is blocking!")
+        return true
+      case code"${MethodApplication(ma)}:Any " => 
+        if (methodsIdMap.get(ma.symbol.toString()).isDefined && 
+        (agentPath != ma.symbol.toString.split("\\.").dropRight(1).mkString("\\."))){
+            println(f"${mtdName} is blocking!")
+            return true
+        }
+    }
+
+    false
   }
 
   /** Lifts the code for actor initialization

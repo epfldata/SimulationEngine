@@ -61,6 +61,9 @@ class Actor extends Serializable {
   var responseListeners
     : Map[String, Message => Unit] = Map()
 
+  var _env: Set[AgentId] = Set()
+
+  var handleMessageState: Boolean = false
   /**
     * Adds one message to the sendActions list, which will be collected and distributed at the end of the step
     *
@@ -200,5 +203,8 @@ class Actor extends Serializable {
   def setInstructionPointer(new_ir: Int): Actor = ???
 
   // Get the code position of the handleMessage and go to that location. Process the code related to handle message, reset the instruction pointer, and return the agent
-  def gotoHandleMessage(new_ir: Int = -1): Actor = ??? 
+  // def handleNonblockingMessages(): Actor = ??? 
+  def gotoHandleMessages(new_ir: Int = -1): Actor = ??? 
+  
+  def handleNonblockingMessage(m: RequestMessage): Unit = ??? 
 }

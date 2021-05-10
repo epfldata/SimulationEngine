@@ -5,7 +5,7 @@ import java.io.{BufferedWriter, File, FileWriter}
 import meta.deep.IR
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
-import meta.deep.member.{EdgeInfo, CompiledActorGraph, VarValue, VarWrapper}
+import meta.deep.member.{EdgeInfo, CompiledActorGraph, VarValue, VarWrapper, MethodInfo}
 import meta.runtime.Actor
 
 import scala.collection.mutable.ListBuffer
@@ -104,8 +104,6 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     )
 
     val scalaCode = IR.showScala(codeWithInit.rep)
-
-    // hardcode the extraction of instruction pointer (algo)
     
     // split into three sections: variable declarations, commands, driver code
     val parts: Array[String] = scalaCode.split("""meta\.deep\.algo\.Instructions\.splitter\(\);""")
@@ -157,21 +155,21 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     
     // set the IR and return the previous IR 
     val getIR: String = s"""
-    override def getInstructionPointer: Int = {
-      ${instructionRegister}
-    }
-    """
+  override def getInstructionPointer: Int = {
+    ${instructionRegister}
+  }
+  """
 
     val setIR: String = s"""
-    override def setInstructionPointer(new_ir: Int) = {
-      if (new_ir >= ${memorySize} || new_ir <0) {
-        throw new Exception("Invalid address pointer " + new_ir + " for agent " + id)
-      }
-      val prev_ir: Int = ${instructionRegister}
-      ${instructionRegister} = new_ir
-      this
+  override def setInstructionPointer(new_ir: Int) = {
+    if (new_ir >= ${memorySize} || new_ir <0) {
+      throw new Exception("Invalid address pointer " + new_ir + " for agent " + id)
     }
-    """
+    val prev_ir: Int = ${instructionRegister}
+    ${instructionRegister} = new_ir
+    this
+  }
+  """
 
     // "classname_" is for merging optimization
     // Add to resolve package object
@@ -194,12 +192,42 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     val reflectionIR: String = "reflectionIR_" + Random.nextInt(100)
 
     // initParams += s"  private var  ${reflectionModeRegister}: Boolean = false\n"
-    initParams += s"  private var  ${reflectionIR}: Int = -1 \n"
-  
-    val handleMsg: String = s"""
+    initParams += "\n" + " " * 2 + s"private var  ${reflectionIR}: Int = -1"
+
+    // meta.Util.debug(methodArgs.toString)
+
+    var methodss: String = ""
+
+    val methodCases: String = meta.classLifting.Lifter.methodsIdMap.filterNot(x => {x._1.endsWith("handleMessages") || meta.classLifting.Lifter.methodsMap(x._1).blocking}).map(x => {
+      val foo = meta.classLifting.Lifter.methodsMap(x._1)
+      methodss += changeTypes(foo.toDeclaration())
+      methodss += changeTypes(foo.toWrapperDeclaration())
+      f"case ${x._2} => ${foo.toWrapperInvocation()}"
+    }).mkString("\n")
+
+    val handleMsg: String = 
+    s"""
+  override def handleNonblockingMessage(m: meta.runtime.RequestMessage): Unit = {
+    val args = m.argss.flatten
+    val response = m.methodId match {
+      ${methodCases.split("\n").mkString("\n" + " "*6)}
+    }
+    m.reply(this, response)
+  }
+  """
+
+  //   override def handleNonblockingMessages(): meta.runtime.Actor = {
+  //   val requests = popRequestMessages
+  //   for (r <- requests) {
+  //     handleNonblockingMessage(r)
+  //   }
+  //   this
+  // }
+
     // default to the entry point of handle message
     // allow for re-entry from previous location, to handle waits in methods
-    override def gotoHandleMessage(new_ir: Int = ${handlerEntryMap(actorName)}): meta.runtime.Actor = {
+    val gotoHandleMsg: String = s"""
+    override def gotoHandleMessages(new_ir: Int = ${handlerEntryMap(actorName)}): meta.runtime.Actor = {
       // first entry, save the current IR to reflectionIR
       ${unblockRegMap(actorName)} = true
 
@@ -222,18 +250,22 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     """
 
     val run_until: String = s"""
-    override def run(): meta.runtime.Actor = {
-      ${unblockRegMap(actorName)} = true
+  override def run(): meta.runtime.Actor = {
+    ${unblockRegMap(actorName)} = true
+    while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
       (${reflectionIR} != -1) match {
-        case true => gotoHandleMessage()
-        case false => 
-          while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
-            ${memAddr}(${instructionRegister})() 
-          }
-          this
-      }
+      case true => 
+        gotoHandleMessages()
+      case false => 
+        while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
+          ${memAddr}(${instructionRegister})()
+        }
+        this
     }
-    """
+    }
+    this
+  }
+  """
 
     val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.filter(x => x.parameter).map(s => {
@@ -258,12 +290,12 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     // Clone the agent 
     // The cloner has the same class type with the same connections, but different agent id and clean mailbox
     val deepClone: String = s"""
-    override def deepClone(): meta.runtime.Actor = {
-      val cloner = new ${compiledActorGraph.name}(${parameterApplication})
-      cloner.connectedAgents = connectedAgents
-      cloner
-    }
-    """
+  override def deepClone(): meta.runtime.Actor = {
+    val cloner = new ${compiledActorGraph.name}(${parameterApplication})
+    cloner.connectedAgents = connectedAgents
+    cloner
+  }
+  """
 
     def parents: String = {
       var parentNames: List[String] = compiledActorGraph.parentNames
@@ -275,10 +307,13 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       s"${parentNames.head}${parentNames.tail.foldLeft("")((a,b) => a + " with " + changeTypes(b))}"
     }
 
-    val methods: String = s"${deepClone}${run_until}${getIR}${setIR}${handleMsg}"
+    val methods: String = s"${methodss}${deepClone}${run_until}${getIR}${setIR}${handleMsg}${gotoHandleMsg}"
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars, methods, parents);
   }
+
+  // given method info, generate string corresponding to method definition
+
 
   /**
     * This generates the code of the state machine
@@ -290,7 +325,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     val graph: ListBuffer[EdgeInfo] = compiledActorGraph.graph
     //Reassign positions
     val handleMessageMethodId: Int = meta.classLifting.Lifter.methodsIdMap(compiledActorGraph.name + ".handleMessages")
-    assert(graph.filter(x => x.methodId1 == handleMessageMethodId).nonEmpty)
+    // assert(graph.filter(x => x.methodId1 == handleMessageMethodId).nonEmpty)
 
     var positionMap: Map[Int, Int] = Map()
 
@@ -363,8 +398,19 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
         edgeSaving = edgeSaving + ((node, target) -> currentCodePos)
 
         if (edge.cond != null) {
-          code.append(
-            code"if(${edge.cond}) {${edge.code}; $posChanger} else {}")
+          // Constant propagation (truth value)
+          edge.cond = edge.cond rewrite {
+            case code"false.`unary_!`" => 
+              code"true"
+            case code"true.`unary_!`" =>
+              code"false"
+          }
+
+          edge.cond match {
+            case code"true" => code.append(code"{${edge.code}; $posChanger}")
+            case code"false" => code.append(code"$posChanger")
+            case _ => code.append(code"if(${edge.cond}) {${edge.code}; $posChanger} else {}")
+          }
         } else {
           code.append(code"${edge.code}; $posChanger")
         }
@@ -377,14 +423,17 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
         //edge is added (else part)
         if (edge.cond != null && start.length > (edgeIndex._2 + 1)) {
           code(currentCodePos) =
-            code"if(${edge.cond}) {${edge.code}; $posChanger} else {${AlgoInfo.positionVar} := ${Const(code.length)}}"
+            edge.cond match {
+              case code"true" => code"${edge.code}; $posChanger"
+              case code"false" => code"${AlgoInfo.positionVar} := ${Const(code.length)}"
+              case _ => code"if(${edge.cond}) {${edge.code}; $posChanger} else {${AlgoInfo.positionVar} := ${Const(code.length)}}"
+            }
         }
 
         //Add wait at end, if there is a wait on that edge
         if (edge.waitEdge) {
           code(currentCodePos) =
             code"${code(currentCodePos)}; ${AlgoInfo.unblockFlag} := false"
-            // code"${code(currentCodePos)}; ${AlgoInfo.unblockFlag} := !(${AlgoInfo.unblockFlag}!)"
         }
       })
     }
@@ -487,6 +536,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       })
       y
     })
+
     code.toList
   }
 

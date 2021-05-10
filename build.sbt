@@ -14,7 +14,6 @@ lazy val commonSettings = Seq(
   libraryDependencies += "org.scalanlp" %% "breeze" % breezeVersion,
   libraryDependencies += "org.scalanlp" %% "breeze-natives" % breezeVersion,
   libraryDependencies += "org.scalanlp" %% "breeze-viz" % breezeVersion,
-  libraryDependencies += "org.scalafx" %% "scalafx" % "8.0.144-R12"
 )
 
 lazy val logSetting = Seq(

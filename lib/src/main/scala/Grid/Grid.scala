@@ -1,7 +1,7 @@
 package lib
 package Grid
 
-trait Grid[T] extends Serializable {
+trait Grid[T] {
   val width: Int
   val height: Int
 

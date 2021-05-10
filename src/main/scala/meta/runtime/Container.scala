@@ -21,6 +21,11 @@ class Container extends Actor {
     sendMessages = simsMessages ::: sendMessages
     containedAgents ++= sims.map(_.cleanSendMessage)
     addProxyIds(sims.flatMap(x => x.getProxyIds))
+
+    sims.foreach(s => {
+      s._env = s._env.union(proxyIds.toSet)
+    })
+
     // println(s"Proxy ids of agent ${id} are ${proxyIds}")
   }
 
@@ -81,44 +86,46 @@ class Container extends Actor {
           .run()
         })
 
-        do {
-          // get all the messages
-          messageBuffer = (containedAgents.flatMap(_.getSendMessages)).toList
-          // remove the sent messages from the agents 
-          containedAgents = containedAgents
-            .map(_.cleanSendMessage)
-          // println(s"Looping inside container agent! Message buffer: ${messageBuffer}")
-          // filter out the internal messages 
-          internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
-          // profile internal messages
-          chattyAgents.recordMessage(internalMessages)
-          // append the external messages to the outgoing mailbox  
-          sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages
-          // update the unblockAgent indexes to selectively deliver the internal blocking messages
-          unblockAgents = internalMessages.flatMap(x => List(x.receiverId)).toSet
-          // update the messages to deliver for the selected unblocking agents
-          mx = internalMessages.groupBy(_.receiverId)
+        sendMessages = (containedAgents.flatMap(_.getSendMessages)).toList
 
-          containedAgents = containedAgents.map(a => {
-            if (unblockAgents.contains(a.id)) {
-              val msgs: List[Message] = mx.getOrElse(a.id, List())
-              var b = a.addReceiveMessages(msgs)
-              // If the receiver agent was waiting for a blocking request, unblock it
-              if (msgs.exists(x => (x.isInstanceOf[ResponseMessage] && x.blocking))) {  
-                meta.Util.debug(s"Unblock agent ${a.id} to run")
-                b.run()
-              } else {
-                meta.Util.debug(s"Unblock agent ${a.id} to handle message.")
-                
-                b.gotoHandleMessage()
-              }
-            }
-            else {
-              a
-            }
-          })
+        // do {
+        //   // get all the messages
+        //   messageBuffer = (containedAgents.flatMap(_.getSendMessages)).toList
+        //   // remove the sent messages from the agents 
+        //   containedAgents = containedAgents
+        //     .map(_.cleanSendMessage)
+        //   // println(s"Looping inside container agent! Message buffer: ${messageBuffer}")
+        //   // filter out the internal messages 
+        //   internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
+        //   // profile internal messages
+        //   chattyAgents.recordMessage(internalMessages)
+        //   // append the external messages to the outgoing mailbox  
+        //   sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages
+        //   // update the unblockAgent indexes to selectively deliver the internal blocking messages
+        //   unblockAgents = internalMessages.flatMap(x => List(x.receiverId)).toSet
+        //   // update the messages to deliver for the selected unblocking agents
+        //   mx = internalMessages.groupBy(_.receiverId)
 
-        } while (internalMessages.nonEmpty)
+        //   containedAgents = containedAgents.map(a => {
+        //     if (unblockAgents.contains(a.id)) {
+        //       val msgs: List[Message] = mx.getOrElse(a.id, List())
+        //       val b = a.addReceiveMessages(msgs)
+        //       // If the receiver agent was waiting for a blocking request, unblock it
+        //       if (msgs.exists(x => (x.isInstanceOf[ResponseMessage] && x.blocking))) {  
+        //         meta.Util.debug(s"Unblock agent ${a.id} to run")
+        //         b.run()
+        //       } else {
+        //         meta.Util.debug(s"Unblock agent ${a.id} to handle messages")
+        //         b
+        //         // b.handleMessages()
+        //       }
+        //     }
+        //     else {
+        //       a
+        //     }
+        //   })
+
+        // } while (internalMessages.nonEmpty)
     }
   )
 
@@ -131,7 +138,7 @@ class Container extends Actor {
   }
 
   // Implement the reflection API  
-  override def gotoHandleMessage(new_ir: Int = 0) = this 
+  // override def gotoHandleMessage(new_ir: Int = 0) = this 
 
   override def getInstructionPointer: Int = 0
 
