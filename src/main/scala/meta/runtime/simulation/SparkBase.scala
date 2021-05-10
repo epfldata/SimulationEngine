@@ -7,16 +7,16 @@ import meta.runtime.Actor.AgentId
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
-import meta.classLifting.SpecialInstructions.Time
-import scala.util.Random 
+// import meta.classLifting.SpecialInstructions.Time
+import scala.util.Random
 
 class SparkBase(val config: SimulationConfig) extends Simulation {
 
   @transient protected lazy val conf: SparkConf =
     new SparkConf().setMaster("local")
       .setAppName("ECONOMIC_SIMULATION")
-      .set("spark.driver.memory", "2g")
-      .set("spark.executor.memory", "512m")
+      .set("spark.driver.memory", "30g")
+      .set("spark.executor.memory", "5g")
   //        .set("spark.driver.allowMultipleContexts", "true")
 
   @transient protected lazy val sc: SparkContext = new SparkContext(conf)
@@ -49,7 +49,7 @@ class SparkBase(val config: SimulationConfig) extends Simulation {
   })
   events.append(() => {
     collect()
-    registerLabel(Time, actors.count())
+    // registerLabel(Time, actors.count())
     meta.Util.warning(s"Total agents ${actors.count}")
   })
   events.append(() => {
@@ -79,12 +79,17 @@ class SparkBase(val config: SimulationConfig) extends Simulation {
       .leftOuterJoin(containerMessages)
       .mapValues { x =>
         x._1.addReceiveMessages(x._2.getOrElse(List()).toList)
-          .cleanSendMessage
-          .run()
-      }.cache()
+      }
+    actors.cache()
+    actors.count()
 
+    actors = actors.mapValues { x =>
+      x.cleanSendMessage.run()
+    }
+    actors.cache()
     actors.count()
   })
+  
   events.append(() => {
     proceed()
   })
@@ -97,6 +102,19 @@ class SparkBase(val config: SimulationConfig) extends Simulation {
   var takeSnapshot = () => {
     val updatedActors: List[Actor] = actors.values.collect.toList
     SimulationSnapshot(updatedActors, currentTurn, currentTime)
+  }
+
+  run = () => {
+    init()
+
+    while (currentTurn <= config.totalTurn && currentTime <= config.totalTime) {
+      util.bench {
+        events.foreach(_())
+      }
+    }
+    val snapshot = takeSnapshot()
+    sc.stop()
+    snapshot
   }
 }
 
