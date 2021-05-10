@@ -4,9 +4,6 @@ package simulation
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
 import scala.util.Random
 import SimRuntime._
-import meta.classLifting.SpecialInstructions.Time
-import meta.runtime.Actor.AgentId
-import scala.collection.immutable.ListMap
 
 object EvenPartition {
   def apply(s: Simulation): Simulation = {
@@ -16,11 +13,21 @@ object EvenPartition {
         val origInit = s.init
         s.init = () => {
             origInit()
-            val actorMap: Map[AgentId, Actor] = newActors.map(x => (x.id, x)).toMap
             if (config.runtimeMerging) {
-              val containerAgents = util.groupAgents(RandomCluster.cluster(newActors.map(_.id).toList, config.availableHardware), actorMap)
+              val totalAgents = newActors.size
+              var clusterSize: Int = totalAgents / config.availableHardware
+              if (totalAgents % config.availableHardware != 0) {
+                clusterSize += 1
+              }
+
+              val containers = newActors.sliding(clusterSize, clusterSize).map(x => {
+                val c1 = new Container()
+                c1.initAddAgents(x)
+                c1
+              }).toList
+
               newActors.clear()
-              newActors ++= containerAgents
+              newActors ++= containers
             }
         }
         s
