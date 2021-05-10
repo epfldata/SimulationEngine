@@ -8,7 +8,7 @@ import squid.quasi.lift
 @lift
 class MessengerBot() extends Actor {
 
-  def waitUntilAllReceive(future_objs: List[Future[Any]]): Unit = {
+  def waitUntilAllReceive[T](future_objs: List[Future[T]]): Unit = {
     while (!(future_objs.nonEmpty && future_objs.forall(x => x.isCompleted))) {
       waitLabel(Turn,1)
     }
@@ -16,11 +16,11 @@ class MessengerBot() extends Actor {
     deleted = true
   }
 
-  def waitUntilAllReply(future_objs: List[Future[Any]]): List[Any] = {
+  def waitUntilAllReply[T](future_objs: List[Future[T]]): List[T] = {
     while (!(future_objs.nonEmpty && future_objs.forall(x => x.isCompleted))) {
       waitLabel(Turn,1)
     }
-    val ans: List[Any] = future_objs.map(o => o.popValue.get)
+    val ans = future_objs.map(o => o.popValue.get.asInstanceOf[T])
     deleted = true
     ans
   }
