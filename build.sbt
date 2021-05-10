@@ -16,11 +16,6 @@ lazy val commonSettings = Seq(
   libraryDependencies += "org.scalanlp" %% "breeze-viz" % breezeVersion,
 )
 
-lazy val logSetting = Seq(
-  excludeDependencies += "org.slf4j" % "slf4j-log4j12",
-  libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3",
-)
-
 lazy val squidSettings = Seq(
   libraryDependencies += "ch.epfl.data" %% "squid" % squidVersion, 
   resolvers += Resolver.sonatypeRepo("snapshots"),
@@ -31,7 +26,8 @@ lazy val squidSettings = Seq(
 )
 
 lazy val sparkSettings = Seq(
-  libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion
+  libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion,
+  libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion
 )
 
 // Enable graph drawing when debugging
