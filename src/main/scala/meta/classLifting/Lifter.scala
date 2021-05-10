@@ -381,7 +381,6 @@ object Lifter {
                     ScalaCode(
                       code"""
                       val future = meta.runtime.Future[$mt](value = Some($rebuildMsg))
-                      meta.runtime.SimRuntime.addFuture(future.id, future)
                       future
                       """
                     ).asInstanceOf[Algo[T]],
