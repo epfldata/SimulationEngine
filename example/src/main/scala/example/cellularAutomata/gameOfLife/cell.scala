@@ -19,9 +19,21 @@ class Cell(var alive: Boolean) extends Actor {
 
     def getValue: Boolean = alive
 
+    private def rule(neighbors: List[Boolean]): Unit = {
+        val aliveNeighbors = neighbors.filter(x => x==true).size
+
+        if (alive && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
+            alive = false
+        }
+        
+        if (!alive && (aliveNeighbors==3)) {
+            alive = true
+        }
+    }
+
     def main(): Unit = {
         while(true) {
-            if (alive) {
+            if (getValue) {
                 println("Alive")
             }
             futures = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => asyncMessage(() => v.getValue))
@@ -29,16 +41,10 @@ class Cell(var alive: Boolean) extends Actor {
                 waitLabel(Turn, 1)
                 handleMessages()
             }
+
             val ans: List[Boolean] = futures.map(o => o.popValue.get).asInstanceOf[List[Boolean]]
 
-            val aliveNeighbors = ans.filter(x => x==true).size
-
-            if (alive && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
-                alive = false
-            }
-            if (!alive && (aliveNeighbors==3)) {
-                alive = true
-            }
+            rule(ans)
 
             handleMessages()
             waitLabel(Turn, 1)
