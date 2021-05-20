@@ -175,7 +175,6 @@ object Lifter {
       liftActor(c)
     })
 
-    debug(s"Method id map: ${methodsIdMap.map(x => x.toString()).toString()}")
     endTypes
   }
 
@@ -336,36 +335,7 @@ object Lifter {
         case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" =>
 
           val rebuildMsg = msg.rebuild(IdentityTransformer).asOpenCode
-          // println(rebuildMsg.toString)
 
-          // rebuildMsg match {
-          //   case code"${MethodApplication(ma)}" => {
-          //     println("Matched method application inside!" + ma.args + ma.symbol)
-          //     var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
-
-          //     val methodName: String = ma.symbol.toString()
-
-          //     val recipientActorVariable =
-          //       ma.args.head.head.asInstanceOf[OpenCode[Actor]]
-              
-          //     val convertLocal = Variable[Boolean]
-
-          //     val f = LetBinding(Some(convertLocal),
-          //           ScalaCode(code"$actorSelfVariable._env.contains($recipientActorVariable.id)"),
-          //           IfThenElse(code"$convertLocal",
-          //             ScalaCode(rebuildMsg).asInstanceOf[Algo[T]],
-          //             AsyncSend[T, mt.Typ](
-          //               actorSelfVariable.toCode,
-          //               recipientActorVariable,
-          //               methodsIdMap(methodName),
-          //               argss)))
-
-          //     cache += (cde -> f)
-          //     return f.asInstanceOf[Algo[T]]
-          //   }
-          //   case _ => throw new Exception("Error in async message!")
-          // }
-          
           if (methodsIdMap.get(msg.symbol.toString()).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
@@ -392,61 +362,7 @@ object Lifter {
             throw new Exception("Error in async message!")
           }
 
-          
-          // else {
-          //   var recipientActorVariable: OpenCode[Actor] = msg.args.last.head.asInstanceOf[OpenCode[Actor]]
-          //   val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
-          //   var mtd = msg.symbol.toString()
-          //   var curriedMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
-          //   argss.append(msg.args.last.head)
-
-          //   while (!methodsIdMap.get(mtd).isDefined) {
-          //     curriedMtd match {
-          //       case code"($sa: $st) => ${MethodApplication(mtd2)}: Any" => {
-          //         mtd = mtd2.symbol.toString() 
-          //         if (methodsIdMap.get(mtd).isDefined){
-          //           recipientActorVariable = mtd2.args.head.head.asInstanceOf[OpenCode[Actor]]
-          //           if (mtd2.args.last.length != argss.length){
-          //             // Due to closure, foreach(c => async(c.abc())) is different from async(c.abc()) the first var is the recipient
-          //             if (mtd2.args.last.length + 1 == argss.length ) {
-          //               recipientActorVariable = argss(0).asInstanceOf[OpenCode[Actor]]
-          //               argss.remove(0)
-          //             } else {
-          //               println(s"msg: $msg, argss: $argss, mtd argss: ${mtd2.args.last}")
-          //               throw new Exception("Async msg does't support local variables yet. Please make it a Sim variable instead")
-          //             }
-          //           }
-          //         } else {
-          //           argss.append(mtd2.args.last.head)
-          //         }
-          //         curriedMtd = mtd2.args.head.head
-          //       }
-          //       case _ => throw new Exception(s"Error state in asyncMessage! $cde $recipientActorVariable $curriedMtd")
-          //     }
-          //   }
-
-          //   // val convertLocal = Variable[Boolean]
-
-          //   AsyncSend[T, mt.Typ](
-          //     actorSelfVariable.toCode,
-          //     recipientActorVariable,
-          //     methodsIdMap(mtd),
-          //     List(argss.toList))
-
-          //   // val convertLocal = Variable[Boolean]
-
-          //   // LetBinding(Some(convertLocal),
-          //   //       ScalaCode(code"$actorSelfVariable._env.contains($recipientActorVariable.id)"),
-          //   //       IfThenElse(code"$convertLocal",
-          //   //         ScalaCode(cde),
-          //   //         AsyncSend[T, mt.Typ](
-          //   //           actorSelfVariable.toCode,
-          //   //           recipientActorVariable,
-          //   //           methodsIdMap(mtd),
-          //   //           List(argss.toList))))
-          // }
-
-          // If a method is both redirect and sso? We would like sso to merge it. 
+        // If a method is both redirect and sso? We would like sso to merge it. 
         case code"${MethodApplication(ma)}:Any "
           if methodsIdMap.get(ma.symbol.toString()).isDefined =>
             // println(cde.toString())
