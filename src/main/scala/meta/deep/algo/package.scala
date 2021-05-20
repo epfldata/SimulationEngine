@@ -5,5 +5,4 @@ package object algo {
   type EdgeInfo = member.EdgeInfo
   val CodeNodePos = member.CodeNodePos 
   val CodeNodeMtd = member.CodeNodeMtd 
-  val debug = meta.Util.debug 
 }

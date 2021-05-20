@@ -9,8 +9,6 @@ import meta.deep.member._
 import meta.runtime.{Actor, Message, RequestMessage}
 import scala.collection.mutable.{Map => MutMap, ListBuffer}
 
-import meta.Util.warning 
-
 // An identity transformer that reconstructs the info of async message
 object IdentityTransformer extends IR.SelfTransformer with squid.ir.IdentityTransformer
 
@@ -336,7 +334,6 @@ object Lifter {
 
         // asynchronously call a remote method
         case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" =>
-          meta.Util.debug("Async message is " + msg.symbol + msg.args)
 
           val rebuildMsg = msg.rebuild(IdentityTransformer).asOpenCode
           // println(rebuildMsg.toString)
