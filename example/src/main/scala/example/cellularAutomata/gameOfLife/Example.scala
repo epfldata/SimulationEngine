@@ -3,16 +3,15 @@ package gameOfLife
 
 import squid.quasi.lift
 import meta.runtime.SimRuntime
+import scala.collection.mutable.{Map => MutMap}
 
 import lib.Grid.Torus2D._
-import lib.Bot.LoggerBotInt
-import ch.qos.logback.classic.Logger
 
 @lift
 class MainInit {
     def main(): Unit = {
-        val width: Int = 25
-        val height: Int = 25
+        val width: Int = 15
+        val height: Int = 15
 
         val totalPoints: Int = width * height
 
@@ -23,8 +22,8 @@ class MainInit {
             new Cell(Random.nextBoolean())
         })
 
-        (0 to totalPoints-1).foreach(i =>
-            points(i).connectedAgents = getNeighborCells(width, height)(i, neighborRadius).map(j => points(j))
+        (1 to totalPoints).foreach(i =>
+            points(i-1).connectedAgents = getNeighborCells(width, height)(i-1, neighborRadius).map(j => points(j)).map(x => (x.id, x)).toMap
         )
 
         SimRuntime.newActors ++= points
@@ -34,7 +33,6 @@ class MainInit {
 object Example extends App {
 
   val cls1: ClassWithObject[Cell] = Cell.reflect(IR)
-//   val logger: ClassWithObject[LoggerBotInt] = LoggerBotInt.reflect(IR)
 
   val mainClass: ClassWithObject[MainInit] = MainInit.reflect(IR)
 
