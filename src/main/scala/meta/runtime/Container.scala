@@ -5,7 +5,7 @@ import Actor.AgentId
 /**
  * A container agent holds a collection of agents. 
  * The internal messages among the agents are non-blocking. 
- */ 
+ */
 class Container extends Actor {
   private var position: Int = 0
 
@@ -88,15 +88,10 @@ class Container extends Actor {
         unblockAgents = proxyIds.toSet
         cleanSendMessage
 
-        containedAgents = containedAgents.map(a => {
+        sendMessages = containedAgents.flatMap(a => {
           a.cleanSendMessage
-          .addReceiveMessages(a.getProxyIds.flatMap(id => mx.getOrElse(id, List())))
-          .run()
-        })
-
-        sendMessages = (containedAgents.flatMap(_.getSendMessages)).toList
-        internalMessages = sendMessages.filter(x => proxyIds.contains(x.receiverId))
-        sendMessages = sendMessages.filterNot(x => proxyIds.contains(x.receiverId))
+          .run(a.getProxyIds.flatMap(id => mx.getOrElse(id, List())))
+        }).toList
 
         // do {
         //   // get all the messages
@@ -139,16 +134,15 @@ class Container extends Actor {
     }
   )
 
-  // Assume each wait in main follows a handleMessage 
-  override def run(): Actor = {    
-    // meta.Util.debug(s"Agent ${id} received messages: ${receivedMessages}")
+  // Assume each wait in main follows a handleMessage
+  override def run(msgs: List[Message]): List[Message] = {
+    addReceiveMessages(msgs)
     commands(position)()
-    // meta.Util.debug(s"Agent ${id} sent messages: ${sendMessages}")
-    this
+    sendMessages
   }
 
-  // Implement the reflection API  
-  // override def gotoHandleMessage(new_ir: Int = 0) = this 
+  // Implement the reflection API
+  // override def gotoHandleMessage(new_ir: Int = 0) = this
 
   override def getInstructionPointer: Int = 0
 

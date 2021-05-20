@@ -1,10 +1,7 @@
 package meta.runtime
 
 import java.util.UUID
-import org.slf4j.LoggerFactory
-
 import scala.collection.mutable.{ListBuffer, Map}
-import scala.util.Try 
 
 /**
   * This object handles the unique id generation of an actor
@@ -35,12 +32,16 @@ class Actor extends Serializable {
   
   var id: AgentId = Actor.getNextAgentId
 
-  protected var proxyIds: ListBuffer[AgentId] = new ListBuffer[AgentId]()
+  var proxyIds: ListBuffer[AgentId] = new ListBuffer[AgentId]()
 
   var deleted: Boolean = false
-  
-  var connectedAgents: List[Actor] = Nil 
 
+  var connectedAgentIds: List[AgentId] = Nil
+
+  // lazy var, doesn't need to sync with connectedAgentIds. We donot need references to 
+  // connections who are not within the same container 
+  var connectedAgents: Map[AgentId, Actor] = Map()
+	
   // a variable denoting whether we can relax the consistency constraint and allow concurrent copies 
   var relaxConsistency: Boolean = false 
 
@@ -91,9 +92,6 @@ class Actor extends Serializable {
     * @param messages Actions with receiver matching the agent from the previous step
     */
   def addReceiveMessages(messages: List[Message]): Actor = {
-    // if (messages.nonEmpty){
-    //   meta.Util.debug(s"Add messages for ${id}: ${messages}, ${responseListeners}")
-    // }
     
     this.receivedMessages = this.receivedMessages ::: messages.filter(
       x =>
@@ -178,8 +176,8 @@ class Actor extends Serializable {
   /**
     * Stub, gets overriden by generated code 
     */
-  def run(): Actor = {
-    this
+  def run(l: List[Message]): List[Message] = {
+    sendMessages
   }
 
   /**
@@ -192,10 +190,6 @@ class Actor extends Serializable {
     this
   }
 
-  /**
-    * Reflection code 
-    */
-
   // Return the current value of the instruction pointer  
   def getInstructionPointer: Int = ???
 
@@ -207,4 +201,14 @@ class Actor extends Serializable {
   def gotoHandleMessages(new_ir: Int = -1): Actor = ??? 
   
   def handleNonblockingMessage(m: RequestMessage): Unit = ??? 
+
+  def addConnectionIds(c: List[AgentId]): Actor = {
+		this.connectedAgentIds = this.connectedAgentIds ::: c
+		this
+	}
+
+	def addConnections(c: List[Actor]): Actor = {
+    this.connectedAgents = this.connectedAgents ++ c.map(x => (x.id -> x)).toMap
+		this
+	}
 }

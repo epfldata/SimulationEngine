@@ -194,8 +194,6 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     // initParams += s"  private var  ${reflectionModeRegister}: Boolean = false\n"
     initParams += "\n" + " " * 2 + s"private var  ${reflectionIR}: Int = -1"
 
-    // meta.Util.debug(methodArgs.toString)
-
     var methodss: String = ""
 
     val methodCases: String = meta.classLifting.Lifter.methodsIdMap.filterNot(x => {x._1.endsWith("handleMessages") || meta.classLifting.Lifter.methodsMap(x._1).blocking}).map(x => {
@@ -250,20 +248,13 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     """
 
     val run_until: String = s"""
-  override def run(): meta.runtime.Actor = {
+  override def run(msgs: List[meta.runtime.Message]): List[meta.runtime.Message] = {
+    addReceiveMessages(msgs)
     ${unblockRegMap(actorName)} = true
     while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
-      (${reflectionIR} != -1) match {
-      case true => 
-        gotoHandleMessages()
-      case false => 
-        while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
-          ${memAddr}(${instructionRegister})()
-        }
-        this
+      ${memAddr}(${instructionRegister})()
     }
-    }
-    this
+    sendMessages
   }
   """
 
@@ -284,8 +275,6 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
         x.split(" ").filterNot(_.isEmpty)(1).stripSuffix(":")
       }
     }).mkString(", ")
-
-    meta.Util.debug(parameterApplication)
 
     // Clone the agent 
     // The cloner has the same class type with the same connections, but different agent id and clean mailbox
