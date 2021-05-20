@@ -4,8 +4,6 @@ package gameOfLife
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 
-import lib.Bot.LoggerBotInt
-
 /**
   * Conway's game of life
   * https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
@@ -33,10 +31,7 @@ class Cell(var alive: Boolean) extends Actor {
 
     def main(): Unit = {
         while(true) {
-            if (getValue) {
-                println("Alive")
-            }
-            futures = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => asyncMessage(() => v.getValue))
+            futures = connectedAgents.map(x => x._2.asInstanceOf[Cell]).toList.map(v => asyncMessage(() => v.getValue))
             while (!(futures.nonEmpty && futures.forall(x => x.isCompleted))) {
                 waitLabel(Turn, 1)
                 handleMessages()
