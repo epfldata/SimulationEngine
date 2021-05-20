@@ -1,2 +1,0 @@
-This example shows how latency increases as clients queue up.
-Please note that server handles the same batch of requests randomly, so you may not see the exact same output. However, you can see how the latency number changes. 
