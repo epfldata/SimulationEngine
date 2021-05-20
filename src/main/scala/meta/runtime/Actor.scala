@@ -1,7 +1,7 @@
 package meta.runtime
 
 import java.util.UUID
-import scala.collection.mutable.{ListBuffer, Map}
+import scala.collection.mutable.{ListBuffer, Map => MutMap}
 
 /**
   * This object handles the unique id generation of an actor
@@ -59,8 +59,8 @@ class Actor extends Serializable {
   /**
     * A map of listeners, which is required to register a listener for a response of a request message
     */
-  var responseListeners
-    : Map[String, Message => Unit] = Map()
+  val responseListeners
+    : MutMap[String, Message => Unit] = MutMap()
 
   var _env: Set[AgentId] = Set()
 
