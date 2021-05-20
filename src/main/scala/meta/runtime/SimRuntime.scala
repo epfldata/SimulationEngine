@@ -18,7 +18,6 @@ object SimRuntime {
   }
 
   def initLabelVals(): Unit = {
-    waitLabels("time") = 0
     waitLabels("turn") = 0
     waitLabels.keys.foreach(k => {
       labelVals(k) = ListBuffer[Double]()

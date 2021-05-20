@@ -7,7 +7,6 @@ trait Simulation extends Serializable {
 
   val config: SimulationConfig
   var currentTurn: Int = 0
-  var currentTime: Double = 0
 
   val events: ListBuffer[() => Unit]
 
@@ -25,7 +24,7 @@ trait Simulation extends Serializable {
   var run: () => SimulationSnapshot = () => {
     init()
 
-    while (currentTurn <= config.totalTurn && currentTime <= config.totalTime) {
+    while (currentTurn <= config.totalTurn) {
       util.bench {
         events.foreach(_())
       }

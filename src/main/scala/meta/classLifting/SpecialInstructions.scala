@@ -17,18 +17,11 @@ object SpecialInstructions {
   }
 
   /**
-    * Sims can also synchronize by time. Time elapses only if all Sims are waiting on time
-    */
-  case object Time extends waitMode {
-    override def toString: String = "time"
-  }
-
-  /**
     * Sims can synchronize among a group of them according to a label
     * @param l the group name. Need to define at compile time (in MainInit) the size of the group
     */
   case class Group(l: String) extends waitMode {
-    assert(l.toLowerCase != "time" && l.toLowerCase != "turn")
+    assert(l.toLowerCase != "turn")
     override def toString: String = l
   }
 
