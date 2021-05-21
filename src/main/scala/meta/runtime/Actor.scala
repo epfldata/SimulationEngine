@@ -62,7 +62,7 @@ class Actor extends Serializable {
   val responseListeners
     : MutMap[String, Message => Unit] = MutMap()
 
-  var _env: Set[AgentId] = Set()
+  var _container: Container = null
 
   var handleMessageState: Boolean = false
   /**
