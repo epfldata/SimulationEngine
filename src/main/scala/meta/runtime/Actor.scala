@@ -74,8 +74,8 @@ class Actor extends Serializable {
 
   final def getProxyIds: List[AgentId] = proxyIds.toList 
 
-  final def addProxyIds(ids: List[AgentId]): Unit = {
-    proxyIds ++= ids 
+  final def addProxyIds(ids: Seq[AgentId]): Unit = {
+    proxyIds ++= ids
   }
 
   final def sendMessage(message: Message): Unit = {
