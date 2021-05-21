@@ -16,7 +16,7 @@ object Actor {
     *
     * @return id for an agent
     */
-  def getNextAgentId: AgentId = {
+  def getNextAgentId: AgentId = this.synchronized {
     lastAgentId = lastAgentId + 1
     lastAgentId
   }
