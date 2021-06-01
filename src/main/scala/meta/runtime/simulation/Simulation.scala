@@ -25,9 +25,9 @@ trait Simulation extends Serializable {
     init()
 
     while (currentTurn <= config.totalTurn) {
-      util.bench {
+      // util.bench {
         events.foreach(_())
-      }
+      // }
     }
     takeSnapshot()
   }

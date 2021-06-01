@@ -314,10 +314,12 @@ object Lifter {
             NoOp[Unit]())
           f.asInstanceOf[Algo[T]]
         case code"if($cond: Boolean) $ifBody:T else $elseBody: T  " =>
+          
           val f = IfThenElse(cond,
                             liftCode(ifBody),
                             liftCode(elseBody))
           f.asInstanceOf[Algo[T]]
+
         case code"SpecialInstructions.handleMessages()" =>
           ScalaCode(code"$actorSelfVariable.handleMessageState = true")
 
@@ -343,7 +345,12 @@ object Lifter {
             val convertLocal = Variable[Boolean]
 
             val f = LetBinding(Some(convertLocal),
-                  ScalaCode(code"$actorSelfVariable._env.contains($recipientActorVariable.id)"),
+                  ScalaCode(code"""
+                  if ($actorSelfVariable._container!= null) {
+                    $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
+                  } else {
+                    false
+                  }"""),
                   IfThenElse(code"$convertLocal",
                     ScalaCode(
                       code"""
@@ -420,7 +427,12 @@ object Lifter {
 
             val f = if (actorSelfVariable.toCode != recipientActorVariable) {
                 LetBinding(Some(convertLocal), 
-                  ScalaCode(code"$actorSelfVariable._env.contains($recipientActorVariable.id)"),
+                  ScalaCode(code"""
+                  if ($actorSelfVariable._container!= null) {
+                    $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
+                  } else {
+                    false
+                  }"""),
                   IfThenElse(code"$convertLocal",
                     ScalaCode(cde),
                     Send[T](actorSelfVariable.toCode,
