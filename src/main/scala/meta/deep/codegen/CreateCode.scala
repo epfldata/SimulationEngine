@@ -250,6 +250,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
     val run_until: String = s"""
   override def run(msgs: List[meta.runtime.Message]): List[meta.runtime.Message] = {
     addReceiveMessages(msgs)
+    sendMessages = List()
     ${unblockRegMap(actorName)} = true
     while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
       ${memAddr}(${instructionRegister})()
