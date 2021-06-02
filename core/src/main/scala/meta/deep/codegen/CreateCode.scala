@@ -12,7 +12,7 @@ import scala.collection.mutable.ListBuffer
 import meta.compile.CompilationMode
 import scala.util.Random
 
-class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: CompilationMode)
+class CreateCode(initCode: String, storagePath: String, optimization: CompilationMode)
     extends StateMachineElement() {
 
   var compiledActorGraphs: List[CompiledActorGraph] = Nil
@@ -51,15 +51,7 @@ class CreateCode(initCode: OpenCode[_], storagePath: String, optimization: Compi
       prepareClass(cAG)
     }
 
-    val c: String = initCode.Typ.rep.toString() match {
-      case "Unit" => 
-        IR.showScala(initCode.rep).substring(1).dropRight(1)
-      case "List[meta.runtime.Actor]" =>  // compatibility
-        IR.showScala(initCode.rep)
-      case _ => throw new Exception("Invalid init code!")
-    }
-
-    createInit(c)
+    createInit(initCode)
 
     Nil
   }
@@ -656,9 +648,7 @@ $run_until
       s"""package ${generatedPackage}
 
 object InitData  {
-  def initActors(): Unit = {
     ${changeTypes(code)}
-  }  
 }"""
     val file = new File(storagePath + "/InitData.scala")
     val bw = new BufferedWriter(new FileWriter(file))

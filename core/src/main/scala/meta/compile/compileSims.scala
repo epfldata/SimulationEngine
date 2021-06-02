@@ -18,37 +18,26 @@ object compileSims {
     * @param destFolder
     */
   def apply(startClasses: List[Clasz[_ <: Actor]], 
-            mainClass: Option[Clasz[_]] = None, 
-            mainInit: Option[OpenCode[Unit]] = None, 
-            initPkgName: String = "", 
-            mode: CompilationMode = Vanilla, 
+            mainInit: Option[String] = None, 
+            initPkgName: Option[String] = None, 
+            mode: CompilationMode = Vanilla,
             destFolder: String=""): Unit = {
 
     val simulationData = Lifter(startClasses)
 
-    var statemachineElements: List[StateMachineElement] = List(new EdgeMerge())
+    var statemachineElements: List[StateMachineElement] = 
+    List(new EdgeMerge())
 
     var nameMap: Map[String, String] = Map[String, String]()
-
-    var canonicalName: String = ""
 
     startClasses.foreach(x => {
       nameMap = nameMap + (x.name -> x.getClass.getPackage().getName())
     })
 
     // Can specify main init either way 
-    (mainClass, mainInit) match {
-      case (Some(x), _) => {
-        canonicalName = x.getClass.getPackage.getName()
-      }
-      case (None, Some(x)) => {
-        if(initPkgName.isEmpty()){
-          canonicalName = startClasses.head.getClass.getPackage.getName()
-        } else {
-          canonicalName = initPkgName 
-        }
-      }
-      case (None, None) => throw new Exception("MainInit not defined!") 
+    val canonicalName = initPkgName match {
+      case None => startClasses.head.getClass.getPackage.getName
+      case Some(x) => x
     }
   
     nameMap = nameMap + ("Main" -> canonicalName)
@@ -70,13 +59,10 @@ object compileSims {
 
     println(s"DestFolder: $destFolderName\n" +
       s"Package name: ${mode.pkgName}")
-    
-    val stagedMain: OpenCode[_] = mainInit match {
-      case None => Lifter.liftInitCode(mainClass.get)
-      case Some(x) => x
-    }
 
-    statemachineElements = statemachineElements :+ new CreateCode(stagedMain,
+    assert(mainInit.isDefined)
+    
+    statemachineElements = statemachineElements :+ new CreateCode(mainInit.get,
       destFolderName, 
       mode)
 

@@ -648,14 +648,4 @@ object Lifter {
 
     false
   }
-
-  /** Lifts the code for actor initialization
-    *
-    * @param clasz - initialization class representation - must contain only 1 method, which returns an [[OpenCode]] of list of [[Actor]]s
-    * @return - extracted initialization method body
-    */
-
-  def liftInitCode(clasz: Clasz[_]): OpenCode[_] = {
-    clasz.methods.head.body 
-  }
 }

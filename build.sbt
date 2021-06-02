@@ -42,7 +42,13 @@ lazy val graphSettings = Seq(
   libraryDependencies += "guru.nidi" % "graphviz-java" % graphVizVersion,
 )
 
-lazy val root = (project in file("."))
+lazy val custMacros = (project in file("custMacros"))
+  .settings(
+    name := "custMacros",
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+  )
+
+lazy val root = (project in file("core"))
   .settings(
     name := "root",
     commonSettings, squidSettings, graphSettings, sparkSettings, akkaSettings
@@ -71,7 +77,7 @@ lazy val example = (project in file("example"))
     commonSettings, squidSettings,
     runAll := runAllIn(Compile).value
   )
-  .dependsOn(root, library)
+  .dependsOn(root, library, custMacros)
 
 lazy val genExample = (project in file("generated"))
   .settings(

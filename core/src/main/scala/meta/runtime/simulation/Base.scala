@@ -21,7 +21,9 @@ class Base(val config: SimulationConfig) extends Simulation {
 
   var proceed: () => Unit = () => {
     proceedGroups()
-    currentTurn += proceedLabel("turn").asInstanceOf[Int]
+    currentTurn += 1
+
+    // currentTurn += proceedLabel("turn").asInstanceOf[Int]
   }
 
   val events: ListBuffer[()=> Unit] = new ListBuffer()

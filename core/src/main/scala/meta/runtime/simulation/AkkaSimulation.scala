@@ -80,7 +80,6 @@ object SimAgent {
     }
 }
 
-
 object SimExperiment {
 
   final case class StartSimulation(totalTurn: Int, actors: List[Actor])
