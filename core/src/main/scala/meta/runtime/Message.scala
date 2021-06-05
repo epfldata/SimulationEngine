@@ -37,13 +37,13 @@ abstract class Message extends Serializable {
   * @param senderId the id of the sender
   * @param receiverId the id of the receiver
   * @param blocking indicates how the message is sent (whether sender waits for the reply): through A.B() or asyncMessage(() => A.B())
-  * @param methodId the id of the method which should be called
+  * @param methodInfo the name of the method which should be called
   * @param argss the arguments of the method
   */
 case class RequestMessage(override val senderId: AgentId,
                           override val receiverId: AgentId,
                           blocking: Boolean,
-                          methodId: Int,
+                          methodInfo: Either[String, Int],
                           argss: List[List[Any]])
     extends Message {
 
