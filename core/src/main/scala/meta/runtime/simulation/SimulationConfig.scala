@@ -12,10 +12,11 @@ import Actor.AgentId
   * @param methodInlining indicates whether to inline methods from stateless agents
   * @param runtimeMerging indicates whether to group agents into containers at runtime
   */
-class SimulationConfig(var actors: List[Actor] = List(),
+class SimulationConfig(val actors: List[Actor],
                       var startTurn: Int = 0,
                       var totalTurn: Int = 40)
 
-class MergeSimulationConfig(var availableHardware: Int,
+class MergeSimulationConfig(override val actors: List[Actor],
+                          var availableHardware: Int,
                           var runtimeMerging: Boolean = true)
-                          extends SimulationConfig
+                          extends SimulationConfig(actors)
