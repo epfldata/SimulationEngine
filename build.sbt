@@ -45,13 +45,17 @@ lazy val graphSettings = Seq(
 lazy val custMacros = (project in file("custMacros"))
   .settings(
     name := "custMacros",
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full),
+    libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
   )
 
 lazy val root = (project in file("core"))
   .settings(
     name := "root",
-    commonSettings, squidSettings, graphSettings, sparkSettings, akkaSettings
+    commonSettings, squidSettings, graphSettings, sparkSettings, akkaSettings,
+    libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
   )
 
 lazy val library = (project in file("lib"))
@@ -74,6 +78,7 @@ def runAllIn(config: Configuration) = Def.task {
 lazy val example = (project in file("example"))
   .settings(
     name := "example",
+    libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
     commonSettings, squidSettings,
     runAll := runAllIn(Compile).value
   )
