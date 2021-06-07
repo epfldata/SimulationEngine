@@ -8,6 +8,8 @@ import meta.runtime.Actor.AgentId
 import akka.actor.typed.{ActorRef, ActorSystem, Terminated, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 
+import org.coroutines._
+
 object Dispatcher {
   final case class SendToDispatcher(agentId: Long, messages: List[Message], replyTo: ActorRef[ReceiveFromDispatcher])
   final case class ReceiveFromDispatcher(messages: List[Message], from: ActorRef[SendToDispatcher])
@@ -65,19 +67,26 @@ object Dispatcher {
     }
 }
 
-object SimAgent {
+class SimAgent {
+    private var simInstance: org.coroutines.Coroutine.Instance[List[meta.runtime.Message],Unit] = null
 
-  def apply(sim: Actor): Behavior[Dispatcher.ReceiveFromDispatcher] = {
-    simAgent(sim, 0)
-  }
+    private var sim: Actor = null
 
-  private def simAgent(sim: Actor, currentTurn: Int): Behavior[Dispatcher.ReceiveFromDispatcher] =
-    Behaviors.receive { (context, message) =>
-        val next = currentTurn + 1
-        val sentMessages = sim.run(message.messages)
-        message.from ! Dispatcher.SendToDispatcher(sim.id, sentMessages, context.self)
-        simAgent(sim, next)
+    def main(sim: Actor): Behavior[Dispatcher.ReceiveFromDispatcher] = {
+        this.simInstance = call (sim.run()())
+        this.sim = sim
+        simAgent(0)
     }
+
+     private def simAgent(currentTurn: Int): Behavior[Dispatcher.ReceiveFromDispatcher] =
+        Behaviors.receive { (context, message) =>
+            val next = currentTurn + 1
+            sim.addReceiveMessages(message.messages)
+            simInstance.resume
+            val sentMessages = simInstance.value
+            message.from ! Dispatcher.SendToDispatcher(sim.id, sentMessages, context.self)
+            simAgent(next)
+        }
 }
 
 object SimExperiment {
@@ -99,7 +108,7 @@ object SimExperiment {
           // val dispatcher = context.spawn(Dispatcher(actors.size, totalTurn, proxyMap), "dispatcher", DispatcherSelector.fromConfig("my-pinned-dispatcher"))
           
           actors.foreach(a => {
-            val simAgent = context.spawn(SimAgent(a), f"simAgent${a.id}")
+            val simAgent = context.spawn((new SimAgent).main(a), f"simAgent${a.id}")
             // val simAgent = context.spawn(SimAgent(a), f"simAgent${a.id}", DispatcherSelector.fromConfig("my-pinned-dispatcher"))
             simAgent ! Dispatcher.ReceiveFromDispatcher(List(), dispatcher)
           })
@@ -119,7 +128,7 @@ object SimExperiment {
 object AkkaRun {
   def apply(config: SimulationConfig): Unit = {
     val system: ActorSystem[SimExperiment.StartSimulation] =
-        ActorSystem(SimExperiment(), "Sim System")
+        ActorSystem(SimExperiment(), "SimSystem")
     system ! SimExperiment.StartSimulation(config.totalTurn, config.actors)
   }
 }
