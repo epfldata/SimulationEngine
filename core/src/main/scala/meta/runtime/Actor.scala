@@ -2,7 +2,7 @@ package meta.runtime
 
 import java.util.UUID
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
-
+import org.coroutines._
 /**
   * This object handles the unique id generation of an actor
   * as long as all ids are generated on a single instance
@@ -49,12 +49,12 @@ class Actor extends Serializable {
     * Contains the received messages from the previous step
     */
 //  protected var receivedMessages: List[Message] = List()
-  var receivedMessages: List[Message] = List()
+  val receivedMessages: ListBuffer[Message] = new ListBuffer[Message]()
 
   /**
     * Contains the messages, which should be sent to other actors in the next step
     */
-  var sendMessages: List[Message] = List()
+  val sendMessages: ListBuffer[Message] = new ListBuffer()
 
   /**
     * A map of listeners, which is required to register a listener for a response of a request message
@@ -82,7 +82,7 @@ class Actor extends Serializable {
     if (message.receiverId == this.id) {
       addReceiveMessages(List(message))
     } else {
-      sendMessages = message :: sendMessages
+      sendMessages.append(message)
     }
   }
 
@@ -92,13 +92,13 @@ class Actor extends Serializable {
     * @param messages Actions with receiver matching the agent from the previous step
     */
   def addReceiveMessages(messages: List[Message]): Actor = {
-    
-    this.receivedMessages = this.receivedMessages ::: messages.filter(
+    this.receivedMessages.appendAll( messages.filter(
       x =>
         x.isInstanceOf[RequestMessage] || responseListeners
           .get(x.sessionId)
-          .isEmpty)
+          .isEmpty))
     // Only invoke handler callback If the agent is not a container agent
+
     if (proxyIds.size == 1) {
       messages
       .filter(
@@ -111,7 +111,7 @@ class Actor extends Serializable {
         handler(x)
       })
     }
-    // println(s"Add receive messages for ${id}: ${messages}")
+    // println(s"Add receive messages for ${id}: ${messages} $responseListeners")
 
     this 
   }
@@ -120,7 +120,7 @@ class Actor extends Serializable {
     * This returns all messages, which are sent via sendMessage
     * @return the actor itself
     */
-  def getSendMessages: List[Message] = {
+  def getSendMessages: ListBuffer[Message] = {
     sendMessages
   }
 
@@ -129,7 +129,7 @@ class Actor extends Serializable {
     * @return the actor itself
     */
   final def cleanSendMessage: Actor = {
-    sendMessages = List()
+    sendMessages.clear()
     this
   }
 
@@ -154,9 +154,9 @@ class Actor extends Serializable {
       .filter(_.isInstanceOf[RequestMessage])
       .map(_.asInstanceOf[RequestMessage])
       .sortBy(x => x.blocking)  // non-blocking messages are processed first
-    this.receivedMessages =
-      this.receivedMessages.filterNot(_.isInstanceOf[RequestMessage])
-    rM
+    this.receivedMessages --=
+      this.receivedMessages.filter(_.isInstanceOf[RequestMessage])
+    rM.toList
   }
 
   /**
@@ -168,17 +168,20 @@ class Actor extends Serializable {
     val rM = this.receivedMessages
       .filter(_.isInstanceOf[ResponseMessage])
       .map(_.asInstanceOf[ResponseMessage])
-    this.receivedMessages =
-      this.receivedMessages.filterNot(_.isInstanceOf[ResponseMessage])
-    rM
+    this.receivedMessages --=
+      this.receivedMessages.filter(_.isInstanceOf[ResponseMessage])
+    rM.toList
   }
 
   /**
     * Stub, gets overriden by generated code 
     */
-  def run(l: List[Message]): List[Message] = {
-    sendMessages
+  def run(messages: List[Message]): List[Message] = {
+    ???
   }
+
+  // Add another run() signature for coroutine 
+  def run(): ~~~>[List[Message], Unit] = ???
 
   /**
     * Stub, overriden by generated code. 
