@@ -56,7 +56,7 @@ lazy val root = (project in file("core"))
     name := "root",
     commonSettings, squidSettings, graphSettings, sparkSettings, akkaSettings,
     libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
-  )
+  ).dependsOn(custMacros)
 
 lazy val library = (project in file("lib"))
   .settings(
@@ -78,7 +78,6 @@ def runAllIn(config: Configuration) = Def.task {
 lazy val example = (project in file("example"))
   .settings(
     name := "example",
-    libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
     commonSettings, squidSettings,
     runAll := runAllIn(Compile).value
   )
