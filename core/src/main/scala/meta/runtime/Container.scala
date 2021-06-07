@@ -1,35 +1,45 @@
 package meta.runtime
 
-import scala.collection.mutable.{ListBuffer, Map => MutMap}
-
 import Actor.AgentId
-import spire.std.SeqEq
+
+import custMacros.Sim
+import meta.classLifting.SpecialInstructions._
+import scala.collection.mutable.ListBuffer
+import org.coroutines._
+
+
 /**
  * A container agent holds a collection of agents. 
  * The internal messages among the agents are non-blocking. 
  */ 
+
 class Container extends Actor {
   protected var position: Int = 0
 
   // Use a list buffer to remove agents
-  val containedAgents: MutMap[AgentId, Actor] = MutMap[AgentId, Actor]()
+  val containedAgents: scala.collection.mutable.Map[AgentId, Actor] = scala.collection.mutable.Map[AgentId, Actor]()
   
-  protected var internalMessages: List[Message] = List()
+  protected var internalMessages: ListBuffer[Message] = ListBuffer[Message]()
+
+  // Coroutine instances
+  protected val containedAgentInstances: ListBuffer[org.coroutines.Coroutine.Instance[List[meta.runtime.Message],Unit]] = ListBuffer[org.coroutines.Coroutine.Instance[List[meta.runtime.Message],Unit]]()
 
   // private val chattyAgents: ChattyAgents = new ChattyAgents(50)
 
   def initAddAgents(sims: Seq[Actor]): Unit = {
-		containedAgents ++= sims.map(x => (x.id, x)).toMap
+	containedAgents ++= sims.map(x => (x.id, x)).toMap
 
     addProxyIds(sims.flatMap(x => {
       x._container = this
       x.getProxyIds
     }))
+
+    containedAgentInstances.appendAll(sims.map(x => call (x.run()())))
   }
 
   def addAgents(sims: Seq[Actor]): Unit = {
     val simsMessages = sims.flatMap(_.getSendMessages)
-    sendMessages = simsMessages.toList ::: sendMessages
+    sendMessages.appendAll(simsMessages)
     containedAgents ++= sims.map(_.cleanSendMessage).map(x => (x.id, x)).toMap
     addProxyIds(sims.flatMap(x => x.getProxyIds))
     sims.foreach(s => {
@@ -59,100 +69,47 @@ class Container extends Actor {
   // We need an index container which monitors the total agents in each container agent, and warns any imbalance, forwarding references of the container agents to each other to balance the traffic.
 
   // Group messages by receiver id
-  protected var mx = receivedMessages.groupBy(_.receiverId)
+  protected var mx = receivedMessages.toList.groupBy(_.receiverId)
   protected var messageBuffer: List[Message] = List()
 
   protected var unblockAgents: Set[Actor.AgentId] = Set()
 
-  // Remove an agent from the contained agents and drop its id from proxyId
-  // Return the agent
-  // private def removeAgent(a: AgentId): Option[Actor] = {
-  //   val idx = proxyIds.indexOf(a)
-  //   if (idx == -1) {
-  //     None
-  //   } else {
-  //     // Clear the ChattyAgent monitor after removing a silent agent
-  //     // chattyAgents.clearMergeCandidates()
-  //     proxyIds.remove(idx)
-  //     Some(containedAgents.remove(idx))
-  //   }
-  // }
+  override def run() = org.coroutines.coroutine((() => while (true) 
+    {
+        meta.runtime.simulation.util.bench {
+            mx = (internalMessages ++ receivedMessages).toList.groupBy(_.receiverId)
 
-  protected val commands: List[() => Unit] = List(
-    () => {
-        mx = receivedMessages.groupBy(_.receiverId)
-        // println(f"Received messages for container ${mx}")
-        receivedMessages = List()
-        unblockAgents = proxyIds.toSet
-        cleanSendMessage
+            receivedMessages.clear()
+            internalMessages.clear()
 
-        sendMessages = containedAgents.flatMap(a => {
-          a._2.cleanSendMessage
-          .run(a._2.getProxyIds.flatMap(id => mx.getOrElse(id, List())))
-        }).toList
+            containedAgents.foreach(a => {
+                a._2.addReceiveMessages(
+                    a._2.getProxyIds.toList.flatMap(
+                        id => mx.getOrElse(id, List())
+                    ))
+            })
 
-        // do {
-        //   // get all the messages
-        //   messageBuffer = (containedAgents.flatMap(_.getSendMessages)).toList
-        //   // remove the sent messages from the agents 
-        //   containedAgents = containedAgents
-        //     .map(_.cleanSendMessage)
-        //   // println(s"Looping inside container agent! Message buffer: ${messageBuffer}")
-        //   // filter out the internal messages 
-        //   internalMessages = messageBuffer.filter(x => proxyIds.contains(x.receiverId))
-        //   // profile internal messages
-        //   chattyAgents.recordMessage(internalMessages)
-        //   // append the external messages to the outgoing mailbox  
-        //   sendMessages = messageBuffer.diff(internalMessages) ::: sendMessages
-        //   // update the unblockAgent indexes to selectively deliver the internal blocking messages
-        //   unblockAgents = internalMessages.flatMap(x => List(x.receiverId)).toSet
-        //   // update the messages to deliver for the selected unblocking agents
-        //   mx = internalMessages.groupBy(_.receiverId)
+            containedAgentInstances.map(x =>x.resume)
 
-        //   containedAgents = containedAgents.map(a => {
-        //     if (unblockAgents.contains(a.id)) {
-        //       val msgs: List[Message] = mx.getOrElse(a.id, List())
-        //       val b = a.addReceiveMessages(msgs)
-        //       // If the receiver agent was waiting for a blocking request, unblock it
-        //       if (msgs.exists(x => (x.isInstanceOf[ResponseMessage] && x.blocking))) {  
-        //         meta.Util.debug(s"Unblock agent ${a.id} to run")
-        //         b.run()
-        //       } else {
-        //         meta.Util.debug(s"Unblock agent ${a.id} to handle messages")
-        //         b
-        //         // b.handleMessages()
-        //       }
-        //     }
-        //     else {
-        //       a
-        //     }
-        //   })
+            sendMessages.appendAll(containedAgentInstances.flatMap(a => a.value))
 
-        // } while (internalMessages.nonEmpty)
-    }
-  )
+            internalMessages = sendMessages.filter(x => (proxyIds.contains(x.receiverId)))
 
-  // Assume each wait in main follows a handleMessage 
-  override def run(msg: List[Message]): List[Message] = {    
-    // println(s"Agent ${id} contains agents: ${containedAgents}")
-    val start: Long = System.currentTimeMillis()
-    addReceiveMessages(msg)
-    commands(position)()
-    val end: Long = System.currentTimeMillis()
-    // println(f"Container runs: ${end - start} ms")
-    // println(s"Container ${id} sent messages: ${sendMessages}")
-    sendMessages
-  }
+            sendMessages --= internalMessages
+        }
+        org.coroutines.yieldval(sendMessages.toList);
+        sendMessages.clear()
+    }))
 
   // Implement the reflection API  
   // override def gotoHandleMessage(new_ir: Int = 0) = this 
 
-  override def getInstructionPointer: Int = 0
+//   override def getInstructionPointer: Int = 0
 
-  override def setInstructionPointer(new_ir: Int) = {
-    if (new_ir!=0) {
-        throw new Exception(s"Invalid address pointer ${new_ir} for agent ${id}")
-    }
-    this
-  }
+//   override def setInstructionPointer(new_ir: Int) = {
+//     if (new_ir!=0) {
+//         throw new Exception(s"Invalid address pointer ${new_ir} for agent ${id}")
+//     }
+//     this
+//   }
 }
