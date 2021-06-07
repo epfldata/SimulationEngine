@@ -38,14 +38,17 @@ class InTimeBase(val config: SimulationConfig) extends Simulation {
 
   events.append(() => collect())
   // If new actors are added, time takes them into account as well
-  // events.append(() => registerLabel(Time, actors.size))
   events.append(() => {
 
     sortedMessages = collectedMessages.toList.groupBy(x => x.receiverId).toMap
 
     collectedMessages.clear()
 
-    actors.foreach(x => x.asInstanceOf[Actor].addReceiveMessages(sortedMessages.getOrElse(x.id, List())))
+    actors.foreach(x => 
+      x.asInstanceOf[Actor]
+        .addReceiveMessages(x.getProxyIds.toList.flatMap(
+          id => sortedMessages.getOrElse(id, List())))
+    )
 
     coroutineAgents.map(x => x.resume)
 
