@@ -5,30 +5,41 @@ import scala.collection.mutable.ListBuffer
 
 trait Simulation extends Serializable {
 
-  val config: SimulationConfig
   var currentTurn: Int = 0
+
+  var actors: List[Actor]
+  val totalTurn: Int
 
   val events: ListBuffer[() => Unit]
 
-  var init: ()=> Unit
+  def init: ()=> Unit = () => {
+    SimRuntime.initLabelVals()
+  }
 
   // discover the newly generated agents
-  var collect: ()=> Unit
+  def collect: ()=> Unit = () => {
+    actors = SimRuntime.newActors.toList ::: actors
+    SimRuntime.newActors.clear()
+  }
 
   // go to the next state of the Sim
-  var proceed: ()=> Unit
+  def proceed: ()=> Unit = () => {
+    SimRuntime.proceedGroups()
+    currentTurn += 1
 
-  var takeSnapshot: ()=> SimulationSnapshot
+    // currentTurn += proceedLabel("turn").asInstanceOf[Int]
+  }
 
   // entry point of the simulation
-  var run: () => SimulationSnapshot = () => {
+  def run(): List[Actor] = {
     init()
 
-    while (currentTurn <= config.totalTurn) {
-      // util.bench {
+    while (currentTurn < totalTurn) {
+      util.bench {
         events.foreach(_())
-      // }
+      }
     }
-    takeSnapshot()
+
+    actors
   }
 }

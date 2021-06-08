@@ -7,29 +7,13 @@ import SimRuntime._
 import meta.runtime.Actor.AgentId
 import org.coroutines._
 
-class InTimeBase(val config: SimulationConfig) extends Simulation {
-
-  var actors: List[Actor] = config.actors
+class StagedBase(var actors: List[Actor], val totalTurn: Int) extends Simulation {
 
   val coroutineAgents = actors.map(x => call (x.run()()))
   
   var sortedMessages: Map[Long, List[Message]] = Map()
 
-  currentTurn = config.startTurn
-
   val collectedMessages: ListBuffer[Message] = new ListBuffer[Message]()
-
-  var init = () => initLabelVals()
-
-  var collect = () => {
-    actors = newActors.toList ::: actors
-    newActors.clear()
-  }
-
-  var proceed: () => Unit = () => {
-    proceedGroups()
-    currentTurn += 1
-  }
 
   val events: ListBuffer[()=> Unit] = new ListBuffer()
   events.append(
@@ -56,8 +40,4 @@ class InTimeBase(val config: SimulationConfig) extends Simulation {
   })
 
   events.append(() => proceed())
-
-  var takeSnapshot = () => {
-    SimulationSnapshot(actors, currentTurn)
-  }
 }

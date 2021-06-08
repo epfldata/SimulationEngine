@@ -3,28 +3,11 @@ package simulation
 
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
 import scala.util.Random
-import SimRuntime._
 import meta.runtime.Actor.AgentId
 
-class Base(val config: SimulationConfig) extends Simulation {
+class Base(var actors: List[Actor], val totalTurn: Int) extends Simulation {
 
-  var actors: List[Actor] = config.actors
-  currentTurn = config.startTurn
   var collectedMessages: List[Message] = List()
-
-  var init = () => initLabelVals()
-
-  var collect = () => {
-    actors = newActors.toList ::: actors
-    newActors.clear()
-  }
-
-  var proceed: () => Unit = () => {
-    proceedGroups()
-    currentTurn += 1
-
-    // currentTurn += proceedLabel("turn").asInstanceOf[Int]
-  }
 
   val events: ListBuffer[()=> Unit] = new ListBuffer()
   events.append(
@@ -32,8 +15,7 @@ class Base(val config: SimulationConfig) extends Simulation {
   )
 
   events.append(() => collect())
-  // If new actors are added, time takes them into account as well
-  // events.append(() => registerLabel(Time, actors.size))
+
   events.append(() => {
     val mx = collectedMessages.groupBy(_.receiverId)
     
@@ -43,9 +25,6 @@ class Base(val config: SimulationConfig) extends Simulation {
         .run(targetMessages)
     }).toList
   })
-  events.append(() => proceed())
 
-  var takeSnapshot = () => {
-    SimulationSnapshot(actors, currentTurn)
-  }
+  events.append(() => proceed())
 }
