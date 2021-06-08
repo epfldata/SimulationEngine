@@ -199,8 +199,13 @@ class CreateCode(initCode: String, storagePath: String, optimization: Compilatio
     s"""
   override def handleNonblockingMessage(m: meta.runtime.RequestMessage): Unit = {
     val args = m.argss.flatten
-    val response = m.methodId match {
-      ${methodCases.split("\n").mkString("\n" + " "*6)}
+    val response = m.methodInfo match {
+      case Right(x) => {
+        x match {
+          ${methodCases.split("\n").mkString("\n" + " "*8)}
+        }
+      }
+      case Left(x) => println("For staged implementation only")
     }
     m.reply(this, response)
   }
@@ -242,12 +247,12 @@ class CreateCode(initCode: String, storagePath: String, optimization: Compilatio
     val run_until: String = s"""
   override def run(msgs: List[meta.runtime.Message]): List[meta.runtime.Message] = {
     addReceiveMessages(msgs)
-    sendMessages = List()
+    sendMessages.clear()
     ${unblockRegMap(actorName)} = true
     while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
       ${memAddr}(${instructionRegister})()
     }
-    sendMessages
+    sendMessages.toList
   }
   """
 
@@ -591,7 +596,6 @@ $run_until
 
     nonTypedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
   }
-
 
   /**
     * Converts a list of opencode code fragments to a opencode of array of code fragments
