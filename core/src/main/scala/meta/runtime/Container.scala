@@ -7,76 +7,80 @@ import meta.classLifting.SpecialInstructions._
 import scala.collection.mutable.ListBuffer
 import org.coroutines._
 
-
 /**
  * A container agent holds a collection of agents. 
  * The internal messages among the agents are non-blocking. 
  */ 
 
 class Container extends Actor {
-  protected var position: Int = 0
+    protected var position: Int = 0
 
-  // Use a list buffer to remove agents
-  val containedAgents: scala.collection.mutable.Map[AgentId, Actor] = scala.collection.mutable.Map[AgentId, Actor]()
-  
-  protected var internalMessages: ListBuffer[Message] = ListBuffer[Message]()
+    // Use a list buffer to remove agents
+    val containedAgents: scala.collection.mutable.Map[AgentId, Actor] = scala.collection.mutable.Map[AgentId, Actor]()
+    
+    protected var internalMessages: ListBuffer[Message] = ListBuffer[Message]()
 
-  // Coroutine instances
-  protected val containedAgentInstances: ListBuffer[org.coroutines.Coroutine.Instance[List[meta.runtime.Message],Unit]] = ListBuffer[org.coroutines.Coroutine.Instance[List[meta.runtime.Message],Unit]]()
+    // Coroutine instances
+    protected val containedAgentInstances: ListBuffer[org.coroutines.Coroutine.Instance[List[meta.runtime.Message],Unit]] = ListBuffer[org.coroutines.Coroutine.Instance[List[meta.runtime.Message],Unit]]()
 
-  // private val chattyAgents: ChattyAgents = new ChattyAgents(50)
+    def initAddAgents(sims: Seq[Actor], mode: String): Unit = {
+        containedAgents ++= sims.map(x => (x.id, x)).toMap
 
-  def initAddAgents(sims: Seq[Actor]): Unit = {
-	containedAgents ++= sims.map(x => (x.id, x)).toMap
+        addProxyIds(sims.flatMap(x => {
+            x._container = this
+            x.getProxyIds
+        }))
 
-    addProxyIds(sims.flatMap(x => {
-      x._container = this
-      x.getProxyIds
-    }))
+        mode match {
+          case "Staged" => containedAgentInstances.appendAll(
+                            sims.map(x => call (x.run()())))
+          case _ =>
+        }
+    }
 
-    containedAgentInstances.appendAll(sims.map(x => call (x.run()())))
-  }
+    // Dynamically add agents to a container at run time
+//   def addAgents(sims: Seq[Actor]): Unit = {
+//     val simsMessages = sims.flatMap(_.getSendMessages)
+//     sendMessages.appendAll(simsMessages)
+//     containedAgents ++= sims.map(_.cleanSendMessage).map(x => (x.id, x)).toMap
+//     addProxyIds(sims.flatMap(x => x.getProxyIds))
+//     sims.foreach(s => {
+//       s._container = this
+//     })
+//   }
 
-  def addAgents(sims: Seq[Actor]): Unit = {
-    val simsMessages = sims.flatMap(_.getSendMessages)
-    sendMessages.appendAll(simsMessages)
-    containedAgents ++= sims.map(_.cleanSendMessage).map(x => (x.id, x)).toMap
-    addProxyIds(sims.flatMap(x => x.getProxyIds))
-    sims.foreach(s => {
-      s._container = this
-    })
-  }
+    // Group messages by receiver id
+    protected var mx = receivedMessages.toList.groupBy(_.receiverId)
+    protected var messageBuffer: List[Message] = List()
 
-  // Root can propose to migrate an agent based on profiling data. 
-  // None if the agent is hot or warmup not completed, and we prefer to keep it internal
-  // Otherwise return the agent to the root, and remove it. Upon removal, we also reset the chattyAgent monitor to clear the proposed merged agents
-  // def migrateAgent(a: AgentId): Option[Actor] = {
-  //   var silentAgents: List[AgentId] = List()
-  //   // if no merge candidates, then stil in the warm-up phase
-  //   val hotAgents = chattyAgents.getPairedMergeCandidates.flatten
-  //   if (hotAgents.nonEmpty) {
-  //     silentAgents = getProxyIds.filterNot(_ == id).diff(hotAgents)
-  //   }
-  //   // println(s"Silent agents of the turn: ${silentAgents}")
+    protected var unblockAgents: Set[Actor.AgentId] = Set()
 
-  //   silentAgents.contains(a) match {
-  //     case true => removeAgent(a)
-  //     case false => None
-  //   }
-  // }
+    override def run(msg: List[Message]): List[Message] = {
+        // meta.runtime.simulation.util.bench {
+            mx = (internalMessages ++ msg).toList.groupBy(_.receiverId)
 
-  // If an agent communicates much more frequently with an external container, then offer it to that container; if an agent doesn't communicate much and the container's capacity is close to full, then we migrate it 
-  // We need an index container which monitors the total agents in each container agent, and warns any imbalance, forwarding references of the container agents to each other to balance the traffic.
+            sendMessages.clear()
+            internalMessages.clear()
 
-  // Group messages by receiver id
-  protected var mx = receivedMessages.toList.groupBy(_.receiverId)
-  protected var messageBuffer: List[Message] = List()
+            val sentMessages = containedAgents.flatMap(a => {
+                    a._2.run(
+                        a._2.getProxyIds.toList.flatMap(
+                            id => mx.getOrElse(id, List())
+                        ))
+                })
 
-  protected var unblockAgents: Set[Actor.AgentId] = Set()
+            sendMessages.appendAll(sentMessages)
 
-  override def run() = org.coroutines.coroutine((() => while (true) 
+            internalMessages = sendMessages.filter(x => (proxyIds.contains(x.receiverId)))
+
+            sendMessages --= internalMessages
+        // }
+        sendMessages.toList
+    }
+
+    override def run() = org.coroutines.coroutine((() => while (true) 
     {
-        meta.runtime.simulation.util.bench {
+        // meta.runtime.simulation.util.bench {
             mx = (internalMessages ++ receivedMessages).toList.groupBy(_.receiverId)
 
             receivedMessages.clear()
@@ -96,20 +100,8 @@ class Container extends Actor {
             internalMessages = sendMessages.filter(x => (proxyIds.contains(x.receiverId)))
 
             sendMessages --= internalMessages
-        }
+        // }
         org.coroutines.yieldval(sendMessages.toList);
         sendMessages.clear()
     }))
-
-  // Implement the reflection API  
-  // override def gotoHandleMessage(new_ir: Int = 0) = this 
-
-//   override def getInstructionPointer: Int = 0
-
-//   override def setInstructionPointer(new_ir: Int) = {
-//     if (new_ir!=0) {
-//         throw new Exception(s"Invalid address pointer ${new_ir} for agent ${id}")
-//     }
-//     this
-//   }
 }
