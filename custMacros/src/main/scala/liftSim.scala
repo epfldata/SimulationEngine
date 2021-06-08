@@ -9,7 +9,7 @@ import scala.annotation.compileTimeOnly
 
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
 
-// Lift the MainInit of each example
+// Lift the behavior of each Sim
 @compileTimeOnly("Enable macro paradise to expand macro annotations.")
 class Sim extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SimMacro.impl
@@ -61,6 +61,7 @@ object rewriteBehavior {
         handleAPI(API_methods_meta)
 
         def recursive(t: Tree): Tree = {
+
             t match {
                 // Two or more sequential case
                 case q"$a ; $b; ..$c" => 
@@ -72,6 +73,9 @@ object rewriteBehavior {
 
                 case q"var $lhs = $rhs" =>
                     q"var $lhs = ${recursive(rhs)}"
+
+                case q"$lhs = $rhs" =>
+                    q"$lhs = ${recursive(rhs)}"    
 
                 case q"while($cond) $body" =>
                     q"while(${recursive(cond)}) ${recursive(body)}"
@@ -100,13 +104,13 @@ object rewriteBehavior {
                         })
                       """
 
-                case q"asyncMessage[..$ts](() => $receiver.$mtd(..$args))" => 
+                case q"asyncMessage[..$ts](() => $receiver.$mtd(...$args))" => 
                     if (ts.isEmpty) {
                         println("Error! Need to annotate the type of asyncMessage!")
                     }
 
                     val t = ts.head
-                    q"""val request = new meta.runtime.RequestMessage(id, ${receiver}.id, false, Left(${mtd.toString}), List($args));
+                    q"""val request = new meta.runtime.RequestMessage(id, ${receiver}.id, false, Left(${mtd.toString}), $args);
                     var future = meta.runtime.Future[$t](request.sessionId); 
                     sendMessage(request);
                     setMessageResponseHandler(request.sessionId, (response: meta.runtime.Message) => {
@@ -116,6 +120,13 @@ object rewriteBehavior {
                     """
                 case q"if ($cond) $thenp else $elsep" => 
                     q"if (${recursive(cond)}) ${recursive(thenp)} else ${recursive(elsep)}"
+
+                case q"$x(..$exp)" =>    // member selection
+                    val f = exp.map(i => q"${recursive(i)}")
+                    q"$x(..${f})"
+
+                case q"(..$params) => $body" =>
+                    q"(..$params) => ${recursive(body)}"
 
                 case _ => 
                     t
