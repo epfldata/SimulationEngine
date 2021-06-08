@@ -15,6 +15,10 @@ class Sim extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SimMacro.impl
 }
 
+// class dbg_Sim extends StaticAnnotation {
+//   def macroTransform(annottees: Any*): Any = macro SimMacro.impl
+// }
+
 // Inject code for asyncMessage, wait, and handleMessages
 object rewriteBehavior {
      def apply(c: blackbox.Context)(t: c.universe.Tree)(API_methods_meta: List[c.universe.Tree]): c.universe.Tree = {
@@ -82,15 +86,15 @@ object rewriteBehavior {
 
                 case q"waitLabel(Turn, $t)" =>
 
-                    q"""var elapsedTime_1 = 0;
-                    while (elapsedTime_1 < $t) {
-                        elapsedTime_1 += 1;
+                    q"""elapsed_time_counter = 0;
+                    while (elapsed_time_counter < $t) {
+                        elapsed_time_counter += 1;
                         org.coroutines.yieldval(sendMessages.toList);
                         sendMessages.clear()
                     }
                     """
                 case q"handleMessages()" => 
-                    q"""val receivedRequests = popRequestMessages
+                    q"""receivedRequests = popRequestMessages
 
                         receivedRequests.foreach(m => {
                             m.methodInfo match {
@@ -106,7 +110,7 @@ object rewriteBehavior {
 
                 case q"asyncMessage[..$ts](() => $receiver.$mtd(...$args))" => 
                     if (ts.isEmpty) {
-                        println("Error! Need to annotate the type of asyncMessage!")
+                        throw new Exception("Error! Need to annotate the type of asyncMessage!")
                     }
 
                     val t = ts.head
@@ -128,6 +132,10 @@ object rewriteBehavior {
                 case q"(..$params) => $body" =>
                     q"(..$params) => ${recursive(body)}"
 
+                // case cq"$pat if $expr => $expr" =>
+                                    
+                // case q"$expr match { case ..$cases } " =>
+                //     q"${recursive(expr)} match ${recursive(body)}"
                 case _ => 
                     t
             }
@@ -180,11 +188,13 @@ object SimMacro {
             val ans = q"""
 
                 class $name (..$args) extends ..$parents {
-                ..$regularMethods
+                    var elapsed_time_counter: Int = 0;
+                    var receivedRequests: List[meta.runtime.RequestMessage] = List();
+                    ..$regularMethods
                 
-                override def run() = org.coroutines.coroutine {() => {
-                    $mainBehaviour
-                }}
+                    override def run() = org.coroutines.coroutine {() => {
+                        $mainBehaviour
+                    }}
                 }
             """
 
