@@ -42,7 +42,7 @@ class Person(val world: WorldMap, val view: Int, val toleranceThreshold: Double)
         if (unhappy()){
           location = Some(world.move(location.get, this))
         }
-        waitLabel(Group("People"), 1)
+        waitLabel(Turn, 1)
       }
 //      println("Person " + id + " finished! Next turn!")
       handleMessages()

@@ -188,7 +188,7 @@ class CreateCode(initCode: String, storagePath: String, optimization: Compilatio
 
     var methodss: String = ""
 
-    val methodCases: String = meta.classLifting.Lifter.methodsIdMap.filterNot(x => {x._1.endsWith("handleMessages") || meta.classLifting.Lifter.methodsMap(x._1).blocking}).map(x => {
+    val methodCases: String = meta.classLifting.Lifter.methodsIdMap.filterNot(x => {x._1.endsWith("handleMessages") || meta.classLifting.Lifter.methodsMap(x._1).blocking}).filter(x => x._1.split("\\.").head == actorName).map(x => {
       val foo = meta.classLifting.Lifter.methodsMap(x._1)
       methodss += changeTypes(foo.toDeclaration())
       methodss += changeTypes(foo.toWrapperDeclaration())
