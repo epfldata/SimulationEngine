@@ -1,73 +1,64 @@
 package example
 package segregation
 
-import lib.Bot.LoggerBotTimeseries
-import lib.Grid.{Grid, Torus2D}
 
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Map, ListBuffer}
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 
 @lift
 class WorldMap(val width: Int, val height: Int) extends Actor {
 
-  val loggerBot: LoggerBotTimeseries = new LoggerBotTimeseries("similarity", 10)
+    val similarities: Map[Int, Double] = Map[Int, Double]()
 
-  var grid: Option[Grid[Int]] = None
-  val similarities: Map[Int, Double] = Map[Int, Double]()
-  val world: Map[Int, Person] = Map[Int, Person]()
+    val world: Map[Int, Long] = Map[Int, Long]()
 
-  var totalReports: Int = 0
-  var segregationLevel: Double = 0
+    val freeSpots: ListBuffer[Int] = ListBuffer[Int]()
 
-  def init(): Unit = {
-    grid = Some(new Torus2D(width, height))
-  }
+    var totalReports: Int = 0
+    var segregationLevel: Double = 0
 
-  def placeAgent(p: Person): Option[Int] = {
-    grid.get.placeAgent(p, true)
-  }
-
-  def getNeighbors(loc: Int, radius: Int): List[Person] = {
-    grid.get.getAgentNeighbors(loc, radius).asInstanceOf[List[Person]]
-  }
-
-  def move(currentLoc: Int, p: Person): Int = {
-    val newLoc: Option[Int] = placeAgent(p)
-    if (newLoc.isDefined) {
-      grid.get.removeAgent(currentLoc, p)
-      similarities.remove(currentLoc)
-      newLoc.get
-    } else {
-      currentLoc
+    def placeAgent(location: Int, aid: Long): Unit = {
+        world += (location -> aid)
+        freeSpots --= List(location)
     }
-  }
 
-  // record the similarity report from Sims
-  def report(loc: Option[Int], similarity: Double): Unit = {
-    totalReports = totalReports + 1
-    similarities(loc.get) = similarity
-  }
+    // Given a location index, return the list of neighbor ids
+    def getNeighbors(loc: Int): List[Long] = {
+        val neighborLocations: List[Int] = lib.Grid.Torus2D.getNeighborCells(width, height)(loc, 1)
 
-  // segregation is measured as the average similarities
-  def recordSegregation(): Unit = {
-    if (similarities.size > 0) {
-      segregationLevel = similarities.values.sum / similarities.size
-      asyncMessage(() => loggerBot.append(segregationLevel))
-//      println("Segregation level: " + segregationLevel)
+        neighborLocations.filter(x => world.get(x).isDefined).map(x => world(x))
     }
-  }
 
-  def main(): Unit ={
-    init()
-    while(true){
-      handleMessages()
-      recordSegregation()
-//      if (totalReports == (Actor.totalSims - 1)){
-//        totalReports = 0
-//        waitLabel(Time,(1)
-//      }
-      waitLabel(Turn,1)
+    def move(currentLoc: Int): Int = {
+        if (!freeSpots.isEmpty){
+            val moveTo = freeSpots.head
+            freeSpots.append(currentLoc)
+            similarities.remove(currentLoc)
+            moveTo
+        } else {
+            currentLoc
+        }
     }
-  }
+
+    // record the similarity report from Sims
+    def report(loc: Int, similarity: Double): Unit = {
+        totalReports = totalReports + 1
+        similarities(loc) = similarity
+    }
+
+    def main(): Unit ={
+        freeSpots.appendAll(Range(0, width*height).toList)
+
+        while(true){
+            
+            if (similarities.size > 0) {
+                segregationLevel = similarities.values.sum / similarities.size
+
+                println("Segregation level " + segregationLevel)
+            }
+
+            waitLabel(Turn,1)
+        }
+    }
 }

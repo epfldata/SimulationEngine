@@ -17,7 +17,7 @@ object centralizedGameOfLife {
 
         def step(): Seq[Boolean] = {
             (0 to totalCells-1).map(i => {
-                val n = getNeighborCells(gridSize, gridSize)(i, 1).map(x => env(x))
+                val n = getNeighborCells(gridSize, gridSize)(i, 1).map(x => env(x-1))
                 val aliveNeighbors = n.filter(_==true).size
                 if (env(i) && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
                     false

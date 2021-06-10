@@ -2,6 +2,7 @@ package lib
 package Grid
 
 import scala.util.Random
+import scala.collection.mutable.ListBuffer
 
 import Torus2D._
 
@@ -39,7 +40,6 @@ class Torus2D(val width: Int, val height: Int) extends Grid[Int] {
   override def removeAgent(agentLoc: Int, agent: Actor): Unit = {
     currentPlacement.get(agentLoc) match {
       case None =>
-//      case List() =>
       case Some(x) => {
         currentPlacement = currentPlacement + (agentLoc -> x.filter(a => a!=agent))
         if (x.length == 1) { emptyLoc(agentLoc) = 1 }
@@ -57,24 +57,30 @@ class Torus2D(val width: Int, val height: Int) extends Grid[Int] {
 }
 
 object Torus2D {
+  // 0-based 
   def getNeighborCells(width: Int, height: Int)(x: Int, radius: Int): List[Int] = {
     // radius: optionally, we can have neighbors of radius 2 or more. Right now we define 8 neighbors with radius=1
     
     if (x < 0 || x >= width * height) {
+      println("Index out of bound!")
       throw new IndexOutOfBoundsException
     }
 
-    val neighbors: Array[Int] = new Array[Int](8)
-    val area = width * height
-		neighbors(0) = mod(x-1, area)
-		neighbors(1) = mod(x+1, area)
-		neighbors(2) = mod(x - width, area)
-		neighbors(3) = mod(x + width, area)
-		neighbors(4) = mod(neighbors(2)-1, area)
-		neighbors(5) = mod(neighbors(2)+1, area)
-		neighbors(6) = mod(neighbors(3)-1, area)
-		neighbors(7) = mod(neighbors(3)+1, area)
+    var r = 1
 
+    val neighbors = ListBuffer[Int]()
+
+    val nw = x- radius * width - radius
+    val area = width * height
+
+    Range(0, 2*radius+1).foreach(i => {
+      Range(0, 2*radius+1).foreach(j => {
+        neighbors.append(mod(nw + i + j*width, area))
+      })
+    })
+
+    // Remove x from the neighbor list
+    neighbors--=List(x)
     neighbors.toList
   }
 
