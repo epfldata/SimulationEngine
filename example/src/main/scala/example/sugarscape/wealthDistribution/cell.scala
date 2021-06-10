@@ -59,7 +59,7 @@ class Cell(var energy: Int,
             identity.energy = identity.energy + energy
             energy = 0
             daysElapsed = 0
-            visionFields = lib.Grid.Torus2D.getNeighborCells(gridWidth, gridHeight)(id.toInt, identity.vision).map(x => x.toLong)
+            visionFields = lib.Grid.Torus2D.getNeighborCells(gridWidth, gridHeight)(id.toInt-1, identity.vision).map(x => (1+x).toLong)
             
             true
         } else {
@@ -91,7 +91,7 @@ class Cell(var energy: Int,
 
                 val maxSugar: Option[Cell] = {
 
-                    println("Neighbor info " + neighborIds)
+                    // println("Neighbor info " + neighborIds)
                     val res = neighborIds.foldLeft((0, 0): Tuple2[Long, Int])((x, z) => {
                         if (z._2 > x._2) {
                             (z._1, z._2)
