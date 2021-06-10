@@ -57,7 +57,7 @@ class Torus2D(val width: Int, val height: Int) extends Grid[Int] {
 }
 
 object Torus2D {
-  // 1-based rather than 0
+  // 0-based 
   def getNeighborCells(width: Int, height: Int)(x: Int, radius: Int): List[Int] = {
     // radius: optionally, we can have neighbors of radius 2 or more. Right now we define 8 neighbors with radius=1
     
@@ -75,7 +75,7 @@ object Torus2D {
 
     Range(0, 2*radius+1).foreach(i => {
       Range(0, 2*radius+1).foreach(j => {
-        neighbors.append(1+mod(nw + i + j*width, area))
+        neighbors.append(mod(nw + i + j*width, area))
       })
     })
 
