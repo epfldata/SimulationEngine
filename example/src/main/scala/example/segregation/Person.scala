@@ -5,47 +5,58 @@ import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 
 @lift
-class Person(val world: WorldMap, val view: Int, val toleranceThreshold: Double) extends Actor {
+class Person(val world: WorldMap,
+            val view: Int, 
+            val toleranceThreshold: Double) extends Actor {
 
-  var location: Option[Int] = None
+  var location: Int = 0
+
   var similarity: Double = 1
   val neighborRadius: Int = 1
 
+  var neighborViews: List[Future[Int]] = null
+
   // happy: same views 50%+
   // notify the world about its similarity
-  def unhappy(): Boolean = {
-    var sameView: Int = 0
-    val neighbors: List[Person] = world.getNeighbors(location.get, neighborRadius)
 
-    neighbors.foreach(n => {
-      if (n.view == view){
-        sameView = sameView + 1
-      }})
-    // If only one person, similarity = 1, happy
-    if (neighbors.length == 0){
-      similarity = 1
-      asyncMessage(() => world.report(location, similarity))
-      false
-    } else {
-      similarity = sameView.toDouble/neighbors.length
-      asyncMessage(() => world.report(location, similarity))
-      sameView < toleranceThreshold * neighbors.length
-    }
-  }
+  def getView(): Int = view
 
   def main(): Unit ={
+    asyncMessage(() => world.placeAgent(location, id))
+
     while(true){
-//      println("Person " + id)
-      if (!location.isDefined){
-        location = world.placeAgent(this)
-      } else {
-        if (unhappy()){
-          location = Some(world.move(location.get, this))
+        var sameView: Int = 0
+
+        val neighborIds = world.getNeighbors(location)
+
+        val neighbors = neighborIds.map(x => connectedAgents(x).asInstanceOf[Person])
+
+        neighborViews = neighbors.map(x => asyncMessage(() => x.getView()))
+
+        while (!neighborViews.forall(_.isCompleted)){
+          waitLabel(Turn, 1)
+        }
+
+        neighborViews.map(x => x.popValue.get.asInstanceOf[Int]).foreach(n => {
+          if (n == view){
+            sameView = sameView + 1
+          }
+        })
+
+        val unhappy = if (neighbors.length == 0){
+            similarity = 1
+            asyncMessage(() => world.report(location, similarity))
+            false
+        } else {
+            similarity = sameView.toDouble/neighbors.length
+            asyncMessage(() => world.report(location, similarity))
+            sameView < toleranceThreshold * neighbors.length
+        }
+
+        if (unhappy){
+          location = world.move(location)
         }
         waitLabel(Turn, 1)
       }
-//      println("Person " + id + " finished! Next turn!")
-      handleMessages()
     }
-  }
 }
