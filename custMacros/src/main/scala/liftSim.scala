@@ -21,7 +21,7 @@ class Sim extends StaticAnnotation {
 
 // Inject code for asyncMessage, wait, and handleMessages
 object rewriteBehavior {
-     def apply(c: blackbox.Context)(t: c.universe.Tree)(API_methods_meta: List[c.universe.Tree]): c.universe.Tree = {
+    def genHandleMessage(c: blackbox.Context)(API_methods_meta: List[c.universe.Tree]): c.universe.Tree = {
         import c.universe._
 
         var handleMessageCode: ListBuffer[c.universe.Tree] = new ListBuffer[c.universe.Tree]()
@@ -64,6 +64,27 @@ object rewriteBehavior {
 
         handleAPI(API_methods_meta)
 
+        q"""
+            def handleMessages(): Unit = {
+                receivedRequests = popRequestMessages
+
+                    receivedRequests.foreach(m => {
+                        m.methodInfo match {
+                            case Left(x) => 
+                                val args = m.argss.flatten
+                                
+                                ..${handleMessageCode.toList}
+
+                            case Right(x) => 
+                        }
+                    })
+            }
+        """
+    }
+
+     def apply(c: blackbox.Context)(t: c.universe.Tree): c.universe.Tree = {
+        import c.universe._
+
         def recursive(t: Tree): Tree = {
 
             t match {
@@ -90,23 +111,14 @@ object rewriteBehavior {
                     while (elapsed_time_counter < $t) {
                         elapsed_time_counter += 1;
                         org.coroutines.yieldval(sendMessages.toList);
-                        sendMessages.clear()
+                        sendMessages.clear();
+                        handleMessages();
                     }
                     """
-                case q"handleMessages()" => 
-                    q"""receivedRequests = popRequestMessages
-
-                        receivedRequests.foreach(m => {
-                            m.methodInfo match {
-                                case Left(x) => 
-                                    val args = m.argss.flatten
-                                    
-                                    ..${handleMessageCode.toList}
-
-                                case Right(x) => 
-                            }
-                        })
-                      """
+                
+                // case q"handleMessages()" => 
+                //     q"""
+                //       """
 
                 case q"asyncMessage[..$ts](() => $receiver.$mtd(...$args))" => 
                     if (ts.isEmpty) {
@@ -183,22 +195,24 @@ object SimMacro {
 
             val m = mainMethod.asInstanceOf[DefTree]
 
-            val mainBehaviour = rewriteBehavior(c)(m.children.last)(API_methods_meta)
+            val mainBehaviour = rewriteBehavior(c)(m.children.last)
+
+            val handleMsgGen = rewriteBehavior.genHandleMessage(c)(API_methods_meta)
 
             val ans = q"""
-
                 class $name (..$args) extends ..$parents {
                     var elapsed_time_counter: Int = 0;
                     var receivedRequests: List[meta.runtime.RequestMessage] = List();
                     ..$regularMethods
-                
+                    $handleMsgGen
+
                     override def run() = org.coroutines.coroutine {() => {
                         $mainBehaviour
                     }}
                 }
             """
 
-            // println(showCode(ans))
+            println(showCode(ans))
             ans
       }
     }
