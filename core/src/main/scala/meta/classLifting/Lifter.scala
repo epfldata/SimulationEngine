@@ -9,9 +9,6 @@ import meta.deep.member._
 import meta.runtime.{Actor, Message, RequestMessage}
 import scala.collection.mutable.{Map => MutMap, ListBuffer}
 
-// An identity transformer that reconstructs the info of async message
-object IdentityTransformer extends IR.SelfTransformer with squid.ir.IdentityTransformer
-
 /** Code lifter
   *
   * lifts the code into the deep representation [[meta.deep]]
@@ -248,7 +245,7 @@ object Lifter {
             })
            
           IfThenElse(
-            code"$p1.methodId==${Const(methodId)}",
+            code"$p1.methodInfo==Right(${Const(methodId)})",
             IfThenElse(
               code"${Const(methodInfo.blocking)}",
               LetBinding(
@@ -321,23 +318,37 @@ object Lifter {
           f.asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.handleMessages()" =>
-          ScalaCode(code"$actorSelfVariable.handleMessageState = true")
-
-        val handleMessage =
-              CallMethod[Unit](handleMessageId, List(List()))
+          val handleMessage = CallMethod[Unit](handleMessageId, List(List()))
           cache += (cde -> handleMessage)
           handleMessage.asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
-          val f = WaitLabel[T](code"$x.toString()", y)
+          val waitCounter = Variable[Double]
+          y match {
+            case code"${Const(n)}: Double" =>
+              if (n <= 0) {
+                throw new Exception("The waitLabel takes a positive value!")
+              }
+            case _ =>   //  If variable turn number, skip the check
+          }
+
+          val f =
+                LetBinding(
+                  Some(waitCounter),
+                  ScalaCode(code"0.0"),
+                  DoWhile(code"$waitCounter < $y",
+                    LetBinding(Some(waitCounter),
+                              ScalaCode(code"${waitCounter} + 1"),
+                              LetBinding(None, 
+                                Wait(), 
+                                CallMethod[Unit](handleMessageId, List(List()))
+                                )))).asInstanceOf[Algo[T]]
+
           cache += (cde -> f)
           f
 
         // asynchronously call a remote method
-        case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" =>
-
-          val rebuildMsg = msg.rebuild(IdentityTransformer).asOpenCode
-
+        case code"SpecialInstructions.asyncMessage[$mt]((() => {${m@ MethodApplication(msg)}}: mt))" =>
           if (methodsIdMap.get(msg.symbol.toString()).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
@@ -345,16 +356,17 @@ object Lifter {
             val convertLocal = Variable[Boolean]
 
             val f = LetBinding(Some(convertLocal),
-                  ScalaCode(code"""
-                  if ($actorSelfVariable._container!= null) {
-                    $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
-                  } else {
-                    false
-                  }"""),
+                  // ScalaCode(code"""
+                  // if ($actorSelfVariable._container!= null) {
+                  //   $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
+                  // } else {
+                  //   false
+                  // }"""),
+                  ScalaCode(code"false"),
                   IfThenElse(code"$convertLocal",
                     ScalaCode(
                       code"""
-                      val future = meta.runtime.Future[$mt](value = Some($rebuildMsg))
+                      val future = meta.runtime.Future[$mt](value = Some($m))
                       future
                       """
                     ).asInstanceOf[Algo[T]],
@@ -366,14 +378,46 @@ object Lifter {
             cache += (cde -> f)
             f
           } else {
-            throw new Exception("Error in async message!")
+            var recipientActorVariable: OpenCode[Actor] = msg.args.last.head.asInstanceOf[OpenCode[Actor]]
+            val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
+            var mtd = msg.symbol.toString()
+            var curriedMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
+            argss.append(msg.args.last.head)
+
+            while (!methodsIdMap.get(mtd).isDefined) {
+              curriedMtd match {
+                case code"($sa: $st) => ${MethodApplication(mtd2)}: Any" => {
+                  mtd = mtd2.symbol.toString()
+                  if (methodsIdMap.get(mtd).isDefined){
+                    recipientActorVariable = mtd2.args.head.head.asInstanceOf[OpenCode[Actor]]
+                    if (mtd2.args.last.length != argss.length){
+                      // Due to closure, foreach(c => async(c.abc())) is different from async(c.abc()) the first var is the recipient
+                      if (mtd2.args.last.length + 1 == argss.length ) {
+                        recipientActorVariable = argss(0).asInstanceOf[OpenCode[Actor]]
+                        argss.remove(0)
+                      } else {
+                        println(s"msg: $msg, argss: $argss, mtd argss: ${mtd2.args.last}")
+                        throw new Exception("Async msg does't support local variables yet. Please make it a Sim variable instead")
+                      }
+                    }
+                  } else {
+                    argss.append(mtd2.args.last.head)
+                  }
+                  curriedMtd = mtd2.args.head.head
+                }
+                case _ => throw new Exception(s"Error state in asyncMessage! $cde $recipientActorVariable $curriedMtd")
+              }
           }
+            AsyncSend[T, mt.Typ](
+              actorSelfVariable.toCode,
+              recipientActorVariable,
+              methodsIdMap(mtd),
+              List(argss.toList))
+        }
 
         // If a method is both redirect and sso? We would like sso to merge it. 
         case code"${MethodApplication(ma)}:Any "
           if methodsIdMap.get(ma.symbol.toString()).isDefined =>
-            // println(cde.toString())
-            // println(ScalaCode(cde).toString())
             //extracting arguments and formatting them
             var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
 
@@ -427,12 +471,13 @@ object Lifter {
 
             val f = if (actorSelfVariable.toCode != recipientActorVariable) {
                 LetBinding(Some(convertLocal), 
-                  ScalaCode(code"""
-                  if ($actorSelfVariable._container!= null) {
-                    $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
-                  } else {
-                    false
-                  }"""),
+                  ScalaCode(code"false"),
+                  // ScalaCode(code"""
+                  // if ($actorSelfVariable._container!= null) {
+                  //   $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
+                  // } else {
+                  //   false
+                  // }"""),
                   IfThenElse(code"$convertLocal",
                     ScalaCode(cde),
                     Send[T](actorSelfVariable.toCode,
