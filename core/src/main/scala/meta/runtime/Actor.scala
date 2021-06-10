@@ -64,7 +64,6 @@ class Actor extends Serializable {
 
   var _container: Container = null
 
-  var handleMessageState: Boolean = false
   /**
     * Adds one message to the sendActions list, which will be collected and distributed at the end of the step
     *
@@ -92,6 +91,7 @@ class Actor extends Serializable {
     * @param messages Actions with receiver matching the agent from the previous step
     */
   def addReceiveMessages(messages: List[Message]): Actor = {
+    // println(s"Add receive messages for ${id}: ${messages} $responseListeners")
     this.receivedMessages.appendAll( messages.filter(
       x =>
         x.isInstanceOf[RequestMessage] || responseListeners
@@ -111,9 +111,8 @@ class Actor extends Serializable {
         handler(x)
       })
     }
-    // println(s"Add receive messages for ${id}: ${messages} $responseListeners")
 
-    this 
+    this
   }
 
   /**
