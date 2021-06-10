@@ -195,7 +195,7 @@ class CreateCode(initCode: String, storagePath: String, optimization: Compilatio
       f"case ${x._2} => ${foo.toWrapperInvocation()}"
     }).mkString("\n")
 
-    val handleMsg: String = 
+    val handleMsg: String = if (methodCases.isEmpty()) ""  else 
     s"""
   override def handleNonblockingMessage(m: meta.runtime.RequestMessage): Unit = {
     val args = m.argss.flatten
