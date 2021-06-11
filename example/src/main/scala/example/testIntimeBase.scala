@@ -1,10 +1,8 @@
 package example
 
 import custMacros.Sim
-import org.coroutines._
 import meta.classLifting.SpecialInstructions._
 import meta.runtime.Message
-import meta.runtime.simulation.{SimulationConfig, InTimeBase}
 
 @Sim
 class C() extends Actor {
@@ -60,13 +58,14 @@ class B(val a: Int) extends Actor {
 }
 
 object Test extends App {
+    import meta.API._
+
     val b = new B(4)
     val c = new C()
 
     b.neighbor = c
 
-    val config = new SimulationConfig(List(b, c), totalTurn=10)
-
-    val base = new InTimeBase(config)
-    base.run()
+    val config = new SimulationConfig(List(b, c), 10)
+    // StartSimulation[AkkaStaged.type](config)
+    StartSimulation[BaseStaged.type](config)
 }
