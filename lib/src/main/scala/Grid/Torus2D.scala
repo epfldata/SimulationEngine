@@ -62,7 +62,7 @@ object Torus2D {
     // radius: optionally, we can have neighbors of radius 2 or more. Right now we define 8 neighbors with radius=1
     
     if (x < 0 || x >= width * height) {
-      println("Index out of bound!")
+      println(f"Index out of bound! ${x}")
       throw new IndexOutOfBoundsException
     }
 
