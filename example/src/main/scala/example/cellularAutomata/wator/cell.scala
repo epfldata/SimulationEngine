@@ -7,13 +7,14 @@ import custMacros.Sim
 
 trait watorCell {
     var energy: Int
+    var age: Int
 }
 
-case class Fish(var energy: Int) extends watorCell
+case class Fish(var energy: Int, var age: Int = 0) extends watorCell
 
-case class Water(var energy: Int=0) extends watorCell
+case class Water(var energy: Int=0, var age: Int = 0) extends watorCell
 
-case class Shark(var energy: Int) extends watorCell
+case class Shark(var energy: Int, var age: Int = 0) extends watorCell
 
 // @Sim
 @lift
@@ -24,7 +25,7 @@ class Cell(var identity: watorCell) extends Actor {
     private var peekNeighbors: List[Future[(Long, watorCell)]] = List()
     private var tryMoving: Future[Boolean] = null
 
-    private var asyncReceiver: Cell = null
+    private var targetCell: Cell = null
 
     def getIdentity(): (Long, watorCell) = (id, identity)
 
@@ -88,55 +89,41 @@ class Cell(var identity: watorCell) extends Actor {
                 // println(id + " " + identity + " nearby fish: " + nearbyFish + " empty spots " + emptySpot)
 
 
+                val currentAge = identity.age
                 if (identity.isInstanceOf[Fish]){
                     if (emptySpot.isDefined) {
-                        val currentEnergy = identity.energy
-
-                        assert(emptySpot.isDefined)
-                        asyncReceiver = emptySpot.get
+                        targetCell = emptySpot.get
 
                         tryMoving = asyncMessage[Boolean](() => emptySpot.get.relocate(identity))
-
-                        tryMoving = asyncMessage[Boolean](() => asyncReceiver.relocate(identity))
 
                         // println(id + " tries to swim to nearby water!")
                         while (!tryMoving.isCompleted) {
                             waitLabel(Turn, 1)
-                            // handleMessages()
                         }
 
                         val relocateSuccess: Boolean = tryMoving.popValue.get
-                        // println(id + " relocates : " + relocateSuccess)
 
                         // If the agent has moved but no one moved to this place, reset it
                         if (relocateSuccess && !isReserved){
-                            println(id + " fish swims away!")
-                            identity = Water(0)
+                            // reproduce
+                            if (currentAge >= 10) {
+                                println(id + " produces new fish!")
+                                identity = Fish(10)
+                            } else {
+                                identity = Water(0)
+                            }
                         }
                     }
-                } else if (identity.isInstanceOf[Shark]) {
-                    // println(id + " is a shark!")
-                    if (nearbyFish.isDefined) {
-                        asyncReceiver = nearbyFish.get
+                } else {
+                    if (nearbyFish.isDefined || emptySpot.isDefined){
+                        if (nearbyFish.isDefined) {
+                            targetCell = nearbyFish.get
+                        } else {
+                            // println(id + " shark tries to swim away!")
+                            targetCell = emptySpot.get
+                        } 
 
-                        tryMoving = asyncMessage[Boolean](() => asyncReceiver.relocate(identity))
-
-                        // println(id + " tries to eat the nearby fish!")
-
-                        while (!tryMoving.isCompleted) {
-                            waitLabel(Turn, 1)
-                            // handleMessages()
-                        }
-
-                        // If the agent has moved but no one moved to this place, reset it
-                        if (tryMoving.popValue.get && !isReserved){
-                            println(id + " eats the fish!")
-                            identity = Water(0)
-                        }
-                    } else if (emptySpot.isDefined) {
-                        // println(id + " shark tries to swim away!")
-                        asyncReceiver = emptySpot.get
-                        tryMoving = asyncMessage[Boolean](() => asyncReceiver.relocate(identity))
+                        tryMoving = asyncMessage[Boolean](() => targetCell.relocate(identity))
 
                         while (!tryMoving.isCompleted) {
                             waitLabel(Turn, 1)
@@ -145,26 +132,31 @@ class Cell(var identity: watorCell) extends Actor {
 
                         // If the agent has moved but no one moved to this place, reset it
                         if (tryMoving.popValue.get && !isReserved){
-                            println(id + " shark left!")
-                            identity = Water(0)
+                            if (currentAge >= 10){
+                                println(id + " produces new sharks!")
+                                identity = Shark(10)
+                            } else {
+                                identity = Water(0)
+                            }
                         }
+                    }
 
-                        // if (isReserved) {
-                        //     println("Error! Shark should not be reserved!")
-                        // }
-                    } 
+                    identity.energy = identity.energy - 1
                 } 
 
                 if (identity.energy <= 0) {
                     identity = Water(0)
-                } else {
-                    identity.energy = identity.energy - 1
+                } 
+
+                if (identity.age > 10){
+                    identity.age = 0
                 }
+
+                identity.age = identity.age + 1
             }
 
             waitLabel(Turn, 1)
             isReserved = false
-            // handleMessages()
         }
     }
 }
