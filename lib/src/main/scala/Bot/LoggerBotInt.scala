@@ -3,15 +3,14 @@ package Bot
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-//import squid.quasi.dbg_lift
 
 @lift
 class LoggerBotInt(val item: String,
-                val reportFrequency: Int) extends Actor {
+                  val reportFrequency: Int) extends Actor {
 
   var timeseries: List[Int] = List()
   var sum: Int = 0
-  var currentTurn: Int = 0 
+  var currentTurn: Int = 0
 
   def log(v: Int): Unit = {
     sum = sum + v
@@ -19,8 +18,8 @@ class LoggerBotInt(val item: String,
   }
 
   def printLogInfo(): Unit = {
-    if (currentTurn % reportFrequency == 0) {
-      println(s"$item timeseries: " + sum)
+    if (currentTurn % reportFrequency == 1) {
+      println(s"$item: " + sum)
     }
   }
 
