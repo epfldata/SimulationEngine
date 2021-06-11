@@ -8,8 +8,8 @@ import meta.runtime.simulation.util
 object centralizedGameOfLife {
 
     def main(args: Array[String]): Unit = {
-        val gridSize: Int = args(0).toInt
-        val totalTurns: Int = args(1).toInt
+        val gridSize: Int = if (args.size > 0) args(0).toInt else 100
+        val totalTurns: Int = if (args.size > 1) args(1).toInt else 100
 
         val totalCells: Int = gridSize * gridSize
 
@@ -17,7 +17,7 @@ object centralizedGameOfLife {
 
         def step(): Seq[Boolean] = {
             (0 to totalCells-1).map(i => {
-                val n = getNeighborCells(gridSize, gridSize)(i, 1).map(x => env(x-1))
+                val n = getNeighborCells(gridSize, gridSize)(i, 1).map(x => env(x))
                 val aliveNeighbors = n.filter(_==true).size
                 if (env(i) && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
                     false
