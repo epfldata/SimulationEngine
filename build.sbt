@@ -90,6 +90,7 @@ lazy val example = (project in file("example"))
 lazy val genExample = (project in file("generated"))
   .settings(
     name := "genExample",
+    Test / parallelExecution := false,
     commonSettings, akkaSettings,
   )
   .dependsOn(root, library, example)
