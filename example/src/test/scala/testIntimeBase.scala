@@ -1,10 +1,10 @@
 package example
+package stagedTest
+
 
 import custMacros.Sim
-import org.coroutines._
 import meta.classLifting.SpecialInstructions._
 import meta.runtime.Message
-import meta.runtime.simulation.{SimulationConfig, InTimeBase}
 
 @Sim
 class C() extends Actor {
@@ -59,14 +59,18 @@ class B(val a: Int) extends Actor {
     }
 }
 
-object Test extends App {
-    val b = new B(4)
-    val c = new C()
+class stagedRewriteLift extends org.scalatest.FlatSpec {
 
-    b.neighbor = c
+    "staged example" should "run directly" in {
+        import meta.API._
 
-    val config = new SimulationConfig(List(b, c), totalTurn=10)
+        val b = new B(4)
+        val c = new C()
 
-    val base = new InTimeBase(config)
-    base.run()
+        b.neighbor = c
+
+        val config = new SimulationConfig(List(b, c), 10)
+        // StartSimulation[AkkaStaged.type](config)
+        StartSimulation[BaseStaged.type](config)
+    }
 }

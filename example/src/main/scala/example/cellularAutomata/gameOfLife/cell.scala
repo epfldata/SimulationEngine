@@ -35,16 +35,22 @@ class Cell(var alive: Boolean) extends Actor {
                 println(id + " is alive!")
             }
             futures = connectedAgents.map(x => x._2.asInstanceOf[Cell]).toList.map(v => asyncMessage(() => v.getValue))
+
+            var syncOneTurn = false
+
             while (!(futures.nonEmpty && futures.forall(x => x.isCompleted))) {
+                syncOneTurn = true
                 waitLabel(Turn, 1)
-                handleMessages()
+            }
+
+            if (!syncOneTurn){
+                waitLabel(Turn, 1)
             }
 
             val ans: List[Boolean] = futures.map(o => o.popValue.get).asInstanceOf[List[Boolean]]
 
             rule(ans)
 
-            handleMessages()
             waitLabel(Turn, 1)
         }
     }

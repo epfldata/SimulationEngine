@@ -12,7 +12,11 @@ import scala.collection.mutable.ListBuffer
 import meta.compile.CompilationMode
 import scala.util.Random
 
-class CreateCode(initCode: String, storagePath: String, optimization: CompilationMode)
+class CreateCode(initCode: String, 
+    storagePath: String, 
+    optimization: CompilationMode, 
+    methodsIdMap: Map[String, Int], 
+    methodsMap: Map[String, MethodInfo[_]])
     extends StateMachineElement() {
 
   var compiledActorGraphs: List[CompiledActorGraph] = Nil
@@ -188,8 +192,8 @@ class CreateCode(initCode: String, storagePath: String, optimization: Compilatio
 
     var methodss: String = ""
 
-    val methodCases: String = meta.classLifting.Lifter.methodsIdMap.filterNot(x => {x._1.endsWith("handleMessages") || meta.classLifting.Lifter.methodsMap(x._1).blocking}).filter(x => x._1.split("\\.").head == actorName).map(x => {
-      val foo = meta.classLifting.Lifter.methodsMap(x._1)
+    val methodCases: String = methodsIdMap.filterNot(x => {x._1.endsWith("handleMessages") || methodsMap(x._1).blocking}).filter(x => x._1.split("\\.").head == actorName).map(x => {
+      val foo = methodsMap(x._1)
       methodss += changeTypes(foo.toDeclaration())
       methodss += changeTypes(foo.toWrapperDeclaration())
       f"case ${x._2} => ${foo.toWrapperInvocation()}"
@@ -311,7 +315,7 @@ class CreateCode(initCode: String, storagePath: String, optimization: Compilatio
       compiledActorGraph: CompiledActorGraph): List[OpenCode[Unit]] = {
     val graph: ListBuffer[EdgeInfo] = compiledActorGraph.graph
     //Reassign positions
-    val handleMessageMethodId: Int = meta.classLifting.Lifter.methodsIdMap(compiledActorGraph.name + ".handleMessages")
+    val handleMessageMethodId: Int = methodsIdMap(compiledActorGraph.name + ".handleMessages")
     // assert(graph.filter(x => x.methodId1 == handleMessageMethodId).nonEmpty)
 
     var positionMap: Map[Int, Int] = Map()

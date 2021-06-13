@@ -75,7 +75,6 @@ class Person(val dailyContact: Int, val age: Int) extends Actor {
                 while (!f.get.isCompleted) {
                     waitLabel(Turn, 1)
                     usedTimeSlices = usedTimeSlices + 1
-                    handleMessages()
                 }
 
                 val affected = f.get.value.get
@@ -96,7 +95,6 @@ class Person(val dailyContact: Int, val age: Int) extends Actor {
                 }
             }
 
-            handleMessages()
             waitLabel(Turn, dailyTimeSlices - usedTimeSlices)
         }
     }
