@@ -5,7 +5,7 @@ import squid.quasi.lift
 import meta.deep.IR.TopLevel.ClassWithObject
 import meta.deep.IR
 import meta.runtime.{Actor}
-import meta.runtime.simulation.{Base, SimulationConfig}
+import meta.API._
 import org.scalatest.FlatSpec
 import scala.util.Random
 import meta.runtime.Future
