@@ -11,8 +11,7 @@ object compileSims {
     * Staging, convert Sims from source programs to object programs. 
     * We allow two ways to specify the main class which serve as entrypoint of the object programs, either lift an existing MainClass, or write as OpenCode[] directly.
     * @param startClasses: Sim classes which are staged
-    * @param mainClass: Return List[Actor] including *all* Sims needed when simulation starts
-    * @param mainInit: Return OpenCode[Unit]
+    * @param mainInit: Return Option[String]
     * @param initPkgName: the package name of init main. If empty, take the package name of the first agent in start classes
     * @param mode
     * @param destFolder
@@ -23,7 +22,7 @@ object compileSims {
             mode: CompilationMode = Vanilla,
             destFolder: String=""): Unit = {
 
-    val simulationData = Lifter(startClasses)
+    val simulationData = (new Lifter()).apply(startClasses)
 
     var statemachineElements: List[StateMachineElement] = 
     List(new EdgeMerge())
@@ -61,12 +60,14 @@ object compileSims {
       s"Package name: ${mode.pkgName}")
 
     assert(mainInit.isDefined)
-    
+
     statemachineElements = statemachineElements :+ new CreateCode(mainInit.get,
       destFolderName, 
-      mode)
+      mode, 
+      simulationData._2, 
+      simulationData._3)
 
-    val pipeline = Pipeline(new CreateActorGraphs(simulationData), statemachineElements)
+    val pipeline = Pipeline(new CreateActorGraphs(simulationData._1), statemachineElements)
 
     pipeline.run()
   }

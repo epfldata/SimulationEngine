@@ -4,7 +4,6 @@ import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 import meta.runtime.{Actor, Future}
 import custMacros.Sim
-import org.apache.hadoop.yarn.webapp.hamlet.HamletSpec.P
 
 // energy: the current energy a person has
 // metabolism: the amount of energy consumed every day 
@@ -60,7 +59,6 @@ class Cell(var energy: Int,
             energy = 0
             daysElapsed = 0
             visionFields = lib.Grid.Torus2D.getNeighborCells(gridWidth, gridHeight)(id.toInt-1, identity.vision).map(x => (1+x).toLong)
-            
             true
         } else {
             false
@@ -69,9 +67,7 @@ class Cell(var energy: Int,
 
     def main(): Unit = {
         if (identity != null){
-            visionFields = lib.Grid.Torus2D.getNeighborCells(gridWidth, gridHeight)(id.toInt, identity.vision).map(x => x.toLong)
-
-            println("Id " + id + " " + visionFields)
+            visionFields = lib.Grid.Torus2D.getNeighborCells(gridWidth, gridHeight)(id.toInt-1, identity.vision).map(x => (1+x).toLong)
         }
 
         while (true) {

@@ -10,6 +10,8 @@ val sparkVersion = "3.0.1"
 val graphVizVersion = "0.10.0"
 val akkaVersion = "2.6.14"
 
+fork in run := true
+
 lazy val commonSettings = Seq(
   libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
   libraryDependencies += "org.scalanlp" %% "breeze" % breezeVersion,

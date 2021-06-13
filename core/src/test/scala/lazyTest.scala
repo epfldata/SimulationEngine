@@ -1,10 +1,10 @@
-package meta.test
+package meta.test.methodSymbol
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import meta.deep.IR.TopLevel.ClassWithObject
 import meta.deep.IR
-import meta.runtime.simulation.{Base, SimulationConfig}
+import meta.API._
 import org.scalatest.FlatSpec
 import scala.util.Random
 import meta.runtime.Future
@@ -20,7 +20,7 @@ object specialInst {
 
 object Opt {
     def opt[T](pgrm: OpenCode[T]): Unit = pgrm match {
-        case code"meta.test.specialInst.asyncSend[$t]((() => ${MethodApplication(ma)}:t))" => 
+        case code"meta.test.methodSymbol.specialInst.asyncSend[$t]((() => ${MethodApplication(ma)}:t))" => 
             println("Match the delayed execution!")
             println(ma.symbol)
             println(ma.args)
@@ -40,8 +40,8 @@ object Opt {
 }
 
 @lift
-class A() extends Agent {
-    val n: B = new B()
+class FooC() extends Agent {
+    val n: D = new D()
     val bar: Int = 980
     var someString: String = "hi"
 
@@ -49,23 +49,23 @@ class A() extends Agent {
 
     def a2(): Unit = {
 
-        // specialInst.asyncSend[Unit](n, "B.b2", List(bar, "hello"))
+        // specialInst.asyncSend[Unit](n, "D.b2", List(bar, "hello"))
 
         // l.foreach(x => {
-        //     specialInst.asyncSend[Unit](n, "B.b2", List(x, "h"))
-        //     specialInst.asyncSend[Unit](n, "B.b2", List(x, someString))
+        //     specialInst.asyncSend[Unit](n, "D.b2", List(x, "h"))
+        //     specialInst.asyncSend[Unit](n, "D.b2", List(x, someString))
         // })
 
         specialInst.asyncSend[Unit](() => n.b())
 
         // l.foreach(x => {
-        //     B.b2(x, someString)
-        //     B.b2(x, "hello")
+        //     D.b2(x, someString)
+        //     D.b2(x, "hello")
         // })
 
-        // squid.utils.Lazy(B.b())
-        // squid.utils.Lazy(B.b2(bar, someString))
-        // squid.utils.Lazy(B.b2(10, someString))
+        // squid.utils.Lazy(D.b())
+        // squid.utils.Lazy(D.b2(bar, someString))
+        // squid.utils.Lazy(D.b2(10, someString))
     }
 
     def a3(): Unit = {
@@ -79,7 +79,7 @@ class A() extends Agent {
 }
 
 @lift
-class B() extends Agent {
+class D() extends Agent {
     val foo: Int = 10
 
     def b(): String = "hello"
@@ -88,7 +88,7 @@ class B() extends Agent {
 
 class lazyTest extends FlatSpec {
 
-    val liftMyClass: ClassWithObject[A] = A.reflect(IR)
+    val liftMyClass: ClassWithObject[FooC] = FooC.reflect(IR)
 
     "lazy val lifting" should "preserve the method symbols" in {
         liftMyClass.methods.foreach(m => {
