@@ -13,7 +13,7 @@ import scala.collection.mutable.{Map => MutMap, ListBuffer}
   *
   * lifts the code into the deep representation [[meta.deep]]
   */
-object Lifter {
+class Lifter {
 
   /** Maps method symbols to their IDs
     *
@@ -162,7 +162,7 @@ object Lifter {
     */
 
   def apply(startClasses: List[Clasz[_ <: Actor]])
-    : List[ActorType[_]] = {
+    : (List[ActorType[_]], Map[String, Int], Map[String, MethodInfo[_]]) = {
 
     // ssoEnabled = Optimization.sso    
     init(startClasses)
@@ -172,7 +172,7 @@ object Lifter {
       liftActor(c)
     })
 
-    endTypes
+    (endTypes, methodsIdMap, methodsMap)
   }
 
   /** Lifts a specific [[Actor]] class into an ActorType
