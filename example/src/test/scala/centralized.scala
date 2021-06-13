@@ -2,7 +2,7 @@ package example.gameOfLife
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
-import lib.Grid.Torus2D._
+import lib.Grid.Torus2D
 import meta.runtime.simulation.util
 
 object centralizedGameOfLife {
@@ -17,7 +17,7 @@ object centralizedGameOfLife {
 
         def step(): Seq[Boolean] = {
             (0 to totalCells-1).map(i => {
-                val n = getNeighborCells(gridSize, gridSize)(i, 1).map(x => env(x))
+                val n = Torus2D.getNeighborCells(gridSize, gridSize)(i, 1).map(x => env(x))
                 val aliveNeighbors = n.filter(_==true).size
                 if (env(i) && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
                     false

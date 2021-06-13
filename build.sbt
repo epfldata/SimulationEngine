@@ -61,7 +61,7 @@ lazy val root = (project in file("core"))
     libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
   ).dependsOn(custMacros)
 
-lazy val library = (project in file("lib"))
+lazy val library = (project in file("library"))
   .settings(
     name := "library",
     commonSettings,

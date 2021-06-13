@@ -1,5 +1,4 @@
-package lib
-package Grid
+package lib.Grid
 
 import scala.util.Random
 import scala.collection.mutable.ListBuffer
