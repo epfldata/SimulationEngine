@@ -55,7 +55,6 @@ class Cell(var identity: watorCell) extends Actor {
 
                 while (!(peekNeighbors.nonEmpty && peekNeighbors.forall(x => x.isCompleted))) {
                     waitLabel(Turn, 1)
-                    // handleMessages()
                 }
 
                 val neighborIds = peekNeighbors.map(i => i.popValue.get).asInstanceOf[List[(Long, watorCell)]]
@@ -127,7 +126,6 @@ class Cell(var identity: watorCell) extends Actor {
 
                         while (!tryMoving.isCompleted) {
                             waitLabel(Turn, 1)
-                            // handleMessages()
                         }
 
                         // If the agent has moved but no one moved to this place, reset it
