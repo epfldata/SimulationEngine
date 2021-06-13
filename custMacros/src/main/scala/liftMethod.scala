@@ -14,6 +14,10 @@ object liftMethod {
       showCode(_).replace("\n", "\n    ")
     }
 
+    if (!liftedMethodDef.mkString(" ").contains("def ")){
+      throw new Exception("Invalid lift method! Not a method")
+    }
+
     q"..$liftedMethodDef"
   }
 }

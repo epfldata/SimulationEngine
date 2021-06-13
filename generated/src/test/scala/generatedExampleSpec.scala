@@ -46,6 +46,6 @@ class generatedExamples extends org.scalatest.FlatSpec {
         val c = new SimulationConfig(agents, totalTurn = 10)
         c.staticPartition(10)
 
-        StartSimulation[BaseMessagingLayer.type](c)
+        StartSimulation[AkkaMessagingLayer.type](c)
     }
 }

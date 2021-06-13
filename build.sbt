@@ -46,6 +46,7 @@ lazy val custMacros = (project in file("custMacros"))
     addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full),
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
     libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
   )
 

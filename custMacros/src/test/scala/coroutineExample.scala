@@ -32,9 +32,9 @@ class Foo() {
     }))
 }
 
-object CoroutineExample {
+class CoroutineExample extends org.scalatest.FlatSpec {
 
-    def main(args: Array[String]) {
+    "Coroutine example" should "run" in {
         val ss =  new Foo()
         val x = call (ss.run()())
 
