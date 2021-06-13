@@ -175,12 +175,14 @@ object SimExperiment {
 }
 
 object AkkaRun {
-  def apply(actors: List[Actor], totalTurn: Int, staged: Boolean): List[Actor] = {
-    val actorSystem = ActorSystem(SimExperiment(totalTurn, actors, staged), "SimSystem")
+    def apply(actors: List[Actor], totalTurn: Int, staged: Boolean): List[Actor] = {
+        println("Simulation starts!")
 
-    Await.ready(actorSystem.whenTerminated, 10.days)
+        val actorSystem = ActorSystem(SimExperiment(totalTurn, actors, staged), "SimSystem")
+        Await.ready(actorSystem.whenTerminated, 10.days)
 
-    println("Simulation ended!")
-    Dispatcher.finalStates.toList
-  }
+        println("Simulation ends!")
+        Actor.reset
+        Dispatcher.finalStates.toList
+    }
 }

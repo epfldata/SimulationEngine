@@ -40,6 +40,7 @@ trait Simulation extends Serializable {
       }
     }
 
+    Actor.reset
     actors
   }
 }

@@ -20,6 +20,10 @@ object Actor {
     lastAgentId = lastAgentId + 1
     lastAgentId
   }
+
+  def reset: Unit = this.synchronized {
+    lastAgentId = 0
+  }
 }
 
 /**
