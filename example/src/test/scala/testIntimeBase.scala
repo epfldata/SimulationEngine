@@ -1,4 +1,6 @@
 package example
+package stagedTest
+
 
 import custMacros.Sim
 import meta.classLifting.SpecialInstructions._
@@ -57,15 +59,18 @@ class B(val a: Int) extends Actor {
     }
 }
 
-object Test extends App {
-    import meta.API._
+class stagedRewriteLift extends org.scalatest.FlatSpec {
 
-    val b = new B(4)
-    val c = new C()
+    "staged example" should "run directly" in {
+        import meta.API._
 
-    b.neighbor = c
+        val b = new B(4)
+        val c = new C()
 
-    val config = new SimulationConfig(List(b, c), 10)
-    // StartSimulation[AkkaStaged.type](config)
-    StartSimulation[BaseStaged.type](config)
+        b.neighbor = c
+
+        val config = new SimulationConfig(List(b, c), 10)
+        // StartSimulation[AkkaStaged.type](config)
+        StartSimulation[BaseStaged.type](config)
+    }
 }
