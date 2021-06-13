@@ -5,7 +5,7 @@
 ### Project specific ###
 checkpoint/*
 debug/*
-generated/*
+generated/src/main/*
 benchmark/*
 
 ### Build server support ###
