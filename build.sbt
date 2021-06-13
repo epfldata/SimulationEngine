@@ -64,9 +64,8 @@ lazy val root = (project in file("core"))
 lazy val library = (project in file("lib"))
   .settings(
     name := "library",
-    commonSettings, squidSettings
+    commonSettings,
   )
-  .dependsOn(root)
 
 lazy val runAll = taskKey[Unit]("run-all, for compiling all meta examples")
 
