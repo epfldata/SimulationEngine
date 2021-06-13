@@ -1,19 +1,12 @@
-package example.sugarscape.wealthDistribution
+package example.staged.wealthDist
 
-import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
-import meta.runtime.{Actor, Future}
+import custMacros.Sim
+import meta.runtime._
 
-// energy: the current energy a person has
-// metabolism: the amount of energy consumed every day 
-// life expectancy: if not due to starvation, how long a person lives
-// vison: how far the person would search for sugar (go to the location with max sugar).
-case class Person(var energy: Int, val metabolism: Int, val lifeExpectancy: Int, val vision: Int, var age: Int = 0)
+import example.sugarscape.wealthDistribution.Person
 
-// energy: the amount of energy provided by the sugar
-// interval: after consumption, how fast the sugar grows back
-
-@lift
+@Sim
 class Cell(var energy: Int, 
         val interval: Int, 
         val energyCapacity: Int, 
@@ -145,11 +138,11 @@ class Cell(var energy: Int,
                 } else if (identity.lifeExpectancy >= identity.age){
                     // reproduce
                     println("Person reproduces!")
-                    identity = wealthDistributionConfig.newPerson()
+                    identity = example.sugarscape.wealthDistribution.wealthDistributionConfig.newPerson()
                 }
             }
 
-            val waitTicks = wealthDistributionConfig.ticksInDay - clock
+            val waitTicks = example.sugarscape.wealthDistribution.wealthDistributionConfig.ticksInDay - clock
 
             if (waitTicks > 0){
                 waitLabel(Turn, waitTicks)
@@ -160,5 +153,53 @@ class Cell(var energy: Int,
             daysElapsed = daysElapsed + 1
             isReserved = false
         }
+    }
+}
+
+class wealthDistStaged extends org.scalatest.FlatSpec {
+    import meta.API._
+
+    "wealth distribution example" should "run and people should reproduce and die" in {
+
+        val width: Int = 10
+        val height: Int = 10
+
+        // Sugar
+        val meanEnergy: Int = 10
+        val meanInterval: Int = 5
+        val meanEnergyCapacity: Int = 10
+    
+        // Human
+        val personMeanEnergy: Int = 30
+        val personMeanMetabolism: Int = 8
+        val lifeExpectancy: Int = 60
+        val vision: Int = 3
+
+        val totalPoints: Int = width * height
+        // 2D space
+        val neighborRadius: Int = 1
+
+        val points = (1 to totalPoints).map(x => {
+            val r = scala.util.Random.nextInt(10)
+            if (r < 3) {
+                val c = new Cell(scala.util.Random.nextInt(meanEnergy), scala.util.Random.nextInt(meanInterval), scala.util.Random.nextInt(meanEnergyCapacity), width, height)
+
+                c.identity = Person(personMeanEnergy * scala.util.Random.nextGaussian().toInt, personMeanMetabolism * scala.util.Random.nextGaussian().toInt, lifeExpectancy * scala.util.Random.nextGaussian().toInt, vision * scala.util.Random.nextGaussian().toInt)
+
+                c
+            } else {
+                new Cell(scala.util.Random.nextInt(meanEnergy), scala.util.Random.nextInt(meanInterval), scala.util.Random.nextInt(meanEnergyCapacity), width, height)
+            }
+        })
+
+        val indexedPoints = points.map(x => (x.id, x)).toMap
+
+        // Fully connected. A person can go anywhere
+        (1 to totalPoints).foreach(i =>
+            points(i-1).connectedAgents = indexedPoints
+        )
+
+        val config = new SimulationConfig(points.toList, 100, false)
+        StartSimulation[BaseStaged.type](config)
     }
 }
