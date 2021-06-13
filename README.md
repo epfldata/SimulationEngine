@@ -21,11 +21,9 @@ The syntax for a blocking message is the same as a regular function. When a Sim 
 
 given that `tellMeThis()` and `doThat()` are public methods in Sim2's class. The transpiler converts it to delivering a message to Sim2 and waiting for a reply. When the reply arrives, the function returns and Sim1's variables ```secret``` and ```workDone```  get their values. 
 
-Besides blocking calls, Sims can also send asynchronous messages, with a different syntax```asyncMessage(() => msg)```. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. 
+Besides blocking calls, Sims can also send asynchronous messages, with a different syntax```asyncMessage(() => receiver.API(args))```. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. The non-block message return a Future object, which user can query about the status of the message. `src/main/scala/meta/runtime/Future.scala`.
 
-Function ```waitLabel``` signals that messages in the Sim's mailbox are ready to be delivered. 
-
-Apart from communicating with others, Sim decides when it wants to check its mailbox by calling another DSL function, ```handleMessages```.  You can find the signature of these methods here ```/src/main/scala/meta/classLifting/SpecialInstructions.scala```
+Function ```waitLabel(Turn, someTicks)``` signals that messages in the Sim's mailbox are ready and agents will wait for the specified ticks. After each turn, the agents automatically process all the messages in their mailboxes. You can find the syntax of the DSLs here ```core/src/main/scala/meta/classLifting/SpecialInstructions.scala```
 
 ### <a name="Meta-Programs"></a> Sims as Meta-Programs
 The embedded DSL is in a staged meta-programming environment. Staging is the operation that generates **object programs** from **meta-programs**. In our framework, users define the behaviour of each agent in **meta-programs** written in a subset of Scala enriched with DSL. We offer two flavors of DSL, one with compilation and one without. For the compiled version, our transpiler compiles the source programs to **object programs** (valid Scala source programs) in `generated\` folder with the help of Squid. For the non-compiled version, we use Scala quasiquote and coroutines. Right now we do not support blocking calls in the non-compiled version.
@@ -100,9 +98,7 @@ object gameOfLifeTest {
 - `docs/` contains documentation
 - `example/` contains the examples using class-lifting and message-passing 
 - `generated/` contains the object programs. The simulation drivers take object programs and run 
-- `lib/` contains the library for writing the meta-programs of a simulation 
-    - `Bot/` are the agents which you can instantiate directly in your example. Please refer to the rumor example which uses the LoggerBot to see how to use it. Please make sure to include the Bot you used in your main class when compiling your example. 
-    - Other folders contain helper classes which are non-agent that you can use directly in your example. 
+- `library/` contains helper classes which are non-agent that you can use in your example. 
 - `core/` contains the compiler source code and supporting runtime objects. 
 - `custMacros/` contains the no-compilation implementation of the DSL. 
  
