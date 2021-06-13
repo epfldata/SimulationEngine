@@ -16,17 +16,24 @@ object wealthDistributionConfig {
     val vision: Int = 3
 
     def newPerson(): example.sugarscape.wealthDistribution.Person = {
-        var genVision = vision * scala.util.Random.nextGaussian().toInt
+        var genVision = (vision * scala.util.Random.nextGaussian()).toInt
         if (genVision > 4) {
             genVision = 4
+        } else if (genVision < 0) {
+            genVision = 1
         }
 
-        var lifespan = lifeExpectancy * scala.util.Random.nextGaussian().toInt
+        var lifespan = lifeExpectancy + (20 * scala.util.Random.nextGaussian()).toInt
         if (lifespan > 100) {
             lifespan = 100
+        } else if (lifespan < 0) {
+            lifespan = lifeExpectancy
         }
 
-        example.sugarscape.wealthDistribution.Person(personMeanEnergy * scala.util.Random.nextGaussian().toInt, personMeanMetabolism * scala.util.Random.nextGaussian().toInt, lifespan, genVision)
+        example.sugarscape.wealthDistribution.Person(
+            List(2, personMeanEnergy + (2 * scala.util.Random.nextGaussian()).toInt).max, List(2, personMeanMetabolism + (2* scala.util.Random.nextGaussian()).toInt).max, 
+            lifespan, 
+            genVision)
     }
 }
 
