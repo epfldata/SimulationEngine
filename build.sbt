@@ -81,7 +81,8 @@ lazy val example = (project in file("example"))
   .settings(
     name := "example",
     commonSettings, squidSettings,
-    runAll := runAllIn(Compile).value
+    runAll := runAllIn(Compile).value,
+    Test / parallelExecution := false
   )
   .dependsOn(root, library, custMacros)
 
