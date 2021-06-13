@@ -6,7 +6,6 @@
 checkpoint/*
 debug/*
 generated/*
-src/test/*
 benchmark/*
 
 ### Build server support ###

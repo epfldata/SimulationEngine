@@ -49,6 +49,11 @@ lazy val custMacros = (project in file("custMacros"))
     libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
   )
 
+lazy val noMessaging = (project in file("ecosim"))
+  .settings(
+    name := "noMessaging",
+    commonSettings)
+
 lazy val root = (project in file("core"))
   .settings(
     name := "root",
