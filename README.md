@@ -21,16 +21,16 @@ The syntax for a blocking message is the same as a regular function. When a Sim 
 
 given that `tellMeThis()` and `doThat()` are public methods in Sim2's class. The transpiler converts it to delivering a message to Sim2 and waiting for a reply. When the reply arrives, the function returns and Sim1's variables ```secret``` and ```workDone```  get their values. 
 
-Besides blocking calls, Sim can also send asynchronous messages, with a different syntax```asyncMessage(() => msg)```. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. 
+Besides blocking calls, Sims can also send asynchronous messages, with a different syntax```asyncMessage(() => msg)```. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. 
 
 Function ```waitLabel``` signals that messages in the Sim's mailbox are ready to be delivered. 
 
-Apart from communicating with others, Sim decides when it wants to check its mailbox by calling another DSL function, ```handleMessages```. We also have another special instruction, `interrupt`.  You can find the signature of these methods here ```/src/main/scala/meta/classLifting/SpecialInstructions.scala```
+Apart from communicating with others, Sim decides when it wants to check its mailbox by calling another DSL function, ```handleMessages```.  You can find the signature of these methods here ```/src/main/scala/meta/classLifting/SpecialInstructions.scala```
 
 ### <a name="Meta-Programs"></a> Sims as Meta-Programs
-The embedded DSL is in a staged meta-programming environment. Staging is the operation that generates **object programs** from **meta-programs**. In our framework, users define the behaviour of each agent in **meta-programs** written in a subset of Scala enriched with DSL, which are then translated by our transpiler to **object programs** (valid Scala source programs).
+The embedded DSL is in a staged meta-programming environment. Staging is the operation that generates **object programs** from **meta-programs**. In our framework, users define the behaviour of each agent in **meta-programs** written in a subset of Scala enriched with DSL. We offer two flavors of DSL, one with compilation and one without. For the compiled version, our transpiler compiles the source programs to **object programs** (valid Scala source programs) in `generated\` folder with the help of Squid. For the non-compiled version, we use Scala quasiquote and coroutines. Right now we do not support blocking calls in the non-compiled version.
  
-We use Squid meta-programming framework. As of now, you need to build Squid locally (branch: class-lifting). 
+We include uber jars of the Squid (class-lifting branch) in the lib/ folder of dependent subprojects (currently under `core/` and `example/`). If you prefer, you can also build it locally and uncomment the lines in build.sbt which loads Squid snapshot. 
 
 ```
 - clone the class-lifting branch of Squid repo: 
@@ -70,29 +70,41 @@ We use Squid meta-programming framework. As of now, you need to build Squid loca
 
 
 ### <a name="Simulation"></a> Start Simulation 
- Once you have written your meta-programs and translated them to object programs, you can start simulation. The object programs are in folder `/generated/src/main/scala/$packageName$`. To start a simulation, first define you simulation configuration: the total turns and time you want to run the simulation for. Next, decide whether you want to use Spark to parallelize your agents. When running locally, Spark consumes more memory and often results in slower simulation. Afterwards, simply pass the configuration to the simulation driver and invoke `run()`. 
+For the compiled version, you can start simulation after generating object programs. The object programs are in folder `/generated/src/main/scala/$packageName$`. To start a simulation, define you simulation configuration and choose a messaging layer implementation. You can find more information about the simulation API in folder `core/src/main/scala/meta/API/`. Here is an example usage assuming the object generated.example.gameOfLife.InitData is the configuration object of your target simulation.
+
 ```
-// Define the configuration for your simulation
-val c: SimulationConfig = SimulationConfig(totalTurn=3)
-// Run the initialization method 
-generated.*yourExample*.initActors()
-// Add the configuration to the simulation 
-val result: SimulationSnapshot = new Default(c).run()
-// Pass the configuration to Spark simulation 
-val result2: SimulationSnapshot = new SimulationSpark(c).run()
+import meta.API._
+
+object gameOfLifeTest {
+
+  def main(args: Array[String]): Unit = {
+    if (args.size < 3) {
+      throw new Exception("Not enough argument!")
+    }
+    val gridWidth = args(0).toInt
+    val gridHeight = args(1).toInt
+    val totalTurns = args(2).toInt
+
+    val agents = generated.example.gameOfLife.InitData(gridWidth, gridHeight)
+
+    val c = new SimulationConfig(agents, totalTurns)
+
+    StartSimulation[AkkaMessagingLayer.type](c)
+    // StartSimulation[BaseMessagingLayer.type](c)
+  }
+}
 ```
- 
- You can also reference the test scripts in `/src/test/scala`
- 
+
 ### <a name="Folder"></a> Folder Structure 
 - `ecosim/` contains the legacy implementation of the simulation framework without using message passing 
+- `docs/` contains documentation
 - `example/` contains the examples using class-lifting and message-passing 
 - `generated/` contains the object programs. The simulation drivers take object programs and run 
 - `lib/` contains the library for writing the meta-programs of a simulation 
     - `Bot/` are the agents which you can instantiate directly in your example. Please refer to the rumor example which uses the LoggerBot to see how to use it. Please make sure to include the Bot you used in your main class when compiling your example. 
     - Other folders contain helper classes which are non-agent that you can use directly in your example. 
-- `src/` contains the transpiler source code and supporting runtime objects. 
-
+- `core/` contains the compiler source code and supporting runtime objects. 
+- `custMacros/` contains the no-compilation implementation of the DSL. 
  
 ### Code Format
 We use Scalafmt for formatting the code.
