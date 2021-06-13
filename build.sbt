@@ -20,8 +20,8 @@ lazy val commonSettings = Seq(
 )
 
 lazy val squidSettings = Seq(
-  libraryDependencies += "ch.epfl.data" %% "squid" % squidVersion, 
-  resolvers += Resolver.sonatypeRepo("snapshots"),
+  // libraryDependencies += "ch.epfl.data" %% "squid" % squidVersion, 
+  // resolvers += Resolver.sonatypeRepo("snapshots"),
   autoCompilerPlugins := true,
   addCompilerPlugin(
     "org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full
@@ -34,11 +34,6 @@ lazy val akkaSettings = Seq(
   libraryDependencies += "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
 )
 
-lazy val sparkSettings = Seq(
-  libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion,
-  libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion,
-)
-
 // Enable graph drawing when debugging
 lazy val graphSettings = Seq(
   libraryDependencies += "guru.nidi" % "graphviz-java" % graphVizVersion,
@@ -47,6 +42,7 @@ lazy val graphSettings = Seq(
 lazy val custMacros = (project in file("custMacros"))
   .settings(
     name := "custMacros",
+    autoCompilerPlugins := true,
     addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full),
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -56,7 +52,7 @@ lazy val custMacros = (project in file("custMacros"))
 lazy val root = (project in file("core"))
   .settings(
     name := "root",
-    commonSettings, squidSettings, graphSettings, sparkSettings, akkaSettings,
+    commonSettings, squidSettings, graphSettings, akkaSettings,
     libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
   ).dependsOn(custMacros)
 
@@ -88,7 +84,7 @@ lazy val example = (project in file("example"))
 lazy val genExample = (project in file("generated"))
   .settings(
     name := "genExample",
-    commonSettings, sparkSettings, akkaSettings,
+    commonSettings, akkaSettings,
   )
   .dependsOn(root, library, example)
 
