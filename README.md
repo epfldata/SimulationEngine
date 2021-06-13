@@ -1,3 +1,5 @@
+[![Scala CI](https://github.com/ZiluTian/economic_simulations/actions/workflows/scala.yml/badge.svg?branch=latest)](https://github.com/ZiluTian/economic_simulations/actions/workflows/scala.yml)
+
 ## Large-scale agent-based simulation 
 
 The goal of this project is to provide a framework suitable for scaled-out agent-based simulation. 
