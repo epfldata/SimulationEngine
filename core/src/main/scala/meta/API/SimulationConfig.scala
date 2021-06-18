@@ -11,7 +11,9 @@ import meta.runtime.Container
   */
 class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isCompiled: Boolean = true) {
   // Group agents statically into containers according to the number of partitions                 
-  def staticPartition(partitions: Int): SimulationConfig = {
+
+  def staticPartition(partitions: Int)(containerOpt: SimContainerOptimization): SimulationConfig = {
+
         val totalAgents = actors.size
         var clusterSize: Int = totalAgents / partitions
 
@@ -19,19 +21,9 @@ class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isC
             clusterSize += 1
         }
 
-        val containers = if (isCompiled){
-          actors.sliding(clusterSize, clusterSize).map(x => {
-            val c1 = new Container()
-            c1.initAddAgents(x, "Compiled")
-            c1
-          }).toList
-        } else {
-          actors.sliding(clusterSize, clusterSize).map(x => {
-            val c1 = new Container()
-            c1.initAddAgents(x, "Staged")
-            c1
-          }).toList
-        }
+        val containers = actors.sliding(clusterSize, clusterSize).map(x => {
+          newContainer(x)(isCompiled, containerOpt)
+        }).toList
 
         new SimulationConfig(containers, totalTurn, isCompiled)
   }
