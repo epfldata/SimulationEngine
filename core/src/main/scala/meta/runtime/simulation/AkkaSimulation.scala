@@ -54,22 +54,22 @@ object Dispatcher {
                         }
                     })
 
-                    agentRefMap.foreach(a => {
-                        a._2 ! ReceiveFromDispatcher(groupedMsgs.getOrElse(a._1, List()), context.self)
-                    })
-
                     val nextTurn = currentTurn + 1
-                    if (currentTurn >= totalTurn) {
+
+                    val t = System.currentTimeMillis()
+                    context.log.info("Turn {} Total time: {} ms", currentTurn, t - currentTime)
+
+                    if (nextTurn >= totalTurn) {
                         agentRefMap.foreach(a => {
                             a._2 ! Stop(context.self)
                         })
-                        dispatcher(0, nextTurn, 0)
                     } else {
-                        val t = System.currentTimeMillis()
+                        agentRefMap.foreach(a => {
+                            a._2 ! ReceiveFromDispatcher(groupedMsgs.getOrElse(a._1, List()), context.self)
+                        })
+
                         msgBuffer.clear()
                         agentRefMap = Map()
-                        context.log.info("Turn {} Total time: {} ms", currentTurn, t - currentTime)
-
 
                         val newAgents = if (SimExperiment.staged) {
                             SimRuntime.newActors.map(a => context.spawn((new SimAgentStaged).apply(a), f"simAgent${a.id}"))
@@ -89,9 +89,8 @@ object Dispatcher {
                         SimRuntime.newActors.clear()
                         
                         newAgents.foreach(a => a ! Dispatcher.ReceiveFromDispatcher(List(), context.self))
-
-                        dispatcher(0, nextTurn, t)
                     } 
+                    dispatcher(0, nextTurn, t)
                 } else {
                     dispatcher(aggAgents, 
                             currentTurn, 
