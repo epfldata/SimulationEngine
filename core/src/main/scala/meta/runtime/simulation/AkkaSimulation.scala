@@ -69,6 +69,27 @@ object Dispatcher {
                         msgBuffer.clear()
                         agentRefMap = Map()
                         context.log.info("Turn {} Total time: {} ms", currentTurn, t - currentTime)
+
+
+                        val newAgents = if (SimExperiment.staged) {
+                            SimRuntime.newActors.map(a => context.spawn((new SimAgentStaged).apply(a), f"simAgent${a.id}"))
+                        } else {
+                            SimRuntime.newActors.map(a => {
+                                context.spawn((new SimAgent).apply(a), f"simAgent${a.id}")
+                            })
+                        }
+
+                        totalAgents += newAgents.size
+
+                        val newProxyMap = SimRuntime.newActors
+                            .map(a => (a.proxyIds, a.id))
+                            .flatMap(p => p._1.map(i => (i, p._2))).toMap
+
+                        proxyMap = proxyMap ++ newProxyMap
+                        SimRuntime.newActors.clear()
+                        
+                        newAgents.foreach(a => a ! Dispatcher.ReceiveFromDispatcher(List(), context.self))
+
                         dispatcher(0, nextTurn, t)
                     } 
                 } else {
@@ -149,6 +170,8 @@ class SimAgentStaged {
 }
 
 object SimExperiment {
+    var staged: Boolean = false
+
     def apply(totalTurn: Int, actors: List[Actor], staged: Boolean): Behavior[NotUsed] = 
         Behaviors.setup { context => 
             val proxyMap = actors
@@ -157,6 +180,7 @@ object SimExperiment {
 
             val dispatcher = context.spawn(Dispatcher(actors.size, totalTurn, proxyMap), "dispatcher")
             
+            this.staged = staged
             val simAgents = if (staged) {
                 actors.map(a => context.spawn((new SimAgentStaged).apply(a), f"simAgent${a.id}"))
             } else {
