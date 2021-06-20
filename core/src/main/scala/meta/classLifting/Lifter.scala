@@ -356,13 +356,12 @@ class Lifter {
             val convertLocal = Variable[Boolean]
 
             val f = LetBinding(Some(convertLocal),
-                  // ScalaCode(code"""
-                  // if ($actorSelfVariable._container!= null) {
-                  //   $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
-                  // } else {
-                  //   false
-                  // }"""),
-                  ScalaCode(code"false"),
+                  ScalaCode(code"""
+                  if ($actorSelfVariable._container!= null) {
+                    $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
+                  } else {
+                    false
+                  }"""),
                   IfThenElse(code"$convertLocal",
                     ScalaCode(
                       code"""
@@ -471,13 +470,12 @@ class Lifter {
 
             val f = if (actorSelfVariable.toCode != recipientActorVariable) {
                 LetBinding(Some(convertLocal), 
-                  ScalaCode(code"false"),
-                  // ScalaCode(code"""
-                  // if ($actorSelfVariable._container!= null) {
-                  //   $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
-                  // } else {
-                  //   false
-                  // }"""),
+                  ScalaCode(code"""
+                  if ($actorSelfVariable._container!= null) {
+                    $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
+                  } else {
+                    false
+                  }"""),
                   IfThenElse(code"$convertLocal",
                     ScalaCode(cde),
                     Send[T](actorSelfVariable.toCode,
