@@ -6,10 +6,12 @@ object util {
     "(Turn " + turn + ")"
   }
 
-  def bench(code: => Unit ): Unit = {
+  def bench(code: => Unit ): Long = {
     val start: Long = System.currentTimeMillis()
     code
     val end: Long = System.currentTimeMillis()
-    println(s"Total time: ${end - start} ms")
+    val total = end - start
+    println(s"Total time: ${total} ms")
+    total
   }
 }
