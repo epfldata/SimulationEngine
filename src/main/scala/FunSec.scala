@@ -121,9 +121,7 @@ case class FundamentalsSecurity() extends Security {
         new TechnicalTrader(1 + rnd.nextInt(5),
                             0.1 + rnd.nextGaussian() * 0.05, S0)
       }).toList ++
-      (1 to num_rplayers).map(_ => {
-        new RandomTrader()
-      }).toList;
+      (1 to num_rplayers).map(_ => new RandomTrader()).toList;
 
     val S = new Array[Double](resolution + 1); // time series
     S(0) = S0;
