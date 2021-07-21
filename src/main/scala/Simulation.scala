@@ -13,7 +13,7 @@ class Simulation {
     market += (c -> new SellersMarket(c));
   };
 
-  var arbeitsmarkt = collection.mutable.Stack[SimO](); // all Persons
+  var labour_market = collection.mutable.Stack[SimO](); // all Persons
 
   var chicago = collection.mutable.Map[Security, OrderBook]();
 
@@ -37,7 +37,7 @@ class Simulation {
     assert(timer == 0);
     println("INIT Simulation " + this);
     sims = _sims;
-    for(s <- sims) if(s.isInstanceOf[Person]) arbeitsmarkt.push(s);
+    for(s <- sims) if(s.isInstanceOf[Person]) labour_market.push(s);
 
     if(! GLOBAL.silent) {
       for(s <- sims) { s.stat; }
@@ -72,8 +72,8 @@ class Simulation {
       })
     });
 
-    s2.arbeitsmarkt =
-      arbeitsmarkt.map((x: SimO) => old2new(x.asInstanceOf[SimO]));
+    s2.labour_market =
+      labour_market.map((x: SimO) => old2new(x.asInstanceOf[SimO]));
 
     for ((commodity, ma) <- market) {
       ma.copy_state_to(s2.market(commodity),

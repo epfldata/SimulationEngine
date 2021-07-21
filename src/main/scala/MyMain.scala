@@ -12,21 +12,21 @@ object MainExample {
   //val rf  = new CattleFarm(s);
   //val mcd = new McDonalds(s);
   val landlord        = new Source(Land,  20, 100000*100, s);
-  //val freudensprung = new Source(Beef,   100,  26000*100, s);
+  //val cattle_farmer = new Source(Beef,   100,  26000*100, s);
   //val silo          = new Source(Wheat, 1000,   6668*100, s);
   //val silo2         = new Trader(Whear, 100, s);
-  //val billa         = new Trader(Flour, 50, s);
-  val mehlbuyer     = new Buyer(Flour, () => 40, s);
+  //val flour_trader  = new Trader(Flour, 50, s);
+  val flour_buyer     = new Buyer(Flour, () => 40, s);
 
   val people = for(x <- 1 to 12) yield new Person(s, false);
 
   s.init(List(
     landlord,
     //silo,
-    // silo2, billa, freudensprung,
+    // silo2, flour_trader, cattle_farmer,
     f, m,
     // c, rf, mcd,
-    mehlbuyer
+    flour_buyer
   ) ++ people.toList);
 
   def main(argv: Array[String]) {

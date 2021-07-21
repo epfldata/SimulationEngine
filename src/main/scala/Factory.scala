@@ -112,10 +112,10 @@ case class HR(private val shared: Simulation,
   def salary_cost() = salary * employees.length
 
   protected def hire_one() {
-    if(shared.arbeitsmarkt.length > 0)
-      employees.push(shared.arbeitsmarkt.pop.asInstanceOf[Person]);
+    if(shared.labour_market.length > 0)
+      employees.push(shared.labour_market.pop.asInstanceOf[Person]);
   }
-  protected def fire_one() { shared.arbeitsmarkt.push(employees.pop); }
+  protected def fire_one() { shared.labour_market.push(employees.pop); }
 
   def hire(n: Int) { for(i <- 1 to n) hire_one(); }
   def fire(n: Int) { for(i <- 1 to n) fire_one(); }
@@ -184,7 +184,7 @@ class Factory(pls: ProductionLineSpec,
   protected def add_production_line() : Boolean = {
     var success = true;
 
-    if(shared.arbeitsmarkt.length >= pls.employees_needed)
+    if(shared.labour_market.length >= pls.employees_needed)
     {
       // buy only what we require. We may still have it from
       // previous production reductions.
