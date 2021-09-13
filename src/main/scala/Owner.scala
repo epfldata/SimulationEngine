@@ -8,6 +8,9 @@ type ITEM_T = Security
 
 package Owner {
 
+import contact.{ContactNetwork, LocalMarket}
+import Securities.Commodities.Commodity
+
 
 case class BalanceSheet(
   balance               : Int,
@@ -65,6 +68,18 @@ class Owner {
                                      collection.mutable.Map[ITEM_T, Double]()
   private var total_value_destroyed : Double = 0.0
 
+
+  /** @note We can assume that commodities are produced ~ in the same time. Wheat is harvested once a year (for a specific type)
+   * Thus we need only one counter of expiry date by commodity holded
+   * Form: Wheat -> (quantity, timer of expiry)
+   * When timer of expiry is reach, commodity is destroyed
+   */
+  protected var holdedCommodities: collection.mutable.Map[ITEM_T, (Int, Int)] =
+                                 collection.mutable.Map[ITEM_T, (Int, Int)]()
+
+  /** Represent other owners to whom the owner has already exchanged*/
+  val contactNetwork = new ContactNetwork
+
   /** The probability of bankruptcy, as a basis of a credit rating.
       TODO: In which time frame?
   */
@@ -95,8 +110,8 @@ class Owner {
       inventory_avg_cost(item) = (inventory_total_cost(item) +
         units_added * unit_cost) / (inventory(item) + units_added)
 
-    println("recalculate_inv_avg_cost: " + units_added + " " + unit_cost +
-      " " + inventory_avg_cost(item));
+    //println("recalculate_inv_avg_cost: " + units_added + " " + unit_cost +
+    //  " " + inventory_avg_cost(item));
   }
 
   /** This is the number of units in the inventory available for taking;
@@ -153,8 +168,11 @@ class Owner {
   def atomic_sell_to(buyer: Owner, item: ITEM_T, units: Int,
               unit_price: Double) {
     assert(units >= 0); // respect trading direction: it's a sell
-
+              
     if(! inventory.contains(item)) init_inv(item);
+
+    //Take into account the fact that some Items may be holded, thus not saleable
+    //val availableUnits = Math.min(inventory.get(item) - holdedCommodities.getOrElse(com, 0), units)
 
     if(this == buyer)
       println("WARNING Owner.atomic_sell_to: " + this + " selling to himself!");
@@ -164,6 +182,7 @@ class Owner {
 
     if(! GLOBAL.silent)
       println((this + " sells " + units + "*" + item + " to " + buyer +
+      //println((this + " sells " + availableUnits + "*" + item + " to " + buyer +
         " at " + (unit_price/100).toInt) + "/unit");
 
     if(unit_price < inventory_avg_cost(item))
@@ -172,11 +191,17 @@ class Owner {
     buyer.recalculate_inv_avg_cost(item, units, unit_price);
     recalculate_inv_avg_cost(item, -units, unit_price);
 
+    //buyer.recalculate_inv_avg_cost(item, availableUnits, unit_price);
+    //recalculate_inv_avg_cost(item, -availableUnits, unit_price);
+
     // transfer asset
     buyer.inventory(item) += units;
           inventory(item) -= units;
 
     buyer.transfer_money_to(this, math.ceil(units * unit_price).toInt);
+
+    /** add buyer to seller contactNetwork */
+    buyer.contactNetwork.increaseScore(this.asInstanceOf[Seller], item.asInstanceOf[Commodity])
 
     // println("Now buyer = " + buyer + " and seller = " + this);
   }
@@ -184,12 +209,14 @@ class Owner {
   /** No shorting: sell no more than inventory. */
   def partial_sell_to(buyer: Owner, item: ITEM_T, units: Int,
                       unit_price: Double) : Int = {
-    val available = math.max(inventory(item), 0);
-    val n = math.min(available, units); // no shorting
+    //No need to check that inv - holded > 0 as it is made when adding and removing from holdedCommodities
+    val available = Math.min(inventory.getOrElse(item,0) - holdedCommodities.getOrElse(item, (0,0))._1, units)
+    //val n = math.min(available, units); // no shorting
 
-    atomic_sell_to(buyer, item, n, unit_price);
+    atomic_sell_to(buyer, item, available, unit_price);
 
-    n // return #units sold
+    //n
+    available // return #units sold
   }
 
   /** Doesn't touch capital:
@@ -213,7 +240,57 @@ class Owner {
 
     value_destroyed // returns cost of destroyed stuff
   }
+
+  //Holded inventory operations:
+
+  /** Hold ITEM_T, these cannot be sell on the market anymore. Call releaseToMarket() to sell them
+    * The method assumes that the added commodities are added with close simulation timer difference 
+    * (this is why we just replace the old expiryTimer by the new one)
+    * @param com
+    * @param unit
+    * @param expiryTimer should be time time to expire + the current time. After simulation reach this timer, holded ITEM_T is destroyed
+    */
+  def holdCommodity(com: ITEM_T, unit: Int, expiryTimer: Int): Unit = {
+    assert(unit > 0)
+    assert(expiryTimer > 0)
+    //Check if we actually have enough in the inventory
+    val oldValue: (Int, Int) = holdedCommodities.getOrElse(com,(0,0))
+    holdedCommodities.update(com, (oldValue._1 + unit, expiryTimer))
+  }
+
+  def holdedCommodity(com: ITEM_T): Int = {
+    holdedCommodities.getOrElse(com, (0,0))._1
+  }
+
+  def releaseToMarket(com: ITEM_T, unit: Int): Unit = {
+    assert(unit <= holdedCommodities.getOrElse(com, (0,0))._1)
+    val oldValue: (Int, Int) = holdedCommodities.getOrElse(com,(0,0))
+    holdedCommodities.update(com, (oldValue._1 - unit, oldValue._2))
+    //If no more of this kind of commodity is stored, reset expiryTimer to 0
+    if(holdedCommodities.getOrElse(com, (0,0))._1 == 0){
+      holdedCommodities.put(com, (0,0))
+    }
+  }
+
+  def saleableUnits(com: ITEM_T): Int = {
+    inventory.getOrElse(com, 0) - holdedCommodities.getOrElse(com, (0,0))._1
+  }
+
+  /** Use to destroy the items that have expired
+    * @param timer the current timer of the simulation
+    */
+  def removeExpiredItems(timer: Int): Unit = {
+    holdedCommodities.foreach{
+      case (com: ITEM_T, (units:Int, expireTimer:Int)) => {
+        //we need to destroy the holded Items
+        if(timer >= expireTimer){
+          //Clear the hold inventory and the inventory
+          holdedCommodities.put(com, (0,0))
+          destroy(com, units)
+          
+        }
+      }
+    }
+  }
 }
-
-
 } // end package Owner

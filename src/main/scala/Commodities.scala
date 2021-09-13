@@ -28,13 +28,16 @@ case class Commodity(name: String) extends Security {
 
 
 package object Commodities {
-  val Wheat       = Commodity("wheat")
+  val WheatSeeds  = Commodity("wheat seeds") //The WheatSeeds unit is in tonne
+  val Wheat       = Commodity("wheat")  //The Wheat unit is in tonne
   val Flour       = Commodity("flour")
   val Land        = Commodity("land")
   val MovieTicket = Commodity("ticket")
   val Beef        = Commodity("beef")
   val Burger      = Commodity("burger")
-
-  val all_commodities = List(Wheat, Flour, Land, MovieTicket, Beef, Burger);
-}
+  val Fertilizer  = Commodity("fertilizer")
+  val FeedStuff   = Commodity("feedStuff")
+  
+  val all_commodities = List(WheatSeeds, Wheat, Flour, Land, MovieTicket, Beef, Burger, Fertilizer, FeedStuff);
+  }
 
