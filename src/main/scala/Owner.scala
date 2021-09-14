@@ -8,7 +8,7 @@ type ITEM_T = Security
 
 package Owner {
 
-import contact.{ContactNetwork, LocalMarket}
+import contact.ContactNetwork
 import Securities.Commodities.Commodity
 
 

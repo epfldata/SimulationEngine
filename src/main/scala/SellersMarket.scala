@@ -2,7 +2,6 @@ package Owner {
 import Timeseries._
 import Securities._
 import Commodities._
-import contact.LocalMarket
 
 
 case class SalesRecord(
@@ -97,11 +96,9 @@ class SellersMarket(commodity: Commodity) extends MarketSelling with MarketMatch
    */
   private def best_match(units: Int,
                          exclude: Owner, usualSellers: List[Seller] = List[Seller]()) : (Int, List[(Int, Seller)]) = {
-    
-    /** lowest price first (influence by clientScore of the usualSellers)
-     *for example: selling at 100 unit with client score of 5 yield to selling at 100 - 5%of100 = 95
-     @note This implementation should be improved TODO
-     */
+    /** lowest price first + in function of the clientScore of the seller (subtract clientscore% to price for selecting)
+     *for example: selling at 100 unit with client score of 5 yield to selling at 100 - 5%of100 = 95 
+     * TODO might need something else afterwards than only - some % */
 
     //start by sorting the usualSellers by order of price & clientScore
     var asks = usualSellers.filter((s: Seller) => 
@@ -119,6 +116,7 @@ class SellersMarket(commodity: Commodity) extends MarketSelling with MarketMatch
                 s.price(commodity).get - s.contactNetwork.getContactScore(exclude.asInstanceOf[Seller])/100 * s.price(commodity).get
               })) 
     //may require some checks like the fact that price is not taken into account between usualTraders and others
+    //greedy_match(asks, ((s: Seller) => s.available(commodity)), units)
     greedy_match(asks, ((s: Seller) => s.saleableUnits(commodity)), units)
   }
 
@@ -155,50 +153,6 @@ class SellersMarket(commodity: Commodity) extends MarketSelling with MarketMatch
   }
 }
 
-/**
-  * Give the base price of commodities
-  * First milestone, only use a sinus + add/sub some integers to represent fluctuation.
-  * Second milestone: use demand and production based on the SellersMarket to give base price
-  * @param markets Will be used in milestone 2
-  */
-  class Prices(markets: scala.collection.mutable.Map[Commodity, SellersMarket]){
-
-  //The base price for each commodity. In euros/Tons 
-  private val baseComPrices = scala.collection.mutable.Map[Commodity, Double](
-    WheatSeeds -> 100.0, //No Idea of real price
-    Wheat -> 240.0,
-    Flour -> 280.0, //No Idea of real price
-    FeedStuff -> 300.0, //No Idea of real price
-    Fertilizer -> 80.0 //No Idea of real price
-  ) //constant
-  private val comPrices = scala.collection.mutable.Map[Commodity, Double](
-    WheatSeeds -> baseComPrices(WheatSeeds),
-    Wheat -> baseComPrices(Wheat),
-    Flour -> baseComPrices(Flour),
-    FeedStuff -> baseComPrices(FeedStuff),
-    Fertilizer -> baseComPrices(Fertilizer)
-  ) //fluctuate
-
-  //size of the steps of the sinusoïde 
-  val timeStep: Double = 2*Math.PI / (12 * 2 * CONSTANTS.TICKS_TIMER_PER_MONTH) // For a period of 2 years, if each timestep is 1 month
-  var counter: Int = 0
-  val rnd = scala.util.Random
-
-  //Change it with a sinus of amplitude 20% of base price, + small jumps of [-3;3]
-  def updatePrice(com: Commodity): Unit = {
-    comPrices.update(com, 
-    BigDecimal(baseComPrices(com)*(1 + 0.2*Math.sin(timeStep * counter)) -3 + rnd.nextInt(6)).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble)
-  }
-
-  def updateAllPrices(): Unit = {
-    comPrices.keySet.foreach(updatePrice)
-    counter += 1
-  }
-
-  def getPriceOf(com: Commodity): Double = {
-    comPrices.getOrElse(com, -1)
-  }
-}
 
 } // package Markets
 

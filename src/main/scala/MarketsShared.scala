@@ -75,8 +75,8 @@ trait MarketSelling {
   // #units currently offered on the market
   //def offered(): Int;
 
-  def market_buy_order_now(time: Int, buyer: Owner, units: Int) : Int;
-  def  limit_buy_order_now(time: Int, buyer: Owner, units: Int) : Int;
+  def market_buy_order_now(time: Int, buyer: Owner, units: Int, usualSellers: List[Seller]) : Int;
+  def  limit_buy_order_now(time: Int, buyer: Owner, units: Int, usualSellers: List[Seller]) : Int;
 }
 
 

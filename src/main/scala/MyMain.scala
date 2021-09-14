@@ -1,32 +1,39 @@
 package Simulation
 import SimLib._
 import Securities.Commodities._
-import farmpackage.Farm
-import Simulation.Factory._
 
 
 object MainExample {
   val s = new Simulation;
 
-  val seedsSeller = new Source(WheatSeeds, 10000000,300, s);
-  val seedsSeller1 = new Source(WheatSeeds, 100000,340, s);
-  val feedStuffSeller = new Source(FeedStuff, 100000,100, s);
+  val f   = new Farm(s);
+  val m   = new Mill(s);
+  //val c   = new Cinema(s);
+  //val rf  = new CattleFarm(s);
+  //val mcd = new McDonalds(s);
+  val landlord        = new Source(Land,  20, 100000*100, s);
+  //val cattle_farmer = new Source(Beef,   100,  26000*100, s);
+  //val silo          = new Source(Wheat, 1000,   6668*100, s);
+  //val silo2         = new Trader(Wheat, 100, s);
+  //val flour_trader  = new Trader(Flour, 50, s);
+  val flour_buyer     = new Buyer(Flour, () => 40, s);
 
-  s.init(List());
+  val people = for(x <- 1 to 12) yield new Person(s, false);
 
-  //def main(argv: Array[String]) {
-  //  if((argv.length != 1) || (argv(0).toInt < 1))
-  //    println("Exactly one integer >0 argument needed!");
-  //  else
-  //    s.run(argv(0).toInt);
-  //}
+  s.init(List(
+    landlord,
+    //silo,
+    // silo2, flour_trader, cattle_farmer,
+    f, m,
+    // c, rf, mcd,
+    flour_buyer
+  ) ++ people.toList);
 
-  /** For the moment change the number of iteration directly in the code, problem with previous implementation
-   * @note This will be fixed to select number of turns directly from terminal
-  */
   def main(argv: Array[String]) {
-    //s.run(2);
-    s.run(800);
+    if((argv.length != 1) || (argv(0).toInt < 1))
+      println("Exactly one integer >0 argument needed!");
+    else
+      s.run(argv(0).toInt);
   }
 }
 
@@ -47,6 +54,5 @@ object TradingExample {
 (BalanceSheet(0,4050,0,-4050,0),ArrayBuffer(Wheat -> 4@1012))
 */
 }
-
 
 
