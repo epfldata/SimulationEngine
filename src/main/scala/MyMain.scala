@@ -30,10 +30,11 @@ object MainExample {
   ) ++ people.toList);
 
   def main(argv: Array[String]) {
-    if((argv.length != 1) || (argv(0).toInt < 1))
-      println("Exactly one integer >0 argument needed!");
-    else
-      s.run(argv(0).toInt);
+    //if((argv.length != 1) || (argv(0).toInt < 1))
+    //  println("Exactly one integer >0 argument needed!");
+    //else
+    //  s.run(argv(0).toInt);
+    s.run(10)
   }
 }
 
