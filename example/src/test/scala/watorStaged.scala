@@ -1,7 +1,7 @@
 package example.staged.wator
 
 import meta.classLifting.SpecialInstructions._
-import custMacros.Sim
+import stagedSims.Sim
 import meta.runtime._
 
 trait watorCell {

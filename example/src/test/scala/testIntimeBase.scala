@@ -2,7 +2,7 @@ package example
 package stagedTest
 
 
-import custMacros.Sim
+import stagedSims.Sim
 import meta.classLifting.SpecialInstructions._
 import meta.runtime.Message
 

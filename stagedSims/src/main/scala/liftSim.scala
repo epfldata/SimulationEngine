@@ -1,4 +1,4 @@
-package custMacros
+package stagedSims
 
 import scala.reflect.runtime.universe._
 import scala.language.experimental.macros
@@ -9,17 +9,14 @@ import scala.annotation.compileTimeOnly
 
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
 
-// Lift the behavior of each Sim
+/**
+ * We can stage agents with co-routine based local continuation 
+ */
 @compileTimeOnly("Enable macro paradise to expand macro annotations.")
 class Sim extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SimMacro.impl
 }
 
-// class dbg_Sim extends StaticAnnotation {
-//   def macroTransform(annottees: Any*): Any = macro SimMacro.impl
-// }
-
-// Inject code for asyncMessage, wait, and handleMessages
 object rewriteBehavior {
     def genHandleMessage(c: blackbox.Context)(API_methods_meta: List[c.universe.Tree]): c.universe.Tree = {
         import c.universe._

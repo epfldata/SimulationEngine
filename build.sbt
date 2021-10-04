@@ -40,9 +40,9 @@ lazy val graphSettings = Seq(
   libraryDependencies += "guru.nidi" % "graphviz-java" % graphVizVersion,
 )
 
-lazy val custMacros = (project in file("custMacros"))
+lazy val stagedSims = (project in file("stagedSims"))
   .settings(
-    name := "custMacros",
+    name := "stagedSims",
     autoCompilerPlugins := true,
     addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full),
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
@@ -61,7 +61,7 @@ lazy val core = (project in file("core"))
     name := "core",
     commonSettings, squidSettings, graphSettings, akkaSettings,
     libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
-  ).dependsOn(custMacros)
+  ).dependsOn(stagedSims)
 
 lazy val library = (project in file("library"))
   .settings(
@@ -86,7 +86,7 @@ lazy val example = (project in file("example"))
     runAll := runAllIn(Compile).value,
     Test / parallelExecution := false
   )
-  .dependsOn(core, library, custMacros)
+  .dependsOn(core, library, stagedSims)
 
 lazy val genExample = (project in file("generated"))
   .settings(

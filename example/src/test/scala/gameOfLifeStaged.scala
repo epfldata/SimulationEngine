@@ -1,7 +1,7 @@
 package example.staged.gameOfLife
 
 import meta.classLifting.SpecialInstructions._
-import custMacros.Sim
+import stagedSims.Sim
 import meta.runtime._
 
 /**

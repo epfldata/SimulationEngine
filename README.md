@@ -100,7 +100,7 @@ object gameOfLifeTest {
 - `generated/` contains the object programs. The simulation drivers take object programs and run 
 - `library/` contains helper classes which are non-agent that you can use in your example. 
 - `core/` contains the compiler source code and supporting runtime objects. 
-- `custMacros/` contains the no-compilation implementation of the DSL. 
+- `stagedSims/` contains the no-compilation implementation of the DSL. 
  
 ### Code Format
 We use Scalafmt for formatting the code.

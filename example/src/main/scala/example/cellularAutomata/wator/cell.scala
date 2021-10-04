@@ -3,7 +3,7 @@ package example.cellularAutomata.wator
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 import meta.runtime.{Actor, Future}
-import custMacros.Sim
+import stagedSims.Sim
 
 trait watorCell {
     var energy: Int

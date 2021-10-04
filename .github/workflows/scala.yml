@@ -19,7 +19,7 @@ jobs:
         java-version: '8'
         distribution: 'adopt'
     - name: Coroutine test
-      run: sbt "project custMacros; test"
+      run: sbt "project stagedSims; test"
     - name: Unit tests for noMessaging
       run: sbt "project noMessaging; test"
     - name: Unit tests for compiler
