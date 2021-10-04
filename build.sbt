@@ -1,6 +1,7 @@
 ThisBuild / organization := "ch.epfl.data"
 ThisBuild / scalaVersion := "2.12.8"
-ThisBuild / version := "1.0"
+ThisBuild / version := "1.0-SNAPSHOT"
+name := "Simulation"
 
 val paradiseVersion = "2.1.0"
 val breezeVersion = "0.13.2"
@@ -55,9 +56,9 @@ lazy val noMessaging = (project in file("ecosim"))
     name := "noMessaging",
     commonSettings)
 
-lazy val root = (project in file("core"))
+lazy val core = (project in file("core"))
   .settings(
-    name := "root",
+    name := "core",
     commonSettings, squidSettings, graphSettings, akkaSettings,
     libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
   ).dependsOn(custMacros)
@@ -85,7 +86,7 @@ lazy val example = (project in file("example"))
     runAll := runAllIn(Compile).value,
     Test / parallelExecution := false
   )
-  .dependsOn(root, library, custMacros)
+  .dependsOn(core, library, custMacros)
 
 lazy val genExample = (project in file("generated"))
   .settings(
@@ -93,6 +94,6 @@ lazy val genExample = (project in file("generated"))
     Test / parallelExecution := false,
     commonSettings, akkaSettings,
   )
-  .dependsOn(root, library, example)
+  .dependsOn(core, library, example)
 
 

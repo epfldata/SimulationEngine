@@ -23,7 +23,7 @@ jobs:
     - name: Unit tests for noMessaging
       run: sbt "project noMessaging; test"
     - name: Unit tests for compiler
-      run: sbt "project root; test"
+      run: sbt "project core; test"
     - name: Unit tests for library
       run: sbt "project library; test"
     - name: Examples compile
