@@ -39,7 +39,7 @@ object wealthDistributionConfig {
 
 object Example extends App {
     
-    val liftedMain = custMacros.liftMethod {
+    val liftedMain = meta.classLifting.liteLift {
 
         def apply(width: Int, height: Int): List[Actor] = {
 

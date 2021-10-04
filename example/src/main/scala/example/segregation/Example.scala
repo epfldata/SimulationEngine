@@ -3,7 +3,7 @@ package segregation
 
 object Example extends App {
 
-    val liftedMain = custMacros.liftMethod {
+    val liftedMain = meta.classLifting.liteLift {
         def apply(width: Int, height: Int, population: Int): List[Actor] = {
             val world: WorldMap = new WorldMap(width, height)
 

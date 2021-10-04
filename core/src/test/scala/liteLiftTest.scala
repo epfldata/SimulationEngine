@@ -1,13 +1,20 @@
-package test.custMacros
+package meta.test.liteLift
 
 import scala.collection.mutable.ListBuffer
-import custMacros.liftMethod
 import org.scalatest.{Matchers, FlatSpec}
+import meta.classLifting.liteLift
 
-class liftMethodExample extends org.scalatest.FlatSpec with Matchers {
+
+class Foo() {
+    def run(): Unit = {
+        println("Test classpath")
+    }
+}
+
+class liteLiftExample extends org.scalatest.FlatSpec with Matchers {
 
     "lift method" should "return the full path for imported library and capture arguments" in {
-        val liftedMethod = liftMethod {
+        val liftedMethod = liteLift {
             def getMessages(f: Int): ListBuffer[Int] = {
                 val l = ListBuffer[Int]()
                 l.append(f)
@@ -20,7 +27,7 @@ class liftMethodExample extends org.scalatest.FlatSpec with Matchers {
     }
     
     "lift method" should "not return the full path for objects defined in the same package" in {
-        val liftedMethod2 = liftMethod {
+        val liftedMethod2 = liteLift {
             def d(): Unit = {
                 val foo = new Foo()
                 foo.run()
@@ -31,7 +38,7 @@ class liftMethodExample extends org.scalatest.FlatSpec with Matchers {
     }
 
     "A method including non-exist type" should "not type check" in {
-        """liftMethod {
+        """liteLift {
             def bar(): Unit = {
                 val foo = new NonExistentFoo()
             }
@@ -39,15 +46,15 @@ class liftMethodExample extends org.scalatest.FlatSpec with Matchers {
     }
 
     "A method with wrong argument application" should "not type check" in {
-        """liftMethod {
+        """liteLift {
             def bar(): Unit = {
                 val foo = new Foo(10, 100)
             }
         }""" shouldNot typeCheck
     }
 
-    "A block definition which is not a method" should "throw exception by liftMethod" in {
-        """liftMethod {
+    "A block definition which is not a method" should "throw exception by liteLift" in {
+        """liteLift {
             val foo = new Foo()
             foo.run()
         }""" shouldNot compile

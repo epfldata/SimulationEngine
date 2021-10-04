@@ -7,7 +7,7 @@ import scala.collection.mutable.{Map => MutMap}
 import lib.Grid.Torus2D
 
 object MainInit {
-    val liftedMain = custMacros.liftMethod {
+    val liftedMain = meta.classLifting.liteLift {
         def apply(width: Int, height: Int): List[Actor] = {
 
             val totalPoints: Int = width * height

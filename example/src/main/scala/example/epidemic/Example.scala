@@ -2,7 +2,7 @@ package example
 package epidemic
 
 object MainInit {
-    val liftedMain = custMacros.liftMethod {
+    val liftedMain = meta.classLifting.liteLift {
         def apply(populationSize: Int): List[Actor] = {
             val infectiousSeed = 4
             val perCapitaContacts = 6

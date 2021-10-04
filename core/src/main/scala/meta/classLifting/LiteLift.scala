@@ -1,11 +1,15 @@
-package custMacros
+package meta.classLifting
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-// Lift the MainInit of each example
-
-object liftMethod {
+/**
+  * LiteLift is a thin wrapper over Scala's quasiquotation instead of Squid
+  * 
+  * See the test file for more comparison. We use it as an alternative to lift
+  * the main class (MainInit) that defines a simulation.
+  */
+object liteLift {
   def apply[T](x: => T): String = macro impl
   def impl(c: blackbox.Context)(x: c.Tree) = { import c.universe._
     val q"..$methodDef" = x
