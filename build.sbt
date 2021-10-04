@@ -10,7 +10,7 @@ val sparkVersion = "3.0.1"
 val graphVizVersion = "0.10.0"
 val akkaVersion = "2.6.14"
 
-fork in run := true
+run / fork := true
 
 lazy val commonSettings = Seq(
   libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
@@ -72,9 +72,9 @@ lazy val runAll = taskKey[Unit]("run-all, for compiling all meta examples")
 
 def runAllIn(config: Configuration) = Def.task {
     val s = streams.value
-    val cp = (fullClasspath in config).value
-    val r = (runner in run).value
-    (discoveredMainClasses in config).value.foreach(c =>
+    val cp = (config / fullClasspath).value
+    val r = (run / runner).value
+    (config / discoveredMainClasses).value.foreach(c =>
       r.run(c, cp.files, Seq(), s.log))
 }
 
