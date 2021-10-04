@@ -61,7 +61,8 @@ lazy val core = (project in file("core"))
     name := "core",
     commonSettings, squidSettings, graphSettings, akkaSettings,
     libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
-  ).dependsOn(stagedSims)
+    libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
+  )
 
 lazy val library = (project in file("library"))
   .settings(

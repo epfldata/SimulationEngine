@@ -2,7 +2,6 @@ package meta.runtime
 
 import Actor.AgentId
 
-import stagedSims.Sim
 import meta.classLifting.SpecialInstructions._
 import scala.collection.mutable.ListBuffer
 import org.coroutines._
