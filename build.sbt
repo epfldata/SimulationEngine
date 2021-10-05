@@ -26,7 +26,8 @@ lazy val squidSettings = Seq(
   autoCompilerPlugins := true,
   addCompilerPlugin(
     "org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full
-  )
+  ),
+  unmanagedBase := (unmanagedBase in LocalRootProject).value
 )
 
 lazy val akkaSettings = Seq(
@@ -67,7 +68,7 @@ lazy val core = (project in file("core"))
 lazy val library = (project in file("library"))
   .settings(
     name := "library",
-    commonSettings,
+    commonSettings
   )
 
 lazy val runAll = taskKey[Unit]("run-all, for compiling all meta examples")
@@ -96,5 +97,3 @@ lazy val genExample = (project in file("generated"))
     commonSettings, akkaSettings,
   )
   .dependsOn(core, library, example)
-
-
