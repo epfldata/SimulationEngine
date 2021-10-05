@@ -32,7 +32,7 @@ class Cell(var alive: Boolean) extends Actor {
     def main(): Unit = {
         while(true) {
             if (alive) {
-                // println(id + " is alive!")
+                println(id + " is alive!")
             }
             futures = connectedAgents.map(x => x._2.asInstanceOf[Cell]).toList.map(v => asyncMessage[Boolean](() => v.getValue))
 
