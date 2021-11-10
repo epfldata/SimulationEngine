@@ -1,7 +1,6 @@
 package example
 package gameOfLife
 
-import squid.quasi.lift
 import scala.collection.mutable.{Map => MutMap}
 
 import lib.Grid.Torus2D
