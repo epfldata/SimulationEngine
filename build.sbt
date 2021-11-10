@@ -1,7 +1,9 @@
 ThisBuild / organization := "ch.epfl.data"
 ThisBuild / scalaVersion := "2.12.8"
 ThisBuild / version := "1.0-SNAPSHOT"
-name := "Simulation"
+
+val project_name = "TickTalk"
+name := project_name
 
 val paradiseVersion = "2.1.0"
 val breezeVersion = "0.13.2"
@@ -21,8 +23,6 @@ lazy val commonSettings = Seq(
 )
 
 lazy val squidSettings = Seq(
-  // libraryDependencies += "ch.epfl.data" %% "squid" % squidVersion, 
-  // resolvers += Resolver.sonatypeRepo("snapshots"),
   autoCompilerPlugins := true,
   addCompilerPlugin(
     "org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full
@@ -43,7 +43,7 @@ lazy val graphSettings = Seq(
 
 lazy val stagedSims = (project in file("stagedSims"))
   .settings(
-    name := "stagedSims",
+    name := f"${project_name}-stagedSims",
     autoCompilerPlugins := true,
     addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full),
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
@@ -54,12 +54,12 @@ lazy val stagedSims = (project in file("stagedSims"))
 
 lazy val noMessaging = (project in file("ecosim"))
   .settings(
-    name := "noMessaging",
+    name := f"${project_name}-noMessaging",
     commonSettings)
 
 lazy val core = (project in file("core"))
   .settings(
-    name := "core",
+    name := f"${project_name}-core",
     commonSettings, squidSettings, graphSettings, akkaSettings,
     libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
@@ -67,7 +67,7 @@ lazy val core = (project in file("core"))
 
 lazy val library = (project in file("library"))
   .settings(
-    name := "library",
+    name := f"${project_name}-library",
     commonSettings
   )
 
@@ -83,7 +83,7 @@ def runAllIn(config: Configuration) = Def.task {
 
 lazy val example = (project in file("example"))
   .settings(
-    name := "example",
+    name := f"${project_name}-example",
     commonSettings, squidSettings,
     runAll := runAllIn(Compile).value,
     Test / parallelExecution := false
@@ -92,7 +92,7 @@ lazy val example = (project in file("example"))
 
 lazy val genExample = (project in file("generated"))
   .settings(
-    name := "genExample",
+    name := f"${project_name}-genExample",
     Test / parallelExecution := false,
     commonSettings, akkaSettings,
   )
