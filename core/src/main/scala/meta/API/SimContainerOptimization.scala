@@ -5,9 +5,8 @@ import org.coroutines.call
 
 sealed trait SimContainerOptimization
 final case object VanillaContainer extends SimContainerOptimization
-final case object MessageCaching extends SimContainerOptimization
+final case object BoundedLatency extends SimContainerOptimization
 final case object DirectMethodCall extends SimContainerOptimization
-// final case object DirectDelivery extends SimContainerOptimization
 
 sealed trait SimRunnerMode
 final case object CompiledSims extends SimRunnerMode
@@ -38,37 +37,37 @@ object ContainerFactory {
         }
     }
 
-    implicit val messageCachingCompiled = new ContainerFactory[MessageCaching.type, CompiledSims.type] {
+    implicit val boundedLatencyCompiled = new ContainerFactory[BoundedLatency.type, CompiledSims.type] {
         override def createContainer(agents: List[Actor]): Container = {
                 new Container {
                     containedAgents ++= agents.map(x => (x.id, x)).toMap
                     addProxyIds(agents.flatMap(x => x.getProxyIds))
-
                     override def run(msg: List[Message]): List[Message] = {
+                        var countDown: Int = 0
                         mx = (internalMessages ++ msg).toList.groupBy(_.receiverId)
-
                         sendMessages.clear()
-                        internalMessages.clear()
-
-                        val sentMessages = containedAgents.flatMap(a => {
+                        do {
+                            internalMessages.clear()
+                            val sentMessages: List[Message] = containedAgents.flatMap(a => {
                                 a._2.run(
                                     a._2.getProxyIds.toList.flatMap(
                                         id => mx.getOrElse(id, List())
                                     ))
-                            })
+                            }).toList
+                            sendMessages.appendAll(sentMessages)
+                            internalMessages = sendMessages.filter(x => (proxyIds.contains(x.receiverId)))
+                            sendMessages --= internalMessages
 
-                        sendMessages.appendAll(sentMessages)
-
-                        internalMessages = sendMessages.filter(x => (proxyIds.contains(x.receiverId)))
-
-                        sendMessages --= internalMessages
+                            countDown += 1
+                            mx = internalMessages.toList.groupBy(_.receiverId)
+                        } while (!internalMessages.isEmpty && countDown<kbound)
                         sendMessages.toList
                     }
                 }
         }
     }
 
-    implicit val messageCachingStaged = new ContainerFactory[MessageCaching.type, StagedSims.type] {
+    implicit val boundedLatencyStaged = new ContainerFactory[BoundedLatency.type, StagedSims.type] {
         override  def createContainer(agents: List[Actor]): Container = {
                 new Container {
                     containedAgents ++= agents.map(x => (x.id, x)).toMap
