@@ -10,14 +10,14 @@ class latencyBoundTests extends org.scalatest.FlatSpec {
 
     var crossTest: Map[Int, Long] = Map()
     val logger: StringBuilder = new StringBuilder()
-    val width: Int = 20
-    val height: Int = 20
+    val width: Int = 100
+    val height: Int = 100
     val totalTurns: Int = 100
     val containers: Int = 10
 
     val boundLatency1: Int = 1
     val boundLatency2: Int = 10
-    val boundLatency3: Int = 20
+    val boundLatency3: Int = 5
 
     f"Game of life example with ${width * height} agents and ${containers} containers with latency bound ${boundLatency1}" should "run" in {
         val agents = generated.example.gameOfLife.InitData(width, height)
@@ -51,11 +51,11 @@ class latencyBoundTests extends org.scalatest.FlatSpec {
         crossTest += (3 -> run2)
     }
 
-    // There are cases when further increasing the latency bound hurts the performance, especially as agents increase and the memory pressure increases
+    // The bound latency is a lower bound. If agents are all waiting before that, then partitions merge.
     "Lower latency bound" should "increase the performannce" in {
         println(logger)
         assert(crossTest(1) > crossTest(2))
-        assert(crossTest(2) > crossTest(3))
+        assert(crossTest(1) > crossTest(3))
     }
 }
 
