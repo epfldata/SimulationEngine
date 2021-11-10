@@ -23,10 +23,12 @@ class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isC
             clusterSize += 1
         }
 
-        val containers = actors.sliding(clusterSize, clusterSize).map(x => {
+        val containers: List[Container] = actors.sliding(clusterSize, clusterSize).map(x => {
           newContainer(x)(isCompiled, containerOpt)
         }).toList
 
+        containers.foreach(c => c.setKBound(latencyBound))
+        
         new SimulationConfig(containers, totalTurn, isCompiled, latencyBound)
   }
 
