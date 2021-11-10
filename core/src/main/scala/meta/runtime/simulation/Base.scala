@@ -22,7 +22,7 @@ class Base(var actors: List[Actor], val totalTurn: Int) extends Simulation {
     collectedMessages = actors.filterNot(_.deleted).flatMap(a => {
       val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
       a.cleanSendMessage
-        .run(targetMessages)
+        .run(targetMessages)._1
     }).toList
   })
 

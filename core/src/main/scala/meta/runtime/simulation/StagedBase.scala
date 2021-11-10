@@ -36,7 +36,7 @@ class StagedBase(var actors: List[Actor], val totalTurn: Int) extends Simulation
 
     coroutineAgents.map(x => x.resume)
 
-    collectedMessages.appendAll(coroutineAgents.flatMap(x => x.value))
+    collectedMessages.appendAll(coroutineAgents.flatMap(x => x.value._1))
   })
 
   events.append(() => proceed())

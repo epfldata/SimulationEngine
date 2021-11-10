@@ -27,6 +27,7 @@ object Dispatcher {
   private val msgBuffer: ListBuffer[Message] = ListBuffer[Message]()
 
   val finalStates: ListBuffer[Actor] = ListBuffer[Actor]()
+  val proposedTime: ListBuffer[Int] = ListBuffer[Int]()
 
   def apply(maxAgents: Int, maxTurn: Int, pMap: Map[AgentId, AgentId]): Behavior[SimAgent.AgentEvent] = {
     totalAgents = maxAgents
@@ -40,8 +41,9 @@ object Dispatcher {
                         currentTime: Long): Behavior[SimAgent.AgentEvent] =
     Behaviors.receive { (context, message) =>
         message match {
-            case SimAgent.SendToDispatcher(agentId: Long, messages: List[Message], replyTo: ActorRef[Dispatcher.DispatcherEvent]) => 
+            case SimAgent.SendToDispatcher(agentId: Long, messages: List[Message], elapasedTime: Int, replyTo: ActorRef[Dispatcher.DispatcherEvent]) => 
                 val aggAgents = agentCounter+1
+                proposedTime.append(elapasedTime)
                 msgBuffer.appendAll(messages)
                 agentRefMap = agentRefMap + (agentId -> replyTo)
 
@@ -49,13 +51,13 @@ object Dispatcher {
                     val groupedMsgs = msgBuffer.map(x => (proxyMap(x.receiverId), x)).foldLeft(Map[AgentId, List[Message]]())((b, a) => { 
                         if (b.get(a._1).isEmpty) { 
                             b + (a._1 -> List(a._2)) 
-                        } else { 
+                        } else {
                             b + (a._1 -> (a._2 :: b(a._1))) 
                         }
                     })
 
-                    val nextTurn = currentTurn + 1
-
+                    val nextTurn = currentTurn + proposedTime.max(scala.math.Ordering[Int])
+                    proposedTime.clear()
                     val t = System.currentTimeMillis()
                     context.log.info("Turn {} Total time: {} ms", currentTurn, t - currentTime)
 
@@ -111,7 +113,7 @@ object Dispatcher {
 
 object SimAgent {
     sealed trait AgentEvent
-    final case class SendToDispatcher(agentId: Long, messages: List[Message], replyTo: ActorRef[Dispatcher.DispatcherEvent]) extends AgentEvent
+    final case class SendToDispatcher(agentId: Long, messages: List[Message], elapasedTime: Int, replyTo: ActorRef[Dispatcher.DispatcherEvent]) extends AgentEvent
     final case class FinalState(actor: Actor) extends AgentEvent
 }
 
@@ -129,8 +131,10 @@ class SimAgent {
         Behaviors.receive { (context, message) =>
             message match {
                 case Dispatcher.ReceiveFromDispatcher(messages, from) => 
-                    val sentMessages = sim.run(messages)
-                    from ! SendToDispatcher(sim.id, sentMessages, context.self)
+                    val agentAPI = sim.run(messages)
+                    val sentMessages = agentAPI._1
+                    val elapsedTime = agentAPI._2
+                    from ! SendToDispatcher(sim.id, sentMessages, elapsedTime, context.self)
                     simAgent()
                 case Dispatcher.Stop(from) =>
                     from ! FinalState(sim)
@@ -142,7 +146,7 @@ class SimAgent {
 class SimAgentStaged {
     import SimAgent._
 
-    private var simInstance: org.coroutines.Coroutine.Instance[List[meta.runtime.Message],Unit] = null
+    private var simInstance: org.coroutines.Coroutine.Instance[(List[meta.runtime.Message], Int),Unit] = null
 
     private var sim: Actor = null
 
@@ -158,8 +162,8 @@ class SimAgentStaged {
                 case Dispatcher.ReceiveFromDispatcher(messages, from) => 
                     sim.addReceiveMessages(messages)
                     simInstance.resume
-                    val sentMessages = simInstance.value
-                    from ! SendToDispatcher(sim.id, sentMessages, context.self)
+                    val simAPI = simInstance.value
+                    from ! SendToDispatcher(sim.id, simAPI._1, simAPI._2, context.self)
                     simAgent()
                 case Dispatcher.Stop(from) =>
                     from ! FinalState(sim)

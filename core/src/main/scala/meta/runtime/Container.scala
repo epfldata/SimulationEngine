@@ -42,18 +42,18 @@ class Container extends Actor {
     protected var mx = receivedMessages.toList.groupBy(_.receiverId)
 
     // vanilla compiled
-    override def run(msg: List[Message]): List[Message] = {
+    override def run(msg: List[Message]): (List[Message], Int) = {
         mx = msg.toList.groupBy(_.receiverId)
 
         sendMessages.clear()
 
         val sentMessages = containedAgents.flatMap(a => {
                 a._2.run(a._2.getProxyIds.toList.flatMap(
-                        id => mx.getOrElse(id, List())))
+                        id => mx.getOrElse(id, List())))._1
             })
 
         sendMessages.appendAll(sentMessages)
-        sendMessages.toList
+        (sendMessages.toList, 1)
     }
 
     // vanilla staged
@@ -72,7 +72,7 @@ class Container extends Actor {
 
         containedAgentInstances.map(x =>x.resume)
         sendMessages.appendAll(containedAgentInstances.flatMap(a => a.value))
-        org.coroutines.yieldval(sendMessages.toList);
+        org.coroutines.yieldval((sendMessages.toList, 1));
         sendMessages.clear()
     }))
 }

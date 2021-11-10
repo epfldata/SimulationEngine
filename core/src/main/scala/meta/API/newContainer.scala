@@ -14,12 +14,12 @@ object newContainer {
                 vanillaStaged.createContainer(agents)
             case (BoundedLatency, true) => 
                 boundedLatencyCompiled.createContainer(agents)
-            case (BoundedLatency, false) => 
-                boundedLatencyStaged.createContainer(agents)
+            // case (BoundedLatency, false) => 
+            //     boundedLatencyStaged.createContainer(agents)
             case (DirectMethodCall, true) => 
                 directMethodCallCompiled.createContainer(agents)
-            case (DirectMethodCall, false) => 
-                directMethodCallStaged.createContainer(agents)
+            // case (DirectMethodCall, false) => 
+            //     directMethodCallStaged.createContainer(agents)
             }
     }
 }

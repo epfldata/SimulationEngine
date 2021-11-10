@@ -42,7 +42,7 @@ object ContainerFactory {
                 new Container {
                     containedAgents ++= agents.map(x => (x.id, x)).toMap
                     addProxyIds(agents.flatMap(x => x.getProxyIds))
-                    override def run(msg: List[Message]): List[Message] = {
+                    override def run(msg: List[Message]): (List[Message], Int) = {
                         var countDown: Int = 0
                         mx = (internalMessages ++ msg).toList.groupBy(_.receiverId)
                         sendMessages.clear()
@@ -52,7 +52,7 @@ object ContainerFactory {
                                 a._2.run(
                                     a._2.getProxyIds.toList.flatMap(
                                         id => mx.getOrElse(id, List())
-                                    ))
+                                    ))._1
                             }).toList
                             sendMessages.appendAll(sentMessages)
                             internalMessages = sendMessages.filter(x => (proxyIds.contains(x.receiverId)))
@@ -61,48 +61,49 @@ object ContainerFactory {
                             countDown += 1
                             mx = internalMessages.toList.groupBy(_.receiverId)
                         } while (!internalMessages.isEmpty && countDown<kbound)
-                        sendMessages.toList
+                        (sendMessages.toList, countDown)
                     }
                 }
         }
     }
 
-    implicit val boundedLatencyStaged = new ContainerFactory[BoundedLatency.type, StagedSims.type] {
-        override  def createContainer(agents: List[Actor]): Container = {
-                new Container {
-                    containedAgents ++= agents.map(x => (x.id, x)).toMap
-                    addProxyIds(agents.flatMap(x => x.getProxyIds))
+    // todo: extend k-bound to staged implementation
+    // implicit val boundedLatencyStaged = new ContainerFactory[BoundedLatency.type, StagedSims.type] {
+    //     override  def createContainer(agents: List[Actor]): Container = {
+    //             new Container {
+    //                 containedAgents ++= agents.map(x => (x.id, x)).toMap
+    //                 addProxyIds(agents.flatMap(x => x.getProxyIds))
 
-                    containedAgentInstances.appendAll(agents.map(x => call (x.run()())))
+    //                 containedAgentInstances.appendAll(agents.map(x => call (x.run()())))
 
-                    override def run() = org.coroutines.coroutine((() => while (true) 
-                    {
-                        mx = (internalMessages ++ receivedMessages).toList.groupBy(_.receiverId)
+    //                 override def run() = org.coroutines.coroutine((() => while (true) 
+    //                 {
+    //                     mx = (internalMessages ++ receivedMessages).toList.groupBy(_.receiverId)
 
-                        receivedMessages.clear()
-                        internalMessages.clear()
+    //                     receivedMessages.clear()
+    //                     internalMessages.clear()
 
-                        containedAgents.foreach(a => {
-                            a._2.addReceiveMessages(
-                                a._2.getProxyIds.toList.flatMap(
-                                    id => mx.getOrElse(id, List())
-                                ))
-                        })
+    //                     containedAgents.foreach(a => {
+    //                         a._2.addReceiveMessages(
+    //                             a._2.getProxyIds.toList.flatMap(
+    //                                 id => mx.getOrElse(id, List())
+    //                             ))
+    //                     })
 
-                        containedAgentInstances.map(x =>x.resume)
+    //                     containedAgentInstances.map(x =>x.resume)
 
-                        sendMessages.appendAll(containedAgentInstances.flatMap(a => a.value))
+    //                     sendMessages.appendAll(containedAgentInstances.flatMap(a => a.value))
 
-                        internalMessages = sendMessages.filter(x => (proxyIds.contains(x.receiverId)))
+    //                     internalMessages = sendMessages.filter(x => (proxyIds.contains(x.receiverId)))
 
-                        sendMessages --= internalMessages
+    //                     sendMessages --= internalMessages
 
-                        org.coroutines.yieldval(sendMessages.toList);
-                        sendMessages.clear()
-                    }))
-                }
-            }
-    }
+    //                     org.coroutines.yieldval((sendMessages.toList, 1));
+    //                     sendMessages.clear()
+    //                 }))
+    //             }
+    //         }
+    // }
 
     implicit val directMethodCallCompiled = new ContainerFactory[DirectMethodCall.type, CompiledSims.type] {
         override def createContainer(agents: List[Actor]): Container = {
@@ -116,17 +117,17 @@ object ContainerFactory {
         }
     }
 
-    implicit val directMethodCallStaged = new ContainerFactory[DirectMethodCall.type, StagedSims.type] {
-        override def createContainer(agents: List[Actor]): Container = {
-            new Container {
-                containedAgents ++= agents.map(x => (x.id, x)).toMap
-                addProxyIds(agents.flatMap(x => {
-                    x._container = this
-                    x.getProxyIds
-                }))
-                containedAgentInstances.appendAll(agents.map(x => call (x.run()())))
-            }
-        }
-    }
+    // implicit val directMethodCallStaged = new ContainerFactory[DirectMethodCall.type, StagedSims.type] {
+    //     override def createContainer(agents: List[Actor]): Container = {
+    //         new Container {
+    //             containedAgents ++= agents.map(x => (x.id, x)).toMap
+    //             addProxyIds(agents.flatMap(x => {
+    //                 x._container = this
+    //                 x.getProxyIds
+    //             }))
+    //             containedAgentInstances.appendAll(agents.map(x => call (x.run()())))
+    //         }
+    //     }
+    // }
 }
 

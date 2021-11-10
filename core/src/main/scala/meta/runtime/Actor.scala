@@ -177,14 +177,16 @@ class Actor extends Serializable {
   }
 
   /**
-    * Stub, gets overriden by generated code 
+    * Stub, gets overriden by generated code
+    * messages: a list of input messages
+    * return: (a list of output messages, passed rounds)
     */
-  def run(messages: List[Message]): List[Message] = {
+  def run(messages: List[Message]): (List[Message], Int) = {
     ???
   }
 
   // Add another run() signature for coroutine 
-  def run(): ~~~>[List[Message], Unit] = ???
+  def run(): ~~~>[(List[Message], Int), Unit] = ???
 
   /**
     * Stub, overriden by generated code. 

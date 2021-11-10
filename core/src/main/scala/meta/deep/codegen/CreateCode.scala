@@ -249,14 +249,14 @@ class CreateCode(initCode: String,
     """
 
     val run_until: String = s"""
-  override def run(msgs: List[meta.runtime.Message]): List[meta.runtime.Message] = {
+  override def run(msgs: List[meta.runtime.Message]): (List[meta.runtime.Message], Int) = {
     addReceiveMessages(msgs)
     sendMessages.clear()
     ${unblockRegMap(actorName)} = true
     while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
       ${memAddr}(${instructionRegister})()
     }
-    sendMessages.toList
+    (sendMessages.toList, 1)
   }
   """
 
