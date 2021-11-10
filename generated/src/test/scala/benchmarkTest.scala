@@ -19,7 +19,6 @@ object benchmarkTest {
             case "epidemic" => generated.example.epidemic.InitData(margs(0).toInt)  // first argument
             case "gameOfLife" => generated.example.gameOfLife.InitData(width, margs(0).toInt)
             case "segregation" => generated.example.segregation.InitData(width, margs(0).toInt, margs(1).toInt)
-            case "wealthDist" => generated.example.sugarscape.wealthDistribution.InitData(width, margs(0).toInt)
         }
         
         val c = new SimulationConfig(agents, totalTurn)
@@ -33,7 +32,7 @@ object benchmarkTest {
             case x => 
                 val containerConf = containerOpt match {
                     case "MC" => 
-                        c.staticPartition(containers)(MessageCaching)
+                        c.staticPartition(containers)(BoundedLatency)
                     case "DM" =>
                         c.staticPartition(containers)(DirectMethodCall)
                     case "VN" =>
