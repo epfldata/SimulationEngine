@@ -12,10 +12,10 @@ object newContainer {
                 vanillaCompiled.createContainer(agents)
             case (VanillaContainer, false) => 
                 vanillaStaged.createContainer(agents)
-            case (MessageCaching, true) => 
-                messageCachingCompiled.createContainer(agents)
-            case (MessageCaching, false) => 
-                messageCachingStaged.createContainer(agents)
+            case (BoundedLatency, true) => 
+                boundedLatencyCompiled.createContainer(agents)
+            case (BoundedLatency, false) => 
+                boundedLatencyStaged.createContainer(agents)
             case (DirectMethodCall, true) => 
                 directMethodCallCompiled.createContainer(agents)
             case (DirectMethodCall, false) => 
