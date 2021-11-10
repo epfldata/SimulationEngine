@@ -107,7 +107,7 @@ object rewriteBehavior {
                     q"""elapsed_time_counter = 0;
                     while (elapsed_time_counter < $t) {
                         elapsed_time_counter += 1;
-                        org.coroutines.yieldval(sendMessages.toList);
+                        org.coroutines.yieldval((sendMessages.toList, 1));
                         sendMessages.clear();
                         handleMessages();
                     }
