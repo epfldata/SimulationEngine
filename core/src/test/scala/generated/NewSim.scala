@@ -3,7 +3,7 @@ package generated.meta.test
 class NewSim () extends meta.runtime.Actor {
 
 
-  private var  reflectionIR_46: Int = -1
+  private var  reflectionIR_48: Int = -1
   private var resetData_0: scala.Any = null;
   private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
   private var resetData_2: meta.runtime.ResponseMessage = null;
@@ -142,14 +142,14 @@ class NewSim () extends meta.runtime.Actor {
     cloner
   }
   
-  override def run(msgs: List[meta.runtime.Message]): List[meta.runtime.Message] = {
+  override def run(msgs: List[meta.runtime.Message]): (List[meta.runtime.Message], Int) = {
     addReceiveMessages(msgs)
     sendMessages.clear()
     unblockFlag_11 = true
     while (unblockFlag_11 && (positionVar_12 < 15)) {
       commands_57(positionVar_12)()
     }
-    sendMessages.toList
+    (sendMessages.toList, 1)
   }
   
   override def getInstructionPointer: Int = {
@@ -169,8 +169,8 @@ class NewSim () extends meta.runtime.Actor {
       // first entry, save the current IR to reflectionIR
       unblockFlag_11 = true
 
-      if (reflectionIR_46 == -1){
-        reflectionIR_46 = positionVar_12
+      if (reflectionIR_48 == -1){
+        reflectionIR_48 = positionVar_12
         positionVar_12 = new_ir
       }
 
@@ -180,8 +180,8 @@ class NewSim () extends meta.runtime.Actor {
 
       // reset instruction register when finishes processing
       if (positionVar_12 > 6) {
-        positionVar_12 = reflectionIR_46
-        reflectionIR_46 = -1
+        positionVar_12 = reflectionIR_48
+        reflectionIR_48 = -1
       }
       this
     }
