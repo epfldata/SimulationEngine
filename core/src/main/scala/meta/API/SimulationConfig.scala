@@ -7,9 +7,11 @@ import meta.runtime.Container
   * Defines the configuration for a simulation run
   * Simulation terminates when totalTurn or totalTime is reached (or both)
   * @param actors the Sims (agents) which are part of the simulation 
-  * @param totalTurn define for how many turns the simulation continues
+  * @param totalTurn defines for how many turns the simulation continues
+  * @param isCompiled defines whether to compile or stage the agents
+  * @param latencyBound defines a bounded message latency for the model, default to 1
   */
-class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isCompiled: Boolean = true) {
+class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isCompiled: Boolean = true, val latencyBound: Int = 1) {
   // Group agents statically into containers according to the number of partitions                 
 
   def staticPartition(partitions: Int)(containerOpt: SimContainerOptimization): SimulationConfig = {
@@ -25,6 +27,10 @@ class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isC
           newContainer(x)(isCompiled, containerOpt)
         }).toList
 
-        new SimulationConfig(containers, totalTurn, isCompiled)
+        new SimulationConfig(containers, totalTurn, isCompiled, latencyBound)
+  }
+
+  override def toString(): String = {
+    f"Agents:${actors.length}; Turns:${totalTurn}; Bound:${latencyBound}"
   }
 }
