@@ -14,6 +14,8 @@ import org.coroutines._
 class Container extends Actor {
     protected var position: Int = 0
 
+    // Bound latency, default to 1
+    var kbound: Int = 1
     // Use a list buffer to remove agents
     val containedAgents: scala.collection.mutable.Map[AgentId, Actor] = scala.collection.mutable.Map[AgentId, Actor]()
     
@@ -33,6 +35,10 @@ class Container extends Actor {
 //     })
 //   }
 
+    def setKBound(bound: Int): Unit = {
+        kbound = bound
+    }
+    
     protected var mx = receivedMessages.toList.groupBy(_.receiverId)
 
     // vanilla compiled
