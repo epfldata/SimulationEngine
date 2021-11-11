@@ -10,7 +10,7 @@ class gameOfLifeMemoryTests extends org.scalatest.FlatSpec {
     val output: String = "game_of_life_mem.csv"
 
     val logger: StringBuilder = new StringBuilder()
-    val width: Int = 1000
+    val width: Int = 10
     val height: Int = 1000
     val totalTurns: Int = 10
     val container: Int = 0
