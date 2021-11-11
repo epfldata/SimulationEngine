@@ -11,7 +11,7 @@ class Reader(var server: Server) extends Actor {
     def main(): Unit = {
         while (true) {
             server.get()
-            waitLabel(Turn, 1)
+            // waitLabel(Turn, 1)
         }
     }
 }
