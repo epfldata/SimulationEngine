@@ -13,7 +13,7 @@ object StartSimulation {
       runner.run(c)
     }
     w ++= c.toString
-    w ++= f" TotalTime:${totalTime}; TimePerIteration:${totalTime.toDouble/c.totalTurn}\n"
+    w ++= f"TotalTime:${totalTime}; TimePerIteration:${totalTime.toDouble/c.totalTurn}\n"
     totalTime
   }
 }

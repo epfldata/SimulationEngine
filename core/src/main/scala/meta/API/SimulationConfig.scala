@@ -33,6 +33,6 @@ class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isC
   }
 
   override def toString(): String = {
-    f"Agents:${actors.length}; Turns:${totalTurn}; Bound:${latencyBound}"
+    f"Agents:${actors.length}; Turns:${totalTurn}; Bound:${latencyBound}; "
   }
 }
