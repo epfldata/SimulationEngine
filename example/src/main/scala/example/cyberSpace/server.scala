@@ -4,10 +4,11 @@ package cyberSpace
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 import meta.runtime.Actor.AgentId
+import scala.collection.mutable.Map
 
 @lift
 class Server(var syncPeriod: Int) extends Actor {
-    var content: Map[AgentId, String] = Map()
+    val content: Map[AgentId, String] = Map()
     var allServers: List[Server] = List()
     var elapsed: Int = 0
 
@@ -17,10 +18,10 @@ class Server(var syncPeriod: Int) extends Actor {
 
     def post(id: AgentId, newContent: String): Unit = {
         if (content.get(id).isEmpty) {
-            content = content.updated(id, newContent)
+            content(id) = newContent
         } else {
             val old = content(id)
-            content = content.updated(id, newContent + old)
+            content(id) = old + newContent
         }
     }
 
@@ -37,6 +38,7 @@ class Server(var syncPeriod: Int) extends Actor {
             elapsed = elapsed + 1
             if (elapsed >= syncPeriod){
                 allServers.foreach(s => asyncMessage(() => s.sync(content)))
+                elapsed = 0
             }
         }
     }
