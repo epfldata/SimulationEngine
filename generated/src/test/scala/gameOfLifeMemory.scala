@@ -6,11 +6,11 @@ import scala.collection.mutable.{Map, StringBuilder}
 
 class gameOfLifeMemoryTests extends org.scalatest.FlatSpec {
 
-    val example: String = "Game of life memory test"
+    val example: String = "Game of life"
     val output: String = "game_of_life_mem.csv"
 
     val logger: StringBuilder = new StringBuilder()
-    val width: Int = 10
+    val width: Int = 1000
     val height: Int = 1000
     val totalTurns: Int = 10
     val container: Int = 0

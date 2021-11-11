@@ -11,13 +11,11 @@ class epidemicMergingScalability extends org.scalatest.FlatSpec {
 
     val logger: StringBuilder = new StringBuilder()
 
-    val populations: List[Int] = List(100)
-    // val populations: Set[Int] = Set(1000, 10000, 100000)
+    val populations: Set[Int] = Set(1000, 10000, 100000)
 
     val totalTurns: Int = 100
 
-    val containers: List[Int] = List(50)
-    // val containers: Set[Int] = Set(0, 50, 100)
+    val containers: Set[Int] = Set(0, 50, 100)
     // assume fixed model
     val boundLatency: List[Int] = List(1)
 

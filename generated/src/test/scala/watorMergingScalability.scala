@@ -10,10 +10,8 @@ class watorMergingScalability extends org.scalatest.FlatSpec {
     val output: String = "wator.csv"
 
     val logger: StringBuilder = new StringBuilder()
-    val widths: Set[Int] = Set(10, 100)
-    // val widths: Set[Int] = Set(10, 100, 1000)
+    val widths: Set[Int] = Set(10, 100, 1000)
     val height: Int = 100
-
     val totalTurns: Int = 100
 
     val containers: Set[Int] = Set(0, 50, 100)

@@ -6,22 +6,22 @@ import scala.collection.mutable.{StringBuilder}
 
 class cyberSpaceLatencyTests extends org.scalatest.FlatSpec {
 
-    val example: String ="Cyber space"
-    val output: String = "cyber_space.csv"
+    val example: String ="Cyberspace"
+    val output: String = "cyberspace.csv"
 
     val logger: StringBuilder = new StringBuilder()
-    val population: Int = 1000
-    val totalTurns: Int = 100
+    val population: Int = 10000
+    val totalTurns: Int = 600
     // Assume one server per container
-    val containers: Set[Int] = Set(50, 100)
-    val boundLatency: Set[Int] = Set(1, 10, 30, 50)
+    val containers: Set[Int] = Set(50)
+    val boundLatency: Set[Int] = Set(1, 100, 200)
 
     val pw = new PrintWriter(new FileOutputStream(new File(output),true))
 
     for (container <- containers) {
         for (latency <- boundLatency) {
             f"${example} example with ${population} agents and ${container} containers with latency bound ${latency}" should "run" in {
-                val agents = generated.example.cyberSpace.InitData(population, container, 10)
+                val agents = generated.example.cyberSpace.InitData(population, container, 200)
 
                 val c = new SimulationConfig(agents, totalTurns, true, latency)
                 val run1 = {
