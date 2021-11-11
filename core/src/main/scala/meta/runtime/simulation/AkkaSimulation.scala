@@ -27,7 +27,7 @@ object Dispatcher {
   private val msgBuffer: ListBuffer[Message] = ListBuffer[Message]()
 
   val finalStates: ListBuffer[Actor] = ListBuffer[Actor]()
-  val proposedTime: ListBuffer[Int] = ListBuffer[Int]()
+  var proposedTime: Int = 1
 
   def apply(maxAgents: Int, maxTurn: Int, pMap: Map[AgentId, AgentId]): Behavior[SimAgent.AgentEvent] = {
     totalAgents = maxAgents
@@ -41,9 +41,11 @@ object Dispatcher {
                         currentTime: Long): Behavior[SimAgent.AgentEvent] =
     Behaviors.receive { (context, message) =>
         message match {
-            case SimAgent.SendToDispatcher(agentId: Long, messages: List[Message], elapasedTime: Int, replyTo: ActorRef[Dispatcher.DispatcherEvent]) => 
+            case SimAgent.SendToDispatcher(agentId: Long, messages: List[Message], elapsedTime: Int, replyTo: ActorRef[Dispatcher.DispatcherEvent]) => 
                 val aggAgents = agentCounter+1
-                proposedTime.append(elapasedTime)
+                if (elapsedTime > proposedTime){
+                    proposedTime = elapsedTime
+                }
                 msgBuffer.appendAll(messages)
                 agentRefMap = agentRefMap + (agentId -> replyTo)
 
@@ -56,8 +58,8 @@ object Dispatcher {
                         }
                     })
 
-                    val nextTurn = currentTurn + proposedTime.max(scala.math.Ordering[Int])
-                    proposedTime.clear()
+                    val nextTurn = currentTurn + proposedTime
+                    proposedTime = 1
                     val t = System.currentTimeMillis()
                     context.log.info("Turn {} Total time: {} ms", currentTurn, t - currentTime)
 
@@ -113,7 +115,7 @@ object Dispatcher {
 
 object SimAgent {
     sealed trait AgentEvent
-    final case class SendToDispatcher(agentId: Long, messages: List[Message], elapasedTime: Int, replyTo: ActorRef[Dispatcher.DispatcherEvent]) extends AgentEvent
+    final case class SendToDispatcher(agentId: Long, messages: List[Message], elapsedTime: Int, replyTo: ActorRef[Dispatcher.DispatcherEvent]) extends AgentEvent
     final case class FinalState(actor: Actor) extends AgentEvent
 }
 
