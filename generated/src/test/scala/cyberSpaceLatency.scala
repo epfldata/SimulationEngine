@@ -24,8 +24,8 @@ class cyberSpaceLatencyTests extends org.scalatest.FlatSpec {
             val agents = generated.example.cyberSpace.InitData(population, totalServers, latency)
 
             val c = new SimulationConfig(agents, totalTurns, true, latency)
+            logger ++= c.toString()
             val containerConfig = c.staticPartition(containers)(BoundedLatency)
-
             val run1 = StartSimulation.bench[AkkaMessagingLayer.type](containerConfig)(logger)
         }
     }

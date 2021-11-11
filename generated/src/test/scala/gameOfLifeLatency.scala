@@ -20,8 +20,8 @@ class gameOfLifeLatencyTests extends org.scalatest.FlatSpec {
             val agents = generated.example.gameOfLife.InitData(width, height)
 
             val c = new SimulationConfig(agents, totalTurns, true, latency)
+            logger ++= c.toString()
             val containerConfig = c.staticPartition(containers)(BoundedLatency)
-
             val run1 = StartSimulation.bench[AkkaMessagingLayer.type](containerConfig)(logger)
         }
     }
