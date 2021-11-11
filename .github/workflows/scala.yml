@@ -31,4 +31,4 @@ jobs:
     - name: Coroutine-based Sim examples
       run: sbt "project example; test"
     - name: Compiled examples run
-      run: sbt "project genExample; test"
+      run: sbt "project genExample; testOnly generated.example.test.generatedExamples"
