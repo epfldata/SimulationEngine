@@ -16,4 +16,14 @@ object StartSimulation {
     w ++= f"TotalTime:${totalTime}; TimePerIteration:${totalTime.toDouble/c.totalTurn}\n"
     totalTime
   }
+
+  def benchAvg[T](c: SimulationConfig)(w: StringBuilder)(implicit runner: SimsRunner[T]): Double = {
+    println(f"Start simulation benchmark! ${c}")
+    val totalTime = meta.runtime.simulation.util.bench {
+      runner.run(c)
+    }
+    // w ++= c.toString
+    // w ++= f"TotalTime:${totalTime}; TimePerIteration:${totalTime.toDouble/c.totalTurn}\n"
+    totalTime.toDouble/c.totalTurn
+  }
 }
