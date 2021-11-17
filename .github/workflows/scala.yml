@@ -18,8 +18,6 @@ jobs:
       with:
         java-version: '8'
         distribution: 'adopt'
-    - name: Coroutine test
-      run: sbt "project stagedSims; test"
     - name: Unit tests for noMessaging
       run: sbt "project noMessaging; test"
     - name: Unit tests for compiler
@@ -28,7 +26,5 @@ jobs:
       run: sbt "project library; test"
     - name: Examples compile
       run: sbt "project example; runAll"
-    - name: Coroutine-based Sim examples
-      run: sbt "project example; test"
     - name: Compiled examples run
       run: sbt "project genExample; testOnly generated.example.test.generatedExamples"

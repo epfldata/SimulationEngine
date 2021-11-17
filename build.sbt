@@ -41,17 +41,6 @@ lazy val graphSettings = Seq(
   libraryDependencies += "guru.nidi" % "graphviz-java" % graphVizVersion,
 )
 
-lazy val stagedSims = (project in file("stagedSims"))
-  .settings(
-    name := f"${project_name}-stagedSims",
-    autoCompilerPlugins := true,
-    addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full),
-    libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-    libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
-  )
-
 lazy val noMessaging = (project in file("ecosim"))
   .settings(
     name := f"${project_name}-noMessaging",
@@ -61,7 +50,6 @@ lazy val core = (project in file("core"))
   .settings(
     name := f"${project_name}-core",
     commonSettings, squidSettings, graphSettings, akkaSettings,
-    libraryDependencies += "de.sciss" %% "coroutines" % "0.1.0",
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
   )
 

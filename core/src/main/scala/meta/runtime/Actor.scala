@@ -2,7 +2,7 @@ package meta.runtime
 
 import java.util.UUID
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
-import org.coroutines._
+
 /**
   * This object handles the unique id generation of an actor
   * as long as all ids are generated on a single instance
@@ -184,9 +184,6 @@ class Actor extends Serializable {
   def run(messages: List[Message]): (List[Message], Int) = {
     ???
   }
-
-  // Add another run() signature for coroutine 
-  def run(): ~~~>[(List[Message], Int), Unit] = ???
 
   /**
     * Stub, overriden by generated code. 

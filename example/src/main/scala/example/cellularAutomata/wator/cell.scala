@@ -3,7 +3,6 @@ package example.cellularAutomata.wator
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 import meta.runtime.{Actor, Future}
-import stagedSims.Sim
 
 trait watorCell {
     var energy: Int
@@ -16,7 +15,6 @@ case class Water(var energy: Int=0, var age: Int = 0) extends watorCell
 
 case class Shark(var energy: Int, var age: Int = 0) extends watorCell
 
-// @Sim
 @lift
 class Cell(var identity: watorCell) extends Actor {
 

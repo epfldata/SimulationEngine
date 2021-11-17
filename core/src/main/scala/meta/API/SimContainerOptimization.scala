@@ -1,7 +1,6 @@
 package meta.API
 
 import meta.runtime.{Actor, Container, Message}
-import org.coroutines.call
 
 sealed trait SimContainerOptimization
 final case object VanillaContainer extends SimContainerOptimization
@@ -10,7 +9,6 @@ final case object DirectMethodCall extends SimContainerOptimization
 
 sealed trait SimRunnerMode
 final case object CompiledSims extends SimRunnerMode
-final case object StagedSims extends SimRunnerMode
 
 trait ContainerFactory[SimContainerOptimization, SimRunnerMode] {
   def createContainer(agents: List[Actor]): Container
@@ -24,15 +22,6 @@ object ContainerFactory {
                     containedAgents ++= agents.map(x => (x.id, x)).toMap
                     addProxyIds(agents.flatMap(x => x.getProxyIds))
                 }
-            }
-        }
-    }
-
-    implicit val vanillaStaged = new ContainerFactory[VanillaContainer.type, StagedSims.type] {
-        override def createContainer(agents: List[Actor]): Container = {
-            new Container {
-                containedAgents ++= agents.map(x => (x.id, x)).toMap
-                addProxyIds(agents.flatMap(x => x.getProxyIds))
             }
         }
     }
@@ -67,44 +56,6 @@ object ContainerFactory {
         }
     }
 
-    // todo: extend k-bound to staged implementation
-    // implicit val boundedLatencyStaged = new ContainerFactory[BoundedLatency.type, StagedSims.type] {
-    //     override  def createContainer(agents: List[Actor]): Container = {
-    //             new Container {
-    //                 containedAgents ++= agents.map(x => (x.id, x)).toMap
-    //                 addProxyIds(agents.flatMap(x => x.getProxyIds))
-
-    //                 containedAgentInstances.appendAll(agents.map(x => call (x.run()())))
-
-    //                 override def run() = org.coroutines.coroutine((() => while (true) 
-    //                 {
-    //                     mx = (internalMessages ++ receivedMessages).toList.groupBy(_.receiverId)
-
-    //                     receivedMessages.clear()
-    //                     internalMessages.clear()
-
-    //                     containedAgents.foreach(a => {
-    //                         a._2.addReceiveMessages(
-    //                             a._2.getProxyIds.toList.flatMap(
-    //                                 id => mx.getOrElse(id, List())
-    //                             ))
-    //                     })
-
-    //                     containedAgentInstances.map(x =>x.resume)
-
-    //                     sendMessages.appendAll(containedAgentInstances.flatMap(a => a.value))
-
-    //                     internalMessages = sendMessages.filter(x => (proxyIds.contains(x.receiverId)))
-
-    //                     sendMessages --= internalMessages
-
-    //                     org.coroutines.yieldval((sendMessages.toList, 1));
-    //                     sendMessages.clear()
-    //                 }))
-    //             }
-    //         }
-    // }
-
     implicit val directMethodCallCompiled = new ContainerFactory[DirectMethodCall.type, CompiledSims.type] {
         override def createContainer(agents: List[Actor]): Container = {
             new Container {
@@ -116,18 +67,5 @@ object ContainerFactory {
             }
         }
     }
-
-    // implicit val directMethodCallStaged = new ContainerFactory[DirectMethodCall.type, StagedSims.type] {
-    //     override def createContainer(agents: List[Actor]): Container = {
-    //         new Container {
-    //             containedAgents ++= agents.map(x => (x.id, x)).toMap
-    //             addProxyIds(agents.flatMap(x => {
-    //                 x._container = this
-    //                 x.getProxyIds
-    //             }))
-    //             containedAgentInstances.appendAll(agents.map(x => call (x.run()())))
-    //         }
-    //     }
-    // }
 }
 

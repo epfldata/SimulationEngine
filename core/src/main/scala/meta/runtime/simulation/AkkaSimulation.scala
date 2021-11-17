@@ -12,8 +12,6 @@ import akka.NotUsed
 import akka.actor.typed.{ActorRef, ActorSystem, Terminated, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 
-import org.coroutines._
-
 object Dispatcher {
   sealed trait DispatcherEvent
   final case class ReceiveFromDispatcher(messages: List[Message], from: ActorRef[SimAgent.AgentEvent]) extends DispatcherEvent
@@ -75,13 +73,8 @@ object Dispatcher {
                         msgBuffer.clear()
                         agentRefMap = Map()
 
-                        val newAgents = if (SimExperiment.staged) {
-                            SimRuntime.newActors.map(a => context.spawn((new SimAgentStaged).apply(a), f"simAgent${a.id}"))
-                        } else {
-                            SimRuntime.newActors.map(a => {
-                                context.spawn((new SimAgent).apply(a), f"simAgent${a.id}")
-                            })
-                        }
+                        val newAgents = SimRuntime.newActors.map(a => {
+                                context.spawn((new SimAgent).apply(a), f"simAgent${a.id}")})
 
                         totalAgents += newAgents.size
 
@@ -145,39 +138,9 @@ class SimAgent {
         }
 }
 
-class SimAgentStaged {
-    import SimAgent._
-
-    private var simInstance: org.coroutines.Coroutine.Instance[(List[meta.runtime.Message], Int),Unit] = null
-
-    private var sim: Actor = null
-
-    def apply(sim: Actor): Behavior[Dispatcher.DispatcherEvent] = {
-        this.simInstance = call (sim.run()())
-        this.sim = sim
-        simAgent()
-    }
-
-    private def simAgent(): Behavior[Dispatcher.DispatcherEvent] =
-        Behaviors.receive { (context, message) =>
-            message match {
-                case Dispatcher.ReceiveFromDispatcher(messages, from) => 
-                    sim.addReceiveMessages(messages)
-                    simInstance.resume
-                    val simAPI = simInstance.value
-                    from ! SendToDispatcher(sim.id, simAPI._1, simAPI._2, context.self)
-                    simAgent()
-                case Dispatcher.Stop(from) =>
-                    from ! FinalState(sim)
-                    Behaviors.stopped
-            }
-        }
-}
-
 object SimExperiment {
-    var staged: Boolean = false
 
-    def apply(totalTurn: Int, actors: List[Actor], staged: Boolean): Behavior[NotUsed] = 
+    def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false): Behavior[NotUsed] = 
         Behaviors.setup { context => 
             val proxyMap = actors
             .map(a => (a.proxyIds, a.id))
@@ -185,12 +148,7 @@ object SimExperiment {
 
             val dispatcher = context.spawn(Dispatcher(actors.size, totalTurn, proxyMap), "dispatcher")
             
-            this.staged = staged
-            val simAgents = if (staged) {
-                actors.map(a => context.spawn((new SimAgentStaged).apply(a), f"simAgent${a.id}"))
-            } else {
-                actors.map(a => context.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
-            }
+            val simAgents = actors.map(a => context.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
 
             simAgents.foreach(a => a ! Dispatcher.ReceiveFromDispatcher(List(), dispatcher))
 
@@ -204,10 +162,10 @@ object SimExperiment {
 }
 
 object AkkaRun {
-    def apply(actors: List[Actor], totalTurn: Int, staged: Boolean): List[Actor] = {
+    def apply(actors: List[Actor], totalTurn: Int, staged: Boolean=false): List[Actor] = {
         println("Simulation starts!")
 
-        val actorSystem = ActorSystem(SimExperiment(totalTurn, actors, staged), "SimSystem")
+        val actorSystem = ActorSystem(SimExperiment(totalTurn, actors), "SimSystem")
         Await.ready(actorSystem.whenTerminated, 10.days)
 
         println("Simulation ends!")

@@ -1,10 +1,8 @@
 package meta.runtime
 
 import Actor.AgentId
-
 import meta.classLifting.SpecialInstructions._
 import scala.collection.mutable.ListBuffer
-import org.coroutines._
 
 /**
  * A container agent holds a collection of agents. 
@@ -20,9 +18,6 @@ class Container extends Actor {
     val containedAgents: scala.collection.mutable.Map[AgentId, Actor] = scala.collection.mutable.Map[AgentId, Actor]()
     
     protected var internalMessages: ListBuffer[Message] = ListBuffer[Message]()
-
-    // Coroutine instances
-    protected val containedAgentInstances: ListBuffer[org.coroutines.Coroutine.Instance[List[meta.runtime.Message],Unit]] = ListBuffer[org.coroutines.Coroutine.Instance[List[meta.runtime.Message],Unit]]()
 
     // Dynamically add agents to a container at run time
 //   def addAgents(sims: Seq[Actor]): Unit = {
@@ -55,24 +50,4 @@ class Container extends Actor {
         sendMessages.appendAll(sentMessages)
         (sendMessages.toList, 1)
     }
-
-    // vanilla staged
-    override def run() = org.coroutines.coroutine((() => while (true) 
-    {
-        mx = receivedMessages.toList.groupBy(_.receiverId)
-
-        receivedMessages.clear()
-
-        containedAgents.foreach(a => {
-            a._2.addReceiveMessages(
-                a._2.getProxyIds.toList.flatMap(
-                    id => mx.getOrElse(id, List())
-                ))
-        })
-
-        containedAgentInstances.map(x =>x.resume)
-        sendMessages.appendAll(containedAgentInstances.flatMap(a => a.value))
-        org.coroutines.yieldval((sendMessages.toList, 1));
-        sendMessages.clear()
-    }))
 }
