@@ -2,14 +2,13 @@ package generated.example.test
 
 import meta.API._
 import java.io._
-import scala.collection.mutable.{Map, StringBuilder}
+import scala.collection.mutable.{Map}
 
 class gameOfLifeMemoryTests extends org.scalatest.FlatSpec {
 
     val example: String = "Game of life"
     val output: String = "game_of_life_mem.csv"
 
-    val logger: StringBuilder = new StringBuilder()
     val width: Int = 1000
     val height: Int = 1000
     val totalTurns: Int = 10
@@ -24,14 +23,12 @@ class gameOfLifeMemoryTests extends org.scalatest.FlatSpec {
             val agents = generated.example.gameOfLife.InitData(width, height)
 
             val c = new SimulationConfig(agents, totalTurns, true, latency)
-            logger ++= c.toString()
             val run1 = {
                 if (container == 0){
-                    StartSimulation.benchAvg[AkkaMessagingLayer.type](c)(logger)
+                    StartSimulation.benchAvg[AkkaMessagingLayer.type](c)
                 }else {
-                    logger ++= c.toString()
                     val containerConfig = c.staticPartition(container)(BoundedLatency)
-                    StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)(logger)
+                    StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
                 }
             } 
 

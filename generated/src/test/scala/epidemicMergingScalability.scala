@@ -1,16 +1,13 @@
 package generated.example.test
 
 import meta.API._
-import scala.collection.mutable.{Map, StringBuilder}
+import scala.collection.mutable.{Map}
 import java.io._
 
 class epidemicMergingScalability extends org.scalatest.FlatSpec {
 
     val example: String = "epidemic"
     val output: String = "epidemic.csv"
-
-    val logger: StringBuilder = new StringBuilder()
-
     val populations: Set[Int] = Set(1000, 10000, 100000)
 
     val totalTurns: Int = 100
@@ -30,11 +27,10 @@ class epidemicMergingScalability extends org.scalatest.FlatSpec {
                     val c = new SimulationConfig(agents, totalTurns, true, latency)
                     val run1 = {
                         if (container == 0){
-                            StartSimulation.benchAvg[AkkaMessagingLayer.type](c)(logger)
+                            StartSimulation.benchAvg[AkkaMessagingLayer.type](c)
                         }else {
-                            logger ++= c.toString()
                             val containerConfig = c.staticPartition(container)(BoundedLatency)
-                            StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)(logger)
+                            StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
                         }
                     } 
                     pw.write(f"${example},${population},${container},${latency},${run1}\n")

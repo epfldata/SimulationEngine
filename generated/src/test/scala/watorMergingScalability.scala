@@ -1,7 +1,7 @@
 package generated.example.test
 
 import meta.API._
-import scala.collection.mutable.{Map, StringBuilder}
+import scala.collection.mutable.{Map}
 import java.io._
 
 class watorMergingScalability extends org.scalatest.FlatSpec {
@@ -9,7 +9,6 @@ class watorMergingScalability extends org.scalatest.FlatSpec {
     val example: String = "wator"
     val output: String = "wator.csv"
 
-    val logger: StringBuilder = new StringBuilder()
     val widths: Set[Int] = Set(10, 100, 1000)
     val height: Int = 100
     val totalTurns: Int = 100
@@ -30,11 +29,10 @@ class watorMergingScalability extends org.scalatest.FlatSpec {
 
                     val run1 = {
                         if (container == 0){
-                            StartSimulation.benchAvg[AkkaMessagingLayer.type](c)(logger)
+                            StartSimulation.benchAvg[AkkaMessagingLayer.type](c)
                         }else {
-                            logger ++= c.toString()
                             val containerConfig = c.staticPartition(container)(BoundedLatency)
-                            StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)(logger)
+                            StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
                         }
                     } 
                     pw.write(f"${example},${width*height},${container},${latency},${run1}\n")

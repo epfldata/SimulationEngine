@@ -2,14 +2,12 @@ package generated.example.test
 
 import meta.API._
 import java.io._
-import scala.collection.mutable.{StringBuilder}
 
 class cyberSpaceLatencyTests extends org.scalatest.FlatSpec {
 
     val example: String ="Cyberspace"
     val output: String = "cyberspace.csv"
 
-    val logger: StringBuilder = new StringBuilder()
     val population: Int = 10000
     val totalTurns: Int = 600
     // Assume one server per container
@@ -26,11 +24,10 @@ class cyberSpaceLatencyTests extends org.scalatest.FlatSpec {
                 val c = new SimulationConfig(agents, totalTurns, true, latency)
                 val run1 = {
                     if (container == 0){
-                        StartSimulation.benchAvg[AkkaMessagingLayer.type](c)(logger)
+                        StartSimulation.benchAvg[AkkaMessagingLayer.type](c)
                     }else {
-                        logger ++= c.toString()
                         val containerConfig = c.staticPartition(container)(BoundedLatency)
-                        StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)(logger)
+                        StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
                     }
                 } 
                 pw.write(f"${example},${population},${container},${latency},${run1}\n")
