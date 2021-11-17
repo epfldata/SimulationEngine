@@ -26,7 +26,7 @@ Besides blocking calls, Sims can also send asynchronous messages, with a differe
 Function ```waitLabel(Turn, someTicks)``` signals that messages in the Sim's mailbox are ready and agents will wait for the specified ticks. After each turn, the agents automatically process all the messages in their mailboxes. You can find the syntax of the DSLs here ```core/src/main/scala/meta/classLifting/SpecialInstructions.scala```
 
 ### <a name="Meta-Programs"></a> Sims as Meta-Programs
-The embedded DSL is in a staged meta-programming environment. Staging is the operation that generates **object programs** from **meta-programs**. In our framework, users define the behaviour of each agent in **meta-programs** written in a subset of Scala enriched with DSL. We offer two flavors of DSL, one with compilation and one without. For the compiled version, our transpiler compiles the source programs to **object programs** (valid Scala source programs) in `generated\` folder with the help of Squid. For the non-compiled version, we use Scala quasiquote and coroutines. Right now we do not support blocking calls in the non-compiled version.
+The embedded DSL is in a staged meta-programming environment. Staging is the operation that generates **object programs** from **meta-programs**. In our framework, users define the behaviour of each agent in **meta-programs** written in a subset of Scala enriched with DSL. We offer two flavors of DSL, one with compilation and one without. For the compiled version, our transpiler compiles the source programs to **object programs** (valid Scala source programs) in `generated\` folder with the help of Squid. For the non-compiled version, we use ScalaMeta and coroutines, see branch `staged`.
  
 We include uber jars of the Squid (class-lifting branch) in the lib/ folder of dependent subprojects (currently under `core/` and `example/`). If you prefer, you can also build it locally and uncomment the lines in build.sbt which loads Squid snapshot. 
 
@@ -100,7 +100,7 @@ object gameOfLifeTest {
 - `generated/` contains the object programs. The simulation drivers take object programs and run 
 - `library/` contains helper classes which are non-agent that you can use in your example. 
 - `core/` contains the compiler source code and supporting runtime objects. 
-- `stagedSims/` contains the no-compilation implementation of the DSL. 
+- `stagedSims/` contains the no-compilation implementation of the DSL (in the branch staged)
  
 ### Code Format
 We use Scalafmt for formatting the code.
