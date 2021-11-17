@@ -84,7 +84,7 @@ lazy val example = (project in file("example"))
     runAll := runAllIn(Compile).value,
     Test / parallelExecution := false
   )
-  .dependsOn(core, library, stagedSims)
+  .dependsOn(core, library)
 
 lazy val genExample = (project in file("generated"))
   .settings(
