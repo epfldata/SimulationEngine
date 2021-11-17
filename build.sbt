@@ -68,8 +68,16 @@ lazy val core = (project in file("core"))
 lazy val library = (project in file("library"))
   .settings(
     name := f"${project_name}-library",
-    commonSettings
-  )
+    commonSettings, 
+  ).dependsOn(core)
+
+lazy val gui = (project in file("GUI"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    name := f"${project_name}-GUI",
+    commonSettings, 
+    libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "1.1.0",
+  ).dependsOn(core)
 
 lazy val runAll = taskKey[Unit]("run-all, for compiling all meta examples")
 
@@ -96,4 +104,4 @@ lazy val genExample = (project in file("generated"))
     Test / parallelExecution := false,
     commonSettings, akkaSettings,
   )
-  .dependsOn(core, library, example)
+  .dependsOn(core, library, example, gui)
