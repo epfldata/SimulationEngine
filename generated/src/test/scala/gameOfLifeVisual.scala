@@ -12,7 +12,7 @@ object gameOfLifeVisual {
         val totalTurns: Int = 10
         val container: Int = 0
         
-        val output: String = "GUI/gameOfLifeInit.js"
+        val output: String = "GUI/experiments/gameOfLifeInit.txt"
 
         val agents = generated.example.gameOfLife.InitData(width, height)
 
@@ -26,6 +26,7 @@ object gameOfLifeVisual {
                 case _ => 0
             }
         ), width, height, Map(1 -> "black"))
+        
         pw.write(visualConfig.serialize())
         pw.close()
     }
