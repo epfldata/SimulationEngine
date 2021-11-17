@@ -1,7 +1,6 @@
 package generated.example.test
 
 import meta.API._
-import scala.collection.mutable.{StringBuilder}
 import lib.Grid.Grid2DSnapshot
 import java.io._
 
@@ -27,7 +26,6 @@ object gameOfLifeVisual {
                 case _ => 0
             }
         ), width, height, Map(1 -> "black"))
-
         pw.write(visualConfig.serialize())
         pw.close()
     }
