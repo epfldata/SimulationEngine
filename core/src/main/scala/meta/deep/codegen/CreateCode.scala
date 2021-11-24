@@ -584,7 +584,7 @@ $run_until
     * @param code which should be changed
     * @return code with replaced variable types
     */
-  def changeTypes(code: String): String = {
+  def changeTypes(code: String, isMain: Boolean = false): String = {
     var result: String = code
 
     for (k <- this.typesReplaceWith) {
@@ -594,11 +594,13 @@ $run_until
     val typedPattern = s"(\\s*)(va[r|l] .*): (.*) = new generated\\.(.*);".r    // general form of var assignments
     val nonTypedPattern = s"(\\s*)(val .*) = new generated\\.(.*);".r    // general form of val assignments
 
-    // new Sims are added to newActors at runtime
-    
-    result = typedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
-
-    nonTypedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
+    if (isMain){
+      result
+    } else {
+      // new Sims are added to newActors at runtime    
+      result = typedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
+      nonTypedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
+    }
   }
 
   /**
@@ -656,7 +658,7 @@ $run_until
       s"""package ${generatedPackage}
 
 object InitData  {
-    ${changeTypes(code)}
+    ${changeTypes(code, true)}
 }"""
     val file = new File(storagePath + "/InitData.scala")
     val bw = new BufferedWriter(new FileWriter(file))
