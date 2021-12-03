@@ -671,6 +671,7 @@ class Lifter {
 
   /**
    * This method analyses whether a method body is blocking: contains either blocking call or wait statements. 
+   * It also analysis whether a method contains special instructions.
    */
   def blockingAnalysis(cde: OpenCode[_], mtdName: String): Boolean = {
     val mtdNameSegs = mtdName.split("\\.")
@@ -678,6 +679,14 @@ class Lifter {
     val agentPath = mtdNameSegs.dropRight(1).mkString("\\.")
 
     cde analyse {
+      case code"SpecialInstructions.handleMessages()" =>
+        if (mtdSymbolNoPrefix != "main"){
+          throw new Exception(f"${mtdName} contains special instruction handleMessages!")
+        }
+      case code"SpecialInstructions.asyncMessage[$mt]((() => {${m@ MethodApplication(msg)}}: mt))" =>
+        if (mtdSymbolNoPrefix != "main"){
+          throw new Exception(f"${mtdName} contains special instruction asyncMessage!")
+        }
       case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
         println(f"${mtdName} is blocking!")
         return true
