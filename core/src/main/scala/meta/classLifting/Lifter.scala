@@ -400,7 +400,11 @@ class Lifter {
                       }
                     }
                   } else {
-                    argss.append(mtd2.args.last.head)
+                    try {
+                      argss.append(mtd2.args.last.head)
+                    } catch {
+                      case e: Exception => throw new Exception(s"Error in asyncMessage! $cde")
+                    }
                   }
                   curriedMtd = mtd2.args.head.head
                 }

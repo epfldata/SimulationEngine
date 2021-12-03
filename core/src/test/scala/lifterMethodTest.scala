@@ -31,13 +31,16 @@ class MyClass2(var neighbor: MyClass2) extends Actor {
     }
 }
 
-class lifterMethodTest extends FlatSpec {
+class lifterMethodTest extends FlatSpec with org.scalatest.Matchers {
     import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 
-    val liftMyClass2: ClassWithObject[MyClass2] = MyClass2.reflect(IR)
-
-    assertThrows[Exception]{
+    val thrown = the [Exception] thrownBy {
+        val liftMyClass2: ClassWithObject[MyClass2] = MyClass2.reflect(IR)
         new Lifter().apply(List(liftMyClass2)) 
+    }
+
+    "Use async message in a method" should "trigger an exception" in {
+        thrown.getMessage should endWith ("asyncMessage!")
     }
 }
