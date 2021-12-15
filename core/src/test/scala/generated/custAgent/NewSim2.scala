@@ -3,7 +3,7 @@ package generated.meta.test.custAgent
 class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime.Actor with meta.test.custAgent.custActor {
 
 
-  private var  reflectionIR_96: Int = -1
+  private var  reflectionIR_12: Int = -1
   private var resetData_0: scala.Any = null;
   private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
   private var resetData_2: meta.runtime.ResponseMessage = null;
@@ -282,12 +282,6 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
           
   }
   
-  override def deepClone(): meta.runtime.Actor = {
-    val cloner = new NewSim2(n)
-    cloner.connectedAgents = connectedAgents
-    cloner
-  }
-  
   override def run(msgs: List[meta.runtime.Message]): (List[meta.runtime.Message], Int) = {
     addReceiveMessages(msgs)
     sendMessages.clear()
@@ -328,8 +322,8 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
       // first entry, save the current IR to reflectionIR
       unblockFlag_13 = true
 
-      if (reflectionIR_96 == -1){
-        reflectionIR_96 = positionVar_14
+      if (reflectionIR_12 == -1){
+        reflectionIR_12 = positionVar_14
         positionVar_14 = new_ir
       }
 
@@ -339,8 +333,8 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
 
       // reset instruction register when finishes processing
       if (positionVar_14 > 15) {
-        positionVar_14 = reflectionIR_96
-        reflectionIR_96 = -1
+        positionVar_14 = reflectionIR_12
+        reflectionIR_12 = -1
       }
       this
     }

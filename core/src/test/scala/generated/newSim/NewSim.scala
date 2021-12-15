@@ -3,7 +3,7 @@ package generated.meta.test.newSim
 class NewSim () extends meta.runtime.Actor {
 
 
-  private var  reflectionIR_54: Int = -1
+  private var  reflectionIR_68: Int = -1
   private var resetData_0: scala.Any = null;
   private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
   private var resetData_2: meta.runtime.ResponseMessage = null;
@@ -136,12 +136,6 @@ class NewSim () extends meta.runtime.Actor {
 }).apply();
   
 
-  override def deepClone(): meta.runtime.Actor = {
-    val cloner = new NewSim()
-    cloner.connectedAgents = connectedAgents
-    cloner
-  }
-  
   override def run(msgs: List[meta.runtime.Message]): (List[meta.runtime.Message], Int) = {
     addReceiveMessages(msgs)
     sendMessages.clear()
@@ -169,8 +163,8 @@ class NewSim () extends meta.runtime.Actor {
       // first entry, save the current IR to reflectionIR
       unblockFlag_11 = true
 
-      if (reflectionIR_54 == -1){
-        reflectionIR_54 = positionVar_12
+      if (reflectionIR_68 == -1){
+        reflectionIR_68 = positionVar_12
         positionVar_12 = new_ir
       }
 
@@ -180,8 +174,8 @@ class NewSim () extends meta.runtime.Actor {
 
       // reset instruction register when finishes processing
       if (positionVar_12 > 6) {
-        positionVar_12 = reflectionIR_54
-        reflectionIR_54 = -1
+        positionVar_12 = reflectionIR_68
+        reflectionIR_68 = -1
       }
       this
     }

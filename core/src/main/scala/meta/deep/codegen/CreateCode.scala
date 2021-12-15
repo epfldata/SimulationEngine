@@ -278,16 +278,6 @@ class CreateCode(initCode: String,
       }
     }).mkString(", ")
 
-    // Clone the agent 
-    // The cloner has the same class type with the same connections, but different agent id and clean mailbox
-    val deepClone: String = s"""
-  override def deepClone(): meta.runtime.Actor = {
-    val cloner = new ${compiledActorGraph.name}(${parameterApplication})
-    cloner.connectedAgents = connectedAgents
-    cloner
-  }
-  """
-
     def parents: String = {
       var parentNames: List[String] = compiledActorGraph.parentNames
 
@@ -298,7 +288,7 @@ class CreateCode(initCode: String,
       s"${parentNames.head}${parentNames.tail.foldLeft("")((a,b) => a + " with " + changeTypes(b))}"
     }
 
-    val methods: String = s"${methodss}${deepClone}${run_until}${getIR}${setIR}${handleMsg}${gotoHandleMsg}"
+    val methods: String = s"${methodss}${run_until}${getIR}${setIR}${handleMsg}${gotoHandleMsg}"
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars, methods, parents);
   }

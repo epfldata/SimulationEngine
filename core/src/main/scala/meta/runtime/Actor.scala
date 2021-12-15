@@ -95,7 +95,6 @@ class Actor extends Serializable {
     * @param messages Actions with receiver matching the agent from the previous step
     */
   def addReceiveMessages(messages: List[Message]): Actor = {
-    // println(s"Add receive messages for ${id}: ${messages} $responseListeners")
     this.receivedMessages.appendAll( messages.filter(
       x =>
         x.isInstanceOf[RequestMessage] || responseListeners
@@ -183,16 +182,6 @@ class Actor extends Serializable {
     */
   def run(messages: List[Message]): (List[Message], Int) = {
     ???
-  }
-
-  /**
-    * Stub, overriden by generated code. 
-    * Clone an agent with the same connectedAgents, but a new id and fresh mailbox
-    *
-    * @return
-    */
-  def deepClone(): Actor = {
-    this
   }
 
   // Return the current value of the instruction pointer  
