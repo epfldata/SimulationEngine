@@ -1,4 +1,4 @@
-package meta.test
+package meta.test.newSim
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
@@ -36,11 +36,11 @@ class NewSimTest extends FlatSpec {
         compileSims(List(liftMyClass), 
             mainInit = Some(liftedMain), 
             initPkgName = Some(this.getClass().getPackage().getName()),
-            destFolder = "core/src/test/scala/generated")
+            destFolder = "core/src/test/scala/generated/newSim/")
     }
 
     "The runtime" should "recognize the generated new agents" in {
-        val agents = generated.meta.test.InitData()
+        val agents = generated.meta.test.newSim.InitData()
         val c = new SimulationConfig(agents, 3)
         StartSimulation[AkkaMessagingLayer.type](c)
     }

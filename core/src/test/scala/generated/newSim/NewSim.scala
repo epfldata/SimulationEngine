@@ -1,9 +1,9 @@
-package generated.meta.test
+package generated.meta.test.newSim
 
 class NewSim () extends meta.runtime.Actor {
 
 
-  private var  reflectionIR_48: Int = -1
+  private var  reflectionIR_54: Int = -1
   private var resetData_0: scala.Any = null;
   private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
   private var resetData_2: meta.runtime.ResponseMessage = null;
@@ -12,7 +12,7 @@ class NewSim () extends meta.runtime.Actor {
   private var bindingMut_5: scala.Double = 0.0;
   private var bindingMut_6: java.lang.String = null;
   private var bindingMut_7: scala.Long = 0L;
-  private var bindingMut_8: generated.meta.test.NewSim = null;
+  private var bindingMut_8: generated.meta.test.newSim.NewSim = null;
   private var bindingMut_9: java.lang.String = null;
   private var bindingMut_10: scala.Long = 0L;
   private var unblockFlag_11: scala.Boolean = true;
@@ -36,11 +36,11 @@ class NewSim () extends meta.runtime.Actor {
     val x_21 = bindingMut_9;
     scala.Predef.println(x_21);
     resetData_0 = ();
-    val x_22 = new generated.meta.test.NewSim();
+    val x_22 = new generated.meta.test.newSim.NewSim();
     meta.runtime.SimRuntime.newActors.append(x_22);
     resetData_0 = x_22;
     val x_23 = resetData_0;
-    val x_24 = x_23.asInstanceOf[generated.meta.test.NewSim];
+    val x_24 = x_23.asInstanceOf[generated.meta.test.newSim.NewSim];
     bindingMut_8 = x_24;
     val x_25 = bindingMut_8;
     val x_26 = x_25.id;
@@ -169,8 +169,8 @@ class NewSim () extends meta.runtime.Actor {
       // first entry, save the current IR to reflectionIR
       unblockFlag_11 = true
 
-      if (reflectionIR_48 == -1){
-        reflectionIR_48 = positionVar_12
+      if (reflectionIR_54 == -1){
+        reflectionIR_54 = positionVar_12
         positionVar_12 = new_ir
       }
 
@@ -180,8 +180,8 @@ class NewSim () extends meta.runtime.Actor {
 
       // reset instruction register when finishes processing
       if (positionVar_12 > 6) {
-        positionVar_12 = reflectionIR_48
-        reflectionIR_48 = -1
+        positionVar_12 = reflectionIR_54
+        reflectionIR_54 = -1
       }
       this
     }

@@ -35,7 +35,7 @@ class MyClass4() extends Actor {
     }
 }
 
-class lifterMethodTest2 extends FlatSpec with org.scalatest.Matchers{
+class lifterMethodTest2 extends FlatSpec with org.scalatest.Matchers {
     import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 
