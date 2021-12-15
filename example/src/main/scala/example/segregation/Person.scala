@@ -3,11 +3,12 @@ package segregation
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
+import lib.Grid.AgentWithNeighbors
 
 @lift
 class Person(val world: WorldMap,
             val view: Int, 
-            val toleranceThreshold: Double) extends Actor {
+            val toleranceThreshold: Double) extends AgentWithNeighbors {
 
   var location: Int = 0
 

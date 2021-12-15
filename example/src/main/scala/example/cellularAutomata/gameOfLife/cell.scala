@@ -3,6 +3,7 @@ package gameOfLife
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
+import lib.Grid.AgentWithNeighbors
 
 /**
   * Conway's game of life
@@ -11,7 +12,7 @@ import squid.quasi.lift
   * @param alive
   */
 @lift
-class Cell(var alive: Boolean) extends Actor {
+class Cell(var alive: Boolean) extends AgentWithNeighbors {
 
     var futures: List[Future[Boolean]] = List()
 

@@ -3,6 +3,7 @@ package example.cellularAutomata.wator
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 import meta.runtime.{Actor, Future}
+import lib.Grid.AgentWithNeighbors
 
 trait watorCell {
     var energy: Int
@@ -16,7 +17,7 @@ case class Water(var energy: Int=0, var age: Int = 0) extends watorCell
 case class Shark(var energy: Int, var age: Int = 0) extends watorCell
 
 @lift
-class Cell(var identity: watorCell) extends Actor {
+class Cell(var identity: watorCell) extends AgentWithNeighbors {
 
     private var isReserved: Boolean = false
 

@@ -40,12 +40,6 @@ class Actor extends Serializable {
 
   var deleted: Boolean = false
 
-  var connectedAgentIds: List[AgentId] = Nil
-
-  // lazy var, doesn't need to sync with connectedAgentIds. We donot need references to 
-  // connections who are not within the same container 
-  var connectedAgents: Map[AgentId, Actor] = Map()
-	
   // a variable denoting whether we can relax the consistency constraint and allow concurrent copies 
   var relaxConsistency: Boolean = false 
 
@@ -189,14 +183,4 @@ class Actor extends Serializable {
   def gotoHandleMessages(new_ir: Int = -1): Actor = ??? 
   
   def handleNonblockingMessage(m: RequestMessage): Unit = ??? 
-
-  def addConnectionIds(c: List[AgentId]): Actor = {
-		this.connectedAgentIds = this.connectedAgentIds ::: c
-		this
-	}
-
-	def addConnections(c: List[Actor]): Actor = {
-    this.connectedAgents = this.connectedAgents ++ c.map(x => (x.id -> x)).toMap
-		this
-	}
 }

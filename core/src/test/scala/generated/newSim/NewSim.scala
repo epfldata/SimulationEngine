@@ -3,7 +3,7 @@ package generated.meta.test.newSim
 class NewSim () extends meta.runtime.Actor {
 
 
-  private var  reflectionIR_18: Int = -1
+  private var  reflectionIR_34: Int = -1
   private var resetData_0: scala.Any = null;
   private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
   private var resetData_2: meta.runtime.ResponseMessage = null;
@@ -150,8 +150,8 @@ class NewSim () extends meta.runtime.Actor {
       // first entry, save the current IR to reflectionIR
       unblockFlag_11 = true
 
-      if (reflectionIR_18 == -1){
-        reflectionIR_18 = positionVar_12
+      if (reflectionIR_34 == -1){
+        reflectionIR_34 = positionVar_12
         positionVar_12 = new_ir
       }
 
@@ -161,8 +161,8 @@ class NewSim () extends meta.runtime.Actor {
 
       // reset instruction register when finishes processing
       if (positionVar_12 > 6) {
-        positionVar_12 = reflectionIR_18
-        reflectionIR_18 = -1
+        positionVar_12 = reflectionIR_34
+        reflectionIR_34 = -1
       }
       this
     }

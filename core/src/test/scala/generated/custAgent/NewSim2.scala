@@ -3,7 +3,7 @@ package generated.meta.test.custAgent
 class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime.Actor with meta.test.custAgent.custActor {
 
 
-  private var  reflectionIR_67: Int = -1
+  private var  reflectionIR_14: Int = -1
   private var resetData_0: scala.Any = null;
   private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
   private var resetData_2: meta.runtime.ResponseMessage = null;
@@ -309,8 +309,8 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
       // first entry, save the current IR to reflectionIR
       unblockFlag_13 = true
 
-      if (reflectionIR_67 == -1){
-        reflectionIR_67 = positionVar_14
+      if (reflectionIR_14 == -1){
+        reflectionIR_14 = positionVar_14
         positionVar_14 = new_ir
       }
 
@@ -320,8 +320,8 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
 
       // reset instruction register when finishes processing
       if (positionVar_14 > 15) {
-        positionVar_14 = reflectionIR_67
-        reflectionIR_67 = -1
+        positionVar_14 = reflectionIR_14
+        reflectionIR_14 = -1
       }
       this
     }
