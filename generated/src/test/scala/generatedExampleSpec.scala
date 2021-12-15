@@ -13,7 +13,7 @@ class generatedExamples extends org.scalatest.FlatSpec {
         val results = StartSimulation[AkkaMessagingLayer.type](containerConfig)
     }
 
-    "Compiled game of life example with Akka messaging layer" should "run" in {
+    "Compiled game of life example with base messaging layer" should "run" in {
         val agents = generated.example.gameOfLife.InitData(10, 10)
 
         val c = new SimulationConfig(agents, 10)
