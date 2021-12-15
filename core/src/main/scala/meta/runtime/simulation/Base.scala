@@ -28,17 +28,15 @@ class Base(var actors: List[Actor], val totalTurn: Int, val messages: List[Messa
       SimRuntime.initLabelVals()
 
       while (currentTurn < totalTurn) {
-        util.bench {
-          println(util.displayTime(currentTurn))
-          collect()
-          val mx = collectedMessages.groupBy(_.receiverId)
-          collectedMessages = actors.filterNot(_.deleted).flatMap(a => {
-            val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
-            a.cleanSendMessage
-              .run(targetMessages)._1
-          }).toList
-          proceed()
-        }
+        println(util.displayTime(currentTurn))
+        collect()
+        val mx = collectedMessages.groupBy(_.receiverId)
+        collectedMessages = actors.filterNot(_.deleted).flatMap(a => {
+          val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
+          a.cleanSendMessage
+            .run(targetMessages)._1
+        }).toList
+        proceed()
       }
 
       Actor.reset
