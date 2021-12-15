@@ -17,8 +17,7 @@ object SimsRunner {
     implicit val baseSimulation = {
         new SimsRunner[BaseMessagingLayer.type] {
             def run(c: SimulationConfig): SimulationSnapshot = {
-                val finalAgents = new Base(c.actors, c.totalTurn).run()
-                SimulationSnapshot(finalAgents)
+                new Base(c.actors, c.totalTurn, c.messages).run()
             }
         }
     }
@@ -26,8 +25,7 @@ object SimsRunner {
     implicit val akkaSimulation = {
         new SimsRunner[AkkaMessagingLayer.type] {
             def run(c: SimulationConfig): SimulationSnapshot = {
-                val finalAgents = AkkaRun(c.actors, c.totalTurn, false)
-                SimulationSnapshot(finalAgents)
+                AkkaRun(c.actors, c.totalTurn, false, c.messages)
             }
         }
     }

@@ -4,10 +4,11 @@ package simulation
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
 import scala.util.Random
 import meta.runtime.Actor.AgentId
+import meta.API.SimulationSnapshot
 
-class Base(var actors: List[Actor], val totalTurn: Int) extends Simulation {
+class Base(var actors: List[Actor], val totalTurn: Int, val messages: List[Message]) extends Simulation {
 
-  var collectedMessages: List[Message] = List()
+  var collectedMessages: List[Message] = messages
 
   val events: ListBuffer[()=> Unit] = new ListBuffer()
   events.append(
@@ -27,4 +28,17 @@ class Base(var actors: List[Actor], val totalTurn: Int) extends Simulation {
   })
 
   events.append(() => proceed())
+
+  override def run(): SimulationSnapshot = {
+    init()
+
+    while (currentTurn < totalTurn) {
+      util.bench {
+        events.foreach(_())
+      }
+    }
+
+    Actor.reset
+    SimulationSnapshot(actors, collectedMessages)
+  }
 }

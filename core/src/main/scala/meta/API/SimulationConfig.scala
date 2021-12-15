@@ -1,7 +1,6 @@
 package meta.API
 
-import meta.runtime.Actor
-import meta.runtime.Container
+import meta.runtime.{Actor, Container, Message}
 
 /**
   * Defines the configuration for a simulation run
@@ -11,7 +10,7 @@ import meta.runtime.Container
   * @param isCompiled defines whether to compile or stage the agents
   * @param latencyBound defines a bounded message latency for the model, default to 1
   */
-class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isCompiled: Boolean = true, val latencyBound: Int = 1) {
+class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isCompiled: Boolean = true, val latencyBound: Int = 1, val messages: List[Message]=List()) {
   // Group agents statically into containers according to the number of partitions                 
 
   def staticPartition(partitions: Int)(containerOpt: SimContainerOptimization): SimulationConfig = {
@@ -29,7 +28,7 @@ class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isC
 
         containers.foreach(c => c.setKBound(latencyBound))
         
-        new SimulationConfig(containers, totalTurn, isCompiled, latencyBound)
+        new SimulationConfig(containers, totalTurn, isCompiled, latencyBound, messages)
   }
 
   override def toString(): String = {

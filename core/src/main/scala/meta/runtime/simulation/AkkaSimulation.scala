@@ -4,6 +4,7 @@ package simulation
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
 import SimRuntime._
 import meta.runtime.Actor.AgentId
+import meta.API.SimulationSnapshot
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -22,15 +23,16 @@ object Dispatcher {
   private var proxyMap: Map[AgentId, AgentId] = Map()
 
   private var agentRefMap: Map[AgentId, ActorRef[DispatcherEvent]] = Map()
-  private val msgBuffer: ListBuffer[Message] = ListBuffer[Message]()
+  val msgBuffer: ListBuffer[Message] = ListBuffer[Message]()
 
   val finalStates: ListBuffer[Actor] = ListBuffer[Actor]()
   var proposedTime: Int = 1
 
-  def apply(maxAgents: Int, maxTurn: Int, pMap: Map[AgentId, AgentId]): Behavior[SimAgent.AgentEvent] = {
+  def apply(maxAgents: Int, maxTurn: Int, pMap: Map[AgentId, AgentId], messages: List[Message]): Behavior[SimAgent.AgentEvent] = {
     totalAgents = maxAgents
     totalTurn = maxTurn
     proxyMap = pMap
+    msgBuffer.appendAll(messages)
     dispatcher(0, 0, System.currentTimeMillis())
   }
 
@@ -140,13 +142,13 @@ class SimAgent {
 
 object SimExperiment {
 
-    def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false): Behavior[NotUsed] = 
+    def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[NotUsed] = 
         Behaviors.setup { context => 
             val proxyMap = actors
             .map(a => (a.proxyIds, a.id))
             .flatMap(p => p._1.map(i => (i, p._2))).toMap
 
-            val dispatcher = context.spawn(Dispatcher(actors.size, totalTurn, proxyMap), "dispatcher")
+            val dispatcher = context.spawn(Dispatcher(actors.size, totalTurn, proxyMap, messages), "dispatcher")
             
             val simAgents = actors.map(a => context.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
 
@@ -162,14 +164,14 @@ object SimExperiment {
 }
 
 object AkkaRun {
-    def apply(actors: List[Actor], totalTurn: Int, staged: Boolean=false): List[Actor] = {
+    def apply(actors: List[Actor], totalTurn: Int, staged: Boolean=false, messages: List[Message]): SimulationSnapshot = {
         println("Simulation starts!")
 
-        val actorSystem = ActorSystem(SimExperiment(totalTurn, actors), "SimSystem")
+        val actorSystem = ActorSystem(SimExperiment(totalTurn, actors, staged, messages), "SimSystem")
         Await.ready(actorSystem.whenTerminated, 10.days)
 
         println("Simulation ends!")
         Actor.reset
-        Dispatcher.finalStates.toList
+        SimulationSnapshot(Dispatcher.finalStates.toList, Dispatcher.msgBuffer.toList)
     }
 }

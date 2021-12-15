@@ -1,6 +1,7 @@
 package meta.runtime
 package simulation
 
+import meta.API.SimulationSnapshot
 import scala.collection.mutable.ListBuffer
 
 trait Simulation extends Serializable {
@@ -31,16 +32,5 @@ trait Simulation extends Serializable {
   }
 
   // entry point of the simulation
-  def run(): List[Actor] = {
-    init()
-
-    while (currentTurn < totalTurn) {
-      util.bench {
-        events.foreach(_())
-      }
-    }
-
-    Actor.reset
-    actors
-  }
+  def run(): SimulationSnapshot = ??? 
 }
