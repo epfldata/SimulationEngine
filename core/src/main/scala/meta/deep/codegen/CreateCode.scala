@@ -149,23 +149,23 @@ class CreateCode(initCode: String,
 
     val instructionRegister: String = instRegMap(actorName)
     
-    // set the IR and return the previous IR 
-    val getIR: String = s"""
-  override def getInstructionPointer: Int = {
-    ${instructionRegister}
-  }
-  """
+  //   // set the IR and return the previous IR 
+  //   val getIR: String = s"""
+  // override def getInstructionPointer: Int = {
+  //   ${instructionRegister}
+  // }
+  // """
 
-    val setIR: String = s"""
-  override def setInstructionPointer(new_ir: Int) = {
-    if (new_ir >= ${memorySize} || new_ir <0) {
-      throw new Exception("Invalid address pointer " + new_ir + " for agent " + id)
-    }
-    val prev_ir: Int = ${instructionRegister}
-    ${instructionRegister} = new_ir
-    this
-  }
-  """
+  //   val setIR: String = s"""
+  // override def setInstructionPointer(new_ir: Int) = {
+  //   if (new_ir >= ${memorySize} || new_ir <0) {
+  //     throw new Exception("Invalid address pointer " + new_ir + " for agent " + id)
+  //   }
+  //   val prev_ir: Int = ${instructionRegister}
+  //   ${instructionRegister} = new_ir
+  //   this
+  // }
+  // """
 
     // "classname_" is for merging optimization
     // Add to resolve package object
@@ -288,7 +288,7 @@ class CreateCode(initCode: String,
       s"${parentNames.head}${parentNames.tail.foldLeft("")((a,b) => a + " with " + changeTypes(b))}"
     }
 
-    val methods: String = s"${methodss}${run_until}${getIR}${setIR}${handleMsg}${gotoHandleMsg}"
+    val methods: String = s"${methodss}${run_until}${handleMsg}${gotoHandleMsg}"
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars, methods, parents);
   }
