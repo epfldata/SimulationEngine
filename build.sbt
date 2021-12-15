@@ -1,6 +1,6 @@
 ThisBuild / organization := "ch.epfl.data"
 ThisBuild / scalaVersion := "2.12.8"
-ThisBuild / version := "1.2-SNAPSHOT"
+ThisBuild / version := "1.3-SNAPSHOT"
 
 val project_name = "TickTalk"
 name := project_name
@@ -51,6 +51,7 @@ lazy val core = (project in file("core"))
     name := f"${project_name}-core",
     commonSettings, squidSettings, graphSettings, akkaSettings,
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
+    Test / parallelExecution := false,
   )
 
 lazy val library = (project in file("library"))
