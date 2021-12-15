@@ -3,7 +3,7 @@ package generated.meta.test.custAgent
 class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime.Actor with meta.test.custAgent.custActor {
 
 
-  private var  reflectionIR_12: Int = -1
+  private var  reflectionIR_67: Int = -1
   private var resetData_0: scala.Any = null;
   private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
   private var resetData_2: meta.runtime.ResponseMessage = null;
@@ -292,19 +292,6 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
     (sendMessages.toList, 1)
   }
   
-  override def getInstructionPointer: Int = {
-    positionVar_14
-  }
-  
-  override def setInstructionPointer(new_ir: Int) = {
-    if (new_ir >= 32 || new_ir <0) {
-      throw new Exception("Invalid address pointer " + new_ir + " for agent " + id)
-    }
-    val prev_ir: Int = positionVar_14
-    positionVar_14 = new_ir
-    this
-  }
-  
   override def handleNonblockingMessage(m: meta.runtime.RequestMessage): Unit = {
     val args = m.argss.flatten
     val response = m.methodInfo match {
@@ -322,8 +309,8 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
       // first entry, save the current IR to reflectionIR
       unblockFlag_13 = true
 
-      if (reflectionIR_12 == -1){
-        reflectionIR_12 = positionVar_14
+      if (reflectionIR_67 == -1){
+        reflectionIR_67 = positionVar_14
         positionVar_14 = new_ir
       }
 
@@ -333,8 +320,8 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
 
       // reset instruction register when finishes processing
       if (positionVar_14 > 15) {
-        positionVar_14 = reflectionIR_12
-        reflectionIR_12 = -1
+        positionVar_14 = reflectionIR_67
+        reflectionIR_67 = -1
       }
       this
     }
