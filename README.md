@@ -39,7 +39,7 @@ We include uber jars of the Squid (class-lifting branch) in the lib/ folder of d
   you should see "build 0.4.1-SNAPSHOT"
 ```
    
-   Here are some tips for writing meta-programs in this framework: 
+Here are some tips for writing meta-programs in this framework: 
 * The optimzations created work for specific use-cases:
   * ActorMerge takes a pair of ActorType Names to specify which one to merge.  
   Take care, that the class variables are named differently in the two Sims
@@ -65,6 +65,23 @@ We include uber jars of the Squid (class-lifting branch) in the lib/ folder of d
   * Extend the lifter and override the method liftCodeOther  
   and handle there your created algos.
 * To lift a class, annotate it with @lift and extend from runtime.Actor
+* At the moment, *args* in the syntax of asyncMessage must be class variables. For example, code snippet below is incorrect. 
+
+```allProducts.map(elem => asyncMessage[Product](() => market.consumerPrice(elem))) ```
+
+But the following code snippet works fine.
+```neighbors.map(n => asyncMessage[Int](() => n.getStatus()))```
+
+To fix it, simply bind *elem* with a class variable. 
+```
+var product: Product = null // class variable
+
+allProducts.map(elem => {
+  product = elem
+  asyncMessage[Product](() => market.consumerPrice(product))
+})
+```
+* Please make sure that **only** the main method of an agent contains special instructions.
 
 
 ### <a name="Simulation"></a> Start Simulation 
