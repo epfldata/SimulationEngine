@@ -28,11 +28,12 @@ object Dispatcher {
   val finalStates: ListBuffer[Actor] = ListBuffer[Actor]()
   var proposedTime: Int = 1
 
-  def apply(maxAgents: Int, maxTurn: Int, pMap: Map[AgentId, AgentId], messages: List[Message]): Behavior[SimAgent.AgentEvent] = {
+  def apply(maxAgents: Int, maxTurn: Int, pMap: Map[AgentId, AgentId]): Behavior[SimAgent.AgentEvent] = {
     totalAgents = maxAgents
     totalTurn = maxTurn
     proxyMap = pMap
-    msgBuffer.appendAll(messages)
+    finalStates.clear()
+    msgBuffer.clear()
     dispatcher(0, 0, System.currentTimeMillis())
   }
 
@@ -98,10 +99,10 @@ object Dispatcher {
 
             case SimAgent.FinalState(actor: Actor) =>
                 val aggAgents = agentCounter + 1
+                finalStates.append(actor)
                 if (aggAgents == totalAgents) {
                     Behaviors.stopped
                 } else {
-                    finalStates.append(actor)
                     dispatcher(aggAgents, currentTurn, currentTime)
                 }
         }
@@ -148,11 +149,18 @@ object SimExperiment {
             .map(a => (a.proxyIds, a.id))
             .flatMap(p => p._1.map(i => (i, p._2))).toMap
 
-            val dispatcher = context.spawn(Dispatcher(actors.size, totalTurn, proxyMap, messages), "dispatcher")
+            val dispatcher = context.spawn(Dispatcher(actors.size, totalTurn, proxyMap), "dispatcher")
             
             val simAgents = actors.map(a => context.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
+            
+            val simIds = actors.map(a => a.id)
+            
+            // Buffered messages are dispatched at the initialization
+            val collectedMessages = messages.groupBy(_.receiverId)
 
-            simAgents.foreach(a => a ! Dispatcher.ReceiveFromDispatcher(List(), dispatcher))
+            (simAgents zip simIds).foreach(x => {
+                x._1 ! Dispatcher.ReceiveFromDispatcher(collectedMessages.getOrElse(x._2, List()), dispatcher)
+            })
 
             context.watch(dispatcher)
 
