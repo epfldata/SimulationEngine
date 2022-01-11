@@ -12,9 +12,10 @@ benchmark/*
 .bsp/*
 
 ### VSCode ###
-.vscode/*
-.metals/*
+**/.vscode/*
+**/.metals/*
 .bloop/*
+
 project/*
 !project/build.properties
 !project/plugins.sbt
@@ -110,7 +111,7 @@ fabric.properties
 # http://www.scala-sbt.org/release/docs/Getting-Started/Directories.html#configuring-version-control
 
 dist/*
-target/
+**/target/*
 lib_managed/
 src_managed/
 project/boot/
