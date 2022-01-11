@@ -7,7 +7,9 @@
   </head>
   <body>
     <div class="slidecontainer">
-      <p id="exampleDemo"> </p>
+      <p id="grid_size"> </p>
+      <p id="grid_width"> </p>
+      <p id="grid_height"> </p>
       <input type="range" min="1" max="100" value="25" class="slider" id="stepRange">      
     </div>
 
@@ -21,13 +23,15 @@
     </div>
 
     <!-- Include Scala.js compiled code -->
-    <script type="text/javascript" src="target/scala-2.12/ticktalk-gui-fastopt.js">
-    </script>
+    <!-- dev, git add -f -->
+    <script type="text/javascript" src="target/scala-2.12/ticktalk-gui-fastopt/main.js"></script>
 
     <script>
       const DELAY = 100;
+      const gridWidthText = document.getElementById("grid_width");
+      const gridHeightText = document.getElementById("grid_height");
 
-      const gui = new Grid2DVisualization(3, 2, 20, new Map([[1, "black"]]), document.getElementById("canvas"));
+      const gui = new Grid2DVisualization(10, 10, 20, new Map([[1, "black"]]), document.getElementById("canvas"));
       
       gui.main();
 
@@ -48,8 +52,19 @@
         var file = this.files[0];
         var reader = new FileReader();
         reader.onload = function(progressEvent){    
-            console.log("Simulation file loaded!")
-            prepare_step(this.result.split(/\r\n|\n/));
+            console.log("Simulation file loaded!");
+            const display_data = this.result.split(/\r\n|\n/);
+            var meta_data = display_data.shift();
+            var w_h = meta_data.replaceAll(" ", "").split('#')[1].split(",");
+            
+            console.log("Meta data of the simulation data ", w_h);
+            const width = parseInt(w_h[0]);
+            const height = parseInt(w_h[1]);
+
+            gridWidthText.textContent = "Width: " + width;
+            gridHeightText.textContent = "Height: " + height;
+            gui.initGrid(width, height);
+            prepare_step(display_data);
         };
         reader.readAsText(file);
       };
