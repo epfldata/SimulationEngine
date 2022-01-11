@@ -941,12 +941,10 @@ function $p_LGUI_Graphics_Grid2DVisualization__getTextById$1__T__Lorg_scalajs_do
 }
 function $p_LGUI_Graphics_Grid2DVisualization__configSlider$1__V($thiz) {
   var sliderNode = $m_Lorg_scalajs_dom_package$().document__Lorg_scalajs_dom_raw_HTMLDocument().getElementById("stepRange");
-  var sliderText = $m_Lorg_scalajs_dom_package$().document__Lorg_scalajs_dom_raw_HTMLDocument().getElementById("exampleDemo");
+  var gridSizeText = $m_Lorg_scalajs_dom_package$().document__Lorg_scalajs_dom_raw_HTMLDocument().getElementById("grid_size");
   var arg$macro$1 = $thiz.LGUI_Graphics_Grid2DVisualization__f_grid_size;
-  var arg$macro$2 = $thiz.LGUI_Graphics_Grid2DVisualization__f_width;
-  var arg$macro$3 = $thiz.LGUI_Graphics_Grid2DVisualization__f_height;
-  var this$3 = new $c_sci_StringOps("Grid size: %s Width: %s Height: %s");
-  var array = [arg$macro$1, arg$macro$2, arg$macro$3];
+  var this$3 = new $c_sci_StringOps("Grid size: %s");
+  var array = [arg$macro$1];
   var this$ = this$3.sci_StringOps__f_repr;
   $m_sc_Seq$();
   $m_sjs_js_WrappedArray$();
@@ -978,10 +976,10 @@ function $p_LGUI_Graphics_Grid2DVisualization__configSlider$1__V($thiz) {
     i$1 = ((1 + i$1) | 0);
     j = ((1 + j) | 0)
   };
-  sliderText.textContent = $m_jl_String$().format__T__AO__T(this$, result);
-  sliderNode.addEventListener("input", ((arg$outer, sliderText$1) => ((arg1$2) => {
-    arg$outer.GUI$Graphics$Grid2DVisualization$$$anonfun$main$1__Lorg_scalajs_dom_raw_Event__Lorg_scalajs_dom_raw_Element__V(arg1$2, sliderText$1)
-  }))($thiz, sliderText))
+  gridSizeText.textContent = $m_jl_String$().format__T__AO__T(this$, result);
+  sliderNode.addEventListener("input", ((arg$outer, gridSizeText$1) => ((arg1$2) => {
+    arg$outer.GUI$Graphics$Grid2DVisualization$$$anonfun$main$1__Lorg_scalajs_dom_raw_Event__Lorg_scalajs_dom_raw_Element__V(arg1$2, gridSizeText$1)
+  }))($thiz, gridSizeText))
 }
 /** @constructor */
 function $c_LGUI_Graphics_Grid2DVisualization(width, height, grid_size, color_scheme, canvas) {
@@ -1003,38 +1001,38 @@ function $h_LGUI_Graphics_Grid2DVisualization() {
   /*<skip>*/
 }
 $h_LGUI_Graphics_Grid2DVisualization.prototype = $c_LGUI_Graphics_Grid2DVisualization.prototype;
-$c_LGUI_Graphics_Grid2DVisualization.prototype.initGrid__V = (function() {
-  var world_height = $imul(this.LGUI_Graphics_Grid2DVisualization__f_height, this.LGUI_Graphics_Grid2DVisualization__f_grid_size);
-  var world_width = $imul(this.LGUI_Graphics_Grid2DVisualization__f_width, this.LGUI_Graphics_Grid2DVisualization__f_grid_size);
+$c_LGUI_Graphics_Grid2DVisualization.prototype.initGrid__I__I__V = (function(width, height) {
+  this.LGUI_Graphics_Grid2DVisualization__f_width = width;
+  this.LGUI_Graphics_Grid2DVisualization__f_height = height;
+  var world_height = $imul(height, this.LGUI_Graphics_Grid2DVisualization__f_grid_size);
+  var world_width = $imul(width, this.LGUI_Graphics_Grid2DVisualization__f_grid_size);
   this.LGUI_Graphics_Grid2DVisualization__f_canvas.width = world_width;
   this.LGUI_Graphics_Grid2DVisualization__f_canvas.height = world_height;
   var ctx = this.LGUI_Graphics_Grid2DVisualization__f_canvas.getContext("2d");
   ctx.beginPath();
   ctx.lineWidth = 3.0;
   ctx.strokeRect(0.0, 0.0, world_width, world_height);
-  var end = this.LGUI_Graphics_Grid2DVisualization__f_width;
-  var isEmpty = (end < 0);
+  var isEmpty = (width < 0);
   if ((!isEmpty)) {
     var i = 0;
     while (true) {
       var v1 = i;
       ctx.moveTo($imul(v1, this.LGUI_Graphics_Grid2DVisualization__f_grid_size), 0.0);
       ctx.lineTo($imul(v1, this.LGUI_Graphics_Grid2DVisualization__f_grid_size), world_height);
-      if ((i === end)) {
+      if ((i === width)) {
         break
       };
       i = ((1 + i) | 0)
     }
   };
-  var end$1 = this.LGUI_Graphics_Grid2DVisualization__f_height;
-  var isEmpty$1 = (end$1 < 0);
+  var isEmpty$1 = (height < 0);
   if ((!isEmpty$1)) {
     var i$1 = 0;
     while (true) {
       var v1$1 = i$1;
       ctx.moveTo(0.0, $imul(v1$1, this.LGUI_Graphics_Grid2DVisualization__f_grid_size));
       ctx.lineTo(world_width, $imul(v1$1, this.LGUI_Graphics_Grid2DVisualization__f_grid_size));
-      if ((i$1 === end$1)) {
+      if ((i$1 === height)) {
         break
       };
       i$1 = ((1 + i$1) | 0)
@@ -1043,7 +1041,7 @@ $c_LGUI_Graphics_Grid2DVisualization.prototype.initGrid__V = (function() {
   ctx.stroke()
 });
 $c_LGUI_Graphics_Grid2DVisualization.prototype.visualizeInput__sjs_js_Array__V = (function(input) {
-  this.initGrid__V();
+  this.initGrid__I__I__V(this.LGUI_Graphics_Grid2DVisualization__f_width, this.LGUI_Graphics_Grid2DVisualization__f_height);
   var array = [];
   var len = $uI(input.length);
   var i = 0;
@@ -1088,8 +1086,14 @@ $c_LGUI_Graphics_Grid2DVisualization.prototype.main__V = (function() {
 $c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$prop$width__O = (function() {
   return this.LGUI_Graphics_Grid2DVisualization__f_width
 });
+$c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$prop$width__I__O = (function(x$1) {
+  this.LGUI_Graphics_Grid2DVisualization__f_width = x$1
+});
 $c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$prop$height__O = (function() {
   return this.LGUI_Graphics_Grid2DVisualization__f_height
+});
+$c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$prop$height__I__O = (function(x$1) {
+  this.LGUI_Graphics_Grid2DVisualization__f_height = x$1
 });
 $c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$prop$grid_size__O = (function() {
   return this.LGUI_Graphics_Grid2DVisualization__f_grid_size
@@ -1103,8 +1107,14 @@ $c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$prop$color_scheme__O
 $c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$prop$canvas__O = (function() {
   return this.LGUI_Graphics_Grid2DVisualization__f_canvas
 });
-$c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$meth$initGrid__O = (function() {
-  this.initGrid__V()
+$c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$meth$initGrid__I__I__O = (function(width, height) {
+  this.initGrid__I__I__V(width, height)
+});
+$c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$meth$initGrid$default$1__I = (function() {
+  return this.LGUI_Graphics_Grid2DVisualization__f_width
+});
+$c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$meth$initGrid$default$2__I = (function() {
+  return this.LGUI_Graphics_Grid2DVisualization__f_height
 });
 $c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$meth$visualizeInput__sjs_js_Array__O = (function(input) {
   this.visualizeInput__sjs_js_Array__V(input)
@@ -1112,12 +1122,10 @@ $c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$meth$visualizeInput_
 $c_LGUI_Graphics_Grid2DVisualization.prototype.$js$exported$meth$main__O = (function() {
   this.main__V()
 });
-$c_LGUI_Graphics_Grid2DVisualization.prototype.GUI$Graphics$Grid2DVisualization$$$anonfun$main$1__Lorg_scalajs_dom_raw_Event__Lorg_scalajs_dom_raw_Element__V = (function(e, sliderText$1) {
+$c_LGUI_Graphics_Grid2DVisualization.prototype.GUI$Graphics$Grid2DVisualization$$$anonfun$main$1__Lorg_scalajs_dom_raw_Event__Lorg_scalajs_dom_raw_Element__V = (function(e, gridSizeText$1) {
   var newGridSize = $as_T($p_LGUI_Graphics_Grid2DVisualization__getTextById$1__T__Lorg_scalajs_dom_raw_HTMLInputElement(this, "stepRange").value);
-  var arg$macro$5 = this.LGUI_Graphics_Grid2DVisualization__f_width;
-  var arg$macro$6 = this.LGUI_Graphics_Grid2DVisualization__f_height;
-  var this$3 = new $c_sci_StringOps("Grid size: %s Width: %s Height: %s");
-  var array = [newGridSize, arg$macro$5, arg$macro$6];
+  var this$3 = new $c_sci_StringOps("Grid size: %s");
+  var array = [newGridSize];
   var this$ = this$3.sci_StringOps__f_repr;
   $m_sc_Seq$();
   $m_sjs_js_WrappedArray$();
@@ -1149,15 +1157,15 @@ $c_LGUI_Graphics_Grid2DVisualization.prototype.GUI$Graphics$Grid2DVisualization$
     i$1 = ((1 + i$1) | 0);
     j = ((1 + j) | 0)
   };
-  sliderText$1.textContent = $m_jl_String$().format__T__AO__T(this$, result);
+  gridSizeText$1.textContent = $m_jl_String$().format__T__AO__T(this$, result);
   var this$18 = new $c_sci_StringOps(newGridSize);
   var this$$1 = this$18.sci_StringOps__f_repr;
   var this$20 = $m_jl_Integer$();
   this.LGUI_Graphics_Grid2DVisualization__f_grid_size = this$20.parseInt__T__I__I(this$$1, 10);
-  this.initGrid__V()
+  this.initGrid__I__I__V(this.LGUI_Graphics_Grid2DVisualization__f_width, this.LGUI_Graphics_Grid2DVisualization__f_height)
 });
 $c_LGUI_Graphics_Grid2DVisualization.prototype.GUI$Graphics$Grid2DVisualization$$$anonfun$main$2__Lorg_scalajs_dom_raw_Event__V = (function(e) {
-  this.initGrid__V();
+  this.initGrid__I__I__V(this.LGUI_Graphics_Grid2DVisualization__f_width, this.LGUI_Graphics_Grid2DVisualization__f_height);
   $p_LGUI_Graphics_Grid2DVisualization__configSlider$1__V(this)
 });
 $c_LGUI_Graphics_Grid2DVisualization.prototype.main = (function() {
@@ -1167,8 +1175,10 @@ $c_LGUI_Graphics_Grid2DVisualization.prototype.visualizeInput = (function(arg) {
   var prep0 = arg;
   return this.$js$exported$meth$visualizeInput__sjs_js_Array__O(prep0)
 });
-$c_LGUI_Graphics_Grid2DVisualization.prototype.initGrid = (function() {
-  return this.$js$exported$meth$initGrid__O()
+$c_LGUI_Graphics_Grid2DVisualization.prototype.initGrid = (function(...rest) {
+  var prep0 = ((rest[0] === (void 0)) ? this.$js$exported$meth$initGrid$default$1__I() : $uI(rest[0]));
+  var prep1 = ((rest[1] === (void 0)) ? this.$js$exported$meth$initGrid$default$2__I() : $uI(rest[1]));
+  return this.$js$exported$meth$initGrid__I__I__O(prep0, prep1)
 });
 Object.defineProperty($c_LGUI_Graphics_Grid2DVisualization.prototype, "canvas", {
   "get": (function() {
@@ -1196,11 +1206,19 @@ Object.defineProperty($c_LGUI_Graphics_Grid2DVisualization.prototype, "height", 
   "get": (function() {
     return this.$js$exported$prop$height__O()
   }),
+  "set": (function(arg) {
+    var prep0 = $uI(arg);
+    this.$js$exported$prop$height__I__O(prep0)
+  }),
   "configurable": true
 });
 Object.defineProperty($c_LGUI_Graphics_Grid2DVisualization.prototype, "width", {
   "get": (function() {
     return this.$js$exported$prop$width__O()
+  }),
+  "set": (function(arg) {
+    var prep0 = $uI(arg);
+    this.$js$exported$prop$width__I__O(prep0)
   }),
   "configurable": true
 });
@@ -6642,4 +6660,4 @@ Grid2DVisualization = (function(arg, arg$2, arg$3, arg$4, arg$5) {
   return new $c_LGUI_Graphics_Grid2DVisualization(prep0, prep1, prep2, prep3, prep4)
 });
 }).call(this);
-//# sourceMappingURL=ticktalk-gui-fastopt.js.map
+//# sourceMappingURL=main.js.map
