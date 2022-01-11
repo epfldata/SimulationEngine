@@ -33,8 +33,7 @@ class Base(var actors: List[Actor], val totalTurn: Int, val messages: List[Messa
         val mx = collectedMessages.groupBy(_.receiverId)
         collectedMessages = actors.filterNot(_.deleted).flatMap(a => {
           val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
-          a.cleanSendMessage
-            .run(targetMessages)._1
+          a.run(targetMessages)._1
         }).toList
         proceed()
       }

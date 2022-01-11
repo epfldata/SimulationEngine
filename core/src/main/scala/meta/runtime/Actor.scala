@@ -121,15 +121,6 @@ class Actor extends Serializable {
   }
 
   /**
-    * This resets sendMessages, so that getSendMessages is empty again
-    * @return the actor itself
-    */
-  final def cleanSendMessage: Actor = {
-    sendMessages.clear()
-    this
-  }
-
-  /**
     * Sets a message response handler for a specific session id
     *
     * @param sessionId session of message you want to listen for a response
