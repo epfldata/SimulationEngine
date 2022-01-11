@@ -14,13 +14,15 @@ import org.scalajs.dom.raw.{HTMLInputElement}
 @JSExportAll
 @JSExportTopLevel("Grid2DVisualization")
 class Grid2DVisualization(
-        val width: Int, 
-        val height: Int,
+        var width: Int, 
+        var height: Int,
         var grid_size: Int,
         val color_scheme: js.Map[Int, String],
         val canvas: Canvas) {
 
-    def initGrid(): Unit = {
+    def initGrid(width: Int = this.width, height: Int = this.height): Unit = {
+        this.width = width
+        this.height = height
         val world_height = height * grid_size
         val world_width = width * grid_size
 
@@ -72,12 +74,14 @@ class Grid2DVisualization(
 
         def configSlider(): Unit = {
             val sliderNode = document.getElementById("stepRange")
-            val sliderText = document.getElementById("exampleDemo")
-            sliderText.textContent = f"Grid size: ${grid_size} Width: ${width} Height: ${height}"
+            val gridSizeText = document.getElementById("grid_size")
+
+            gridSizeText.textContent = f"Grid size: ${grid_size}"
+
 
             sliderNode.addEventListener("input", { (e: dom.Event) => {
                 val newGridSize = getTextById("stepRange").value
-                sliderText.textContent = f"Grid size: ${newGridSize} Width: ${width} Height: ${height}"
+                gridSizeText.textContent = f"Grid size: ${newGridSize}"
                 grid_size = newGridSize.toInt
                 initGrid()
             }})
