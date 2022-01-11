@@ -7,9 +7,10 @@ class Grid2DSnapshot(input: List[Int],
     import Grid2DSnapshot._
     def serialize(): String = {
         // const setting = new Map([${mapAdapter(colorScheme)}]);
-        f"""
-        ${listAdapter(input)}
-        """
+f"""
+#${width},${height}
+${listAdapter(input)}
+"""
     }
 }
 
