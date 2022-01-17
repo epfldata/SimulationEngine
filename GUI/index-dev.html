@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>TickTalk GUI</title>
+    <link rel="stylesheet" type="text/css" href="index-dev.css" media="screen" />
+  </head>
+  <body>
+    <div class="slidecontainer">
+      <p id="grid_size"> </p>
+      <p id="grid_width"> </p>
+      <p id="grid_height"> </p>
+      <input type="range" min="1" max="100" value="25" class="slider" id="stepRange">      
+    </div>
+
+    <div class="filecontainer">
+      <p>Please select a timeseries file</p>
+      <input type="file" name="file" id="file" />
+    </div>
+    
+    <div class="canvascontainer">
+      <canvas style="display: block" id="canvas" width="255" height="255"/>
+    </div>
+
+    <!-- Include Scala.js compiled code -->
+    <!-- dev, git add -f -->
+    <script type="text/javascript" src="target/scala-2.12/ticktalk-gui-fastopt/main.js"></script>
+
+    <script>
+      const DELAY = 100;
+      const gridWidthText = document.getElementById("grid_width");
+      const gridHeightText = document.getElementById("grid_height");
+
+      const gui = new Grid2DVisualization(10, 10, 20, new Map([[1, "black"]]), document.getElementById("canvas"));
+      
+      gui.main();
+
+      function prepare_step(texts) {
+        const iter = texts[Symbol.iterator]();
+        let result; 
+
+        function innerStep() {
+          if (!(result = iter.next()).done) {
+            gui.visualizeInput(result.value.split(',').map(Number));
+          }
+        }
+
+        setInterval(innerStep, DELAY);
+      }
+
+      document.getElementById('file').onchange = function(){
+        var file = this.files[0];
+        var reader = new FileReader();
+        reader.onload = function(progressEvent){    
+            console.log("Simulation file loaded!");
+            const display_data = this.result.split(/\r\n|\n/);
+            var meta_data = display_data.shift();
+            var w_h = meta_data.replaceAll(" ", "").split('#')[1].split(",");
+            
+            console.log("Meta data of the simulation data ", w_h);
+            const width = parseInt(w_h[0]);
+            const height = parseInt(w_h[1]);
+
+            gridWidthText.textContent = "Width: " + width;
+            gridHeightText.textContent = "Height: " + height;
+            gui.initGrid(width, height);
+            prepare_step(display_data);
+        };
+        reader.readAsText(file);
+      };
+    </script>
+  </body>
+</html>
+
+
