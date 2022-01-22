@@ -9,11 +9,11 @@ class watorMergingScalability extends org.scalatest.FlatSpec {
     val example: String = "wator"
     val output: String = "wator.csv"
 
-    val widths: Set[Int] = Set(10, 100, 1000)
+    val widths: Set[Int] = Set(1000)
     val height: Int = 100
     val totalTurns: Int = 100
 
-    val containers: Set[Int] = Set(0, 50, 100)
+    val containers: Set[Int] = Range(0, 101, 10).toSet
     // assume fixed model
     val boundLatency: List[Int] = List(1)
 
@@ -36,6 +36,7 @@ class watorMergingScalability extends org.scalatest.FlatSpec {
                         }
                     } 
                     pw.write(f"${example},${width*height},${container},${latency},${run1}\n")
+                    pw.flush()
                 }
             }
         }
@@ -45,4 +46,3 @@ class watorMergingScalability extends org.scalatest.FlatSpec {
         pw.close()
     }
 }
-
