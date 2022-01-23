@@ -17,7 +17,7 @@ case class Water(var energy: Int=0, var age: Int = 0) extends watorCell
 case class Shark(var energy: Int, var age: Int = 0) extends watorCell
 
 @lift
-class Cell(var identity: watorCell) extends AgentWithNeighbors {
+class Cell(var identity: watorCell, var cfreq: Int) extends AgentWithNeighbors {
 
     private var isReserved: Boolean = false
 
@@ -105,7 +105,7 @@ class Cell(var identity: watorCell) extends AgentWithNeighbors {
                         if (relocateSuccess && !isReserved){
                             // reproduce
                             if (currentAge >= 10) {
-                                println(id + " produces new fish!")
+                                // println(id + " produces new fish!")
                                 identity = Fish(10)
                             } else {
                                 identity = Water(0)
@@ -130,7 +130,7 @@ class Cell(var identity: watorCell) extends AgentWithNeighbors {
                         // If the agent has moved but no one moved to this place, reset it
                         if (tryMoving.popValue.get && !isReserved){
                             if (currentAge >= 10){
-                                println(id + " produces new sharks!")
+                                // println(id + " produces new sharks!")
                                 identity = Shark(10)
                             } else {
                                 identity = Water(0)
@@ -152,7 +152,7 @@ class Cell(var identity: watorCell) extends AgentWithNeighbors {
                 identity.age = identity.age + 1
             }
 
-            waitLabel(Turn, 1)
+            waitLabel(Turn, cfreq)
             isReserved = false
         }
     }
