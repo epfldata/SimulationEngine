@@ -20,7 +20,7 @@ class gameOfLifeMemoryTests extends org.scalatest.FlatSpec {
 
     for (latency <- boundLatency) {
         f"${example} example with ${width * height} agents and ${container} containers with latency bound ${latency}" should "run" in {
-            val agents = generated.example.gameOfLife.InitData(width, height)
+            val agents = generated.example.gameOfLife.InitData(width, height)(1)
 
             val c = new SimulationConfig(agents, totalTurns, true, latency)
             val run1 = {
@@ -36,7 +36,7 @@ class gameOfLifeMemoryTests extends org.scalatest.FlatSpec {
         }
     }
 
-    f"${example} example" should "run successfully" in {
+    f"${example} memory example" should "run successfully" in {
         pw.close()
     }
 }

@@ -12,7 +12,7 @@ import lib.Grid.AgentWithNeighbors
   * @param alive
   */
 @lift
-class Cell(var alive: Boolean) extends AgentWithNeighbors {
+class Cell(var alive: Boolean, var cfreq: Int) extends AgentWithNeighbors {
 
     var futures: List[Future[Boolean]] = List()
 
@@ -32,19 +32,9 @@ class Cell(var alive: Boolean) extends AgentWithNeighbors {
 
     def main(): Unit = {
         while(true) {
-            // if (alive) {
-            //     println(id + " is alive!")
-            // }
             futures = connectedAgents.map(x => x._2.asInstanceOf[Cell]).toList.map(v => asyncMessage(() => v.getValue))
 
-            var syncOneTurn = false
-
             while (!(futures.nonEmpty && futures.forall(x => x.isCompleted))) {
-                syncOneTurn = true
-                waitLabel(Turn, 1)
-            }
-
-            if (!syncOneTurn){
                 waitLabel(Turn, 1)
             }
 
@@ -52,7 +42,7 @@ class Cell(var alive: Boolean) extends AgentWithNeighbors {
 
             rule(ans)
 
-            waitLabel(Turn, 1)
+            waitLabel(Turn, cfreq)
         }
     }
 }
