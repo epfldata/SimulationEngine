@@ -11,17 +11,43 @@ import scala.reflect.macros.blackbox
   */
 object liteLift {
   def apply[T](x: => T): String = macro impl
+
   def impl(c: blackbox.Context)(x: c.Tree) = { import c.universe._
     val q"..$methodDef" = x
 
-    val liftedMethodDef = methodDef.map {
-      showCode(_).replace("\n", "\n    ")
+    def getVarName(s: Tree): String = {
+      s match {
+        case ValDef(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) => name.toString()
+        case _ => ""
+      }
     }
 
-    if (!liftedMethodDef.mkString(" ").contains("def ")){
-      throw new Exception("Invalid lift method! Not a method")
-    }
+    methodDef.head match {
+      case q"$mods def $name[..$tparams](...$argss): $tpt = $body" if argss.nonEmpty =>
 
-    q"..$liftedMethodDef"
+        if (argss.length > 1)
+          throw new Exception("We do not support currying")
+
+        val wrapper = 
+          f"""
+          def wrapper(args: List[Int]): $tpt = {
+            $name(${(0 to argss(0).length-1).map(x => "args("+x+")").mkString(",")})
+          }
+          
+          def writeSchema(pw: java.io.PrintWriter): Unit = {
+            pw.write("${argss(0).map(x => getVarName(x)).mkString(",")}")
+            pw.flush()
+          }
+          """
+
+        val ans = f"""
+        ${showCode(methodDef.head)} 
+        ${wrapper}
+        """
+
+        q"..$ans"
+
+      case _ => throw new Exception("Invalid lift method! Not a method")
+    }
   }
 }
