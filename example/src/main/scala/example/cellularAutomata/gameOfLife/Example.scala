@@ -7,8 +7,7 @@ import lib.Grid.Torus2D
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(width: Int, height: Int)(cfreq: Int): List[Actor] = {
-
+        def apply(width: Int, height: Int, cfreq: Int): List[Actor] = {
             val totalPoints: Int = width * height
             // 2D space
             val neighborRadius: Int = 1

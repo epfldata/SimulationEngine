@@ -4,7 +4,7 @@ package cellularAutomata.wator
 object Example extends App {
     
     val liftedMain = meta.classLifting.liteLift {
-        def apply(width: Int, height: Int)(cfreq: Int): List[Actor] = {
+        def apply(width: Int, height: Int, cfreq: Int): List[Actor] = {
 
             val totalPoints: Int = width * height
             // 2D space

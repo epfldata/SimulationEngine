@@ -14,7 +14,7 @@ object gameOfLifeVisual {
         
         val output: String = "GUI/experiments/gameOfLifeInit.txt"
 
-        val agents = generated.example.gameOfLife.InitData(width, height)(1)
+        val agents = generated.example.gameOfLife.InitData(width, height, 1)
 
         val c = new SimulationConfig(agents, totalTurns, true, 1)
 

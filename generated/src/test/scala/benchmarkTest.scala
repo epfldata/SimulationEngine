@@ -15,9 +15,9 @@ object benchmarkTest {
         val margs: Array[String] = args.drop(5)
 
         val agents = example match {
-            case "wator" => generated.example.cellularAutomata.wator.InitData(width, margs(0).toInt)(1)
+            case "wator" => generated.example.cellularAutomata.wator.InitData(width, margs(0).toInt, 1)
             case "epidemic" => generated.example.epidemic.InitData(margs(0).toInt)  // first argument
-            case "gameOfLife" => generated.example.gameOfLife.InitData(width, margs(0).toInt)(1)
+            case "gameOfLife" => generated.example.gameOfLife.InitData(width, margs(0).toInt, 1)
             case "segregation" => generated.example.segregation.InitData(width, margs(0).toInt, margs(1).toInt)
         }
         

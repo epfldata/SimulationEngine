@@ -25,7 +25,7 @@ class watorMergingScalability extends org.scalatest.FlatSpec {
             for (latency <- boundLatency) {
                 for (cfreq <- cfreqs) {
                     f"${example} example with ${width * height} agents and ${container} containers with latency bound ${latency} cfreq ${cfreq}" should "run" in {
-                        val agents = generated.example.cellularAutomata.wator.InitData(width, height)(cfreq)
+                        val agents = generated.example.cellularAutomata.wator.InitData(width, height, cfreq)
 
                         val c = new SimulationConfig(agents, totalTurns, true, latency)
 
