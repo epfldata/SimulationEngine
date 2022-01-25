@@ -37,7 +37,7 @@ class watorMergingScalability extends org.scalatest.FlatSpec {
                                 StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
                             }
                         } 
-                        pw.write(f"${example},${width*height},${container},${latency},${run1}\n")
+                        pw.write(f"${example},${width*height},${container},${latency},${run1},${cfreq}\n")
                         pw.flush()
                     }
                 }

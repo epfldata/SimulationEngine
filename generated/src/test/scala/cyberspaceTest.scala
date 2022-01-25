@@ -3,7 +3,7 @@ package generated.example.test
 import meta.API._
 import java.io._
 
-class cyberSpaceLatencyTests extends org.scalatest.FlatSpec {
+class cyberspaceTest extends org.scalatest.FlatSpec {
 
     val example: String ="Cyberspace"
     val output: String = "cyberspace.csv"

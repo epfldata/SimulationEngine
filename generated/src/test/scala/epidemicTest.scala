@@ -4,7 +4,7 @@ import meta.API._
 import scala.collection.mutable.{Map}
 import java.io._
 
-class epidemicMergingScalability extends org.scalatest.FlatSpec {
+class epidemicTest extends org.scalatest.FlatSpec {
 
     val example: String = "epidemic"
     val output: String = "epidemic.csv"
