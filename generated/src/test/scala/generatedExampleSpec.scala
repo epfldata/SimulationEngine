@@ -14,7 +14,7 @@ class generatedExamples extends org.scalatest.FlatSpec {
     }
 
     "Compiled game of life example with base messaging layer" should "run" in {
-        val agents = generated.example.gameOfLife.InitData(10, 10)
+        val agents = generated.example.gameOfLife.InitData(10, 10, 1)
 
         val c = new SimulationConfig(agents, 10)
         val containerConfig = c.staticPartition(10)(DirectMethodCall)
@@ -23,7 +23,7 @@ class generatedExamples extends org.scalatest.FlatSpec {
     }
 
     "Compiled wator example with 10 containers over base" should "run" in {
-        val agents = generated.example.cellularAutomata.wator.InitData(10, 10)
+        val agents = generated.example.cellularAutomata.wator.InitData(10, 10, 1)
 
         val c = new SimulationConfig(agents, 10)
         val containerConfig = c.staticPartition(10)(VanillaContainer)
