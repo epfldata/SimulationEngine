@@ -14,12 +14,14 @@ import akka.actor.typed.{ActorRef, ActorSystem, Terminated, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 
 import com.typesafe.config.ConfigFactory
+import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 
 object Dispatcher {
     sealed trait DispatcherEvent
-    final case class CollectedMessages(agentId: Long, messages: List[Message], elapsedTime: Int, from: ActorRef[SimAgent.AgentEvent]) extends DispatcherEvent
+    final case class CollectMessages(agentId: Long, messages: List[Message], elapsedTime: Int, from: ActorRef[SimAgent.AgentEvent]) extends DispatcherEvent
     final case class FinalState(actor: Actor) extends DispatcherEvent
-    
+    final case class AddNewAgents() extends DispatcherEvent
+
     private var totalAgents: Int = 0
     private var totalTurn: Int = 0
     private var proxyMap: Map[AgentId, AgentId] = Map()
@@ -44,7 +46,7 @@ object Dispatcher {
                         currentTime: Long): Behavior[DispatcherEvent] =
     Behaviors.receive { (context, message) =>
         message match {
-            case CollectedMessages(agentId: Long, messages: List[Message], elapsedTime: Int, replyTo: ActorRef[SimAgent.AgentEvent]) => 
+            case CollectMessages(agentId: Long, messages: List[Message], elapsedTime: Int, replyTo: ActorRef[SimAgent.AgentEvent]) => 
                 val aggAgents = agentCounter+1
                 if (elapsedTime > proposedTime){
                     proposedTime = elapsedTime
@@ -72,7 +74,7 @@ object Dispatcher {
                         })
                     } else {
                         agentRefMap.foreach(a => {
-                            a._2 ! SimAgent.ReceivedMessages(groupedMsgs.getOrElse(a._1, List()), context.self)
+                            a._2 ! SimAgent.AddMessages(groupedMsgs.getOrElse(a._1, List()), context.self)
                         })
 
                         msgBuffer.clear()
@@ -90,7 +92,7 @@ object Dispatcher {
                         proxyMap = proxyMap ++ newProxyMap
                         SimRuntime.newActors.clear()
                         
-                        newAgents.foreach(a => a ! SimAgent.ReceivedMessages(List(), context.self))
+                        newAgents.foreach(a => a ! SimAgent.AddMessages(List(), context.self))
                     } 
                     dispatcher(0, nextTurn, t)
                 } else {
@@ -112,8 +114,11 @@ object Dispatcher {
 }
 
 object SimAgent {
+    val AgentServiceKey1 = ServiceKey[AddMessages]("SimAgent")
+    val AgentServiceKey2 = ServiceKey[Stop]("SimAgent")
+
     sealed trait AgentEvent
-    final case class ReceivedMessages(messages: List[Message], from: ActorRef[Dispatcher.DispatcherEvent]) extends AgentEvent
+    final case class AddMessages(messages: List[Message], from: ActorRef[Dispatcher.DispatcherEvent]) extends AgentEvent
     final case class Stop(from: ActorRef[Dispatcher.DispatcherEvent]) extends AgentEvent
 }
 
@@ -122,19 +127,23 @@ class SimAgent {
 
     private var sim: Actor = null
 
-    def apply(sim: Actor): Behavior[AgentEvent] = {
-        this.sim = sim
-        simAgent()
-    }
+    def apply(sim: Actor): Behavior[AgentEvent] = 
+        Behaviors.setup { ctx =>
+            ctx.log.info("Register agent with receptionist")
+            ctx.system.receptionist ! Receptionist.Register(AgentServiceKey1, ctx.self)
+            ctx.system.receptionist ! Receptionist.Register(AgentServiceKey2, ctx.self)
+            this.sim = sim
+            simAgent()
+        }
 
     private def simAgent(): Behavior[AgentEvent] =
         Behaviors.receive { (context, message) =>
             message match {
-                case ReceivedMessages(messages, from) => 
+                case AddMessages(messages, from) => 
                     val agentAPI = sim.run(messages)
                     val sentMessages = agentAPI._1
                     val elapsedTime = agentAPI._2
-                    from ! Dispatcher.CollectedMessages(sim.id, sentMessages, elapsedTime, context.self)
+                    from ! Dispatcher.CollectMessages(sim.id, sentMessages, elapsedTime, context.self)
                     simAgent()
                 case Stop(from) =>
                     from ! Dispatcher.FinalState(sim)
@@ -161,7 +170,7 @@ object SimExperiment {
             val collectedMessages = messages.groupBy(_.receiverId)
 
             (simAgents zip simIds).foreach(x => {
-                x._1 ! SimAgent.ReceivedMessages(collectedMessages.getOrElse(x._2, List()), dispatcher)
+                x._1 ! SimAgent.AddMessages(collectedMessages.getOrElse(x._2, List()), dispatcher)
             })
 
             context.watch(dispatcher)
