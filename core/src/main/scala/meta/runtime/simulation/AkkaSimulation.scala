@@ -21,6 +21,7 @@ object Dispatcher {
     final case class CollectMessages(agentId: Long, messages: List[Message], elapsedTime: Int, from: ActorRef[SimAgent.AgentEvent]) extends DispatcherEvent
     final case class FinalState(actor: Actor) extends DispatcherEvent
     final case class AddNewAgents() extends DispatcherEvent
+    final case class SimsUpdated(agents: Set[ActorRef[SimAgent.AddMessages]]) extends DispatcherEvent
 
     private var totalAgents: Int = 0
     private var totalTurn: Int = 0
@@ -32,7 +33,15 @@ object Dispatcher {
     val finalStates: ListBuffer[Actor] = ListBuffer[Actor]()
     var proposedTime: Int = 1
 
-    def apply(maxAgents: Int, maxTurn: Int, pMap: Map[AgentId, AgentId]): Behavior[DispatcherEvent] = {
+    def apply(maxAgents: Int, maxTurn: Int, pMap: Map[AgentId, AgentId]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
+        
+        val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
+            case SimAgent.AgentServiceKey1.Listing(agents) =>
+                ctx.log.debug("HHHHHHHHHHHHHHH")
+                SimsUpdated(agents)
+        } 
+        ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey1, subscriptionAdapter)
+
         totalAgents = maxAgents
         totalTurn = maxTurn
         proxyMap = pMap
@@ -44,8 +53,10 @@ object Dispatcher {
   private def dispatcher(agentCounter: Int, 
                         currentTurn: Int, 
                         currentTime: Long): Behavior[DispatcherEvent] =
-    Behaviors.receive { (context, message) =>
+    Behaviors.receive { (ctx, message) =>
         message match {
+            case SimsUpdated(agents) => 
+                Behaviors.same
             case CollectMessages(agentId: Long, messages: List[Message], elapsedTime: Int, replyTo: ActorRef[SimAgent.AgentEvent]) => 
                 val aggAgents = agentCounter+1
                 if (elapsedTime > proposedTime){
@@ -66,22 +77,22 @@ object Dispatcher {
                     val nextTurn = currentTurn + proposedTime
                     proposedTime = 1
                     val t = System.currentTimeMillis()
-                    context.log.info("Turn {} Total time: {} ms", currentTurn, t - currentTime)
+                    ctx.log.info("Turn {} Total time: {} ms", currentTurn, t - currentTime)
 
                     if (nextTurn >= totalTurn) {
                         agentRefMap.foreach(a => {
-                            a._2 ! SimAgent.Stop(context.self)
+                            a._2 ! SimAgent.Stop(ctx.self)
                         })
                     } else {
                         agentRefMap.foreach(a => {
-                            a._2 ! SimAgent.AddMessages(groupedMsgs.getOrElse(a._1, List()), context.self)
+                            a._2 ! SimAgent.AddMessages(groupedMsgs.getOrElse(a._1, List()), ctx.self)
                         })
 
                         msgBuffer.clear()
                         agentRefMap = Map()
 
                         val newAgents = SimRuntime.newActors.map(a => {
-                                context.spawn((new SimAgent).apply(a), f"simAgent${a.id}")})
+                                ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}")})
 
                         totalAgents += newAgents.size
 
@@ -92,7 +103,7 @@ object Dispatcher {
                         proxyMap = proxyMap ++ newProxyMap
                         SimRuntime.newActors.clear()
                         
-                        newAgents.foreach(a => a ! SimAgent.AddMessages(List(), context.self))
+                        newAgents.foreach(a => a ! SimAgent.AddMessages(List(), ctx.self))
                     } 
                     dispatcher(0, nextTurn, t)
                 } else {
@@ -137,13 +148,13 @@ class SimAgent {
         }
 
     private def simAgent(): Behavior[AgentEvent] =
-        Behaviors.receive { (context, message) =>
+        Behaviors.receive { (ctx, message) =>
             message match {
                 case AddMessages(messages, from) => 
                     val agentAPI = sim.run(messages)
                     val sentMessages = agentAPI._1
                     val elapsedTime = agentAPI._2
-                    from ! Dispatcher.CollectMessages(sim.id, sentMessages, elapsedTime, context.self)
+                    from ! Dispatcher.CollectMessages(sim.id, sentMessages, elapsedTime, ctx.self)
                     simAgent()
                 case Stop(from) =>
                     from ! Dispatcher.FinalState(sim)
@@ -155,14 +166,14 @@ class SimAgent {
 object SimExperiment {
 
     def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[NotUsed] = 
-        Behaviors.setup { context => 
+        Behaviors.setup { ctx => 
             val proxyMap = actors
             .map(a => (a.proxyIds, a.id))
             .flatMap(p => p._1.map(i => (i, p._2))).toMap
 
-            val dispatcher = context.spawn(Dispatcher(actors.size, totalTurn, proxyMap), "dispatcher")
+            val dispatcher = ctx.spawn(Dispatcher(actors.size, totalTurn, proxyMap), "dispatcher")
             
-            val simAgents = actors.map(a => context.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
+            val simAgents = actors.map(a => ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
             
             val simIds = actors.map(a => a.id)
             
@@ -173,7 +184,7 @@ object SimExperiment {
                 x._1 ! SimAgent.AddMessages(collectedMessages.getOrElse(x._2, List()), dispatcher)
             })
 
-            context.watch(dispatcher)
+            ctx.watch(dispatcher)
 
             Behaviors.receiveSignal {
                 case(_, Terminated(_)) => 
