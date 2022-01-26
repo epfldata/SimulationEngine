@@ -20,13 +20,15 @@ object Dispatcher {
     sealed trait DispatcherEvent
     final case class CollectMessages(agentId: Long, messages: List[Message], elapsedTime: Int, from: ActorRef[SimAgent.AgentEvent]) extends DispatcherEvent
     final case class FinalState(actor: Actor) extends DispatcherEvent
-    final case class SimsInitialized(agents: Set[ActorRef[SimAgent.AddMessages]]) extends DispatcherEvent
+    final case object SimsInitialized extends DispatcherEvent
 
     private var totalAgents: Int = 0
     private var totalTurn: Int = 0
     private var proxyMap: Map[AgentId, AgentId] = Map()
 
-    private var agentRefMap: Map[AgentId, ActorRef[SimAgent.AgentEvent]] = Map()
+    private var agentsAddMessages: Set[ActorRef[SimAgent.AddMessages]] = Set()
+    private var agentsStop: Set[ActorRef[SimAgent.Stop]] = Set()
+
     val msgBuffer: ListBuffer[Message] = ListBuffer[Message]()
 
     val finalStates: ListBuffer[Actor] = ListBuffer[Actor]()
@@ -47,12 +49,19 @@ object Dispatcher {
                     agents.foreach(a => {
                         a ! SimAgent.AddMessages(msgBuffer.toList, ctx.self)
                     })
+                    agentsAddMessages = agents
                     msgBuffer.clear()
                 }
-                SimsInitialized(agents)
+                SimsInitialized
+            case SimAgent.AgentServiceKey2.Listing(agents) =>
+                if (agents.size == totalAgents){
+                    agentsStop = agents
+                }
+                SimsInitialized
         } 
-        ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey1, subscriptionAdapter)
 
+        ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey1, subscriptionAdapter)
+        ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey2, subscriptionAdapter)
         dispatcher(0, 0, System.currentTimeMillis())
     }
 
@@ -61,7 +70,7 @@ object Dispatcher {
                         currentTime: Long): Behavior[DispatcherEvent] =
     Behaviors.receive { (ctx, message) =>
         message match {
-            case SimsInitialized(agents) => 
+            case SimsInitialized => 
                 Behaviors.same
             case CollectMessages(agentId: Long, messages: List[Message], elapsedTime: Int, replyTo: ActorRef[SimAgent.AgentEvent]) => 
                 val aggAgents = agentCounter+1
@@ -69,7 +78,6 @@ object Dispatcher {
                     proposedTime = elapsedTime
                 }
                 msgBuffer.appendAll(messages)
-                agentRefMap = agentRefMap + (agentId -> replyTo)
 
                 if (aggAgents == totalAgents) {
                     val nextTurn = currentTurn + proposedTime
@@ -78,26 +86,21 @@ object Dispatcher {
                     ctx.log.info("Turn {} Total time: {} ms", currentTurn, t - currentTime)
 
                     if (nextTurn >= totalTurn) {
-                        agentRefMap.foreach(a => {
-                            a._2 ! SimAgent.Stop(ctx.self)
+                        agentsStop.foreach(a => {
+                            a ! SimAgent.Stop(ctx.self)
                         })
                     } else {
-                        agentRefMap.foreach(a => {
-                            a._2 ! SimAgent.AddMessages(msgBuffer.toList, ctx.self)
+                        agentsAddMessages.foreach(a => {
+                            a ! SimAgent.AddMessages(msgBuffer.toList, ctx.self)
                         })
-
                         msgBuffer.clear()
-                        agentRefMap = Map()
 
                         val newAgents = SimRuntime.newActors.map(a => {
                                 ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}")})
-
                         totalAgents += newAgents.size
-
                         val newProxyMap = SimRuntime.newActors
                             .map(a => (a.proxyIds, a.id))
                             .flatMap(p => p._1.map(i => (i, p._2))).toMap
-
                         proxyMap = proxyMap ++ newProxyMap
                         SimRuntime.newActors.clear()
                         
