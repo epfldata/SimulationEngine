@@ -20,8 +20,7 @@ object Dispatcher {
     sealed trait DispatcherEvent
     final case class CollectMessages(agentId: Long, messages: List[Message], elapsedTime: Int, from: ActorRef[SimAgent.AgentEvent]) extends DispatcherEvent
     final case class FinalState(actor: Actor) extends DispatcherEvent
-    final case class AddNewAgents() extends DispatcherEvent
-    final case class SimsUpdated(agents: Set[ActorRef[SimAgent.AddMessages]]) extends DispatcherEvent
+    final case class SimsInitialized(agents: Set[ActorRef[SimAgent.AddMessages]]) extends DispatcherEvent
 
     private var totalAgents: Int = 0
     private var totalTurn: Int = 0
@@ -33,20 +32,27 @@ object Dispatcher {
     val finalStates: ListBuffer[Actor] = ListBuffer[Actor]()
     var proposedTime: Int = 1
 
-    def apply(maxAgents: Int, maxTurn: Int, pMap: Map[AgentId, AgentId]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
-        
-        val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
-            case SimAgent.AgentServiceKey1.Listing(agents) =>
-                ctx.log.debug("HHHHHHHHHHHHHHH")
-                SimsUpdated(agents)
-        } 
-        ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey1, subscriptionAdapter)
-
+    def apply(maxAgents: Int, maxTurn: Int, pMap: Map[AgentId, AgentId], messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
         totalAgents = maxAgents
         totalTurn = maxTurn
         proxyMap = pMap
         finalStates.clear()
         msgBuffer.clear()
+        msgBuffer.appendAll(messages)
+
+        val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
+            case SimAgent.AgentServiceKey1.Listing(agents) =>
+                if (agents.size == totalAgents) {
+                    ctx.log.debug("Sims are initialized!")
+                    agents.foreach(a => {
+                        a ! SimAgent.AddMessages(msgBuffer.toList, ctx.self)
+                    })
+                    msgBuffer.clear()
+                }
+                SimsInitialized(agents)
+        } 
+        ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey1, subscriptionAdapter)
+
         dispatcher(0, 0, System.currentTimeMillis())
     }
 
@@ -55,7 +61,7 @@ object Dispatcher {
                         currentTime: Long): Behavior[DispatcherEvent] =
     Behaviors.receive { (ctx, message) =>
         message match {
-            case SimsUpdated(agents) => 
+            case SimsInitialized(agents) => 
                 Behaviors.same
             case CollectMessages(agentId: Long, messages: List[Message], elapsedTime: Int, replyTo: ActorRef[SimAgent.AgentEvent]) => 
                 val aggAgents = agentCounter+1
@@ -66,14 +72,6 @@ object Dispatcher {
                 agentRefMap = agentRefMap + (agentId -> replyTo)
 
                 if (aggAgents == totalAgents) {
-                    val groupedMsgs = msgBuffer.map(x => (proxyMap(x.receiverId), x)).foldLeft(Map[AgentId, List[Message]]())((b, a) => { 
-                        if (b.get(a._1).isEmpty) { 
-                            b + (a._1 -> List(a._2)) 
-                        } else {
-                            b + (a._1 -> (a._2 :: b(a._1))) 
-                        }
-                    })
-
                     val nextTurn = currentTurn + proposedTime
                     proposedTime = 1
                     val t = System.currentTimeMillis()
@@ -85,7 +83,7 @@ object Dispatcher {
                         })
                     } else {
                         agentRefMap.foreach(a => {
-                            a._2 ! SimAgent.AddMessages(groupedMsgs.getOrElse(a._1, List()), ctx.self)
+                            a._2 ! SimAgent.AddMessages(msgBuffer.toList, ctx.self)
                         })
 
                         msgBuffer.clear()
@@ -151,7 +149,7 @@ class SimAgent {
         Behaviors.receive { (ctx, message) =>
             message match {
                 case AddMessages(messages, from) => 
-                    val agentAPI = sim.run(messages)
+                    val agentAPI = sim.run(messages.filter(_.receiverId == sim.id))
                     val sentMessages = agentAPI._1
                     val elapsedTime = agentAPI._2
                     from ! Dispatcher.CollectMessages(sim.id, sentMessages, elapsedTime, ctx.self)
@@ -170,22 +168,9 @@ object SimExperiment {
             val proxyMap = actors
             .map(a => (a.proxyIds, a.id))
             .flatMap(p => p._1.map(i => (i, p._2))).toMap
-
-            val dispatcher = ctx.spawn(Dispatcher(actors.size, totalTurn, proxyMap), "dispatcher")
-            
+            val dispatcher = ctx.spawn(Dispatcher(actors.size, totalTurn, proxyMap, messages), "dispatcher")
             val simAgents = actors.map(a => ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
-            
-            val simIds = actors.map(a => a.id)
-            
-            // Buffered messages are dispatched at the initialization
-            val collectedMessages = messages.groupBy(_.receiverId)
-
-            (simAgents zip simIds).foreach(x => {
-                x._1 ! SimAgent.AddMessages(collectedMessages.getOrElse(x._2, List()), dispatcher)
-            })
-
             ctx.watch(dispatcher)
-
             Behaviors.receiveSignal {
                 case(_, Terminated(_)) => 
                     Behaviors.stopped
