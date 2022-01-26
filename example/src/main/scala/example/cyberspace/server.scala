@@ -1,5 +1,5 @@
 package example
-package cyberSpace
+package cyberspace
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._

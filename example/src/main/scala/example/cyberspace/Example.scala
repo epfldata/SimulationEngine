@@ -1,5 +1,5 @@
 package example
-package cyberSpace
+package cyberspace
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
