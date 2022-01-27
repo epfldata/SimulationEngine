@@ -39,9 +39,14 @@ class NewSimTest extends FlatSpec {
             destFolder = "core/src/test/scala/generated/newSim/")
     }
 
-    "The runtime" should "recognize the generated new agents" in {
+    "Newly added agents" should "be visible in the next round" in {
         val agents = generated.meta.test.newSim.InitData()
-        val c = new SimulationConfig(agents, 3)
-        StartSimulation[AkkaMessagingLayer.type](c)
+        val c = new SimulationConfig(agents, 1)
+        val r2 = StartSimulation[AkkaMessagingLayer.type](c)
+        assert(r2.sims.size == 2)
+        val r3 = StartSimulation[AkkaMessagingLayer.type](new SimulationConfig(r2.sims, 1))
+        assert(r3.sims.size == 4)
+        // val r5 = StartSimulation[AkkaMessagingLayer.type](new SimulationConfig(r3.sims, 3))
+        // assert(r5.sims.size == 32)
     }
 }
