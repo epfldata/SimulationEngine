@@ -56,7 +56,7 @@ object Dispatcher {
     }
 
     def dispatcher(): Behavior[DispatcherEvent] = 
-        Behaviors.receive { (ctx, message) => 
+        Behaviors.receive[DispatcherEvent] { (ctx, message) => 
             message match { 
                 case InitializeSims =>
                     dispatcher()
@@ -81,9 +81,21 @@ object Dispatcher {
                 }
 
                 case RoundEnd(messages: List[Message], elapsedTime: Int) =>
-                    ctx.log.debug(f"Round ${currentTurn} ends")
+                    // Add new agents to the system 
+                    val newAgents = SimRuntime.newActors.map(a => 
+                        ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
+                    totalAgents += newAgents.size
+                    // ctx.log.debug(f"Total agents in the system ${totalAgents}")
+
+                    // val newProxyMap = SimRuntime.newActors
+                    //     .map(a => (a.proxyIds, a.id))
+                    //     .flatMap(p => p._1.map(i => (i, p._2))).toMap
+                    // proxyMap = proxyMap ++ newProxyMap
+                    SimRuntime.newActors.clear()
+
                     if (currentTurn + elapsedTime >= totalTurn){
                         Behaviors.stopped {() => {
+                            ctx.log.debug(f"Simulation completes! Stop the dispatcher")
                             AkkaRun.lastWords = messages
                         }}
                     } else {
@@ -91,7 +103,7 @@ object Dispatcher {
                         msgBuffer.clear()
                         msgBuffer.appendAll(messages)
                         ctx.self ! RoundStart
-                        Behaviors.same
+                        dispatcher()
                     }
             }
         }
@@ -217,13 +229,13 @@ class SimAgent {
                     val agentAPI = sim.run(messages.filter(_.receiverId == sim.id))
                     val sentMessages = agentAPI._1
                     val elapsedTime = agentAPI._2
-                    ctx.log.debug(f"Add messages! Agent ${sim.id} Messages ${sentMessages.size}")
                     replyTo ! MessagesAdded(sentMessages, elapsedTime)
                     Behaviors.same
                     
             }
         }.receiveSignal {
             case (ctx, PostStop) => 
+                ctx.log.debug(f"Stop agent ${sim.id}")
                 AkkaRun.stoppedAgents.append(sim)
                 Behaviors.stopped
         }
