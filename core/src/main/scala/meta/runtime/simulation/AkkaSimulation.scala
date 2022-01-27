@@ -27,16 +27,14 @@ object Dispatcher {
     private var totalAgents: Int = 0
     private var totalTurn: Int = 0
     private var currentTurn: Int = 0
-    private var proxyMap: Map[AgentId, AgentId] = Map()
 
     private var agentsAddMessages: Set[ActorRef[SimAgent.AddMessages]] = Set()
 
     val msgBuffer: ListBuffer[Message] = ListBuffer[Message]()
 
-    def apply(maxAgents: Int, maxTurn: Int, pMap: Map[AgentId, AgentId], messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
+    def apply(maxAgents: Int, maxTurn: Int, messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
         totalAgents = maxAgents
         totalTurn = maxTurn
-        proxyMap = pMap
         msgBuffer.clear()
         msgBuffer.appendAll(messages)
 
@@ -87,10 +85,6 @@ object Dispatcher {
                     totalAgents += newAgents.size
                     // ctx.log.debug(f"Total agents in the system ${totalAgents}")
 
-                    // val newProxyMap = SimRuntime.newActors
-                    //     .map(a => (a.proxyIds, a.id))
-                    //     .flatMap(p => p._1.map(i => (i, p._2))).toMap
-                    // proxyMap = proxyMap ++ newProxyMap
                     SimRuntime.newActors.clear()
 
                     if (currentTurn + elapsedTime >= totalTurn){
@@ -107,98 +101,6 @@ object Dispatcher {
                     }
             }
         }
-
-//   private def dispatcher(): Behavior[DispatcherEvent] =
-//     Behaviors.receive { (ctx, message) =>
-//         message match {
-//             case Round => 
-//                 implicit val timeout: Timeout = 100000.seconds
-//                 val sentMessages = msgBuffer.toList
-//                 msgBuffer.clear()
-//                 agentsAddMessages.foreach(a => {
-//                     ctx.ask(a, SimAgent.AddMessages(sentMessages, _)) {
-//                         case Success(x) => CollectMessages(x.messages, x.elapsedTime)
-//                         case Failure(e) => throw new Exception("Timed out when adding messages!")
-//                     }
-//                 })
-
-//                 val nextTurn: Int = currentTurn + proposedTime
-//                 ctx.log.debug(f"Next turn value is ${nextTurn} Message len ${msgBuffer.size}")
-
-//                 if (nextTurn >= totalTurn) {
-//                     agentsStop.foreach(a => {
-//                         ctx.ask(a, SimAgent.Stop(_)) {
-//                             case Success(x) => FinalState(x.agent)
-//                             case Failure(e) => throw new Exception("Timed out while stopping agents")
-//                         }
-//                     })
-//                     Behaviors.stopped
-//                 } else {
-//                     currentTurn = nextTurn
-//                     ctx.log.info("Turn {}", currentTurn)
-//                     ctx.self ! Round
-//                     dispatcher()
-//                 }
-
-//             case CollectMessages(messages: List[Message], elapsedTime: Int) =>
-//                 ctx.log.info(f"Collect messages! ${messages.size}")
-//                 msgBuffer.appendAll(messages)
-//                 ctx.log.info(f"Total collected messages ${msgBuffer.size}")
-//                 // ProposedTime advances the timer of the system by the max of the containers
-//                 if (elapsedTime > proposedTime) {
-//                     proposedTime = elapsedTime
-//                 }
-//                 dispatcher()
-
-//             case InitializeSims => 
-//                 dispatcher()
-
-//             // case CollectMessages(messages: List[Message], elapsedTime: Int, replyTo: ActorRef[SimAgent.AgentEvent]) => 
-//             //     val aggAgents = agentCounter+1
-//             //     if (elapsedTime > proposedTime){
-//             //         proposedTime = elapsedTime
-//             //     }
-//             //     msgBuffer.appendAll(messages)
-
-//             //     if (aggAgents == totalAgents) {
-//             //         val nextTurn = currentTurn + proposedTime
-//             //         proposedTime = 1
-//             //         val t = System.currentTimeMillis()
-//             //         ctx.log.info("Turn {} Total time: {} ms", currentTurn, t - currentTime)
-
-//             //         if (nextTurn >= totalTurn) {
-//             //             agentsStop.foreach(a => {
-//             //                 a ! SimAgent.Stop(ctx.self)
-//             //             })
-//             //         } else {
-//             //             agentsAddMessages.foreach(a => {
-//             //                 a ! SimAgent.AddMessages(msgBuffer.toList, ctx.self)
-//             //             })
-//             //             msgBuffer.clear()
-
-//             //             val newAgents = SimRuntime.newActors.map(a => {
-//             //                     ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}")})
-//             //             totalAgents += newAgents.size
-//             //             val newProxyMap = SimRuntime.newActors
-//             //                 .map(a => (a.proxyIds, a.id))
-//             //                 .flatMap(p => p._1.map(i => (i, p._2))).toMap
-//             //             proxyMap = proxyMap ++ newProxyMap
-//             //             SimRuntime.newActors.clear()
-                        
-//             //             newAgents.foreach(a => a ! SimAgent.AddMessages(List(), ctx.self))
-//             //         } 
-//             //         dispatcher(0, nextTurn, t)
-//             //     } else {
-//             //         dispatcher(aggAgents, 
-//             //                 currentTurn, 
-//             //                 currentTime)
-//             //     }
-
-//             case FinalState(actor: Actor) =>
-//                 finalStates.append(actor)
-//                 Behaviors.same
-//         }
-//     }
 }
 
 object SimAgent {
@@ -226,7 +128,7 @@ class SimAgent {
         Behaviors.receive[AgentEvent] { (ctx, message) =>
             message match {
                 case AddMessages(messages, replyTo) => 
-                    val agentAPI = sim.run(messages.filter(_.receiverId == sim.id))
+                    val agentAPI = sim.run(messages.filter(m => sim.proxyIds.contains(m.receiverId)))
                     val sentMessages = agentAPI._1
                     val elapsedTime = agentAPI._2
                     replyTo ! MessagesAdded(sentMessages, elapsedTime)
@@ -244,10 +146,7 @@ class SimAgent {
 object SimExperiment {
     def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[NotUsed] = 
         Behaviors.setup { ctx => 
-            val proxyMap = actors
-            .map(a => (a.proxyIds, a.id))
-            .flatMap(p => p._1.map(i => (i, p._2))).toMap
-            val dispatcher = ctx.spawn(Dispatcher(actors.size, totalTurn, proxyMap, messages), "dispatcher")
+            val dispatcher = ctx.spawn(Dispatcher(actors.size, totalTurn, messages), "dispatcher")
             val simAgents = actors.map(a => ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
             ctx.watch(dispatcher)
 
