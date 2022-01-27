@@ -1,5 +1,5 @@
 package example
-package cyberSpace
+package cyberspace
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
@@ -7,7 +7,7 @@ import meta.runtime.Actor.AgentId
 import scala.collection.mutable.Map
 
 @lift
-class Server(var syncPeriod: Int) extends Actor {
+class Server(var syncPeriod: Int, var batchMessages: Int) extends Actor {
     val content: Map[AgentId, String] = Map()
     var allServers: List[Server] = List()
     var elapsed: Int = 0
@@ -37,7 +37,11 @@ class Server(var syncPeriod: Int) extends Actor {
             waitLabel(Turn, 1)
             elapsed = elapsed + 1
             if (elapsed >= syncPeriod){
-                allServers.foreach(s => asyncMessage(() => s.sync(content)))
+                var batchCounter: Int = 1
+                while (batchCounter < batchMessages) {
+                    allServers.foreach(s => asyncMessage(() => s.sync(content)))
+                    batchCounter = batchCounter + 1
+                }
                 elapsed = 0
             }
         }

@@ -1,15 +1,15 @@
 package example
-package cyberSpace
+package cyberspace
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(populationSize: Int, totalServers: Int, syncPeriod: Int): List[Actor] = {
-
+        def apply(populationSize: Int, totalServers: Int, syncPeriod: Int, messagesPerSync: Int): List[Actor] = {
+            
             val readerRatio = 0.9
             val participantRatio = 0.09
             val superUserRatio = 0.01
             
-            val servers = (1 to totalServers).toList.map(x => new Server(syncPeriod))
+            val servers = (1 to totalServers).toList.map(x => new Server(syncPeriod, messagesPerSync))
 
             servers.foreach(s => s.allServers = servers)
 

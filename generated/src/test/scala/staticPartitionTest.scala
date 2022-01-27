@@ -62,9 +62,9 @@ class watorStaticTest extends StaticPartitionTest(
 
 class cyberspaceStaticTest extends StaticPartitionTest(
     "cyberspace", 600, Set(1, 100, 200), Set(50), 
-    List(Set(10000), Set(50), Set(200)), 
-    generated.example.cyberSpace.InitData.wrapper, 
-    generated.example.cyberSpace.InitData.writeSchema) {
+    List(Set(10000), Set(50), Set(200), Range(1, 1000, 100).toSet), 
+    generated.example.cyberspace.InitData.wrapper, 
+    generated.example.cyberspace.InitData.writeSchema) {
 }
 
 class epidemicStaticTest extends StaticPartitionTest(

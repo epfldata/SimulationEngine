@@ -1,17 +1,19 @@
 package example
-package cyberSpace
+package cyberspace
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 
 
 @lift
-class SuperUser(var server: Server) extends Actor {
+class Participant(var server: Server) extends Actor {
     
     def main(): Unit = {
         while (true) {
             server.get()
-            server.post(id, "")
+            if (Random.nextInt(10)==1){
+                server.post(id, "")
+            }
             // waitLabel(Turn, 1)
         }
     }
