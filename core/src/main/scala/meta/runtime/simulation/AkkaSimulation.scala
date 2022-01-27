@@ -35,6 +35,7 @@ object Dispatcher {
     def apply(maxAgents: Int, maxTurn: Int, messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
         totalAgents = maxAgents
         totalTurn = maxTurn
+        currentTurn = 0
         msgBuffer.clear()
         msgBuffer.appendAll(messages)
 
@@ -60,7 +61,7 @@ object Dispatcher {
                     dispatcher()
 
                 case RoundStart => {
-                    ctx.log.debug(f"Round ${currentTurn} starts")
+                    ctx.log.info(f"Round ${currentTurn} starts")
                     ctx.spawnAnonymous(
                         Aggregator[SimAgent.MessagesAdded, RoundEnd](
                             sendRequests = { replyTo =>
@@ -89,7 +90,7 @@ object Dispatcher {
 
                     if (currentTurn + elapsedTime >= totalTurn){
                         Behaviors.stopped {() => {
-                            ctx.log.debug(f"Simulation completes! Stop the dispatcher")
+                            ctx.log.info(f"Simulation completes! Stop the dispatcher")
                             AkkaRun.lastWords = messages
                         }}
                     } else {
@@ -118,7 +119,7 @@ class SimAgent {
 
     def apply(sim: Actor): Behavior[AgentEvent] = 
         Behaviors.setup { ctx =>
-            ctx.log.info("Register agent with receptionist")
+            ctx.log.debug("Register agent with receptionist")
             ctx.system.receptionist ! Receptionist.Register(AgentServiceKey1, ctx.self)
             this.sim = sim
             simAgent()
@@ -128,6 +129,7 @@ class SimAgent {
         Behaviors.receive[AgentEvent] { (ctx, message) =>
             message match {
                 case AddMessages(messages, replyTo) => 
+                    ctx.log.debug(f"Add message! Agent ${sim.id}")
                     val agentAPI = sim.run(messages.filter(m => sim.proxyIds.contains(m.receiverId)))
                     val sentMessages = agentAPI._1
                     val elapsedTime = agentAPI._2
@@ -181,7 +183,7 @@ object AkkaRun {
         }
         initialize()    
         println("Simulation starts!")
-        startup("Frontend", 2551)
+        startup("Sims", 0)
         println("Simulation ends!")
         Actor.reset 
         SimulationSnapshot(stoppedAgents.toList, lastWords)
