@@ -97,7 +97,9 @@ object Dispatcher {
                         currentTurn += elapsedTime
                         msgBuffer.clear()
                         msgBuffer.appendAll(messages)
-                        ctx.self ! RoundStart
+                        if (newAgents == 0) {
+                            ctx.self ! RoundStart
+                        }
                         dispatcher()
                     }
             }
