@@ -185,7 +185,7 @@ object AkkaRun {
         println("Simulation starts!")
         startup("Sims", 0)
         println("Simulation ends!")
-        Actor.reset 
+        // Actor.reset 
         SimulationSnapshot(stoppedAgents.toList, lastWords)
     }
 }
