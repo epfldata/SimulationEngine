@@ -61,7 +61,7 @@ object Dispatcher {
                     dispatcher()
 
                 case RoundStart => {
-                    ctx.log.info(f"Round ${currentTurn} starts")
+                    ctx.log.info(f"Round ${currentTurn} starts ${totalAgents}")
                     ctx.spawnAnonymous(
                         Aggregator[SimAgent.MessagesAdded, RoundEnd](
                             sendRequests = { replyTo =>
@@ -84,7 +84,7 @@ object Dispatcher {
                     val newAgents = SimRuntime.newActors.map(a => 
                         ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
                     totalAgents += newAgents.size
-                    // ctx.log.debug(f"Total agents in the system ${totalAgents}")
+                    ctx.log.debug(f"Total agents in the system ${totalAgents}")
 
                     SimRuntime.newActors.clear()
 
@@ -97,7 +97,7 @@ object Dispatcher {
                         currentTurn += elapsedTime
                         msgBuffer.clear()
                         msgBuffer.appendAll(messages)
-                        if (newAgents == 0) {
+                        if (newAgents.size == 0) {
                             ctx.self ! RoundStart
                         }
                         dispatcher()
@@ -131,7 +131,6 @@ class SimAgent {
         Behaviors.receive[AgentEvent] { (ctx, message) =>
             message match {
                 case AddMessages(messages, replyTo) => 
-                    ctx.log.debug(f"Add message! Agent ${sim.id}")
                     val agentAPI = sim.run(messages.filter(m => sim.proxyIds.contains(m.receiverId)))
                     val sentMessages = agentAPI._1
                     val elapsedTime = agentAPI._2
