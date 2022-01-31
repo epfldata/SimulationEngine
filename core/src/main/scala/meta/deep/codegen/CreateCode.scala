@@ -111,27 +111,11 @@ class CreateCode(initCode: String,
     // Some generated variables cause compile error (also dead code), such as List.Coll, thus track for deletion
 
     def rewriteVariables(code: String): String = {
-      val varPattern = s"(\\s*)(var .*): (.*) = (.*;)".r    // general form of var assignments
-      val valPattern = s"(\\s*)(val .*) = (.*;)".r    // general form of val assignments
-      val iterTypPattern = s"scala\\.collection\\.Iterator(.*)".r   // type pattern of an iterator
-      val lCollTypePattern = s"(.*)scala\\.collection\\.immutable\\.(\\w+)\\.Coll(.*)".r
-
-      // type that contains List.Coll
-
-      code.split("\n").map(s => {
-        s match {
-          case varPattern(f1, f2, f3, f4) =>
-            f1 + (f3 match {
-                case iterTypPattern(a1) =>
-                  "@transient "
-                case lCollTypePattern(a1, a2, a3) =>
-                  "@transient "
-                case _ => ""
-              }) + "private " + f2 + ": " + f3 + " = " + f4
-            
-          case valPattern(f1, f2, f3) =>
-            f1 + "private " + f2 + " = " + f3
-          case x => x
+      code.split(";").map(s => {
+        if (s.contains("scala.collection.Iterator") || (s.contains("scala.collection.immutable") && s.contains(".Coll"))){
+          f"  @transient ${s.trim}" 
+        } else {
+          f"  ${s.trim}"
         }
       }).mkString("\n")
     }
