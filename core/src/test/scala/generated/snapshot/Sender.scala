@@ -3,16 +3,15 @@ package generated.meta.test.snapshot
 class Sender (val r: generated.meta.test.snapshot.Receiver) extends meta.runtime.Actor {
 
 
-  private var  reflectionIR_27: Int = -1
-
-  var resetData_0: scala.Any = null;
-  val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
-  var resetData_2: meta.runtime.ResponseMessage = null;
-  var listValMut_3: meta.runtime.RequestMessage = null;
-  var iterMut_4: scala.collection.Iterator[meta.runtime.RequestMessage] = null;
-  var bindingMut_5: scala.Double = 0.0;
-  var unblockFlag_6: scala.Boolean = true;
-  var positionVar_7: scala.Int = 0;
+  private var  reflectionIR_16: Int = -1
+  var resetData_0: scala.Any = null
+  val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
+  var resetData_2: meta.runtime.ResponseMessage = null
+  var listValMut_3: meta.runtime.RequestMessage = null
+  @transient var iterMut_4: scala.collection.Iterator[meta.runtime.RequestMessage] = null
+  var bindingMut_5: scala.Double = 0.0
+  var unblockFlag_6: scala.Boolean = true
+  var positionVar_7: scala.Int = 0
   
   val commands_48 = (() => {
   val data_8 = new scala.Array[scala.Function0[scala.Unit]](15);
@@ -21,7 +20,7 @@ class Sender (val r: generated.meta.test.snapshot.Receiver) extends meta.runtime
     val receiver_9 = this.r;
     val x_10 = ((this): meta.runtime.Actor).id;
     val x_11 = receiver_9.id;
-    val x_12 = scala.`package`.Right.apply[scala.Nothing, scala.Int](2);
+    val x_12 = scala.`package`.Right.apply[scala.Nothing, scala.Int](17);
     val x_13 = scala.collection.immutable.Nil.::[scala.collection.immutable.List[scala.Any]](((scala.collection.immutable.Nil): scala.collection.immutable.List[scala.Any]));
     val x_14 = meta.runtime.RequestMessage.apply(x_10, x_11, false, x_12, x_13);
     val x_15 = x_14.sessionId;
@@ -132,8 +131,8 @@ class Sender (val r: generated.meta.test.snapshot.Receiver) extends meta.runtime
       // first entry, save the current IR to reflectionIR
       unblockFlag_6 = true
 
-      if (reflectionIR_27 == -1){
-        reflectionIR_27 = positionVar_7
+      if (reflectionIR_16 == -1){
+        reflectionIR_16 = positionVar_7
         positionVar_7 = new_ir
       }
 
@@ -143,8 +142,8 @@ class Sender (val r: generated.meta.test.snapshot.Receiver) extends meta.runtime
 
       // reset instruction register when finishes processing
       if (positionVar_7 > 6) {
-        positionVar_7 = reflectionIR_27
-        reflectionIR_27 = -1
+        positionVar_7 = reflectionIR_16
+        reflectionIR_16 = -1
       }
       this
     }

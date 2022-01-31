@@ -36,6 +36,11 @@ lazy val akkaSettings = Seq(
   libraryDependencies += "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
 )
 
+lazy val sparkSettings = Seq(
+  libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion,
+  libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion,
+)
+
 // Enable graph drawing when debugging
 lazy val graphSettings = Seq(
   libraryDependencies += "guru.nidi" % "graphviz-java" % graphVizVersion,
@@ -49,7 +54,7 @@ lazy val noMessaging = (project in file("ecosim"))
 lazy val core = (project in file("core"))
   .settings(
     name := f"${project_name}-core",
-    commonSettings, squidSettings, graphSettings, akkaSettings,
+    commonSettings, squidSettings, graphSettings, akkaSettings, sparkSettings,
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
     Test / parallelExecution := false,
   )
@@ -91,6 +96,6 @@ lazy val genExample = (project in file("generated"))
   .settings(
     name := f"${project_name}-genExample",
     Test / parallelExecution := false,
-    commonSettings, akkaSettings,
+    commonSettings, akkaSettings, sparkSettings,
   )
   .dependsOn(core, library, example, gui)
