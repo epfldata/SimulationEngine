@@ -3,17 +3,16 @@ package generated.meta.test.snapshot
 class Receiver () extends meta.runtime.Actor {
 
 
-  private var  reflectionIR_42: Int = -1
-
-  var resetData_0: scala.Any = null;
-  val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
-  var resetData_2: meta.runtime.ResponseMessage = null;
-  var bindingMut_3: scala.Any = null;
-  var listValMut_4: meta.runtime.RequestMessage = null;
-  var iterMut_5: scala.collection.Iterator[meta.runtime.RequestMessage] = null;
-  var bindingMut_6: scala.Double = 0.0;
-  var unblockFlag_7: scala.Boolean = true;
-  var positionVar_8: scala.Int = 0;
+  private var  reflectionIR_94: Int = -1
+  var resetData_0: scala.Any = null
+  val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
+  var resetData_2: meta.runtime.ResponseMessage = null
+  var bindingMut_3: scala.Any = null
+  var listValMut_4: meta.runtime.RequestMessage = null
+  @transient var iterMut_5: scala.collection.Iterator[meta.runtime.RequestMessage] = null
+  var bindingMut_6: scala.Double = 0.0
+  var unblockFlag_7: scala.Boolean = true
+  var positionVar_8: scala.Int = 0
   
   val commands_47 = (() => {
   val data_9 = new scala.Array[scala.Function0[scala.Unit]](23);
@@ -58,7 +57,7 @@ class Receiver () extends meta.runtime.Actor {
   data_9.update(6, (() => {
     val x_22 = listValMut_4;
     val x_23 = x_22.methodInfo;
-    val x_24 = scala.`package`.Right.apply[scala.Nothing, scala.Int](2);
+    val x_24 = scala.`package`.Right.apply[scala.Nothing, scala.Int](17);
     val x_25 = x_23.==(x_24);
     if (x_25)
       positionVar_8 = 7
@@ -92,7 +91,7 @@ class Receiver () extends meta.runtime.Actor {
   data_9.update(13, (() => {
     val x_31 = listValMut_4;
     val x_32 = x_31.methodInfo;
-    val x_33 = scala.`package`.Right.apply[scala.Nothing, scala.Int](2);
+    val x_33 = scala.`package`.Right.apply[scala.Nothing, scala.Int](17);
     val x_34 = x_32.==(x_33);
     val x_35 = x_34.`unary_!`;
     if (x_35)
@@ -170,7 +169,7 @@ class Receiver () extends meta.runtime.Actor {
     val response = m.methodInfo match {
       case Right(x) => {
         x match {
-          case 2 => wrapper_rpc1(args)
+          case 17 => wrapper_rpc1(args)
         }
       }
       case Left(x) => println("For staged implementation only")
@@ -182,8 +181,8 @@ class Receiver () extends meta.runtime.Actor {
       // first entry, save the current IR to reflectionIR
       unblockFlag_7 = true
 
-      if (reflectionIR_42 == -1){
-        reflectionIR_42 = positionVar_8
+      if (reflectionIR_94 == -1){
+        reflectionIR_94 = positionVar_8
         positionVar_8 = new_ir
       }
 
@@ -193,8 +192,8 @@ class Receiver () extends meta.runtime.Actor {
 
       // reset instruction register when finishes processing
       if (positionVar_8 > 13) {
-        positionVar_8 = reflectionIR_42
-        reflectionIR_42 = -1
+        positionVar_8 = reflectionIR_94
+        reflectionIR_94 = -1
       }
       this
     }

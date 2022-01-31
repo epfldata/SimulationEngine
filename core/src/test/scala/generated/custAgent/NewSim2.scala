@@ -3,22 +3,22 @@ package generated.meta.test.custAgent
 class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime.Actor with meta.test.custAgent.custActor {
 
 
-  private var  reflectionIR_14: Int = -1
-  private var resetData_0: scala.Any = null;
-  private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
-  private var resetData_2: meta.runtime.ResponseMessage = null;
-  private var bindingMut_3: scala.Any = null;
-  private var listValMut_4: meta.runtime.RequestMessage = null;
-  @transient private var iterMut_5: scala.collection.Iterator[meta.runtime.RequestMessage] = null;
-  private var bindingMut_6: scala.Double = 0.0;
-  private var bindingMut_7: scala.Boolean = false;
-  private var bindingMut_8: generated.meta.test.custAgent.NewSim2 = null;
-  private var bindingMut_9: scala.Boolean = false;
-  private var bindingMut_10: generated.meta.test.custAgent.NewSim2 = null;
-  private var bindingMut_11: java.lang.String = null;
-  private var bindingMut_12: scala.Long = 0L;
-  private var unblockFlag_13: scala.Boolean = true;
-  private var positionVar_14: scala.Int = 0;
+  private var  reflectionIR_6: Int = -1
+  var resetData_0: scala.Any = null
+  val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
+  var resetData_2: meta.runtime.ResponseMessage = null
+  var bindingMut_3: scala.Any = null
+  var listValMut_4: meta.runtime.RequestMessage = null
+  @transient var iterMut_5: scala.collection.Iterator[meta.runtime.RequestMessage] = null
+  var bindingMut_6: scala.Double = 0.0
+  var bindingMut_7: scala.Boolean = false
+  var bindingMut_8: generated.meta.test.custAgent.NewSim2 = null
+  var bindingMut_9: scala.Boolean = false
+  var bindingMut_10: generated.meta.test.custAgent.NewSim2 = null
+  var bindingMut_11: java.lang.String = null
+  var bindingMut_12: scala.Long = 0L
+  var unblockFlag_13: scala.Boolean = true
+  var positionVar_14: scala.Int = 0
   
   val commands_102 = (() => {
   val data_15 = new scala.Array[scala.Function0[scala.Unit]](32);
@@ -99,7 +99,7 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
   data_15.update(8, (() => {
     val x_45 = listValMut_4;
     val x_46 = x_45.methodInfo;
-    val x_47 = scala.`package`.Right.apply[scala.Nothing, scala.Int](6);
+    val x_47 = scala.`package`.Right.apply[scala.Nothing, scala.Int](20);
     val x_48 = x_46.==(x_47);
     if (x_48)
       positionVar_14 = 9
@@ -133,7 +133,7 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
   data_15.update(15, (() => {
     val x_54 = listValMut_4;
     val x_55 = x_54.methodInfo;
-    val x_56 = scala.`package`.Right.apply[scala.Nothing, scala.Int](6);
+    val x_56 = scala.`package`.Right.apply[scala.Nothing, scala.Int](20);
     val x_57 = x_55.==(x_56);
     val x_58 = x_57.`unary_!`;
     if (x_58)
@@ -216,7 +216,7 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
         val x_85 = ((this): meta.runtime.Actor).id;
         val x_86 = bindingMut_8;
         val x_87 = x_86.id;
-        val x_88 = scala.`package`.Right.apply[scala.Nothing, scala.Int](6);
+        val x_88 = scala.`package`.Right.apply[scala.Nothing, scala.Int](20);
         val x_89 = scala.collection.immutable.Nil.::[scala.collection.immutable.List[scala.Any]](((scala.collection.immutable.Nil): scala.collection.immutable.List[scala.Any]));
         val x_90 = meta.runtime.RequestMessage.apply(x_85, x_87, true, x_88, x_89);
         ((this): meta.runtime.Actor).sendMessage(x_90);
@@ -297,7 +297,7 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
     val response = m.methodInfo match {
       case Right(x) => {
         x match {
-          case 6 => wrapper_someMtd(args)
+          case 20 => wrapper_someMtd(args)
         }
       }
       case Left(x) => println("For staged implementation only")
@@ -309,8 +309,8 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
       // first entry, save the current IR to reflectionIR
       unblockFlag_13 = true
 
-      if (reflectionIR_14 == -1){
-        reflectionIR_14 = positionVar_14
+      if (reflectionIR_6 == -1){
+        reflectionIR_6 = positionVar_14
         positionVar_14 = new_ir
       }
 
@@ -320,8 +320,8 @@ class NewSim2 (val n: generated.meta.test.custAgent.NewSim2) extends meta.runtim
 
       // reset instruction register when finishes processing
       if (positionVar_14 > 15) {
-        positionVar_14 = reflectionIR_14
-        reflectionIR_14 = -1
+        positionVar_14 = reflectionIR_6
+        reflectionIR_6 = -1
       }
       this
     }

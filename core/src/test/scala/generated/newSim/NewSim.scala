@@ -3,20 +3,20 @@ package generated.meta.test.newSim
 class NewSim () extends meta.runtime.Actor {
 
 
-  private var  reflectionIR_34: Int = -1
-  private var resetData_0: scala.Any = null;
-  private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]();
-  private var resetData_2: meta.runtime.ResponseMessage = null;
-  private var listValMut_3: meta.runtime.RequestMessage = null;
-  @transient private var iterMut_4: scala.collection.Iterator[meta.runtime.RequestMessage] = null;
-  private var bindingMut_5: scala.Double = 0.0;
-  private var bindingMut_6: java.lang.String = null;
-  private var bindingMut_7: scala.Long = 0L;
-  private var bindingMut_8: generated.meta.test.newSim.NewSim = null;
-  private var bindingMut_9: java.lang.String = null;
-  private var bindingMut_10: scala.Long = 0L;
-  private var unblockFlag_11: scala.Boolean = true;
-  private var positionVar_12: scala.Int = 0;
+  private var  reflectionIR_14: Int = -1
+  var resetData_0: scala.Any = null
+  val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
+  var resetData_2: meta.runtime.ResponseMessage = null
+  var listValMut_3: meta.runtime.RequestMessage = null
+  @transient var iterMut_4: scala.collection.Iterator[meta.runtime.RequestMessage] = null
+  var bindingMut_5: scala.Double = 0.0
+  var bindingMut_6: java.lang.String = null
+  var bindingMut_7: scala.Long = 0L
+  var bindingMut_8: generated.meta.test.newSim.NewSim = null
+  var bindingMut_9: java.lang.String = null
+  var bindingMut_10: scala.Long = 0L
+  var unblockFlag_11: scala.Boolean = true
+  var positionVar_12: scala.Int = 0
   
   val commands_57 = (() => {
   val data_13 = new scala.Array[scala.Function0[scala.Unit]](15);
@@ -150,8 +150,8 @@ class NewSim () extends meta.runtime.Actor {
       // first entry, save the current IR to reflectionIR
       unblockFlag_11 = true
 
-      if (reflectionIR_34 == -1){
-        reflectionIR_34 = positionVar_12
+      if (reflectionIR_14 == -1){
+        reflectionIR_14 = positionVar_12
         positionVar_12 = new_ir
       }
 
@@ -161,8 +161,8 @@ class NewSim () extends meta.runtime.Actor {
 
       // reset instruction register when finishes processing
       if (positionVar_12 > 6) {
-        positionVar_12 = reflectionIR_34
-        reflectionIR_34 = -1
+        positionVar_12 = reflectionIR_14
+        reflectionIR_14 = -1
       }
       this
     }
