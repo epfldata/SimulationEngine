@@ -35,18 +35,16 @@ class CustRunnerTest extends FlatSpec {
         val custRunner = new SimsRunner[BaseMessagingLayer.type] {
             class noRoundBase(c: SimulationConfig) extends Base(c.actors, c.totalTurn, c.messages) {
                 override def run(): SimulationSnapshot = {
-                    SimRuntime.initLabelVals()
-
                     while (currentTurn < totalTurn) {
                         val mx = collectedMessages.groupBy(_.receiverId)
-                        collectedMessages = actors.filterNot(_.deleted).flatMap(a => {
-                        val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
-                        a.run(targetMessages)._1
-                        }).toList
-                        proceed()
+                        val res = actors.filterNot(_.deleted).map(a => {
+                            val targetMessages = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
+                            a.run(targetMessages)
+                        })
+                        collectedMessages = res.flatMap(_._1)
+                        proceed(res.map(_._2).max)
                     }
 
-                    Actor.reset
                     SimulationSnapshot(actors, collectedMessages)
                 }
             }
