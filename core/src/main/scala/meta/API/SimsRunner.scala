@@ -3,11 +3,11 @@ package meta.API
 import meta.runtime.simulation._
 
 sealed trait MessagingLayer
-// Centralized, star network
+// Centralized
 final case object BaseMessagingLayer extends MessagingLayer
-// Centralized dispatcher, distributed agents
+// Distributed
 final case object AkkaMessagingLayer extends MessagingLayer
-
+final case object SparkMessagingLayer extends MessagingLayer
 
 trait SimsRunner[MessagingLayer] {
     def run(c: SimulationConfig): SimulationSnapshot
@@ -26,6 +26,14 @@ object SimsRunner {
         new SimsRunner[AkkaMessagingLayer.type] {
             def run(c: SimulationConfig): SimulationSnapshot = {
                 AkkaRun(c.actors, c.totalTurn, false, c.messages)
+            }
+        }
+    }
+
+    implicit val sparkSimulation = {
+        new SimsRunner[SparkMessagingLayer.type] {
+            def run(c: SimulationConfig): SimulationSnapshot = {
+                new SparkRun(c.actors, c.totalTurn, c.messages).run()
             }
         }
     }
