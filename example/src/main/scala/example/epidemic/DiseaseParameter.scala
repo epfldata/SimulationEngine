@@ -1,10 +1,11 @@
 package example.epidemic
+import breeze.stats.distributions.Gamma
 
 object DiseaseParameter {
     val R0 = 2.6
 
     // units of day
-    val day = 1
+    private val day = 1
 
     val incubationPeriod = 5.1 * day
     val symptomaticLatentPeriod = 4.6 * day
@@ -25,12 +26,39 @@ object DiseaseParameter {
     val ageSkew = 2
     val ageThreshold = 60
 
-    // People sympotamatic are 2x likely to infect others
-    val sympotamaticSkew = 2
+    // People symptomatic are 2x likely to infect others
+    val symptomaticSkew = 2
 
     val hospitalDays = 8 * day
-    val criticalDays = 16 * day
-    val ICUDays = 10 * day
     val asymptomaticRecovery = 21 * day
     val mildRecover = 14 * day
+
+    // unit: days
+    def stateDuration(health: HealthStatus): Int = {
+        health match {
+            case Infectious => 14
+            case Hospitalized => 8
+            case _ => 0
+        }
+    }
+
+    def infectiousness(health: HealthStatus, symptomatic: Boolean): Double = {
+        if (health == Infectious) {
+            var gd = Gamma(infectiousAlpha, infectiousBeta).draw()
+            if (symptomatic){
+                gd = gd * symptomaticSkew
+            }
+            gd
+        } else {
+            0
+        }
+    }
+
+    def vulnerabilityLevel(age: Int): VulnerabilityLevel = {
+        if (age >= ageThreshold){
+            HighRisk
+        } else {
+            LowRisk
+        }
+    }
 }
