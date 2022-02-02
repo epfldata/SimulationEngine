@@ -30,9 +30,9 @@ object liteLift {
 
         val wrapper = 
           f"""
-          def wrapper(args: List[Int]): $tpt = {
-            $name(${(0 to argss(0).length-1).map(x => "args("+x+")").mkString(",")})
-          }
+          // def wrapper(args: List[Int]): $tpt = {
+          //   $name(${(0 to argss(0).length-1).map(x => "args("+x+")").mkString(",")})
+          // }
           
           def writeSchema(pw: java.io.PrintWriter): Unit = {
             pw.write("${argss(0).map(x => getVarName(x)).mkString(",")}")
