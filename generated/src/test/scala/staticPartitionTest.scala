@@ -67,9 +67,9 @@ class cyberspaceStaticTest extends StaticPartitionTest(
     generated.example.cyberspace.InitData.writeSchema) {
 }
 
-class epidemicStaticTest extends StaticPartitionTest(
-    "epidemic", 100, Set(1), Set(0, 50, 100), 
-    List(Set(1000, 10000, 100000)), 
-    generated.example.epidemic.InitData.wrapper, 
-    generated.example.epidemic.InitData.writeSchema) {
-}
+// class epidemicStaticTest extends StaticPartitionTest(
+//     "epidemic", 100, Set(1), Set(0, 50, 100), 
+//     List(Set(1000, 10000, 100000)), 
+//     generated.example.epidemic.InitData.wrapper, 
+//     generated.example.epidemic.InitData.writeSchema) {
+// }
