@@ -34,6 +34,7 @@ lazy val akkaSettings = Seq(
   libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
   libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3",
   libraryDependencies += "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
+  libraryDependencies += "com.typesafe.akka" %% "akka-cluster-typed"         % akkaVersion,
 )
 
 lazy val sparkSettings = Seq(
