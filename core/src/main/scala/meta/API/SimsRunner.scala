@@ -25,7 +25,7 @@ object SimsRunner {
     implicit val akkaSimulation = {
         new SimsRunner[AkkaMessagingLayer.type] {
             def run(c: SimulationConfig): SimulationSnapshot = {
-                AkkaRun(c.actors, c.totalTurn, false, c.messages)
+                AkkaRun(c.actors, c.totalTurn, false, c.messages, c.role, c.port)
             }
         }
     }

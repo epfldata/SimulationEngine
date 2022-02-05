@@ -89,10 +89,10 @@ object Dispatcher {
                     SimRuntime.newActors.clear()
 
                     if (currentTurn + elapsedTime >= totalTurn){
-                        Behaviors.stopped {() => {
+                        Behaviors.stopped {() => 
                             ctx.log.info(f"Simulation completes! Stop the dispatcher")
                             AkkaRun.lastWords = messages
-                        }}
+                        }
                     } else {
                         currentTurn += elapsedTime
                         msgBuffer.clear()
@@ -147,16 +147,42 @@ class SimAgent {
 }
 
 object SimExperiment {
-    def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[NotUsed] = 
+    def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message],
+            role: String): Behavior[NotUsed] = 
         Behaviors.setup { ctx => 
-            val dispatcher = ctx.spawn(Dispatcher(actors.size, totalTurn, messages), "dispatcher")
-            val simAgents = actors.map(a => ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
-            ctx.watch(dispatcher)
+            role match {
+                case "Sims" => 
+                    val simAgents = actors.map(a => 
+                        ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
 
-            Behaviors.receiveSignal {
-                case(_, Terminated(_)) => 
-                    simAgents.map(s => ctx.stop(s))
-                    Behaviors.stopped 
+                    Behaviors.receiveSignal {
+                        case(_, Terminated(_)) => 
+                            ctx.system.terminate()
+                            Behaviors.stopped
+                    }
+
+                case "Dispatcher" =>
+                    val dispatcher = ctx.spawn(Dispatcher(actors.size, totalTurn, messages), "dispatcher")
+                    ctx.watch(dispatcher)
+
+                    Behaviors.receiveSignal {
+                        case(_, Terminated(_)) => 
+                            ctx.system.terminate()
+                            Behaviors.stopped
+                    }
+
+                case "Standalone" =>
+                    val dispatcher = ctx.spawn(Dispatcher(actors.size, totalTurn, messages), "dispatcher")
+                    val simAgents = actors.map(a => ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
+                    ctx.watch(dispatcher)
+
+                    Behaviors.receiveSignal {
+                        case(_, Terminated(_)) => 
+                            simAgents.map(s => ctx.stop(s))
+                            Behaviors.stopped 
+                    }
+
+                case _ => throw new Exception("Invalid role!")
             }
         }
 }
@@ -171,20 +197,20 @@ object AkkaRun {
         lastWords = List()
     }
 
-    def apply(actors: List[Actor], totalTurn: Int, staged: Boolean=false, messages: List[Message]): SimulationSnapshot = {
+    def apply(actors: List[Actor], totalTurn: Int, staged: Boolean=false, messages: List[Message], 
+            role: String= "Standalone", port: Int = 0): SimulationSnapshot = {
         def startup(role: String, port: Int): Unit ={
             val config = ConfigFactory
             .parseString(s"""
                 akka.remote.artery.canonical.port=$port
                 akka.cluster.roles = [$role]
                 """)
-
-            val actorSystem = ActorSystem(SimExperiment(totalTurn, actors, staged, messages), "SimsCluster", config)
+            val actorSystem = ActorSystem(SimExperiment(totalTurn, actors, staged, messages, role), "SimsCluster", config)
             Await.ready(actorSystem.whenTerminated, 10.days)
         }
         initialize()    
         println("Simulation starts!")
-        startup("Sims", 0)
+        startup(role, port)
         println("Simulation ends!")
         // Actor.reset 
         SimulationSnapshot(stoppedAgents.toList, lastWords)
