@@ -21,9 +21,9 @@ import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 
 object Dispatcher {
     sealed trait DispatcherEvent
-    final case object InitializeSims extends DispatcherEvent
-    final case object RoundStart extends DispatcherEvent
-    final case class RoundEnd(messages: List[Message], elapsedTime: Int) extends DispatcherEvent
+    final case object InitializeSims extends DispatcherEvent with CborSerializable
+    final case object RoundStart extends DispatcherEvent with CborSerializable
+    final case class RoundEnd(messages: List[Message], elapsedTime: Int) extends DispatcherEvent with CborSerializable
     
     private var totalAgents: Int = 0
     private var totalTurn: Int = 0
