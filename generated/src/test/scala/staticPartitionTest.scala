@@ -10,7 +10,7 @@ class StaticPartitionTest[T: SimsRunner](name: String,
                     latencys: Set[Int],
                     containers: Set[Int],
                     parameterss: Traversable[Traversable[Int]], 
-                    init: => List[Int] => List[Actor], 
+                    init: => List[Any] => List[Actor], 
                     schemaWriter: => PrintWriter => Unit) extends org.scalatest.FlatSpec {
 
     def run(): Unit = {
