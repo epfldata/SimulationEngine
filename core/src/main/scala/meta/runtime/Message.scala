@@ -1,13 +1,18 @@
 package meta.runtime
 
 import java.util.UUID
-
 import Actor.AgentId
+import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
 
 /**
   * This class is the supertype of the messages
   */
-abstract class Message extends Serializable {
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSubTypes(
+  Array(
+    new JsonSubTypes.Type(value = classOf[RequestMessage], name = "responseMessage"),
+    new JsonSubTypes.Type(value = classOf[ResponseMessage], name = "requestMessage")))
+abstract class Message extends CborSerializable {
 
   /**
     * The sender of the message

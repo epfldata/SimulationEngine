@@ -23,22 +23,21 @@ object liteLift {
     }
 
     methodDef.head match {
-      case q"$mods def $name[..$tparams](...$argss): $tpt = $body" if argss.nonEmpty =>
-
-        if (argss.length > 1)
-          throw new Exception("We do not support currying")
-
+      case q"$mods def $name[..$tparams](...$argss): $tpt = $body" =>
         val wrapper = 
-          f"""
-          def wrapper(args: List[Int]): $tpt = {
-            $name(${(0 to argss(0).length-1).map(x => "args("+x+")").mkString(",")})
+        f"""
+        def wrapper(args: List[Any]): $tpt = {
+          $name${if (argss.nonEmpty) {
+             f"(${argss(0).zipWithIndex.map(x => f"args(${x._2}).asInstanceOf[${TypeName(x._1.tpt.toString)}]").mkString(",")})"    
+          }else {""}   
           }
-          
-          def writeSchema(pw: java.io.PrintWriter): Unit = {
-            pw.write("${argss(0).map(x => getVarName(x)).mkString(",")}")
-            pw.flush()
-          }
-          """
+        }
+        
+        def writeSchema(pw: java.io.PrintWriter): Unit = {
+          pw.write("${if (argss.nonEmpty){argss(0).map(x => getVarName(x)).mkString(",")}}")
+          pw.flush()
+        }
+        """
 
         val ans = f"""
         ${showCode(methodDef.head)} 
@@ -47,7 +46,7 @@ object liteLift {
 
         q"..$ans"
 
-      case _ => throw new Exception("Invalid lift method! Not a method")
+      case _ => throw new Exception("Invalid application of liteLift. Not a method")
     }
   }
 }

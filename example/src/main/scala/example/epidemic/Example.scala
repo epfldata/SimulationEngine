@@ -1,28 +1,46 @@
 package example
 package epidemic
 
+import scala.util.Random
+import scala.collection.mutable.ListBuffer
+
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(populationSize: Int): List[Actor] = {
-            val infectiousSeed = 4
-            val perCapitaContacts = 6
+        def apply(populationsPerCountry: List[Int]): List[Actor] = {
+            val totalCountries: Int = populationsPerCountry.size
 
-            val seed = (1 to infectiousSeed).map(_ => {
-                val p = new Person(perCapitaContacts, scala.util.Random.nextInt(90)+1)
-                // p.health = Infectious
-                p.health = example.epidemic.Infectious
-                p
-            }).toList
+            val countries: ListBuffer[Country] = ListBuffer[Country]()
 
-            val people = (1 to (populationSize - infectiousSeed)).map(x => {
-                new Person(Random.nextInt(perCapitaContacts), scala.util.Random.nextInt(90)+1)
-            }).toList ::: seed
+            val allAgents = populationsPerCountry.flatMap(population => {
+                val x = new Country((population * 0.01).toInt)
+                val citizens = (1 to population).map(c => {
+                    val p = new Person(Random.nextInt(90) + 10)
+                    p.country = x 
+                    p
+                }).toList
+                citizens.foreach(c => {
+                    c.connections = (0 to Random.nextInt(20)).map(x => {
+                        citizens(Random.nextInt(population))
+                    }).toList
+                })
+                // Random seeds of infected people
+                (0 to (Random.nextInt(10)+4)).foreach(_ => {
+                    citizens(Random.nextInt(population)).health = example.epidemic.Infectious
+                })
+                x.citizens = citizens
+                countries.append(x)
+                x :: citizens
+            })
 
-            (1 to populationSize).foreach(i =>
-                people(i-1).connection = people.toList
-            )
+            Range(0, totalCountries).foreach(x => {
+                val neighborCountries = Random.nextInt(totalCountries)
+                countries(x).asInstanceOf[Country].otherCountries = Range(0, neighborCountries)
+                    .map(_ => Random.nextInt(totalCountries))
+                    .filterNot(i => i==x)
+                    .map(k => countries(k).asInstanceOf[Country]).toList
+            })
 
-            people.toList
+            allAgents
         }
     }
 }
@@ -30,8 +48,9 @@ object MainInit {
 object Example extends App {
 
   val cls1: ClassWithObject[Person] = Person.reflect(IR)
+  val cls2: ClassWithObject[Country] = Country.reflect(IR)
 
   val mainClass = MainInit.liftedMain
     
-  compileSims(List(cls1), Some(mainClass))
+  compileSims(List(cls1, cls2), Some(mainClass))
 }

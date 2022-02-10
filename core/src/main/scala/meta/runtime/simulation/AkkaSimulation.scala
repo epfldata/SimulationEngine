@@ -15,14 +15,15 @@ import akka.actor.typed.{ActorRef, ActorSystem, Terminated, PostStop, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 
+import akka.cluster.typed.Cluster
 import com.typesafe.config.ConfigFactory
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 
 object Dispatcher {
     sealed trait DispatcherEvent
-    final case object InitializeSims extends DispatcherEvent
-    final case object RoundStart extends DispatcherEvent
-    final case class RoundEnd(messages: List[Message], elapsedTime: Int) extends DispatcherEvent
+    final case object InitializeSims extends DispatcherEvent with CborSerializable
+    final case object RoundStart extends DispatcherEvent with CborSerializable
+    final case class RoundEnd(messages: List[Message], elapsedTime: Int) extends DispatcherEvent with CborSerializable
     
     private var totalAgents: Int = 0
     private var totalTurn: Int = 0
@@ -89,10 +90,11 @@ object Dispatcher {
                     SimRuntime.newActors.clear()
 
                     if (currentTurn + elapsedTime >= totalTurn){
-                        Behaviors.stopped {() => {
+                        Behaviors.stopped {() => 
                             ctx.log.info(f"Simulation completes! Stop the dispatcher")
                             AkkaRun.lastWords = messages
-                        }}
+                            ctx.system.terminate()
+                        }
                     } else {
                         currentTurn += elapsedTime
                         msgBuffer.clear()
@@ -149,15 +151,24 @@ class SimAgent {
 object SimExperiment {
     def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[NotUsed] = 
         Behaviors.setup { ctx => 
-            val dispatcher = ctx.spawn(Dispatcher(actors.size, totalTurn, messages), "dispatcher")
-            val simAgents = actors.map(a => ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
-            ctx.watch(dispatcher)
+            val cluster = Cluster(ctx.system)
 
-            Behaviors.receiveSignal {
-                case(_, Terminated(_)) => 
-                    simAgents.map(s => ctx.stop(s))
-                    Behaviors.stopped 
+            if (cluster.selfMember.hasRole("Sims")) {
+                actors.foreach(a => {
+                    ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}")
+                })
             }
+
+            if (cluster.selfMember.hasRole("Dispatcher")) {
+                ctx.spawn(Dispatcher(actors.size, totalTurn, messages), "dispatcher")
+            }
+
+            if (cluster.selfMember.hasRole("Standalone")) {
+                ctx.spawn(Dispatcher(actors.size, totalTurn, messages), "dispatcher")
+                actors.foreach(a => ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
+            }
+
+            Behaviors.empty
         }
 }
 
@@ -171,20 +182,19 @@ object AkkaRun {
         lastWords = List()
     }
 
-    def apply(actors: List[Actor], totalTurn: Int, staged: Boolean=false, messages: List[Message]): SimulationSnapshot = {
+    def apply(actors: List[Actor], totalTurn: Int, staged: Boolean=false, messages: List[Message], 
+            role: String= "Standalone", port: Int = 0): SimulationSnapshot = {
         def startup(role: String, port: Int): Unit ={
-            val config = ConfigFactory
-            .parseString(s"""
+            val config = ConfigFactory.parseString(s"""
                 akka.remote.artery.canonical.port=$port
                 akka.cluster.roles = [$role]
-                """)
-
+                """).withFallback(ConfigFactory.load("application"))
             val actorSystem = ActorSystem(SimExperiment(totalTurn, actors, staged, messages), "SimsCluster", config)
             Await.ready(actorSystem.whenTerminated, 10.days)
         }
         initialize()    
         println("Simulation starts!")
-        startup("Sims", 0)
+        startup(role, port)
         println("Simulation ends!")
         // Actor.reset 
         SimulationSnapshot(stoppedAgents.toList, lastWords)

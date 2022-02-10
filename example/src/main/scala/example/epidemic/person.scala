@@ -2,46 +2,29 @@ package example
 package epidemic
 
 import scala.util.Random
-import scala.collection.mutable.ListBuffer
-import breeze.stats.distributions.Gamma
-
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 
-// Epidemic simulation, static graph (fixed connection)
 @lift
-class Person(val dailyContact: Int, val age: Int) extends Actor {
+class Person(val age: Int) extends Actor {
+    var dailyContact: Int = 5
     val symptomatic: Boolean = Random.nextBoolean()
-    var connection: List[Person] = null
     var health: HealthStatus = Susceptible
-
-    var totalConnections: Int = 0
-    var f: Option[Future[Boolean]] = None
-
+    var country: Country = null
+    var vulnerability: VulnerabilityLevel = null
     var daysInfected: Int = 0
+    var policy: NPI = NoNPI
+    var connections: List[Person] = null
 
-    val dailyTimeSlices: Int = 24
-    var usedTimeSlices: Int = 0
+    var f: List[Future[Boolean]] = List()
 
-    def getStatus(): HealthStatus = health
-
-    def infectiousness(): Double = {
-        if (health == Infectious) {
-            var gd = Gamma(DiseaseParameter.infectiousAlpha, DiseaseParameter.infectiousBeta).draw()
-
-            if (symptomatic){
-                gd = gd * DiseaseParameter.sympotamaticSkew
-            }
-
-            gd
-        } else {
-            0
-        }
+    def learnPolicy(newPolicy: NPI): Unit = {
+        policy = newPolicy
     }
 
     def makeContact(risk: Double): Boolean = {
         if (health == Infectious){
-            infectiousness() > 1
+            DiseaseParameter.infectiousness(health, symptomatic) > 1
         } else {
             if (health == Susceptible) {
                 var personalRisk = risk
@@ -49,53 +32,47 @@ class Person(val dailyContact: Int, val age: Int) extends Actor {
                     personalRisk = personalRisk * DiseaseParameter.ageSkew
                 }
                 if (personalRisk > 1) {
-                    health = health.change()
+                    health = health.change(vulnerability)
                 }
             }
             false
         }
     }
 
-    var cnt: Int = 0
-
-    // people don't change their behaviour
     def main(): Unit = {
-        totalConnections = connection.size
+        vulnerability = DiseaseParameter.vulnerabilityLevel(age)
 
         while (true) {
-            cnt = 0
-            usedTimeSlices = 0
+            if (health != Deceased) {
+                dailyContact = policy.contactNumber(health)
+                // Meet with contacts 
+                val selfRisk = DiseaseParameter.infectiousness(health, symptomatic)
+                f = Range(0, dailyContact).toList            
+                        .map(i => connections(Random.nextInt(connections.length)))
+                        .map(x => asyncMessage[Boolean](() => x.makeContact(selfRisk)))
 
-            while ((cnt < dailyContact) && (usedTimeSlices < dailyTimeSlices)) {
-                val conn = connection(Random.nextInt(totalConnections))
-                val selfRisk = infectiousness()
-                
-                f = Some(asyncMessage(() => conn.makeContact(selfRisk)))
-
-                while (!f.get.isCompleted) {
+                while (f.exists(x => !x.isCompleted)){
                     waitLabel(Turn, 1)
-                    usedTimeSlices = usedTimeSlices + 1
                 }
-
-                val affected = f.get.value.get
-
+                val affected = f.map(x => x.popValue.get).exists(e => e == true)
                 if (affected && health == Susceptible) {
-                    health = health.change()
+                    health = health.change(vulnerability)
                 }
 
-                cnt = cnt + 1
-            }
-
-            if (health == Infectious) {
-                if (daysInfected == DiseaseParameter.mildRecover) {
-                    health = health.change()
-                    daysInfected = 0
-                } else {
-                    daysInfected = daysInfected + 1
+                if ((health != Susceptible) && (health != Recover)) {
+                    // report health status
+                    asyncMessage[Unit](() => country.report(health))
+                    if (daysInfected == DiseaseParameter.stateDuration(health)) {
+                        health = health.change(vulnerability)
+                        daysInfected = 0
+                    } else {
+                        daysInfected = daysInfected + 1
+                    }
                 }
+                waitLabel(Turn, 1)
+            } else {
+                waitLabel(Turn, 1)
             }
-
-            waitLabel(Turn, dailyTimeSlices - usedTimeSlices)
         }
     }
 }

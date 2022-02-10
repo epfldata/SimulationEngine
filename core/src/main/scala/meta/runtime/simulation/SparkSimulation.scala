@@ -14,8 +14,11 @@ class SparkRun(var actors: List[Actor], val totalTurn: Int, val messages: List[M
   @transient protected lazy val conf: SparkConf =
     new SparkConf().setMaster("local")
       .setAppName("TickTalk")
-      // .set("spark.driver.memory", "30g")
-      // .set("spark.executor.memory", "5g")
+      .set("spark.driver.memory", "30g")
+      .set("spark.executor.memory", "5g")
+      .set("spark.executor.cores", "48")
+      .set("spark.default.parallelism", "96")
+      .set("spark.hadoop.dfs.replication", "1")
       // .set("spark.driver.allowMultipleContexts", "true")
 
   @transient protected lazy val sc: SparkContext = new SparkContext(conf)
@@ -23,13 +26,13 @@ class SparkRun(var actors: List[Actor], val totalTurn: Int, val messages: List[M
   sc.setLogLevel("INFO")
   sc.setCheckpointDir("checkpoint/")
   
-  @transient protected var actorRDD: RDD[Actor] = sc.parallelize(actors)
+  @transient protected var actorRDD: RDD[Actor] = sc.parallelize(actors, 48)
 
   var currentTurn: Int = 0
   var collectedMessages: List[Message] = messages
 
   def collect(): Unit = {
-    actorRDD = actorRDD ++ sc.parallelize(newActors)
+    actorRDD = actorRDD ++ sc.parallelize(newActors, 2)
     newActors.clear()
   }
 

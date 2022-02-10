@@ -4,13 +4,12 @@ import meta.API._
 
 class generatedExamples extends org.scalatest.FlatSpec {
     "Compiled epidemic example with Akka containers" should "run" in {
-        val agents = generated.example.epidemic.InitData(100)
-
-        val c = new SimulationConfig(agents, totalTurn = 10)
+        val agents = generated.example.epidemic.InitData(List(100,100,100))
+        val c = new SimulationConfig(agents, totalTurn = 50)
 
         // 10 containers
-        val containerConfig = c.staticPartition(10)(BoundedLatency)
-        val results = StartSimulation[AkkaMessagingLayer.type](containerConfig)
+        // val containerConfig = c.staticPartition(3)(BoundedLatency)
+        val results = StartSimulation[AkkaMessagingLayer.type](c)
     }
 
     "Compiled game of life example with base messaging layer" should "run" in {
