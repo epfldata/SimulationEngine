@@ -18,12 +18,15 @@ import akka.util.Timeout
 import akka.cluster.typed.Cluster
 import com.typesafe.config.ConfigFactory
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import akka.actor.NoSerializationVerificationNeeded
+
+import com.fasterxml.jackson.annotation.{JsonProperty}
 
 object Dispatcher {
-    sealed trait DispatcherEvent
-    final case object InitializeSims extends DispatcherEvent with CborSerializable
-    final case object RoundStart extends DispatcherEvent with CborSerializable
-    final case class RoundEnd(messages: List[Message], elapsedTime: Int) extends DispatcherEvent with CborSerializable
+    sealed trait DispatcherEvent extends NoSerializationVerificationNeeded
+    final case object InitializeSims extends DispatcherEvent
+    final case object RoundStart extends DispatcherEvent
+    final case class RoundEnd(messages: List[Message], elapsedTime: Int) extends DispatcherEvent 
     
     private var totalAgents: Int = 0
     private var totalTurn: Int = 0
@@ -110,10 +113,9 @@ object Dispatcher {
 
 object SimAgent {
     val AgentServiceKey1 = ServiceKey[AddMessages]("SimAgent")
-
     sealed trait AgentEvent
-    final case class AddMessages(messages: List[Message], replyTo: ActorRef[MessagesAdded]) extends AgentEvent with CborSerializable
-    final case class MessagesAdded(messages: List[Message], elapsedTime: Int) extends CborSerializable
+    final case class AddMessages(messages: List[Message], replyTo: ActorRef[MessagesAdded]) extends AgentEvent with JsonSerializable
+    final case class MessagesAdded(messages: List[Message], elapsedTime: Int) extends JsonSerializable
 }
 
 class SimAgent {
@@ -138,7 +140,6 @@ class SimAgent {
                     val elapsedTime = agentAPI._2
                     replyTo ! MessagesAdded(sentMessages, elapsedTime)
                     Behaviors.same
-                    
             }
         }.receiveSignal {
             case (ctx, PostStop) => 
@@ -183,7 +184,7 @@ object AkkaRun {
     }
 
     def apply(actors: List[Actor], totalTurn: Int, staged: Boolean=false, messages: List[Message], 
-            role: String= "Standalone", port: Int = 0): SimulationSnapshot = {
+            role: String= "Standalone", port: Int = 25251): SimulationSnapshot = {
         def startup(role: String, port: Int): Unit ={
             val config = ConfigFactory.parseString(s"""
                 akka.remote.artery.canonical.port=$port
