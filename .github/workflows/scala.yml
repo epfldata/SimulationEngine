@@ -32,26 +32,26 @@ jobs:
             - 'generated/**'
 
   noMessagingTest:
-    needs:setup
+    needs: setup
     if: ${{ needs.setup.steps.filter.outputs.noMessaging == 'true' }}
     run: sbt "project noMessaging; test"
   
   compilerTest:
-    needs:setup
+    needs: setup
     if: ${{ needs.setup.steps.filter.outputs.compiler == 'true' }}
     run: sbt "project core; test"
   
   libraryTest:
-    needs:[setup, compilerTest]
+    needs: [setup, compilerTest]
     if: ${{ needs.setup.steps.filter.outputs.library == 'true' }}
     run: sbt "project library; test"
     
   examplesCompile:
-    needs:[setup, compilerTest, libraryTest]
+    needs: [setup, compilerTest, libraryTest]
     if: ${{ needs.setup.steps.filter.outputs.example == 'true' || needs.setup.steps.filter.outputs.library == 'true' || needs.setup.steps.filter.outputs.compiler == 'true'}}
     run: sbt "project example; runAll"
 
   compiledExamplesRun:
-    needs:[setup, compilerTest, libraryTest, examplesCompile]
+    needs: [setup, compilerTest, libraryTest, examplesCompile]
     if: ${{ needs.setup.steps.filter.outputs.generatedExample == 'true' || needs.setup.steps.filter.outputs.example == 'true' || needs.setup.steps.filter.outputs.library == 'true' || needs.setup.steps.filter.outputs.compiler == 'true'}}
     run: sbt "project genExample; testOnly generated.example.test.generatedExamples"
