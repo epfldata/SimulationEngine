@@ -94,7 +94,7 @@ object Dispatcher {
 
                     if (currentTurn + elapsedTime >= totalTurn){
                         Behaviors.stopped {() => 
-                            ctx.log.info(f"Simulation completes! Stop the dispatcher")
+                            ctx.log.debug(f"Simulation completes! Stop the dispatcher")
                             AkkaRun.lastWords = messages
                             ctx.system.terminate()
                         }
@@ -144,7 +144,7 @@ class SimAgent {
         }.receiveSignal {
             case (ctx, PostStop) => 
                 ctx.log.debug(f"Stop agent ${sim.id}")
-                AkkaRun.stoppedAgents.append(sim)
+                AkkaRun.addStoppedAgent(sim)
                 Behaviors.stopped
         }
 }
@@ -175,8 +175,12 @@ object SimExperiment {
 
 object AkkaRun {
 
-    val stoppedAgents: ListBuffer[Actor] = ListBuffer[Actor]()
+    private val stoppedAgents: ListBuffer[Actor] = ListBuffer[Actor]()
     var lastWords: List[Message] = List()
+
+    def addStoppedAgent(agent: Actor): Unit = synchronized {
+        stoppedAgents.append(agent)
+    }
 
     def initialize(): Unit = {
         stoppedAgents.clear()
