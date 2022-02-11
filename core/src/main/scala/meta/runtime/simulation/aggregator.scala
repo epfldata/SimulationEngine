@@ -7,14 +7,15 @@ import scala.reflect.ClassTag
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.NoSerializationVerificationNeeded
 
 // source: https://doc.akka.io/docs/akka/2.6.12//typed/interaction-patterns.html
 
 object Aggregator {
 
-  sealed trait Command
+  sealed trait Command extends NoSerializationVerificationNeeded
   private case object ReceiveTimeout extends Command
-  private case class WrappedReply[R](reply: R) extends Command
+  private case class WrappedReply[R](reply: R) extends Command 
 
   def apply[Reply: ClassTag, Aggregate](
       sendRequests: ActorRef[Reply] => Unit,

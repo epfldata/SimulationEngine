@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
   Array(
     new JsonSubTypes.Type(value = classOf[RequestMessage], name = "responseMessage"),
     new JsonSubTypes.Type(value = classOf[ResponseMessage], name = "requestMessage")))
-abstract class Message extends CborSerializable {
+abstract class Message extends JsonSerializable {
 
   /**
     * The sender of the message
