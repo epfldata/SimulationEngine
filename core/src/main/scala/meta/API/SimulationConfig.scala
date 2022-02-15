@@ -32,7 +32,7 @@ class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isC
 
         containers.foreach(c => c.setKBound(latencyBound))
         
-        new SimulationConfig(containers, totalTurn, isCompiled, latencyBound, messages)
+        new SimulationConfig(containers, totalTurn, isCompiled, latencyBound, messages, role, port)
   }
 
   override def toString(): String = {
