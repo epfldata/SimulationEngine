@@ -9,7 +9,7 @@ class StaticPartitionTest[T: SimsRunner](name: String,
                     totalTurns: Int,
                     latencys: Set[Int],
                     containers: Set[Int],
-                    parameterss: Traversable[Traversable[Int]], 
+                    parameterss: Traversable[Traversable[Any]], 
                     init: => List[Any] => List[Actor], 
                     schemaWriter: => PrintWriter => Unit) extends org.scalatest.FlatSpec {
 
@@ -19,6 +19,7 @@ class StaticPartitionTest[T: SimsRunner](name: String,
 
         pw.write("Experiment,Containers,K,AvgTime,")
         schemaWriter(pw)
+        pw.write("\n")
 
         for (container <- containers; latency <- latencys){
             Util.crossJoin(parameterss).foreach(x => {
@@ -54,8 +55,8 @@ class gameOfLifeStaticTestSpark extends StaticPartitionTest[SparkMessagingLayer.
 }
 
 class gameOfLifeStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
-    "gameOfLife", 100, Set(1), Set(0), 
-    List(Set(10), Set(100), Set(1)), 
+    "gameOfLife", 5, Set(1), Range(0, 100, 10).toSet, 
+    List(Set(100), Set(1000), Set(1)), 
     generated.example.gameOfLife.InitData.wrapper, 
     generated.example.gameOfLife.InitData.writeSchema) {
 }
@@ -74,9 +75,9 @@ class cyberspaceStaticTest extends StaticPartitionTest[AkkaMessagingLayer.type](
     generated.example.cyberspace.InitData.writeSchema) {
 }
 
-// class epidemicStaticTest extends StaticPartitionTest(
-//     "epidemic", 100, Set(1), Set(0, 50, 100), 
-//     List(Set(1000, 10000, 100000)), 
-//     generated.example.epidemic.InitData.wrapper, 
-//     generated.example.epidemic.InitData.writeSchema) {
-// }
+class epidemicStaticTest extends StaticPartitionTest[AkkaMessagingLayer.type](
+    "epidemic", 100, Set(1), Set(0, 50, 100), 
+    List(Set(Range(0, 10).map(x => 1000).toList)), 
+    generated.example.epidemic.InitData.wrapper, 
+    generated.example.epidemic.InitData.writeSchema) {
+}
