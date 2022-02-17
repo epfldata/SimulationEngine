@@ -20,8 +20,6 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.NoSerializationVerificationNeeded
 
-import com.fasterxml.jackson.annotation.{JsonProperty}
-
 object Dispatcher {
     sealed trait DispatcherEvent extends NoSerializationVerificationNeeded
     final case object InitializeSims extends DispatcherEvent
@@ -113,9 +111,9 @@ object Dispatcher {
 
 object SimAgent {
     val AgentServiceKey1 = ServiceKey[AddMessages]("SimAgent")
-    sealed trait AgentEvent
-    final case class AddMessages(messages: List[Message], replyTo: ActorRef[MessagesAdded]) extends AgentEvent with JsonSerializable
-    final case class MessagesAdded(messages: List[Message], elapsedTime: Int) extends JsonSerializable
+    sealed trait AgentEvent extends NoSerializationVerificationNeeded
+    final case class AddMessages(messages: List[Message], replyTo: ActorRef[MessagesAdded]) extends AgentEvent
+    final case class MessagesAdded(messages: List[Message], elapsedTime: Int) extends AgentEvent
 }
 
 class SimAgent {
