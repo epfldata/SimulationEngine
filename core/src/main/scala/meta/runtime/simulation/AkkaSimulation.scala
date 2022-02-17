@@ -64,7 +64,7 @@ object Dispatcher {
                     dispatcher()
 
                 case RoundStart => {
-                    ctx.log.info(f"Round ${currentTurn} starts ${totalAgents}")
+                    ctx.log.info(f"Round ${currentTurn}")
                     ctx.spawnAnonymous(
                         Aggregator[SimAgent.MessagesAdded, RoundEnd](
                             sendRequests = { replyTo =>
