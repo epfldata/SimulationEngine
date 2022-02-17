@@ -19,6 +19,7 @@ import akka.cluster.typed.Cluster
 import com.typesafe.config.ConfigFactory
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.NoSerializationVerificationNeeded
+import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
 
 object Dispatcher {
     sealed trait DispatcherEvent extends NoSerializationVerificationNeeded
@@ -111,7 +112,12 @@ object Dispatcher {
 
 object SimAgent {
     val AgentServiceKey1 = ServiceKey[AddMessages]("SimAgent")
-    sealed trait AgentEvent extends NoSerializationVerificationNeeded
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+    @JsonSubTypes(
+    Array(
+        new JsonSubTypes.Type(value = classOf[AddMessages], name = "addMessages"),
+        new JsonSubTypes.Type(value = classOf[MessagesAdded], name = "messagesAdded")))
+    sealed trait AgentEvent extends JsonSerializable
     final case class AddMessages(messages: List[Message], replyTo: ActorRef[MessagesAdded]) extends AgentEvent
     final case class MessagesAdded(messages: List[Message], elapsedTime: Int) extends AgentEvent
 }
