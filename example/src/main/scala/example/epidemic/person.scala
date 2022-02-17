@@ -4,7 +4,6 @@ package epidemic
 import scala.util.Random
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-import example.epidemic.NPI._
 
 @lift
 class Person(val age: Int) extends Actor {
@@ -14,13 +13,14 @@ class Person(val age: Int) extends Actor {
     var country: Country = null
     var vulnerability: VulnerabilityLevel = null
     var daysInfected: Int = 0
-    var policy: NPI = NoNPI
+    var policy: Int = 0
     var connections: List[Person] = null
 
     var f: List[Future[Boolean]] = List()
 
-    def learnPolicy(newPolicy: NPI): Unit = {
+    def learnPolicy(newPolicy: Int): Int = {
         policy = newPolicy
+        policy
     }
 
     def makeContact(risk: Double): Boolean = {
@@ -45,7 +45,7 @@ class Person(val age: Int) extends Actor {
 
         while (true) {
             if (health != Deceased) {
-                dailyContact = policy.contactNumber(health)
+                dailyContact = NPI.contactNumber(health, policy)
                 // Meet with contacts 
                 val selfRisk = DiseaseParameter.infectiousness(health, symptomatic)
                 f = Range(0, dailyContact).toList            
@@ -62,7 +62,7 @@ class Person(val age: Int) extends Actor {
 
                 if ((health != Susceptible) && (health != Recover)) {
                     // report health status
-                    asyncMessage[Unit](() => country.report(health))
+                    asyncMessage(() => country.report(health))
                     if (daysInfected == DiseaseParameter.stateDuration(health)) {
                         health = health.change(vulnerability)
                         daysInfected = 0
