@@ -3,7 +3,7 @@ package epidemic
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-import org.apache.commons.math3.exception.NotFiniteNumberException
+import example.epidemic.NPI._
 
 // Countries would summarize their total infected patients everyday 
 // and communicate it with other countries, so they can react accordingly

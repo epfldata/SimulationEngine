@@ -4,6 +4,7 @@ package epidemic
 import scala.util.Random
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
+import example.epidemic.NPI._
 
 @lift
 class Person(val age: Int) extends Actor {
