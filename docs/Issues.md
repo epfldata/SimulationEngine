@@ -79,3 +79,7 @@ Term of type _$1 was rewritten to a term of type List[Option[meta.runtime.Future
 - Inconsistency of the test and src. Please be aware that sometimes the test files don't actually sync in with the latest objects. First, please make sure the generated objects indeed contain your latest updates. If the problem still exists, please run `testOnly *testName*` from sbt, and then try from your IDE. This should bring the references up-to-date. 
 
 - Lifted classes, at the time of writing, do not support type parameters or call-by-name parameters.
+
+- "ERROR org.apache.hadoop.util.Shell - Failed to locate the winutils binary in the hadoop binary path
+java.io.IOException: Could not locate executable null\bin\winutils.exe in the Hadoop binaries.
+        at org.apache.hadoop.util.Shell.getQualifiedBinPath(Shell.java:382)". You can safely discard this warning.
