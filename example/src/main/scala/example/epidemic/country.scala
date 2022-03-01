@@ -24,16 +24,16 @@ class Country(val hospitalCapacity: Int) extends Actor {
     policy
   }
 
-  def report(status: HealthStatus): Int = {
-    if (status == Infectious){
+  def report(status: String): Int = {
+    if (status == "Infectious"){
       totalInfected = totalInfected + 1
     } 
     
-    if (status == Hospitalized) {
+    if (status == "Hospitalized") {
       totalHospitalized = totalHospitalized + 1
     } 
     
-    if (status == Deceased) {
+    if (status == "Deceased") {
       totalDeceased = totalDeceased + 1
     }
     totalInfected

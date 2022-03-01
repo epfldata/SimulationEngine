@@ -25,7 +25,7 @@ object MainInit {
                 })
                 // Random seeds of infected people
                 (0 to (Random.nextInt(10)+4)).foreach(_ => {
-                    citizens(Random.nextInt(population)).health = example.epidemic.Infectious
+                    citizens(Random.nextInt(population)).health = "Infectious"
                 })
                 x.citizens = citizens
                 countries.append(x)

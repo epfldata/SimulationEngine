@@ -9,9 +9,9 @@ import squid.quasi.lift
 class Person(val age: Int) extends Actor {
     var dailyContact: Int = 5
     val symptomatic: Boolean = Random.nextBoolean()
-    var health: HealthStatus = Susceptible
+    var health: String = "Susceptible"
     var country: Country = null
-    var vulnerability: VulnerabilityLevel = null
+    var vulnerability: String = "low"
     var daysInfected: Int = 0
     var policy: Int = 0
     var connections: List[Person] = null
@@ -24,16 +24,16 @@ class Person(val age: Int) extends Actor {
     }
 
     def makeContact(risk: Double): Boolean = {
-        if (health == Infectious){
+        if (health == "Infectious"){
             DiseaseParameter.infectiousness(health, symptomatic) > 1
         } else {
-            if (health == Susceptible) {
+            if (health == "Susceptible") {
                 var personalRisk = risk
                 if (age > DiseaseParameter.ageThreshold) {
                     personalRisk = personalRisk * DiseaseParameter.ageSkew
                 }
                 if (personalRisk > 1) {
-                    health = health.change(vulnerability)
+                    health = HealthStatus.change(health, vulnerability)
                 }
             }
             false
@@ -44,7 +44,7 @@ class Person(val age: Int) extends Actor {
         vulnerability = DiseaseParameter.vulnerabilityLevel(age)
 
         while (true) {
-            if (health != Deceased) {
+            if (health != "Deceased") {
                 dailyContact = NPI.contactNumber(health, policy)
                 // Meet with contacts 
                 val selfRisk = DiseaseParameter.infectiousness(health, symptomatic)
@@ -56,15 +56,15 @@ class Person(val age: Int) extends Actor {
                     waitLabel(Turn, 1)
                 }
                 val affected = f.map(x => x.popValue.get).exists(e => e == true)
-                if (affected && health == Susceptible) {
-                    health = health.change(vulnerability)
+                if (affected && health == "Susceptible") {
+                    health = HealthStatus.change(health, vulnerability)
                 }
 
-                if ((health != Susceptible) && (health != Recover)) {
+                if ((health != "Susceptible") && (health != "Recover")) {
                     // report health status
                     asyncMessage(() => country.report(health))
                     if (daysInfected == DiseaseParameter.stateDuration(health)) {
-                        health = health.change(vulnerability)
+                        health = HealthStatus.change(health, vulnerability)
                         daysInfected = 0
                     } else {
                         daysInfected = daysInfected + 1
