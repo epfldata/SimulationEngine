@@ -3,7 +3,6 @@ package epidemic
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-import org.apache.commons.math3.exception.NotFiniteNumberException
 
 // Countries would summarize their total infected patients everyday 
 // and communicate it with other countries, so they can react accordingly
@@ -17,51 +16,48 @@ class Country(val hospitalCapacity: Int) extends Actor {
   var totalHospitalized: Int = 0
   var totalDeceased: Int = 0
 
-  var policy: NPI = NoNPI 
-  var neighborPolicyFutures: List[Future[NPI]] = List()
-  var neighborPolicies: List[NPI] = List()
+  var policy: Int = 0 
+  var neighborPolicyFutures: List[Future[Int]] = List()
+  var neighborPolicies: List[Int] = List()
 
-  def getPolicy(): NPI = {
+  def getPolicy(): Int = {
     policy
   }
 
-  def clearRecord(): Unit = {
-    totalInfected = 0
-    totalHospitalized = 0
-  }
-
-  def report(status: HealthStatus): Unit = {
-    if (status == Infectious){
+  def report(status: String): Int = {
+    if (status == "Infectious"){
       totalInfected = totalInfected + 1
     } 
     
-    if (status == Hospitalized) {
+    if (status == "Hospitalized") {
       totalHospitalized = totalHospitalized + 1
     } 
     
-    if (status == Deceased) {
+    if (status == "Deceased") {
       totalDeceased = totalDeceased + 1
     }
+    totalInfected
   }
 
   def main(): Unit = {
     while (true) {
-      neighborPolicyFutures = otherCountries.map(x => asyncMessage[NPI](() => x.getPolicy()))
+      neighborPolicyFutures = otherCountries.map(x => asyncMessage[Int](() => x.getPolicy()))
 
       if (neighborPolicyFutures.forall(p => p.isCompleted)) {
         neighborPolicies = neighborPolicyFutures.map(x => x.popValue.get)
       }
 
-      if ((hospitalCapacity > 0.8*totalHospitalized) || neighborPolicies.forall(x => x == Lockdown)) {
-        // println("Lock down!")
-        policy = Lockdown
-        citizens.map(p => asyncMessage[Unit](() => p.learnPolicy(policy)))
-      } else if ((hospitalCapacity > 0.5*totalHospitalized) || neighborPolicies.forall(x => x==Quarantine)) {
-        // println("Quarantine!")
-        policy = Quarantine
+      if ((hospitalCapacity > 0.8*totalHospitalized) || neighborPolicies.forall(x => x == 2)) {
+        // Lock down
+        policy = 2
+        citizens.map(p => asyncMessage(() => p.learnPolicy(policy)))
+      } else if ((hospitalCapacity > 0.5*totalHospitalized) || neighborPolicies.forall(x => x==1)) {
+        // Quarantine
+        policy = 1
         citizens.map(x => asyncMessage(() => x.learnPolicy(policy)))
       }
-      clearRecord()
+      totalInfected = 0
+      totalHospitalized = 0
       handleMessages()
       waitLabel(Turn, 1)
     }

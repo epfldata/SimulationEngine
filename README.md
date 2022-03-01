@@ -8,6 +8,7 @@ The goal of this project is to provide a framework suitable for scaled-out agent
 - [Synchronization DSL](#DSL)
 - [Sims as Meta-Programs](#Meta-programs)
 - [Start Simulation](#Simulation)
+- [Test Locally](#bin)
 - [Folder Structure](#Folder)
 - [Issues and Solutions](docs/Issues.md)
 
@@ -110,6 +111,20 @@ object gameOfLifeTest {
 }
 ```
 
+### <a name="bin"></a> Local test
+You can test locally by calling scripts in `bin`.
+
+On linux or Mac:
+```
+bash bin/test.sh 
+```
+
+On windows (Powershell)
+```
+./bin/test.ps1
+```
+
+
 ### <a name="Folder"></a> Folder Structure 
 - `ecosim/` contains the legacy implementation of the simulation framework without using message passing 
 - `docs/` contains documentation
@@ -118,6 +133,7 @@ object gameOfLifeTest {
 - `library/` contains helper classes which are non-agent that you can use in your example. 
 - `core/` contains the compiler source code and supporting runtime objects. 
 - `stagedSims/` contains the no-compilation implementation of the DSL (in the branch staged)
+- `bin/` contains local test scripts for this project.
  
 ### Code Format
 We use Scalafmt for formatting the code.

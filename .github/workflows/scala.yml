@@ -7,10 +7,8 @@ on:
     branches: [ latest ]
 
 jobs:
-  build:
-
+  setup:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 8
@@ -18,13 +16,32 @@ jobs:
       with:
         java-version: '8'
         distribution: 'adopt'
-    - name: Unit tests for noMessaging
+    - uses: dorny/paths-filter@v2.2.1
+      id: filter
+      with:
+        filters: |
+          noMessaging:
+            - 'ecosim/**'
+          compiler:
+            - 'core/**'
+          library:
+            - 'library/**'
+          example:
+            - 'example/**'
+          generatedExample:
+            - 'generated/**'
+    - name: noMessaging test
+      if: ${{ steps.filter.outputs.noMessaging == 'true' }}
       run: sbt "project noMessaging; test"
-    - name: Unit tests for compiler
+  
+    - name: compiler test
+      if: ${{ steps.filter.outputs.compiler == 'true' }}
       run: sbt "project core; test"
-    - name: Unit tests for library
+  
+    - name: library test
+      if: ${{ steps.filter.outputs.library == 'true' }}
       run: sbt "project library; test"
-    - name: Examples compile
-      run: sbt "project example; runAll"
-    - name: Compiled examples run
-      run: sbt "project genExample; testOnly generated.example.test.generatedExamples"
+    
+    - name: examples compile and run
+      if: ${{ steps.filter.outputs.generatedExample == 'true' || steps.filter.outputs.example == 'true' || steps.filter.outputs.library == 'true' || steps.filter.outputs.compiler == 'true'}}
+      run: sbt "project example; runAll; project genExample; testOnly generated.example.test.generatedExamples"

@@ -34,16 +34,16 @@ object DiseaseParameter {
     val mildRecover = 14 * day
 
     // unit: days
-    def stateDuration(health: HealthStatus): Int = {
+    def stateDuration(health: String): Int = {
         health match {
-            case Infectious => 14
-            case Hospitalized => 8
+            case "Infectious" => 14
+            case "Hospitalized" => 8
             case _ => 0
         }
     }
 
-    def infectiousness(health: HealthStatus, symptomatic: Boolean): Double = {
-        if (health == Infectious) {
+    def infectiousness(health: String, symptomatic: Boolean): Double = {
+        if (health == "Infectious") {
             var gd = Gamma(infectiousAlpha, infectiousBeta).draw()
             if (symptomatic){
                 gd = gd * symptomaticSkew
@@ -54,11 +54,11 @@ object DiseaseParameter {
         }
     }
 
-    def vulnerabilityLevel(age: Int): VulnerabilityLevel = {
+    def vulnerabilityLevel(age: Int): String = {
         if (age >= ageThreshold){
-            HighRisk
+            "high"
         } else {
-            LowRisk
+            "low"
         }
     }
 }

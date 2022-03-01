@@ -14,7 +14,7 @@ import meta.runtime.{Actor, Container, Message}
   * @param port defines the port number for the role, default to 0, i.e. randomly assign a port value
   */
 class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isCompiled: Boolean = true, 
-  val latencyBound: Int = 1, val messages: List[Message]=List(), val role: String="Standalone", val port: Int=0) {
+  val latencyBound: Int = 1, val messages: List[Message]=List(), val role: String="Standalone", val port: Int=25251) {
   // Group agents statically into containers according to the number of partitions                 
 
   def staticPartition(partitions: Int)(containerOpt: SimContainerOptimization): SimulationConfig = {
@@ -32,7 +32,7 @@ class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isC
 
         containers.foreach(c => c.setKBound(latencyBound))
         
-        new SimulationConfig(containers, totalTurn, isCompiled, latencyBound, messages)
+        new SimulationConfig(containers, totalTurn, isCompiled, latencyBound, messages, role, port)
   }
 
   override def toString(): String = {

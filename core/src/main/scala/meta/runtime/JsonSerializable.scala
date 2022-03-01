@@ -1,3 +1,3 @@
 package meta.runtime
 
-trait CborSerializable
+trait JsonSerializable

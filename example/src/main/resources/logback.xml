@@ -16,8 +16,8 @@
 
 <!--    level = "error" -->
     <!-- setting Spark log level  -->
-    <logger name="org" level="error" />
-    <logger name="akka" level="error" />
+    <logger name="org" level="info" />
+    <logger name="akka" level="info" />
 
     <root level="info">
         <appender-ref ref="STDOUT" />

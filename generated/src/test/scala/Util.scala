@@ -11,7 +11,7 @@ object Util {
     }
 
     // Comma separated list with just values
-    def csList(list: Traversable[Int]): String = {
+    def csList(list: Traversable[Any]): String = {
         list.mkString(",")
     }
 }
