@@ -253,14 +253,29 @@ class CreateCode(initCode: String,
         }
       })
     }).mkString(", ")
+
+    println("Parameters are " + parameters)
     
-    val parameterApplication: String = parameters.split(",").map(x => {
-      if (x.isEmpty()){
-        ""
-      } else {
-        x.split(" ").filterNot(_.isEmpty)(1).stripSuffix(":")
-      }
-    }).mkString(", ")
+    val parameterApplication: String = {
+      compiledActorGraph.actorTypes.flatMap(actorType => {
+        actorType.states.filter(x => x.parameter).map(s => {
+          s.name
+        })
+      }).mkString(", ")
+    }
+
+    val cloneString: String = 
+s"""
+override def stateClone(): ${compiledActorGraph.name} = {
+  val newAgent = new ${compiledActorGraph.name}(${parameterApplication})
+  ${compiledActorGraph.actorTypes.flatMap(actorType => {
+      actorType.states.filterNot(x => x.parameter).map(s => {
+        s"newAgent.${s.name} = ${s.name}"  
+      })
+    }).mkString("  \n")}
+  newAgent
+}
+"""
 
     def parents: String = {
       var parentNames: List[String] = compiledActorGraph.parentNames
@@ -272,7 +287,7 @@ class CreateCode(initCode: String,
       s"${parentNames.head}${parentNames.tail.foldLeft("")((a,b) => a + " with " + changeTypes(b))}"
     }
 
-    val methods: String = s"${methodss}${run_until}${handleMsg}${gotoHandleMsg}"
+    val methods: String = s"${methodss}${run_until}${handleMsg}${gotoHandleMsg}${cloneString}"
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars, methods, parents);
   }
@@ -526,7 +541,7 @@ class CreateCode(initCode: String,
     val classString =
       s"""package ${generatedPackage}
 
-class ${className} (${parameters}) extends ${parents} {
+class ${className}(${parameters}) extends ${parents} {
 $initParams
 $initVars
 $run_until

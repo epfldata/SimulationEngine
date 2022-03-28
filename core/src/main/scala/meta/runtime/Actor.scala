@@ -169,6 +169,10 @@ class Actor extends Serializable {
     ???
   }
 
+  def stateClone(): Actor = {
+    this
+  }
+
   // Get the code position of the handleMessage and go to that location. Process the code related to handle message, reset the instruction pointer, and return the agent
   // def handleNonblockingMessages(): Actor = ??? 
   def gotoHandleMessages(new_ir: Int = -1): Actor = ??? 
