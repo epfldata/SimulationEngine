@@ -253,8 +253,6 @@ class CreateCode(initCode: String,
         }
       })
     }).mkString(", ")
-
-    println("Parameters are " + parameters)
     
     val parameterApplication: String = {
       compiledActorGraph.actorTypes.flatMap(actorType => {
@@ -269,7 +267,7 @@ s"""
 override def stateClone(): ${compiledActorGraph.name} = {
   val newAgent = new ${compiledActorGraph.name}(${parameterApplication})
   ${compiledActorGraph.actorTypes.flatMap(actorType => {
-      actorType.states.filterNot(x => x.parameter).map(s => {
+      actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
         s"newAgent.${s.name} = ${s.name}"  
       })
     }).mkString("  \n")}

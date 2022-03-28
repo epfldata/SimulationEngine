@@ -3,7 +3,8 @@ package generated.meta.test.timeseries
 class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.runtime.Actor {
 
   var state: Int = 1;
-  private var  reflectionIR_91: Int = -1
+  val immutableSecret: Int = 10;
+  private var  reflectionIR_25: Int = -1
   var resetData_0: scala.Any = null
   val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
   var resetData_2: meta.runtime.ResponseMessage = null
@@ -313,8 +314,8 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
       // first entry, save the current IR to reflectionIR
       unblockFlag_15 = true
 
-      if (reflectionIR_91 == -1){
-        reflectionIR_91 = positionVar_16
+      if (reflectionIR_25 == -1){
+        reflectionIR_25 = positionVar_16
         positionVar_16 = new_ir
       }
 
@@ -324,8 +325,8 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
 
       // reset instruction register when finishes processing
       if (positionVar_16 > 13) {
-        positionVar_16 = reflectionIR_91
-        reflectionIR_91 = -1
+        positionVar_16 = reflectionIR_25
+        reflectionIR_25 = -1
       }
       this
     }
