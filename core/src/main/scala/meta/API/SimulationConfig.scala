@@ -16,7 +16,6 @@ import meta.runtime.{Actor, Container, Message}
 class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isCompiled: Boolean = true, 
   val latencyBound: Int = 1, val messages: List[Message]=List(), val role: String="Standalone", val port: Int=25251) {
   // Group agents statically into containers according to the number of partitions                 
-
   def staticPartition(partitions: Int)(containerOpt: SimContainerOptimization): SimulationConfig = {
 
         val totalAgents = actors.size
@@ -33,6 +32,11 @@ class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isC
         containers.foreach(c => c.setKBound(latencyBound))
         
         new SimulationConfig(containers, totalTurn, isCompiled, latencyBound, messages, role, port)
+  }
+
+  def copy(actors: List[Actor] = actors, totalTurn: Int = totalTurn, isCompiled: Boolean = isCompiled, 
+  latencyBound: Int = latencyBound, messages: List[Message]=messages, role: String=role, port: Int=port): SimulationConfig = {
+    new SimulationConfig(actors, totalTurn, isCompiled, latencyBound, messages, role, port)
   }
 
   override def toString(): String = {
