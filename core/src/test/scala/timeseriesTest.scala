@@ -4,7 +4,7 @@ import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import meta.deep.IR.TopLevel.ClassWithObject
 import meta.deep.IR
-import meta.runtime.{Actor}
+import meta.runtime.{Actor, Message}
 import meta.API._
 import org.scalatest.FlatSpec
 
@@ -14,7 +14,7 @@ class CounterSim(val n: CounterSim) extends Actor {
     val immutableSecret: Int = 10
 
     def inc(): Unit = {
-        println(id + " processes inc message!")
+        // println(id + " processes inc message!")
         state = state + 1
     }
 
@@ -22,10 +22,10 @@ class CounterSim(val n: CounterSim) extends Actor {
         while (true){
             if (n != null) {
                 asyncMessage[Unit](() => n.inc()) 
-                println(id + " sends a message to increment the neighbor!")
+                // println(id + " sends a message to increment the neighbor!")
             }
             handleMessages()
-            println(id + " counter value is " + state)
+            // println(id + " counter value is " + state)
             waitLabel(Turn, 1)
         }
     }
@@ -51,20 +51,56 @@ class timeseriesTest extends FlatSpec {
             destFolder = "core/src/test/scala/generated/timeseries/")
     }
 
-    "Recording counter agents" should "reflect the state of agents" in {
+    "Stepwise eval materialized from snapshots" should "contain correct value" in {
         val agents = generated.meta.test.timeseries.InitData()
         val c = new SimulationConfig(agents, 5)
         // select only the state of counters
-        val eval: List[Actor] => List[Int] = (agents) => agents.map(_.asInstanceOf[generated.meta.test.timeseries.CounterSim].state)
+        val eval: (List[Actor], List[Message]) => List[Int] = (agents, messages) => agents.map(_.asInstanceOf[generated.meta.test.timeseries.CounterSim].state)
 
         val timeseries = StartSimulation.runAndEval[BaseMessagingLayer.type, List[Int]](c)(eval)
 
-        println(timeseries)
+        // println(timeseries)
+        // Record each timestamp
+        assert(timeseries.length == 5)
+        // Initial states
+        assert(timeseries(0).forall(_ == 1))
+        // Final states 
+        assert(timeseries.last.filter(_ == 5).length == 2)
+    }
+
+    "Batch run and eval without intermediate materialization" should "contain correct value" in {
+        val agents = generated.meta.test.timeseries.InitData()
+        val c = new SimulationConfig(agents, 5)
+        // select only the state of counters
+        val eval: (List[Actor], List[Message]) => List[Int] = (agents, messages) => agents.map(_.asInstanceOf[generated.meta.test.timeseries.CounterSim].state)
+
+        val timeseries = StartSimulation.runAndEvalOpt[BaseMessagingLayer.type, List[Int]](c)(eval)
+
+        // println(timeseries)
         // Record each time stamp
         assert(timeseries.length == 5)
         // Initial states
         assert(timeseries(0).forall(_ == 1))
         // Final states 
         assert(timeseries.last.filter(_ == 5).length == 2)
+    }
+
+    "Eval without intermediate materialization" should "run faster than stepwise materialization" in {
+        val agents = generated.meta.test.timeseries.InitData()
+        val c = new SimulationConfig(agents, 500)
+        // select only the state of counters
+        val eval: (List[Actor], List[Message]) => List[Int] = (agents, messages) => agents.map(_.asInstanceOf[generated.meta.test.timeseries.CounterSim].state)
+        
+        val time1 = meta.runtime.simulation.util.bench{
+            StartSimulation.runAndEval[BaseMessagingLayer.type, List[Int]](c)(eval)
+        }
+        
+        val time2 = meta.runtime.simulation.util.bench{
+            StartSimulation.runAndEvalOpt[BaseMessagingLayer.type, List[Int]](c)(eval)
+        }
+
+        println("Time 1 is " + time1)
+        println("Time 2 is " + time2)
+        assert(time1 > time2)
     }
 }
