@@ -8,7 +8,6 @@ import meta.API._
 import org.scalatest.FlatSpec
 import scala.util.Random
 import meta.runtime.Future
-import meta.compile._
 import meta.deep.IR.Predef._
 import meta.deep.IR.Predef.base.MethodApplication
 

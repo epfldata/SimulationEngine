@@ -9,7 +9,7 @@ import meta.deep.member.{EdgeInfo, CompiledActorGraph, VarValue, VarWrapper, Met
 import meta.runtime.Actor
 
 import scala.collection.mutable.ListBuffer
-import meta.compile.CompilationMode
+import meta.API.CompilationMode
 import scala.util.Random
 
 class CreateCode(initCode: String, 

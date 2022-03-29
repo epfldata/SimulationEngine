@@ -7,7 +7,6 @@ import meta.deep.IR
 import meta.runtime.{Actor}
 import meta.API._
 import org.scalatest.FlatSpec
-import meta.compile._
 import scala.util.Random
 
 @lift

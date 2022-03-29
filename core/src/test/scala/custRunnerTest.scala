@@ -7,7 +7,6 @@ import meta.deep.IR
 import meta.runtime._
 import meta.API._
 import org.scalatest.FlatSpec
-import meta.compile._
 import meta.runtime.simulation.Base
 
 // A test that shows how users can define their own runners

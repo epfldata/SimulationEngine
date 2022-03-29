@@ -9,7 +9,6 @@ import meta.API._
 import org.scalatest.FlatSpec
 import scala.util.Random
 import meta.runtime.Future
-import meta.compile._
 
 @lift
 class MyClass2(var neighbor: MyClass2) extends Actor {
