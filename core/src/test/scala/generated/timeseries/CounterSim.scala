@@ -4,7 +4,7 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
 
   var state: Int = 1;
   val immutableSecret: Int = 10;
-  private var  reflectionIR_25: Int = -1
+  private var  reflectionIR_76: Int = -1
   var resetData_0: scala.Any = null
   val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
   var resetData_2: meta.runtime.ResponseMessage = null
@@ -77,7 +77,7 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
   data_17.update(6, (() => {
     val x_36 = listValMut_4;
     val x_37 = x_36.methodInfo;
-    val x_38 = scala.`package`.Right.apply[scala.Nothing, scala.Int](0);
+    val x_38 = scala.`package`.Right.apply[scala.Nothing, scala.Int](15);
     val x_39 = x_37.==(x_38);
     if (x_39)
       positionVar_16 = 7
@@ -116,7 +116,7 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
   data_17.update(13, (() => {
     val x_49 = listValMut_4;
     val x_50 = x_49.methodInfo;
-    val x_51 = scala.`package`.Right.apply[scala.Nothing, scala.Int](0);
+    val x_51 = scala.`package`.Right.apply[scala.Nothing, scala.Int](15);
     val x_52 = x_50.==(x_51);
     val x_53 = x_52.`unary_!`;
     if (x_53)
@@ -230,7 +230,7 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
       val receiver_98 = this.n;
       val x_99 = ((this): meta.runtime.Actor).id;
       val x_100 = receiver_98.id;
-      val x_101 = scala.`package`.Right.apply[scala.Nothing, scala.Int](0);
+      val x_101 = scala.`package`.Right.apply[scala.Nothing, scala.Int](15);
       val x_102 = scala.collection.immutable.Nil.::[scala.collection.immutable.List[scala.Any]](((scala.collection.immutable.Nil): scala.collection.immutable.List[scala.Any]));
       val x_103 = meta.runtime.RequestMessage.apply(x_99, x_100, false, x_101, x_102);
       val x_104 = x_103.sessionId;
@@ -296,13 +296,13 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
     }
     (sendMessages.toList, 1)
   }
-  
+
   override def handleNonblockingMessage(m: meta.runtime.RequestMessage): Unit = {
     val args = m.argss.flatten
     val response = m.methodInfo match {
       case Right(x) => {
         x match {
-          case 0 => wrapper_inc(args)
+          case 15 => wrapper_inc(args)
         }
       }
       case Left(x) => println("For staged implementation only")
@@ -314,8 +314,8 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
       // first entry, save the current IR to reflectionIR
       unblockFlag_15 = true
 
-      if (reflectionIR_25 == -1){
-        reflectionIR_25 = positionVar_16
+      if (reflectionIR_76 == -1){
+        reflectionIR_76 = positionVar_16
         positionVar_16 = new_ir
       }
 
@@ -325,13 +325,13 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
 
       // reset instruction register when finishes processing
       if (positionVar_16 > 13) {
-        positionVar_16 = reflectionIR_25
-        reflectionIR_25 = -1
+        positionVar_16 = reflectionIR_76
+        reflectionIR_76 = -1
       }
       this
     }
     
-override def stateClone(): CounterSim = {
+override def SimClone(): CounterSim = {
   val newAgent = new CounterSim(n)
   newAgent.state = state
   newAgent

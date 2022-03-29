@@ -169,7 +169,7 @@ class Actor extends Serializable {
     ???
   }
 
-  def stateClone(): Actor = {
+  def SimClone(): Actor = {
     this
   }
 

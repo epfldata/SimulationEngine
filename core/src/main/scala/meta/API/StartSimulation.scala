@@ -19,7 +19,7 @@ object StartSimulation {
     (1 to duration).map(_ => {
       val res: SimulationSnapshot = apply(stepConf)(runner)
       stepConf = stepConf.copy(actors = res.sims, messages=res.messages)
-      SimulationSnapshot(res.sims.map(x => x.stateClone()), List())
+      SimulationSnapshot(res.sims.map(x => x.SimClone()), List())
     }).toList
   }
 }
