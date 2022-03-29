@@ -52,6 +52,7 @@ class CreateCode(initCode: String,
     this.typesReplaceWith = updateTypesToReplace(compiledActorGraphs)
 
     for (cAG <- this.compiledActorGraphs) {
+      GeneratedMethods(cAG, methodsIdMap, methodsMap, this)
       prepareClass(cAG)
     }
 
@@ -76,8 +77,7 @@ class CreateCode(initCode: String,
 
     // GraphDrawing.drawGraph(compiledActorGraph.graph, s"${self_name.values.toList}_prepareClass")
     val memorySize: Int = commands.length 
-
-    println(s"Compiled Sim ${compiledActorGraph.name} has states: ${memorySize}")
+    GeneratedMethods.totalStates = memorySize
 
     val codeWithInit = this.generateVarInit(
       compiledActorGraph.variables2,
@@ -131,26 +131,11 @@ class CreateCode(initCode: String,
     // get the reference to memory
     val memAddr: String = parts(1).split(" = ").head.trim().split(" ").find(x => x.startsWith("commands_")).get 
 
+    GeneratedMethods.memAddr = memAddr
+
     val instructionRegister: String = instRegMap(actorName)
     
-  //   // set the IR and return the previous IR 
-  //   val getIR: String = s"""
-  // override def getInstructionPointer: Int = {
-  //   ${instructionRegister}
-  // }
-  // """
-
-  //   val setIR: String = s"""
-  // override def setInstructionPointer(new_ir: Int) = {
-  //   if (new_ir >= ${memorySize} || new_ir <0) {
-  //     throw new Exception("Invalid address pointer " + new_ir + " for agent " + id)
-  //   }
-  //   val prev_ir: Int = ${instructionRegister}
-  //   ${instructionRegister} = new_ir
-  //   this
-  // }
-  // """
-
+    GeneratedMethods.instructionRegister = instructionRegister
     // "classname_" is for merging optimization
     // Add to resolve package object
     this.typesReplaceWith = ("\\.package\\.", "\\.`package`\\.") :: this.typesReplaceWith
@@ -232,58 +217,10 @@ class CreateCode(initCode: String,
     }
     """
 
-    val run_until: String = s"""
-  override def run(msgs: List[meta.runtime.Message]): (List[meta.runtime.Message], Int) = {
-    addReceiveMessages(msgs)
-    sendMessages.clear()
-    ${unblockRegMap(actorName)} = true
-    while (${unblockRegMap(actorName)} && (${instructionRegister} < ${memorySize})) {
-      ${memAddr}(${instructionRegister})()
-    }
-    (sendMessages.toList, 1)
-  }
-  """
-
-    val parameters: String = compiledActorGraph.actorTypes.flatMap(actorType => {
-      actorType.states.filter(x => x.parameter).map(s => {
-        if (s.mutable) {
-          s"var ${s.name}: ${changeTypes(s.tpeRep)}"
-        } else {
-          s"val ${s.name}: ${changeTypes(s.tpeRep)}"
-        }
-      })
-    }).mkString(", ")
-    
-    val parameterApplication: String = {
-      compiledActorGraph.actorTypes.flatMap(actorType => {
-        actorType.states.filter(x => x.parameter).map(s => {
-          s.name
-        })
-      }).mkString(", ")
-    }
-
-    val cloneString: String = 
-s"""
-override def stateClone(): ${compiledActorGraph.name} = {
-  val newAgent = new ${compiledActorGraph.name}(${parameterApplication})
-  ${compiledActorGraph.actorTypes.flatMap(actorType => {
-      actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
-        s"newAgent.${s.name} = ${s.name}"  
-      })
-    }).mkString("  \n")}
-  newAgent
-}
-"""
-
-    def parents: String = {
-      var parentNames: List[String] = compiledActorGraph.parentNames
-
-      if (!parentNames.contains("meta.runtime.Actor")) {
-        parentNames = "meta.runtime.Actor" :: parentNames 
-      } 
-        
-      s"${parentNames.head}${parentNames.tail.foldLeft("")((a,b) => a + " with " + changeTypes(b))}"
-    }
+    val run_until: String = runUntil.run()
+    val parameters: String = parametersString.run()
+    val cloneString: String = cloneAgent.run()
+    def parents: String = parentString.run()
 
     val methods: String = s"${methodss}${run_until}${handleMsg}${gotoHandleMsg}${cloneString}"
 
