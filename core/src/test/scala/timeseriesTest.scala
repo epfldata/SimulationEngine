@@ -54,19 +54,17 @@ class timeseriesTest extends FlatSpec {
     "Recording counter agents" should "reflect the state of agents" in {
         val agents = generated.meta.test.timeseries.InitData()
         val c = new SimulationConfig(agents, 5)
+        // select only the state of counters
+        val eval: List[Actor] => List[Int] = (agents) => agents.map(_.asInstanceOf[generated.meta.test.timeseries.CounterSim].state)
 
-        val r = StartSimulation.record[BaseMessagingLayer.type](c)
-        val timeseries = r.map(x => x.sims.map(_.asInstanceOf[generated.meta.test.timeseries.CounterSim]))
-        val state_timeseries = timeseries.map(_.map(_.state))
-        val secrete_timeseries = timeseries.map(_.map(_.immutableSecret))
+        val timeseries = StartSimulation.runAndEval[BaseMessagingLayer.type, List[Int]](c)(eval)
 
+        println(timeseries)
         // Record each time stamp
         assert(timeseries.length == 5)
         // Initial states
-        assert(state_timeseries(0).forall(_ == 1))
+        assert(timeseries(0).forall(_ == 1))
         // Final states 
-        assert(state_timeseries.last.filter(_ == 5).length == 2)
-        // Secrete should remain unchanged
-        assert(secrete_timeseries.forall(x => x.forall(_ == 10)))
+        assert(timeseries.last.filter(_ == 5).length == 2)
     }
 }
