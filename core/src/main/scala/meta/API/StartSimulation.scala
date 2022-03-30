@@ -15,7 +15,7 @@ object StartSimulation {
     totalTime.toDouble/c.totalTurn
   }
 
-  def runAndEval[T, K](c: SimulationConfig)(eval: (List[Actor], List[Message]) => K)(implicit runner: SimsRunner[T]): List[K] = {
+  def runAndEval[R, T](c: SimulationConfig)(eval: (List[Actor], List[Message]) => T)(implicit runner: SimsRunner[R]): List[T] = {
     val duration: Int = c.totalTurn
     var stepConf: SimulationConfig = c.copy(totalTurn=1)
     (1 to duration).map(_ => {
@@ -25,7 +25,11 @@ object StartSimulation {
     }).toList
   }
 
-  def runAndEvalOpt[T, K](c: SimulationConfig)(eval: (List[Actor], List[Message]) => K)(implicit runner: SimsRecorder[T]): List[K] = {
-    runner.runAndEval[K](c)(eval)
+  def runAndEvalOpt[R, T](c: SimulationConfig)(eval: (List[Actor], List[Message]) => T)(implicit runner: SimsRecorder[R]): List[T] = {
+    runner.runAndEval[T](c)(eval)
+  }
+
+  def runAndReduce[R, K, T](c: SimulationConfig)(mapper: Actor=>K, reducer: List[K]=>T)(implicit runner: SimsMapReduceRecorder[R]): List[T] = {
+    runner.runAndEval[K, T](c)(mapper, reducer)
   }
 }

@@ -53,6 +53,17 @@ s"""
     }
 }
 
+case object runAndEval extends GeneratedMethods {
+    import GeneratedMethods._
+    override def run(): String = {
+s"""
+  override def runAndEval[K](msgs: List[meta.runtime.Message], mapper: meta.runtime.Actor => K): ((List[meta.runtime.Message], Int), K) = {
+    (run(msgs), mapper(this))
+  }
+"""
+    }
+}
+
 case object parametersString extends GeneratedMethods {
     import GeneratedMethods._
 

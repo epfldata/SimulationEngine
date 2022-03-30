@@ -169,6 +169,10 @@ class Actor extends Serializable {
     ???
   }
 
+  def runAndEval[K](messages: List[Message], mapper: Actor=>K): ((List[Message], Int), K) = {
+    ???
+  }
+
   def SimClone(): Actor = {
     this
   }
