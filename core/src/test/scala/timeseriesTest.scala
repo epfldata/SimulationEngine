@@ -13,9 +13,10 @@ class CounterSim(val n: CounterSim) extends ActorWithMapper {
     var state: Int = 1
     val immutableSecret: Int = 10
 
-    def inc(): Unit = {
+    def inc(): Int = {
         // println(id + " processes inc message!")
         state = state + 1
+        0
     }
 
     def main(): Unit = {
@@ -144,5 +145,24 @@ class timeseriesTest extends FlatSpec {
         println("Time with a central eval is " + time1)
         println("Time using mapper and reducer is " + time2)
         // assert(time1 < time2)
+    }
+
+    "Push down eval with mapper and reducer" should "contain correct value for Akka" in {
+        val agents = generated.meta.test.timeseries.InitData()
+        val c = new SimulationConfig(agents, 5)
+        // select only the state of counters
+        val mapper: Actor => Int = (agent) => agent.asInstanceOf[generated.meta.test.timeseries.CounterSim].state
+        val reducer: List[Int] => List[Int] = (x) => x
+
+        val timeseries =
+            StartSimulation.runAndReduce[AkkaMessagingLayer.type, Int, List[Int]](c)(mapper, reducer)
+        
+        println(timeseries)
+        // Record each time stamp
+        assert(timeseries.length == 5)
+        // Initial states
+        assert(timeseries(0).forall(_ == 1))
+        // Final states 
+        assert(timeseries.last.filter(_ == 5).length == 2)
     }
 }
