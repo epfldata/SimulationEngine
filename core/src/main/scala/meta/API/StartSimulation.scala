@@ -26,10 +26,10 @@ object StartSimulation {
   }
 
   def runAndEvalOpt[R, T](c: SimulationConfig)(eval: (List[Actor], List[Message]) => T)(implicit runner: SimsRecorder[R]): List[T] = {
-    runner.runAndEval[T](c)(eval)
+    runner.run[T](c)(eval)
   }
 
   def runAndReduce[R, K, T](c: SimulationConfig)(mapper: Actor=>K, reducer: List[K]=>T)(implicit runner: SimsMapReduceRecorder[R]): List[T] = {
-    runner.runAndEval[K, T](c)(mapper, reducer)
+    runner.run[K, T](c)(mapper, reducer)
   }
 }

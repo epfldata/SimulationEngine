@@ -7,13 +7,13 @@ import meta.runtime.{Actor, Message}
  * Record a timeseries according to eval function 
  */
 trait SimsRecorder[MessagingLayer] {
-    def runAndEval[T](c: SimulationConfig)(eval: (List[Actor], List[Message]) => T): List[T]
+    def run[T](c: SimulationConfig)(eval: (List[Actor], List[Message]) => T): List[T]
 }
 
 object SimsRecorder {
     implicit val baseSimulation = {
         new SimsRecorder[BaseMessagingLayer.type] {
-            def runAndEval[T](c: SimulationConfig)(eval: (List[Actor], List[Message]) => T): List[T] = {
+            def run[T](c: SimulationConfig)(eval: (List[Actor], List[Message]) => T): List[T] = {
                 new BaseWithEval(c).run[T](eval)
             }
         }
