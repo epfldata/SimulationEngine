@@ -66,7 +66,7 @@ class BaseWithReducer(c: SimulationConfig) extends Base(c.actors, c.totalTurn, c
         val mx = collectedMessages.groupBy(_.receiverId)
         val collectAll = actors.filterNot(_.deleted).map(a => {
           val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
-          a.runAndEval(targetMessages, mapper)
+          a.asInstanceOf[ActorWithMapper].runAndEval(targetMessages, mapper)
         })
         val res = collectAll.map(_._1).foldLeft((List[Message](), 1))((a, b) => ((a._1 ::: b._1), if (a._2 > b._2) a._2 else b._2))
         collect()

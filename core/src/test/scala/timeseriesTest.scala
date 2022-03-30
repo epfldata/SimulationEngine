@@ -4,12 +4,12 @@ import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import meta.deep.IR.TopLevel.ClassWithObject
 import meta.deep.IR
-import meta.runtime.{Actor, Message}
+import meta.runtime.{ActorWithMapper,Actor, Message}
 import meta.API._
 import org.scalatest.FlatSpec
 
 @lift
-class CounterSim(val n: CounterSim) extends Actor {
+class CounterSim(val n: CounterSim) extends ActorWithMapper {
     var state: Int = 1
     val immutableSecret: Int = 10
 
@@ -34,22 +34,22 @@ class CounterSim(val n: CounterSim) extends Actor {
 class timeseriesTest extends FlatSpec {
     import meta.deep.IR.Predef._
 
-    "The counter agents" should "compile" in {
-        val liftMyClass: ClassWithObject[CounterSim] = CounterSim.reflect(IR)
-        val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
-                val s1 = new CounterSim(null)
-                val s2 = new CounterSim(s1)
-                val s3 = new CounterSim(s2)
-                List(s1, s2, s3)
-            }
-        }
+    // "The counter agents" should "compile" in {
+    //     val liftMyClass: ClassWithObject[CounterSim] = CounterSim.reflect(IR)
+    //     val liftedMain = meta.classLifting.liteLift {
+    //         def apply(): List[Actor] = {
+    //             val s1 = new CounterSim(null)
+    //             val s2 = new CounterSim(s1)
+    //             val s3 = new CounterSim(s2)
+    //             List(s1, s2, s3)
+    //         }
+    //     }
 
-        compileSims(List(liftMyClass), 
-            mainInit = Some(liftedMain), 
-            initPkgName = Some(this.getClass().getPackage().getName()),
-            destFolder = "core/src/test/scala/generated/timeseries/")
-    }
+    //     compileSims(List(liftMyClass), 
+    //         mainInit = Some(liftedMain), 
+    //         initPkgName = Some(this.getClass().getPackage().getName()),
+    //         destFolder = "core/src/test/scala/generated/timeseries/")
+    // }
 
     "Stepwise eval materialized from snapshots" should "contain correct value" in {
         val agents = generated.meta.test.timeseries.InitData()

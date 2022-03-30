@@ -169,10 +169,6 @@ class Actor extends Serializable {
     ???
   }
 
-  def runAndEval[K](messages: List[Message], mapper: Actor=>K): ((List[Message], Int), K) = {
-    ???
-  }
-
   def SimClone(): Actor = {
     this
   }
@@ -182,4 +178,10 @@ class Actor extends Serializable {
   def gotoHandleMessages(new_ir: Int = -1): Actor = ??? 
   
   def handleNonblockingMessage(m: RequestMessage): Unit = ??? 
+}
+
+class ActorWithMapper extends Actor {
+    def runAndEval[K](messages: List[Message], mapper: Actor=>K): ((List[Message], Int), K) = {
+        (run(messages), mapper(this))
+    }
 }
