@@ -26,6 +26,10 @@ object Dispatcher {
     final case object InitializeSims extends DispatcherEvent
     final case object RoundStart extends DispatcherEvent
     final case class RoundEnd(messages: List[Message], elapsedTime: Int) extends DispatcherEvent 
+}
+
+class Dispatcher {
+    import Dispatcher._
     
     private var totalAgents: Int = 0
     private var totalTurn: Int = 0
@@ -165,11 +169,11 @@ object SimExperiment {
             }
 
             if (cluster.selfMember.hasRole("Dispatcher")) {
-                ctx.spawn(Dispatcher(actors.size, totalTurn, messages), "dispatcher")
+                ctx.spawn((new Dispatcher).apply(actors.size, totalTurn, messages), "dispatcher")
             }
 
             if (cluster.selfMember.hasRole("Standalone")) {
-                ctx.spawn(Dispatcher(actors.size, totalTurn, messages), "dispatcher")
+                ctx.spawn((new Dispatcher).apply(actors.size, totalTurn, messages), "dispatcher")
                 actors.foreach(a => ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
             }
 
