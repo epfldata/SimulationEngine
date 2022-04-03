@@ -50,7 +50,7 @@ class NewSim2(val n: NewSim2) extends custActor {
             if (n != null){
                 n.someMtd()
             }
-            waitLabel(Turn, 1)
+            waitAndReply(1)
         }
     }
 }

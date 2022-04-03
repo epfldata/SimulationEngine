@@ -35,14 +35,12 @@ class Cell(var alive: Boolean, var cfreq: Int) extends AgentWithNeighbors {
             futures = connectedAgents.map(x => x._2.asInstanceOf[Cell]).toList.map(v => asyncMessage(() => v.getValue))
 
             while (!(futures.nonEmpty && futures.forall(x => x.isCompleted))) {
-                waitLabel(Turn, 1)
+                waitAndReply(1)
             }
 
             val ans: List[Boolean] = futures.map(o => o.popValue.get).asInstanceOf[List[Boolean]]
-
             rule(ans)
-
-            waitLabel(Turn, cfreq)
+            waitAndReply(cfreq)
         }
     }
 }

@@ -13,10 +13,13 @@ class Server(var syncPeriod: Int, var batchMessages: Int) extends Actor {
     var elapsed: Int = 0
 
     def get(): String = {
+        // println("Server get mtd")
         content.toString()
     }
 
     def post(id: AgentId, newContent: String): Unit = {
+        // println("Post to server")
+
         if (content.get(id).isEmpty) {
             content(id) = newContent
         } else {
@@ -26,6 +29,7 @@ class Server(var syncPeriod: Int, var batchMessages: Int) extends Actor {
     }
 
     def sync(c: Map[AgentId, String]): Unit = {
+        // println("Server sync")
         c.foreach(x => {
             post(x._1, x._2)
         })
@@ -33,8 +37,7 @@ class Server(var syncPeriod: Int, var batchMessages: Int) extends Actor {
 
     def main(): Unit = {
         while (true) {
-            handleMessages()
-            waitLabel(Turn, 1)
+            waitAndReply(1)
             elapsed = elapsed + 1
             if (elapsed >= syncPeriod){
                 var batchCounter: Int = 1

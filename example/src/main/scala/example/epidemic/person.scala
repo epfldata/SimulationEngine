@@ -53,7 +53,7 @@ class Person(val age: Int) extends Actor {
                         .map(x => asyncMessage[Boolean](() => x.makeContact(selfRisk)))
 
                 while (f.exists(x => !x.isCompleted)){
-                    waitLabel(Turn, 1)
+                    waitAndReply(1)
                 }
                 val affected = f.map(x => x.popValue.get).exists(e => e == true)
                 if (affected && health == "Susceptible") {
@@ -70,9 +70,9 @@ class Person(val age: Int) extends Actor {
                         daysInfected = daysInfected + 1
                     }
                 }
-                waitLabel(Turn, 1)
+                waitAndReply(1)
             } else {
-                waitLabel(Turn, 1)
+                waitAndReply(1)
             }
         }
     }

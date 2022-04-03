@@ -35,7 +35,7 @@ class Person(val world: WorldMap,
         neighborViews = neighbors.map(x => asyncMessage(() => x.getView()))
 
         while (!neighborViews.forall(_.isCompleted)){
-          waitLabel(Turn, 1)
+          waitAndReply(1)
         }
 
         neighborViews.map(x => x.popValue.get.asInstanceOf[Int]).foreach(n => {
@@ -57,7 +57,7 @@ class Person(val world: WorldMap,
         if (unhappy){
           location = world.move(location)
         }
-        waitLabel(Turn, 1)
+        waitAndReply(1)
       }
     }
 }

@@ -16,7 +16,7 @@ class NewSim() extends Actor {
             println("This is agent " + id)
             val c = new NewSim()
             println("Create new agent " + c.id)
-            waitLabel(Turn, 1)
+            waitAndReply(1)
         }
     }
 }

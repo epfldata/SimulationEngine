@@ -53,7 +53,7 @@ class Cell(var identity: watorCell, var cfreq: Int) extends AgentWithNeighbors {
                 peekNeighbors = connectedAgents.map(x => x._2.asInstanceOf[Cell]).toList.map(v => asyncMessage[(Long, watorCell)](() => v.getIdentity))
 
                 while (!(peekNeighbors.nonEmpty && peekNeighbors.forall(x => x.isCompleted))) {
-                    waitLabel(Turn, 1)
+                    waitAndReply(1)
                 }
 
                 val neighborIds = peekNeighbors.map(i => i.popValue.get).asInstanceOf[List[(Long, watorCell)]]
@@ -96,7 +96,7 @@ class Cell(var identity: watorCell, var cfreq: Int) extends AgentWithNeighbors {
 
                         // println(id + " tries to swim to nearby water!")
                         while (!tryMoving.isCompleted) {
-                            waitLabel(Turn, 1)
+                            waitAndReply(1)
                         }
 
                         val relocateSuccess: Boolean = tryMoving.popValue.get
@@ -124,7 +124,7 @@ class Cell(var identity: watorCell, var cfreq: Int) extends AgentWithNeighbors {
                         tryMoving = asyncMessage[Boolean](() => targetCell.relocate(identity))
 
                         while (!tryMoving.isCompleted) {
-                            waitLabel(Turn, 1)
+                            waitAndReply(1)
                         }
 
                         // If the agent has moved but no one moved to this place, reset it
@@ -152,7 +152,9 @@ class Cell(var identity: watorCell, var cfreq: Int) extends AgentWithNeighbors {
                 identity.age = identity.age + 1
             }
 
-            waitLabel(Turn, cfreq)
+
+            waitAndReply(cfreq)
+
             isReserved = false
         }
     }

@@ -10,11 +10,8 @@ import meta.classLifting.SpecialInstructions._
 class WorldMap(val width: Int, val height: Int) extends Actor {
 
     val similarities: Map[Int, Double] = Map[Int, Double]()
-
     val world: Map[Int, Long] = Map[Int, Long]()
-
     val freeSpots: ListBuffer[Int] = ListBuffer[Int]()
-
     var totalReports: Int = 0
     var segregationLevel: Double = 0
 
@@ -26,7 +23,6 @@ class WorldMap(val width: Int, val height: Int) extends Actor {
     // Given a location index, return the list of neighbor ids
     def getNeighbors(loc: Int): List[Long] = {
         val neighborLocations: List[Int] = lib.Grid.Torus2D.getNeighborCells(width, height)(loc, 1)
-
         neighborLocations.filter(x => world.get(x).isDefined).map(x => world(x))
     }
 
@@ -51,14 +47,11 @@ class WorldMap(val width: Int, val height: Int) extends Actor {
         freeSpots.appendAll(Range(0, width*height).toList)
 
         while(true){
-            
             if (similarities.size > 0) {
                 segregationLevel = similarities.values.sum / similarities.size
-
                 println("Segregation level " + segregationLevel)
             }
-
-            waitLabel(Turn,1)
+            waitAndReply(1)
         }
     }
 }

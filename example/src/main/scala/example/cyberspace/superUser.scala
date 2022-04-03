@@ -12,7 +12,6 @@ class SuperUser(var server: Server) extends Actor {
         while (true) {
             server.get()
             server.post(id, "")
-            // waitLabel(Turn, 1)
         }
     }
 }

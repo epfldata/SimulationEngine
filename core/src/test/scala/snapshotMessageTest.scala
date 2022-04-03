@@ -15,7 +15,7 @@ class Sender(val r: Receiver) extends Actor {
     def main(): Unit = {
         while (true){
             asyncMessage(() => r.rpc1())
-            waitLabel(Turn, 1)
+            waitAndReply(1)
         }
     }
 }
@@ -29,7 +29,7 @@ class Receiver() extends Actor {
 
     def main(): Unit = {
         while (true){
-            waitLabel(Turn, 1)
+            waitAndReply(1)
         }
     }
 }

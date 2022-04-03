@@ -14,7 +14,6 @@ class Participant(var server: Server) extends Actor {
             if (Random.nextInt(10)==1){
                 server.post(id, "")
             }
-            // waitLabel(Turn, 1)
         }
     }
 }

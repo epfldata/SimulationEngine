@@ -27,7 +27,7 @@ class CounterSim(val n: CounterSim) extends ActorWithMapper {
             }
             handleMessages()
             // println(id + " counter value is " + state)
-            waitLabel(Turn, 1)
+            waitAndReply(1)
         }
     }
 }
