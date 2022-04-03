@@ -31,6 +31,12 @@ object SpecialInstructions {
     * @param waitValue the amount to wait for. At each iteration, the runtime calculates the min wait value among Sims; each Sim subtracts this min value. When the wait value reaches 0, Sim unblocks and continues
     */
   def waitLabel(label: waitMode, waitValue: Double): Unit = ???
+  
+  /**
+    * Waits for total turns. At each turn, process all messages
+    * @param turn Total number of turns. Only support one wait mode
+    */
+  def waitAndReply(turn: Double): Unit = ???
 
   /**
     * The syntax for sending an asynchronous message.

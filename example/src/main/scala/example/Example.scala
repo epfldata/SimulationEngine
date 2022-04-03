@@ -15,7 +15,7 @@ package object example {
 
   type ClassWithObject[T] = meta.deep.IR.TopLevel.ClassWithObject[T]
 
-  val compileSims = meta.compile.compileSims
+  val compileSims = meta.API.compileSims
 
   // Common imports from Scala libraries
   type ListBuffer[T] = scala.collection.mutable.ListBuffer[T]

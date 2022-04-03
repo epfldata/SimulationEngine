@@ -21,25 +21,18 @@ import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.NoSerializationVerificationNeeded
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
 
-object Dispatcher {
-    sealed trait DispatcherEvent extends NoSerializationVerificationNeeded
-    final case object InitializeSims extends DispatcherEvent
-    final case object RoundStart extends DispatcherEvent
-    final case class RoundEnd(messages: List[Message], elapsedTime: Int) extends DispatcherEvent 
-}
-
-class Dispatcher {
+class DispatcherWithReducer[K, T] {
     import Dispatcher._
     
     private var totalAgents: Int = 0
     private var totalTurn: Int = 0
     private var currentTurn: Int = 0
 
-    private var agentsAddMessages: Set[ActorRef[SimAgent.AddMessages]] = Set()
+    private var agentsAddMessages: Set[ActorRef[SimAgentWithMapper.AddMessages]] = Set()
 
     val msgBuffer: ListBuffer[Message] = ListBuffer[Message]()
 
-    def apply(maxAgents: Int, maxTurn: Int, messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
+    def apply(maxAgents: Int, maxTurn: Int, messages: List[Message], mapper: Actor=>K, reducer: List[K]=> T): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
         totalAgents = maxAgents
         totalTurn = maxTurn
         currentTurn = 0
@@ -47,7 +40,7 @@ class Dispatcher {
         msgBuffer.appendAll(messages)
 
         val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
-            case SimAgent.AgentServiceKey1.Listing(agents) =>
+            case SimAgentWithMapper.AgentServiceKey1.Listing(agents) =>
                 if (agents.size == totalAgents) {
                     ctx.log.debug("Sims are initialized!")
                     agentsAddMessages = agents
@@ -57,39 +50,40 @@ class Dispatcher {
                 } 
         } 
 
-        ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey1, subscriptionAdapter)
-        dispatcher()
+        ctx.system.receptionist ! Receptionist.Subscribe(SimAgentWithMapper.AgentServiceKey1, subscriptionAdapter)
+        dispatcher(mapper, reducer)
     }
 
-    def dispatcher(): Behavior[DispatcherEvent] = 
+    def dispatcher(mapper: Actor=>K, reducer: List[K]=>T): Behavior[DispatcherEvent] = 
         Behaviors.receive[DispatcherEvent] { (ctx, message) => 
             message match { 
                 case InitializeSims =>
-                    dispatcher()
+                    dispatcher(mapper, reducer)
 
                 case RoundStart => {
                     ctx.log.info(f"Round ${currentTurn}")
                     ctx.spawnAnonymous(
-                        Aggregator[SimAgent.MessagesAdded, RoundEnd](
+                        Aggregator[SimAgentWithMapper.MessagesAdded, RoundEnd](
                             sendRequests = { replyTo =>
                                 agentsAddMessages.map(a => {
-                                    a ! SimAgent.AddMessages(msgBuffer.toList, replyTo)
+                                    a ! SimAgentWithMapper.AddMessages(msgBuffer.toList, replyTo)
                                 })
                             },
                             expectedReplies = totalAgents,
                             ctx.self,
                             aggregateReplies = replies => {
-                                val ans = replies.foldLeft((List[Message](), 1))((a, b) => ((a._1 ::: b.messages), if (a._2 > b.elapsedTime) a._2 else b.elapsedTime))
+                                val ans = replies.foldLeft((List[Message](), 1, List[Any]()))((a, b) => ((a._1 ::: b.messages), if (a._2 > b.elapsedTime) a._2 else b.elapsedTime, b.mapperResult :: a._3))
+                                SimExperimentWithTimeseries.recording.append(reducer(ans._3.asInstanceOf[List[K]]))
                                 RoundEnd(ans._1, ans._2)
                             },
                             timeout=10.seconds))
-                    dispatcher()
+                    dispatcher(mapper, reducer)
                 }
 
                 case RoundEnd(messages: List[Message], elapsedTime: Int) =>
                     // Add new agents to the system 
                     val newAgents = SimRuntime.newActors.map(a => 
-                        ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
+                        ctx.spawn((new SimAgentWithMapper).apply(a.asInstanceOf[ActorWithMapper], mapper), f"simAgent${a.id}"))
                     totalAgents += newAgents.size
                     ctx.log.debug(f"Total agents in the system ${totalAgents}")
 
@@ -108,13 +102,13 @@ class Dispatcher {
                         if (newAgents.size == 0) {
                             ctx.self ! RoundStart
                         }
-                        dispatcher()
+                        dispatcher(mapper, reducer)
                     }
             }
         }
 }
 
-object SimAgent {
+object SimAgentWithMapper {
     val AgentServiceKey1 = ServiceKey[AddMessages]("SimAgent")
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
@@ -123,30 +117,30 @@ object SimAgent {
         new JsonSubTypes.Type(value = classOf[MessagesAdded], name = "messagesAdded")))
     sealed trait AgentEvent extends JsonSerializable
     final case class AddMessages(messages: List[Message], replyTo: ActorRef[MessagesAdded]) extends AgentEvent
-    final case class MessagesAdded(messages: List[Message], elapsedTime: Int) extends AgentEvent
+    final case class MessagesAdded(messages: List[Message], elapsedTime: Int, mapperResult: Any) extends AgentEvent
 }
 
-class SimAgent {
-    import SimAgent._
+class SimAgentWithMapper[K] {
+    import SimAgentWithMapper._
 
-    private var sim: Actor = null
+    private var sim: ActorWithMapper = null
 
-    def apply(sim: Actor): Behavior[AgentEvent] = 
+    def apply(sim: ActorWithMapper, mapper: Actor=>K): Behavior[AgentEvent] = 
         Behaviors.setup { ctx =>
             ctx.log.debug("Register agent with receptionist")
             ctx.system.receptionist ! Receptionist.Register(AgentServiceKey1, ctx.self)
             this.sim = sim
-            simAgent()
+            simAgent(mapper)
         }
 
-    private def simAgent(): Behavior[AgentEvent] =
+    private def simAgent(mapper: Actor=>K): Behavior[AgentEvent] =
         Behaviors.receive[AgentEvent] { (ctx, message) =>
             message match {
                 case AddMessages(messages, replyTo) => 
-                    val agentAPI = sim.run(messages.filter(m => sim.proxyIds.contains(m.receiverId)))
-                    val sentMessages = agentAPI._1
-                    val elapsedTime = agentAPI._2
-                    replyTo ! MessagesAdded(sentMessages, elapsedTime)
+                    val agentAPI = sim.runAndEval[K](messages.filter(m => sim.proxyIds.contains(m.receiverId)), mapper)
+                    val sentMessages = agentAPI._1._1
+                    val elapsedTime = agentAPI._1._2
+                    replyTo ! MessagesAdded(sentMessages, elapsedTime, agentAPI._2)
                     Behaviors.same
             }
         }.receiveSignal {
@@ -157,32 +151,33 @@ class SimAgent {
         }
 }
 
-object SimExperiment {
-    def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[NotUsed] = 
+object SimExperimentWithTimeseries {
+    val recording: ListBuffer[Any] = new ListBuffer[Any]()
+
+    def apply[K, T](totalTurn: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message], mapper: Actor=>K, reducer: List[K]=>T): Behavior[NotUsed] = 
         Behaviors.setup { ctx => 
             val cluster = Cluster(ctx.system)
 
             if (cluster.selfMember.hasRole("Sims")) {
                 actors.foreach(a => {
-                    ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}")
+                    ctx.spawn((new SimAgentWithMapper[K]).apply(a.asInstanceOf[ActorWithMapper], mapper), f"simAgent${a.id}")
                 })
             }
 
             if (cluster.selfMember.hasRole("Dispatcher")) {
-                ctx.spawn((new Dispatcher).apply(actors.size, totalTurn, messages), "dispatcher")
+                ctx.spawn((new DispatcherWithReducer).apply(actors.size, totalTurn, messages, mapper, reducer), "dispatcher")
             }
 
             if (cluster.selfMember.hasRole("Standalone")) {
-                ctx.spawn((new Dispatcher).apply(actors.size, totalTurn, messages), "dispatcher")
-                actors.foreach(a => ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
+                ctx.spawn((new DispatcherWithReducer).apply(actors.size, totalTurn, messages, mapper, reducer), "dispatcher")
+                actors.foreach(a => ctx.spawn((new SimAgentWithMapper[K]).apply(a.asInstanceOf[ActorWithMapper], mapper), f"simAgent${a.id}"))
             }
 
             Behaviors.empty
         }
 }
 
-object AkkaRun {
-
+class AkkaTimeseriesRun[K, T] {
     private val stoppedAgents: ListBuffer[Actor] = ListBuffer[Actor]()
     var lastWords: List[Message] = List()
 
@@ -195,21 +190,20 @@ object AkkaRun {
         lastWords = List()
     }
 
-    def apply(actors: List[Actor], totalTurn: Int, staged: Boolean=false, messages: List[Message], 
-            role: String= "Standalone", port: Int = 25251): SimulationSnapshot = {
+    def apply(actors: List[Actor], totalTurn: Int, staged: Boolean=false, messages: List[Message], role: String= "Standalone", port: Int = 25251, mapper: Actor=>K, reducer: List[K]=>T): List[T] = {
         def startup(role: String, port: Int): Unit ={
             val config = ConfigFactory.parseString(s"""
                 akka.remote.artery.canonical.port=$port
                 akka.cluster.roles = [$role]
                 """).withFallback(ConfigFactory.load("application"))
-            val actorSystem = ActorSystem(SimExperiment(totalTurn, actors, staged, messages), "SimsCluster", config)
+            val actorSystem = ActorSystem(SimExperimentWithTimeseries(totalTurn, actors, staged, messages, mapper, reducer), "SimsCluster", config)
             Await.ready(actorSystem.whenTerminated, 10.days)
         }
-        initialize()    
+        initialize()
         println("Simulation starts!")
         startup(role, port)
         println("Simulation ends!")
         // Actor.reset 
-        SimulationSnapshot(stoppedAgents.toList, lastWords)
+        SimExperimentWithTimeseries.recording.toList.asInstanceOf[List[T]]
     }
 }

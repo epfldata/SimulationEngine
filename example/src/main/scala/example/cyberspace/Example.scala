@@ -39,5 +39,5 @@ object Example extends App {
 
   val mainClass = MainInit.liftedMain
     
-  compileSims(List(cls1, cls2, cls3, cls4), Some(mainClass))
+  compileSims(List(cls4, cls1, cls2, cls3), Some(mainClass))
 }

@@ -16,7 +16,6 @@ import meta.runtime.ResponseMessage
   * @param positionStack a list of positionStack, one for each original actortype
   * @param returnValue a list of returnValue, one for each original actortype
   * @param responseMessage a list of responseMessage, one for each original actortype
-//  * @param responseMessagess a list of a map of responseMessagess, one for each original actortype
   */
 case class CompiledActorGraph(
     var name: String,

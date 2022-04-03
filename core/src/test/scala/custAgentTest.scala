@@ -7,7 +7,6 @@ import meta.deep.IR
 import meta.runtime._
 import meta.API._
 import org.scalatest.FlatSpec
-import meta.compile._
 
 // A test that shows how users can override methods in Actor for debugging or other purposes
 trait custActor extends Actor {
@@ -51,7 +50,7 @@ class NewSim2(val n: NewSim2) extends custActor {
             if (n != null){
                 n.someMtd()
             }
-            waitLabel(Turn, 1)
+            waitAndReply(1)
         }
     }
 }

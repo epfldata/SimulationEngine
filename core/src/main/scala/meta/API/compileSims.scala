@@ -1,4 +1,4 @@
-package meta.compile 
+package meta.API 
 
 object compileSims {
   import meta.classLifting.Lifter

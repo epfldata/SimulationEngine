@@ -7,7 +7,6 @@ import meta.deep.IR
 import meta.runtime.{Actor}
 import meta.API._
 import org.scalatest.FlatSpec
-import meta.compile._
 
 @lift
 class NewSim() extends Actor {
@@ -17,7 +16,7 @@ class NewSim() extends Actor {
             println("This is agent " + id)
             val c = new NewSim()
             println("Create new agent " + c.id)
-            waitLabel(Turn, 1)
+            waitAndReply(1)
         }
     }
 }

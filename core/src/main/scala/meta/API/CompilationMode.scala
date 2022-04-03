@@ -1,6 +1,4 @@
-package meta.compile 
-
-import meta.runtime.Actor 
+package meta.API 
 
 sealed abstract class CompilationMode {
     def setPackage(name: Map[String, String]): Unit  

@@ -58,8 +58,7 @@ class Country(val hospitalCapacity: Int) extends Actor {
       }
       totalInfected = 0
       totalHospitalized = 0
-      handleMessages()
-      waitLabel(Turn, 1)
+      waitAndReply(1)
     }
   }
 }

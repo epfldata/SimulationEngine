@@ -339,6 +339,29 @@ class Lifter {
                   DoWhile(code"$waitCounter < $y",
                     LetBinding(Some(waitCounter),
                               ScalaCode(code"${waitCounter} + 1"),
+                              Wait()
+                              ))).asInstanceOf[Algo[T]]
+
+          cache += (cde -> f)
+          f
+
+        case code"SpecialInstructions.waitAndReply($y: Double)" =>
+          val waitCounter = Variable[Double]
+          y match {
+            case code"${Const(n)}: Double" =>
+              if (n <= 0) {
+                throw new Exception("The waitLabel takes a positive value!")
+              }
+            case _ =>   //  If variable turn number, skip the check
+          }
+
+          val f =
+                LetBinding(
+                  Some(waitCounter),
+                  ScalaCode(code"0.0"),
+                  DoWhile(code"$waitCounter < $y",
+                    LetBinding(Some(waitCounter),
+                              ScalaCode(code"${waitCounter} + 1"),
                               LetBinding(None, 
                                 Wait(), 
                                 CallMethod[Unit](handleMessageId, List(List()))
@@ -481,14 +504,15 @@ class Lifter {
                     false
                   }"""),
                   IfThenElse(code"$convertLocal",
-                    ScalaCode(cde),
+                    ScalaCode(cde), // If convert local, then call directly
                     Send[T](actorSelfVariable.toCode,
                     recipientActorVariable,
                     methodsIdMap(methodName),
                     argss, true))
                 )
             } else {
-              ScalaCode(cde)
+              // ScalaCode(cde)
+              CallMethod[T](methodsIdMap(methodName), argss)
             }
             cache += (cde -> f)
             f 
@@ -536,48 +560,13 @@ class Lifter {
             if (m.symbol.endsWith(".main")) {
               new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), true)
             } else if (blockingAnalysis(cde, m.symbol)) {
-              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol), mtd.blocking)
+              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), true)
             } else {
-              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol), mtd.blocking)
+              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol), false)
             }
         }
       }
     }
-
-    // /**
-    //  * This method analyses whether a method body contains a special instruction or method call. We also issue warnings about possible programmer mistakes. 
-    //  */
-    // def preLiftAnalyse(cde: OpenCode[_], mtdName: String): Boolean = {
-    //   var containWaits: Boolean = false 
-    //   var processMessages: Boolean = false 
-    //   var issueCalls: Boolean = false 
-    //   val isMain: Boolean = mtdName.endsWith(".main")
-
-    //   cde analyse {
-    //     case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" => 
-    //       containWaits = true 
-    //     case code"SpecialInstructions.handleMessages()" => 
-    //       processMessages = true 
-    //     case code"SpecialInstructions.asyncMessage[$mt]((() => {${MethodApplication(msg)}}: mt))" => 
-    //       issueCalls = true 
-    //     case code"${MethodApplication(ma)}:Any " => 
-    //       if (methodsIdMap.get(ma.symbol.toString()).isDefined){
-    //         issueCalls = true 
-    //       }
-    //   }
-
-    //   // In general, Main should contain both wait and handleMessages 
-    //   if (isMain && !(containWaits && processMessages)) {
-    //     warning(s"Main ${mtdName} does not contain wait or handleMessages!")
-    //   }
-
-    //   // In most cases, we don't want to have handleMessages in any regular method 
-    //   if (!isMain && processMessages) {
-    //     warning(s"Method ${mtdName} contains handleMessages!")
-    //   }
-      
-    //   containWaits || processMessages || issueCalls 
-    // }
 
     /** Used for operations that were not covered in [[liftCode]]. Lifts an [[OpenCode]](expression) into its deep representation [[Algo]]
       *
@@ -663,6 +652,8 @@ class Lifter {
       }}).filter(x => x!=None).toList.map(x => x.get)
     endMethods = endMethods ::: addedSSOMtd.map(m => {liftMethod(m)(cache)})
     val handleMsg = addHandleMessageMtd()
+
+
     endMethods = handleMsg :: endMethods 
 
     ActorType[T](clasz.name,
@@ -683,25 +674,15 @@ class Lifter {
     val agentPath = mtdNameSegs.dropRight(1).mkString("\\.")
 
     cde analyse {
-      case code"SpecialInstructions.handleMessages()" =>
-        if (mtdSymbolNoPrefix != "main"){
-          throw new Exception(f"${mtdName} contains special instruction handleMessages!")
-        }
-      case code"SpecialInstructions.asyncMessage[$mt]((() => {${m@ MethodApplication(msg)}}: mt))" =>
-        if (mtdSymbolNoPrefix != "main"){
-          throw new Exception(f"${mtdName} contains special instruction asyncMessage!")
-        }
+      // case code"SpecialInstructions.handleMessages()" =>
+      //   if (mtdSymbolNoPrefix != "main"){
+      //     throw new Exception(f"${mtdName} contains special instruction handleMessages!")
+      //   }
       case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
-        println(f"${mtdName} is blocking!")
         return true
-      case code"${MethodApplication(ma)}:Any " => 
-        if (methodsIdMap.get(ma.symbol.toString()).isDefined && 
-        (agentPath != ma.symbol.toString.split("\\.").dropRight(1).mkString("\\."))){
-            println(f"${mtdName} is blocking!")
-            return true
-        }
+      case code"SpecialInstructions.waitAndReply($y: Double)" =>
+        return true
     }
-
     false
   }
 }
