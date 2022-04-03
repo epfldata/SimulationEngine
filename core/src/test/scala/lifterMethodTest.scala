@@ -47,7 +47,6 @@ class lifterMethodTest extends FlatSpec with org.scalatest.Matchers {
 
         val liftedMainClass = liftedRes._1.head.main
         // println(liftedMainClass)
-        assert(!liftedMainClass.toString.contains("blockingMtd"))
         assert(!liftedMainClass.toString.contains("SpecialInstructions"))
     }
 }
