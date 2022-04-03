@@ -11,35 +11,43 @@ import scala.util.Random
 import meta.runtime.Future
 
 @lift
-class MyClass2(var neighbor: MyClass2) extends Actor {
+class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
 
-    val c: String = "Hello"
-
-    def foo1(): Double = {
-        scala.util.Random.nextDouble()
-    }
-
-    def k(): Unit = {
-        asyncMessage[Double](() => neighbor.foo1())
+    def blockingMtd(): Boolean = {
+        println(id + " processes blocking mtd!")
+        waitLabel(Turn, 1)
+        println(id + " finishes processing!")
+        true
     }
 
     def main(): Unit = {
-        k()
-        asyncMessage[Double](() => neighbor.foo1())
-        println("Hello world!")
+        while (true){
+            println("Inside agent "+id)
+            if (n != null){
+                n.blockingMtd()
+            }
+            waitAndReply(1)
+        }
     }
 }
+
 
 class lifterMethodTest extends FlatSpec with org.scalatest.Matchers {
     import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 
-    val thrown = the [Exception] thrownBy {
-        val liftMyClass2: ClassWithObject[MyClass2] = MyClass2.reflect(IR)
-        new Lifter().apply(List(liftMyClass2)) 
-    }
+    "Lift a blocking method" should "compile" in {
+        val liftMyClass2: ClassWithObject[AgentWithBlockingCall] = AgentWithBlockingCall.reflect(IR)
+        val liftedRes = new Lifter().apply(List(liftMyClass2)) 
+        liftedRes._1.head.methods.foreach(x => {
+            // println(x.body + "\n===============\n")
+            assert(!x.body.toString.contains("blockingMtd"))
+            assert(!x.body.toString.contains("SpecialInstructions"))
+        })
 
-    "Use async message in a method" should "trigger an exception" in {
-        thrown.getMessage should endWith ("asyncMessage!")
+        val liftedMainClass = liftedRes._1.head.main
+        // println(liftedMainClass)
+        assert(!liftedMainClass.toString.contains("blockingMtd"))
+        assert(!liftedMainClass.toString.contains("SpecialInstructions"))
     }
 }
