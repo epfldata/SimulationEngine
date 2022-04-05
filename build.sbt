@@ -2,6 +2,8 @@ ThisBuild / organization := "ch.epfl.data"
 ThisBuild / scalaVersion := "2.12.8"
 ThisBuild / version := "1.3-SNAPSHOT"
 
+import com.trueaccord.scalapb.compiler.Version.scalapbVersion
+
 val project_name = "TickTalk"
 name := project_name
 
@@ -12,6 +14,7 @@ val squidVersion = "0.4.1-SNAPSHOT"
 val sparkVersion = "3.0.1"
 val graphVizVersion = "0.10.0"
 val akkaVersion = "2.6.14"
+val scalapbVersion = "1.0.6"
 
 run / fork := true
 
@@ -35,7 +38,7 @@ lazy val akkaSettings = Seq(
   libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3",
   libraryDependencies += "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
   libraryDependencies += "com.typesafe.akka" %% "akka-cluster-typed"         % akkaVersion,
-  libraryDependencies += "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion
+  libraryDependencies += "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion,
 )
 
 lazy val sparkSettings = Seq(
@@ -48,6 +51,15 @@ lazy val graphSettings = Seq(
   libraryDependencies += "guru.nidi" % "graphviz-java" % graphVizVersion,
 )
 
+lazy val protobufSettings = Seq(
+  libraryDependencies ++= Seq(
+    "com.trueaccord.scalapb" %% "scalapb-runtime" % "0.6.7" % "protobuf"
+  ),
+  Compile / PB.targets := Seq(
+    scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
+  )
+)
+
 lazy val noMessaging = (project in file("ecosim"))
   .settings(
     name := f"${project_name}-noMessaging",
@@ -56,7 +68,7 @@ lazy val noMessaging = (project in file("ecosim"))
 lazy val core = (project in file("core"))
   .settings(
     name := f"${project_name}-core",
-    commonSettings, squidSettings, graphSettings, akkaSettings, sparkSettings,
+    commonSettings, squidSettings, graphSettings, akkaSettings, sparkSettings, protobufSettings,
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
     Test / parallelExecution := false,
   )
