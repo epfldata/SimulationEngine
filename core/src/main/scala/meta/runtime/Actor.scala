@@ -180,7 +180,7 @@ class Actor extends Serializable {
   def handleNonblockingMessage(m: RequestMessage): Unit = ??? 
 }
 
-class ActorWithMapper extends Actor {
+trait ActorWithMapper extends Actor {
     def runAndEval[K](messages: List[Message], mapper: Actor=>K): ((List[Message], Int), K) = {
         (run(messages), mapper(this))
     }
