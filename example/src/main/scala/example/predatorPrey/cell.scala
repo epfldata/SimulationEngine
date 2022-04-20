@@ -1,6 +1,8 @@
 package example
 package predatorPrey
 
+import squid.quasi.lift
+import meta.classLifting.SpecialInstructions._
 import lib.Grid.AgentWithNeighbors
 
 object predatorPrey {

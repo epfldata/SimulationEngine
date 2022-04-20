@@ -1,6 +1,8 @@
 package example
 package graphAlgorithm.pageRank
 
+import meta.classLifting.SpecialInstructions._
+import squid.quasi.lift
 // Single-source shortest path
 @lift
 class Vertex(val isSource: Boolean) extends Actor {
