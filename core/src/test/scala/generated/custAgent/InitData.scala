@@ -8,14 +8,14 @@ object InitData  {
   scala.collection.immutable.List.apply[generated.meta.test.custAgent.NewSim2](x, y)
 } 
         
-          def wrapper(args: List[Int]): List[meta.runtime.Actor] = {
-            apply()
-          }
-          
-          def writeSchema(pw: java.io.PrintWriter): Unit = {
-            pw.write("")
-            pw.flush()
-          }
-          
+        def wrapper(args: List[Any]): List[meta.runtime.Actor] = {
+          apply()
+        }
+        
+        def writeSchema(pw: java.io.PrintWriter): Unit = {
+          pw.write("")
+          pw.flush()
+        }
+        
         
 }

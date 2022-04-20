@@ -1,9 +1,9 @@
 package generated.meta.test.newSim
 
-class NewSim () extends meta.runtime.Actor {
+class NewSim() extends meta.runtime.Actor {
 
 
-  private var  reflectionIR_14: Int = -1
+  private var  reflectionIR_35: Int = -1
   var resetData_0: scala.Any = null
   val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
   var resetData_2: meta.runtime.ResponseMessage = null
@@ -145,13 +145,13 @@ class NewSim () extends meta.runtime.Actor {
     }
     (sendMessages.toList, 1)
   }
-  
+
     override def gotoHandleMessages(new_ir: Int = 3): meta.runtime.Actor = {
       // first entry, save the current IR to reflectionIR
       unblockFlag_11 = true
 
-      if (reflectionIR_14 == -1){
-        reflectionIR_14 = positionVar_12
+      if (reflectionIR_35 == -1){
+        reflectionIR_35 = positionVar_12
         positionVar_12 = new_ir
       }
 
@@ -161,10 +161,16 @@ class NewSim () extends meta.runtime.Actor {
 
       // reset instruction register when finishes processing
       if (positionVar_12 > 6) {
-        positionVar_12 = reflectionIR_14
-        reflectionIR_14 = -1
+        positionVar_12 = reflectionIR_35
+        reflectionIR_35 = -1
       }
       this
     }
     
+override def SimClone(): NewSim = {
+  val newAgent = new NewSim()
+  
+  newAgent
+}
+
 }
