@@ -1,5 +1,5 @@
 package example
-package epidemic
+package epidemic.evalNPI
 
 import scala.util.Random
 import scala.collection.mutable.ListBuffer
@@ -8,13 +8,13 @@ object MainInit {
     val liftedMain = meta.classLifting.liteLift {
         def apply(populationsPerCountry: List[Int]): List[Actor] = {
             val totalCountries: Int = populationsPerCountry.size
-
+            val dayUnit: Int = 10
             val countries: ListBuffer[Country] = ListBuffer[Country]()
 
             val allAgents = populationsPerCountry.flatMap(population => {
-                val x = new Country((population * 0.01).toInt)
+                val x = new Country((population * 0.01).toInt, dayUnit)
                 val citizens = (1 to population).map(c => {
-                    val p = new Person(Random.nextInt(90) + 10)
+                    val p = new Person(Random.nextInt(90) + 10, dayUnit)
                     p.country = x 
                     p
                 }).toList

@@ -1,4 +1,6 @@
-package example.epidemic
+package example
+package epidemic.evalNPI
+
 import breeze.stats.distributions.Gamma
 
 object DiseaseParameter {

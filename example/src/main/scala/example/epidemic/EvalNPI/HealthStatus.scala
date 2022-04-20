@@ -1,12 +1,22 @@
-package example.epidemic
+package example
+package epidemic.evalNPI
+
 
 import scala.util.Random
 
-// SEIR model
+// Extended SEIR model:
+// Susceptible, Exposed, Infectious, Hospitalized, Recover, Deceased
 object HealthStatus {
     def change(health: String, vulnerability: String): String = {
         health match {
-            case "Susceptible" => "Infectious"
+            case "Susceptible" => "Exposed"
+            case "Exposed" => 
+                val worse_prob: Double = Risk.eval(vulnerability, "Exposed", "Infectious")
+                if (Random.nextDouble < worse_prob) {
+                    "Infectious"
+                } else {
+                    "Recover"
+                }
             case "Infectious" => 
                 val worse_prob: Double = Risk.eval(vulnerability, "Infectious", "Hospitalized")
                 if (Random.nextDouble < worse_prob) {
