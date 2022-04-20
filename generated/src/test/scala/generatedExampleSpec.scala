@@ -4,7 +4,7 @@ import meta.API._
 
 class generatedExamples extends org.scalatest.FlatSpec {
     "Compiled epidemic example with Akka containers" should "run" in {
-        val agents = generated.example.epidemic.InitData(List(100,100,100))
+        val agents = generated.example.epidemic.evalNPI.InitData(List(100,100,100))
         val c = new SimulationConfig(agents, totalTurn = 50)
 
         // 10 containers
