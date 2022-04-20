@@ -1,12 +1,9 @@
-package example.graphAlgorithm.shortestPath
-
-import squid.quasi.lift
-import meta.classLifting.SpecialInstructions._
-import meta.runtime.{ActorWithMapper, Future}
+package example
+package graphAlgorithm.shortestPath
 
 // Single-source shortest path
 @lift
-class Vertex(val isSource: Boolean) extends ActorWithMapper {
+class Vertex(val isSource: Boolean) extends Actor {
     var dist: Int = scala.Int.MaxValue
     var propagateUpdate: Boolean = false
 

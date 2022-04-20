@@ -1,8 +1,6 @@
-package example.predatorPrey
+package example
+package predatorPrey
 
-import squid.quasi.lift
-import meta.classLifting.SpecialInstructions._
-import meta.runtime.{Actor, ActorWithMapper, Future}
 import lib.Grid.AgentWithNeighbors
 
 object predatorPrey {
@@ -50,7 +48,7 @@ case class Player(isNPC: Boolean) {
  */
 
 @lift
-class Cell(val stepUnit: Int) extends AgentWithNeighbors with ActorWithMapper {
+class Cell(val stepUnit: Int) extends AgentWithNeighbors {
 
     var currentPlayer: Option[Player] = None
     private var player: Player = null

@@ -4,12 +4,12 @@ import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import meta.deep.IR.TopLevel.ClassWithObject
 import meta.deep.IR
-import meta.runtime.{ActorWithMapper,Actor, Message}
+import meta.runtime.{Actor, Message}
 import meta.API._
 import org.scalatest.FlatSpec
 
 @lift
-class CounterSim(val n: CounterSim) extends ActorWithMapper {
+class CounterSim(val n: CounterSim) extends Actor {
     var state: Int = 1
     val immutableSecret: Int = 10
 
@@ -22,7 +22,7 @@ class CounterSim(val n: CounterSim) extends ActorWithMapper {
     def main(): Unit = {
         while (true){
             if (n != null) {
-                asyncMessage[Unit](() => n.inc()) 
+                asyncMessage(() => n.inc()) 
                 // println(id + " sends a message to increment the neighbor!")
             }
             handleMessages()

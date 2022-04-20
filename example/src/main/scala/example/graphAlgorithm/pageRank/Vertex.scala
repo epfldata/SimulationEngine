@@ -1,12 +1,9 @@
-package example.graphAlgorithm.pageRank
-
-import squid.quasi.lift
-import meta.classLifting.SpecialInstructions._
-import meta.runtime.{ActorWithMapper, Future}
+package example
+package graphAlgorithm.pageRank
 
 // Single-source shortest path
 @lift
-class Vertex(val isSource: Boolean) extends ActorWithMapper {
+class Vertex(val isSource: Boolean) extends Actor {
     var sum: Double = 0
     var numVertices: Int = 0
     var rank: Double = 0
