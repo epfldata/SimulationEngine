@@ -30,12 +30,4 @@ class generatedExamples extends org.scalatest.FlatSpec {
         val results = StartSimulation[BaseMessagingLayer.type](containerConfig)
         // val results = StartSimulation[AkkaMessagingLayer.type](containerConfig)
     }
-
-    "Compiled segregation example with 10 containers over base" should "run" in {
-        val agents = generated.example.segregation.InitData(10, 10, 70)
-
-        val c = new SimulationConfig(agents, 100)
-        val containerConfig = c.staticPartition(10)(BoundedLatency)
-        val results = StartSimulation[BaseMessagingLayer.type](containerConfig)
-    }
 }
