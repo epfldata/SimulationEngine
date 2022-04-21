@@ -4,6 +4,7 @@ package graphAlgorithm.shortestPath
 
 import scala.util.Random
 import scala.collection.mutable.ListBuffer
+import lib.Graph.Graph
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
@@ -15,9 +16,16 @@ object MainInit {
                     new Vertex(false)
                 }
             }).toList
-            allAgents.foreach(vertex => {
-                vertex.neighbors = allAgents.filter(x => {x !=vertex && p>Random.nextDouble()}).map(x => (1, x))
-            })
+
+            val built: Vertex => Unit = vertex => {
+                val nodes = allAgents.filter(x => {
+                    x !=vertex && p>Random.nextDouble()
+                })
+                vertex.connectedAgents = nodes
+                vertex.outEdgeWeights = (1 to nodes.length).map(_=>1).toList
+            }
+
+            (new Graph).build[Vertex](allAgents, built)
             allAgents
         }
     }

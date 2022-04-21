@@ -10,8 +10,9 @@ class Vertex(val isSource: Boolean) extends Actor {
     var dist: Int = scala.Int.MaxValue
     var propagateUpdate: Boolean = false
 
-    var neighbors: List[(Int, Vertex)] = null
+    var outEdgeWeights: List[Int] = null
     private var futures: List[Future[Boolean]] = null
+    private var tmp_neighbor: Vertex = null
     private var broadcastDist: Int = scala.Int.MaxValue
 
     def updateValue(propose: Int): Boolean = {
@@ -32,9 +33,10 @@ class Vertex(val isSource: Boolean) extends Actor {
 
         while (true) {
             if (propagateUpdate){
-                futures = neighbors.map(x => {
+                futures = outEdgeWeights.zipWithIndex.map(x => {
                     broadcastDist = dist + x._1
-                    asyncMessage(() => x._2.updateValue(broadcastDist))
+                    tmp_neighbor = connectedAgents(x._2).asInstanceOf[Vertex]
+                    asyncMessage(() => tmp_neighbor.updateValue(broadcastDist))
                 })
                 while (futures.exists(x => !x.isCompleted)){
                     waitAndReply(1)

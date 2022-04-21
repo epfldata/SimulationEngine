@@ -1,6 +1,8 @@
 package example
 package predatorPrey
 
+import lib.Graph.Torus2DGraph
+
 object Example extends App {
     
     val liftedMain = meta.classLifting.liteLift {
@@ -19,14 +21,10 @@ object Example extends App {
                     c.currentPlayer = Some(example.predatorPrey.Player(true))   // NPCs
                 }
                 c
-            })
+            }).toList
 
-            (1 to totalPoints).foreach(i =>
-                points(i-1).connectedAgents = lib.Grid.Torus2D.getNeighborCells(width, height)(i-1, neighborRadius).map(j => points(j))
-            )
-
-            points.toList
-
+            Torus2DGraph(points, width, height, neighborRadius)
+            points
         }
     }
     

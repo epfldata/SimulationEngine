@@ -10,7 +10,6 @@ class Vertex(val isSource: Boolean) extends Actor {
     var numVertices: Int = 0
     var rank: Double = 0
 
-    var neighbors: List[Vertex] = null
     private var futures: List[Future[Boolean]] = null
 
     def updateValue(propose: Double): Boolean = {        
@@ -27,11 +26,11 @@ class Vertex(val isSource: Boolean) extends Actor {
     }
 
     def main(): Unit = {
-        numVertices = neighbors.size
+        numVertices = connectedAgents.size
         while (true) {
             rank = pageRank()
-            futures = neighbors.map(x => {
-                asyncMessage(() => x.updateValue(rank))
+            futures = connectedAgents.map(x => {
+                asyncMessage(() => x.asInstanceOf[Vertex].updateValue(rank))
             })
             while (futures.exists(x => !x.isCompleted)){
                 waitAndReply(1)

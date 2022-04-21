@@ -14,9 +14,7 @@ object MainInit {
                     new Vertex(false)
                 }
             }).toList
-            allAgents.foreach(vertex => {
-                vertex.neighbors = allAgents.filter(x => {x !=vertex && p>Random.nextDouble()})
-            })
+            lib.Graph.ErdosRenyiGraph(allAgents, p)
             allAgents
         }
     }

@@ -19,14 +19,10 @@ object Example extends App {
                 } else {
                     new Cell(example.cellularAutomata.wator.Water(0), cfreq)
                 }
-            })
+            }).toList
 
-            (1 to totalPoints).foreach(i =>
-                points(i-1).connectedAgents = lib.Grid.Torus2D.getNeighborCells(width, height)(i-1, neighborRadius).map(j => points(j))
-            )
-
-            points.toList
-
+            lib.Graph.Torus2DGraph(points, width, height, neighborRadius)
+            points
         }
     }
     
