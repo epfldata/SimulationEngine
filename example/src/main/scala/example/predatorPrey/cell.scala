@@ -3,7 +3,6 @@ package predatorPrey
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
-import lib.Grid.AgentWithNeighbors
 
 object predatorPrey {
     val emptyEncoding: Int = 0
@@ -50,21 +49,21 @@ case class Player(isNPC: Boolean) {
  */
 
 @lift
-class Cell(val stepUnit: Int) extends AgentWithNeighbors {
+class Cell(val stepUnit: Int) extends Actor {
 
     var currentPlayer: Option[Player] = None
     private var player: Player = null
-    private var lookAround: List[Future[(Long, Int)]] = List()
+    private var lookAround: List[Future[Int]] = List()
     private var counter: Int = 0
     private var emptyCell: Cell = null
 
-    def getIdentity(): (Long, Int) = {
+    def getIdentity(): Int = {
         if (currentPlayer.isEmpty) {
-            (id, predatorPrey.emptyEncoding)
+            predatorPrey.emptyEncoding
         } else if (currentPlayer.get.isNPC){
-            (id, predatorPrey.npcEncoding)
+             predatorPrey.npcEncoding
         } else {
-            (id, predatorPrey.playerEncoding)
+            predatorPrey.playerEncoding
         }
     }
 
@@ -82,30 +81,32 @@ class Cell(val stepUnit: Int) extends AgentWithNeighbors {
         while (true) {
             // At each game time unit
             if (currentPlayer.isDefined){
-                lookAround = connectedAgents.map(x => x._2.asInstanceOf[Cell]).toList.map(v => asyncMessage[(Long, Int)](() => v.getIdentity()))
+                lookAround = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => asyncMessage[Int](() => v.getIdentity()))
 
                 while (!lookAround.forall(x => x.isCompleted)) {
                     waitAndReply(1)
                     counter = counter + 1
                 }
 
-                val neighborIds = lookAround.map(i => i.popValue.get).asInstanceOf[List[(Long, Int)]]
+                // [(identity, index)]
+                val neighborIds: List[(Int, Int)] = lookAround.map(i => i.popValue.get).asInstanceOf[List[Int]].zipWithIndex
                 // Other players may have killed me when I look. Check again.
                 if (currentPlayer.isDefined){
                     if (currentPlayer.get.isNPC) {
-                        val sortedCells: List[(Long, Int)] = neighborIds.sortBy(_._2)
-                        // If sees players and there exists empty cell
-                        if (sortedCells.last._2 == predatorPrey.playerEncoding && sortedCells.head._2==predatorPrey.emptyEncoding) {
+                        // increasing order of identity
+                        val sortedCells: List[(Int, Int)] = neighborIds.sortBy(_._1)
+                        // If sees players and there exists empty cell, run
+                        if (sortedCells.last._1 == predatorPrey.playerEncoding && sortedCells.head._1==predatorPrey.emptyEncoding) {
                             player = currentPlayer.get
-                            emptyCell = connectedAgents(sortedCells.head._1).asInstanceOf[Cell]
+                            emptyCell = connectedAgents(sortedCells.head._2).asInstanceOf[Cell]
                             asyncMessage(() => emptyCell.playerMove(player))
                             currentPlayer = None
                         }
                     } else {
-                        val sortedCells: List[(Long, Int)] = neighborIds.sortWith((x, y) => (x._2 < predatorPrey.playerEncoding))
-                        if (sortedCells.head._2<predatorPrey.playerEncoding) {
+                        val sortedCells: List[(Int, Int)] = neighborIds.sortWith((x, y) => (x._2 < predatorPrey.playerEncoding))
+                        if (sortedCells.head._1<predatorPrey.playerEncoding) {
                             player = currentPlayer.get
-                            emptyCell = connectedAgents(sortedCells.head._1).asInstanceOf[Cell]
+                            emptyCell = connectedAgents(sortedCells.head._2).asInstanceOf[Cell]
                             asyncMessage(() => emptyCell.playerMove(player))
                             currentPlayer = None
                         }

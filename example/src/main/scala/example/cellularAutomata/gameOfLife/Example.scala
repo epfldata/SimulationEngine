@@ -17,7 +17,7 @@ object MainInit {
             })
 
             (1 to totalPoints).foreach(i =>
-                points(i-1).connectedAgents = Torus2D.getNeighborCells(width, height)(i-1, neighborRadius).map(j => points(j)).map(x => (x.id, x)).toMap
+                points(i-1).connectedAgents = Torus2D.getNeighborCells(width, height)(i-1, neighborRadius).map(j => points(j))
             )
 
             points.toList
