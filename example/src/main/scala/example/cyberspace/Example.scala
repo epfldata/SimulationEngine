@@ -11,7 +11,7 @@ object MainInit {
             
             val servers = (1 to totalServers).toList.map(x => new Server(syncPeriod, messagesPerSync))
 
-            servers.foreach(s => s.allServers = servers)
+            lib.Graph.FullyConnectedGraph(servers)
 
             val perServerPopulation = populationSize / totalServers
 
@@ -39,5 +39,5 @@ object Example extends App {
 
   val mainClass = MainInit.liftedMain
     
-  compileSims(List(cls4, cls1, cls2, cls3), Some(mainClass))
+  compileSims(List(cls1, cls2, cls3, cls4), Some(mainClass))
 }

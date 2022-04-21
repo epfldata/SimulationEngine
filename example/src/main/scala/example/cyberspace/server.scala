@@ -9,7 +9,6 @@ import scala.collection.mutable.Map
 @lift
 class Server(var syncPeriod: Int, var batchMessages: Int) extends Actor {
     val content: Map[AgentId, String] = Map()
-    var allServers: List[Server] = List()
     var elapsed: Int = 0
 
     def get(): String = {
@@ -42,7 +41,9 @@ class Server(var syncPeriod: Int, var batchMessages: Int) extends Actor {
             if (elapsed >= syncPeriod){
                 var batchCounter: Int = 1
                 while (batchCounter < batchMessages) {
-                    allServers.foreach(s => asyncMessage(() => s.sync(content)))
+                    connectedAgents.foreach(s => {
+                        asyncMessage(() => s.asInstanceOf[Server].sync(content))
+                    })
                     batchCounter = batchCounter + 1
                 }
                 elapsed = 0
