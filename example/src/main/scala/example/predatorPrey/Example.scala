@@ -1,27 +1,29 @@
 package example
-package cellularAutomata.wator
+package predatorPrey
+
+import lib.Graph.Torus2DGraph
 
 object Example extends App {
     
     val liftedMain = meta.classLifting.liteLift {
-        def apply(width: Int, height: Int, cfreq: Int): List[Actor] = {
+        def apply(width: Int, height: Int, stepUnit: Int): List[Actor] = {
 
             val totalPoints: Int = width * height
             // 2D space
             val neighborRadius: Int = 1
 
             val points = (1 to totalPoints).map(x => {
+                val c = new Cell(stepUnit)
                 val r = scala.util.Random.nextInt(10)
                 if (r==1) {
-                    new Cell(example.cellularAutomata.wator.Shark(10), cfreq)
+                    c.currentPlayer = Some(example.predatorPrey.Player(false))  // hunters
                 } else if (r < 7) {
-                    new Cell(example.cellularAutomata.wator.Fish(10), cfreq)
-                } else {
-                    new Cell(example.cellularAutomata.wator.Water(0), cfreq)
+                    c.currentPlayer = Some(example.predatorPrey.Player(true))   // NPCs
                 }
+                c
             }).toList
 
-            lib.Graph.Torus2DGraph(points, width, height, neighborRadius)
+            Torus2DGraph(points, width, height, neighborRadius)
             points
         }
     }

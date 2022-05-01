@@ -3,7 +3,7 @@ package gameOfLife
 
 import scala.collection.mutable.{Map => MutMap}
 
-import lib.Grid.Torus2D
+import lib.Graph.Torus2DGraph
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
@@ -12,15 +12,12 @@ object MainInit {
             // 2D space
             val neighborRadius: Int = 1
 
-            val points = (1 to totalPoints).map(x => { 
+            val points = (1 to totalPoints).map(x => {
                 new Cell(Random.nextBoolean(), cfreq)
-            })
+            }).toList
 
-            (1 to totalPoints).foreach(i =>
-                points(i-1).connectedAgents = Torus2D.getNeighborCells(width, height)(i-1, neighborRadius).map(j => points(j)).map(x => (x.id, x)).toMap
-            )
-
-            points.toList
+            Torus2DGraph(points, width, height, neighborRadius)
+            points
         }
     }
 }

@@ -1,10 +1,10 @@
 package generated.meta.test.timeseries
 
-class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.runtime.ActorWithMapper {
+class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.runtime.Actor {
 
   var state: Int = 1;
   val immutableSecret: Int = 10;
-  private var  reflectionIR_43: Int = -1
+  private var  reflectionIR_22: Int = -1
   var resetData_0: scala.Any = null
   val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
   var resetData_2: meta.runtime.ResponseMessage = null
@@ -17,7 +17,7 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
   var unblockFlag_9: scala.Boolean = true
   var positionVar_10: scala.Int = 0
   
-  val commands_90 = (() => {
+  val commands_91 = (() => {
   val data_11 = new scala.Array[scala.Function0[scala.Unit]](27);
   data_11.update(0, (() => positionVar_10 = 1));
   data_11.update(1, (() => {
@@ -91,7 +91,7 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
     val x_35 = this.state;
     val x_36 = x_35.+(1);
     this.`state_=`(x_36);
-    resetData_0 = ();
+    resetData_0 = 0;
     positionVar_10 = 12
   }));
   data_11.update(12, (() => {
@@ -199,20 +199,20 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
       val x_78 = scala.collection.immutable.Nil.::[scala.collection.immutable.List[scala.Any]](((scala.collection.immutable.Nil): scala.collection.immutable.List[scala.Any]));
       val x_79 = meta.runtime.RequestMessage.apply(x_75, x_76, false, x_77, x_78);
       val x_80 = x_79.sessionId;
-      val x_81 = meta.runtime.Future.apply$default$2[scala.Unit];
-      val x_82 = meta.runtime.Future.apply[scala.Unit](x_80, x_81);
-      var v_83: meta.runtime.Future[scala.Unit] = x_82;
+      val x_81 = meta.runtime.Future.apply$default$2[scala.Int];
+      val x_82 = meta.runtime.Future.apply[scala.Int](x_80, x_81);
+      var v_83: meta.runtime.Future[scala.Int] = x_82;
       ((this): meta.runtime.Actor).sendMessage(x_79);
       val x_84 = x_79.sessionId;
       ((this): meta.runtime.Actor).setMessageResponseHandler(x_84, ((response_85: meta.runtime.Message) => {
         val x_86 = v_83;
         val x_87 = response_85.asInstanceOf[meta.runtime.ResponseMessage];
         val x_88 = x_87.arg;
-        x_88.asInstanceOf[scala.Unit];
-        x_86.setValue(())
+        val x_89 = x_88.asInstanceOf[scala.Int];
+        x_86.setValue(x_89)
       }));
-      val x_89 = v_83;
-      resetData_0 = x_89;
+      val x_90 = v_83;
+      resetData_0 = x_90;
       positionVar_10 = 3
     }, ())
   }));
@@ -221,14 +221,15 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
 }).apply();
   
 
-  def inc(): Unit = 
+  def inc(): Int = 
       {
   val x_0 = this.state;
   val x_1 = x_0.+(1);
-  this.`state_=`(x_1)
+  this.`state_=`(x_1);
+  0
 }
   
-  def wrapper_inc(args: List[Any]): Unit = {
+  def wrapper_inc(args: List[Any]): Int = {
     
           
           inc()
@@ -240,7 +241,7 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
     sendMessages.clear()
     unblockFlag_9 = true
     while (unblockFlag_9 && (positionVar_10 < 27)) {
-      commands_90(positionVar_10)()
+      commands_91(positionVar_10)()
     }
     (sendMessages.toList, 1)
   }
@@ -262,19 +263,19 @@ class CounterSim(val n: generated.meta.test.timeseries.CounterSim) extends meta.
       // first entry, save the current IR to reflectionIR
       unblockFlag_9 = true
 
-      if (reflectionIR_43 == -1){
-        reflectionIR_43 = positionVar_10
+      if (reflectionIR_22 == -1){
+        reflectionIR_22 = positionVar_10
         positionVar_10 = new_ir
       }
 
       while (positionVar_10 <= 13 && unblockFlag_9) {
-        commands_90(positionVar_10)()
+        commands_91(positionVar_10)()
       }
 
       // reset instruction register when finishes processing
       if (positionVar_10 > 13) {
-        positionVar_10 = reflectionIR_43
-        reflectionIR_43 = -1
+        positionVar_10 = reflectionIR_22
+        reflectionIR_22 = -1
       }
       this
     }

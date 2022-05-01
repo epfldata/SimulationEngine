@@ -3,7 +3,6 @@ package gameOfLife
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-import lib.Grid.AgentWithNeighbors
 
 /**
   * Conway's game of life
@@ -12,14 +11,14 @@ import lib.Grid.AgentWithNeighbors
   * @param alive
   */
 @lift
-class Cell(var alive: Boolean, var cfreq: Int) extends AgentWithNeighbors {
+class Cell(var alive: Boolean, var cfreq: Int) extends Actor {
 
     var futures: List[Future[Boolean]] = List()
 
     def getValue: Boolean = alive
 
-    private def rule(neighbors: List[Boolean]): Unit = {
-        val aliveNeighbors = neighbors.filter(x => x==true).size
+    private def rule(neighborsAlive: List[Boolean]): Unit = {
+        val aliveNeighbors = neighborsAlive.filter(x => x==true).size
 
         if (alive && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
             alive = false
@@ -32,7 +31,7 @@ class Cell(var alive: Boolean, var cfreq: Int) extends AgentWithNeighbors {
 
     def main(): Unit = {
         while(true) {
-            futures = connectedAgents.map(x => x._2.asInstanceOf[Cell]).toList.map(v => asyncMessage(() => v.getValue))
+            futures = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => asyncMessage(() => v.getValue))
 
             while (!(futures.nonEmpty && futures.forall(x => x.isCompleted))) {
                 waitAndReply(1)

@@ -1,20 +1,20 @@
 package example
-package epidemic
+package epidemic.evalNPI
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
+import scala.collection.mutable.Map
 
 // Countries would summarize their total infected patients everyday 
 // and communicate it with other countries, so they can react accordingly
 // Countries communicate through news and other information channels
 @lift 
-class Country(val hospitalCapacity: Int) extends Actor {
+class Country(val hospitalCapacity: Int, val dayUnit: Int) extends Actor {
   var otherCountries: List[Country] = null
   var citizens: List[Person] = null
 
-  var totalInfected: Int = 0
+  val records: Map[String, Int] = Map[String, Int]()
   var totalHospitalized: Int = 0
-  var totalDeceased: Int = 0
 
   var policy: Int = 0 
   var neighborPolicyFutures: List[Future[Int]] = List()
@@ -24,19 +24,14 @@ class Country(val hospitalCapacity: Int) extends Actor {
     policy
   }
 
-  def report(status: String): Int = {
-    if (status == "Infectious"){
-      totalInfected = totalInfected + 1
-    } 
-    
-    if (status == "Hospitalized") {
-      totalHospitalized = totalHospitalized + 1
-    } 
-    
-    if (status == "Deceased") {
-      totalDeceased = totalDeceased + 1
+  def report(status: String): Boolean = {
+    val current = records.get(status)
+    if (!current.isDefined){
+      records(status) = 1
+    } else {
+      records(status) = current.get + 1
     }
-    totalInfected
+    true
   }
 
   def main(): Unit = {
@@ -47,6 +42,7 @@ class Country(val hospitalCapacity: Int) extends Actor {
         neighborPolicies = neighborPolicyFutures.map(x => x.popValue.get)
       }
 
+      totalHospitalized = records.getOrElse("Hospitalized", 0)
       if ((hospitalCapacity > 0.8*totalHospitalized) || neighborPolicies.forall(x => x == 2)) {
         // Lock down
         policy = 2
@@ -56,9 +52,10 @@ class Country(val hospitalCapacity: Int) extends Actor {
         policy = 1
         citizens.map(x => asyncMessage(() => x.learnPolicy(policy)))
       }
-      totalInfected = 0
-      totalHospitalized = 0
-      waitAndReply(1)
+      println(records)
+      records.clear()
+      waitLabel(Turn, dayUnit)
+      handleMessages()
     }
   }
 }

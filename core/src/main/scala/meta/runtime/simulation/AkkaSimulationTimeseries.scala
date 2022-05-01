@@ -83,7 +83,7 @@ class DispatcherWithReducer[K, T] {
                 case RoundEnd(messages: List[Message], elapsedTime: Int) =>
                     // Add new agents to the system 
                     val newAgents = SimRuntime.newActors.map(a => 
-                        ctx.spawn((new SimAgentWithMapper).apply(a.asInstanceOf[ActorWithMapper], mapper), f"simAgent${a.id}"))
+                        ctx.spawn((new SimAgentWithMapper).apply(a, mapper), f"simAgent${a.id}"))
                     totalAgents += newAgents.size
                     ctx.log.debug(f"Total agents in the system ${totalAgents}")
 
@@ -123,9 +123,9 @@ object SimAgentWithMapper {
 class SimAgentWithMapper[K] {
     import SimAgentWithMapper._
 
-    private var sim: ActorWithMapper = null
+    private var sim: Actor = null
 
-    def apply(sim: ActorWithMapper, mapper: Actor=>K): Behavior[AgentEvent] = 
+    def apply(sim: Actor, mapper: Actor=>K): Behavior[AgentEvent] = 
         Behaviors.setup { ctx =>
             ctx.log.debug("Register agent with receptionist")
             ctx.system.receptionist ! Receptionist.Register(AgentServiceKey1, ctx.self)
@@ -160,7 +160,7 @@ object SimExperimentWithTimeseries {
 
             if (cluster.selfMember.hasRole("Sims")) {
                 actors.foreach(a => {
-                    ctx.spawn((new SimAgentWithMapper[K]).apply(a.asInstanceOf[ActorWithMapper], mapper), f"simAgent${a.id}")
+                    ctx.spawn((new SimAgentWithMapper[K]).apply(a, mapper), f"simAgent${a.id}")
                 })
             }
 
@@ -170,7 +170,7 @@ object SimExperimentWithTimeseries {
 
             if (cluster.selfMember.hasRole("Standalone")) {
                 ctx.spawn((new DispatcherWithReducer).apply(actors.size, totalTurn, messages, mapper, reducer), "dispatcher")
-                actors.foreach(a => ctx.spawn((new SimAgentWithMapper[K]).apply(a.asInstanceOf[ActorWithMapper], mapper), f"simAgent${a.id}"))
+                actors.foreach(a => ctx.spawn((new SimAgentWithMapper[K]).apply(a, mapper), f"simAgent${a.id}"))
             }
 
             Behaviors.empty

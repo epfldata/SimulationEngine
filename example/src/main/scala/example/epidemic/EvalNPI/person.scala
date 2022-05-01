@@ -1,12 +1,12 @@
 package example
-package epidemic
+package epidemic.evalNPI
 
 import scala.util.Random
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 
 @lift
-class Person(val age: Int) extends Actor {
+class Person(val age: Int, val dayUnit: Int) extends Actor {
     var dailyContact: Int = 5
     val symptomatic: Boolean = Random.nextBoolean()
     var health: String = "Susceptible"
@@ -14,6 +14,7 @@ class Person(val age: Int) extends Actor {
     var vulnerability: String = "low"
     var daysInfected: Int = 0
     var policy: Int = 0
+    var hourCounter: Int = 0
     var connections: List[Person] = null
 
     var f: List[Future[Boolean]] = List()
@@ -54,6 +55,7 @@ class Person(val age: Int) extends Actor {
 
                 while (f.exists(x => !x.isCompleted)){
                     waitAndReply(1)
+                    hourCounter = hourCounter + 1
                 }
                 val affected = f.map(x => x.popValue.get).exists(e => e == true)
                 if (affected && health == "Susceptible") {
@@ -70,9 +72,11 @@ class Person(val age: Int) extends Actor {
                         daysInfected = daysInfected + 1
                     }
                 }
-                waitAndReply(1)
+                waitLabel(Turn, dayUnit - hourCounter)
+                handleMessages()
+                hourCounter = 0
             } else {
-                waitAndReply(1)
+                waitLabel(Turn, dayUnit)
             }
         }
     }

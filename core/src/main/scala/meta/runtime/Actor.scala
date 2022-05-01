@@ -62,6 +62,7 @@ class Actor extends Serializable {
 
   var _container: Container = null
 
+  var connectedAgents: List[Actor] = List()
   /**
     * Adds one message to the sendActions list, which will be collected and distributed at the end of the step
     *
@@ -173,15 +174,16 @@ class Actor extends Serializable {
     this
   }
 
+  // In-place reset the user-defined attributes of a Sim. Runtime attributes, such as id and connectedAgents, are unaffected.
+  def SimReset(): Unit = {}
+
   // Get the code position of the handleMessage and go to that location. Process the code related to handle message, reset the instruction pointer, and return the agent
   // def handleNonblockingMessages(): Actor = ??? 
   def gotoHandleMessages(new_ir: Int = -1): Actor = ??? 
   
   def handleNonblockingMessage(m: RequestMessage): Unit = ??? 
-}
 
-class ActorWithMapper extends Actor {
-    def runAndEval[K](messages: List[Message], mapper: Actor=>K): ((List[Message], Int), K) = {
-        (run(messages), mapper(this))
-    }
+  def runAndEval[K](messages: List[Message], mapper: Actor=>K): ((List[Message], Int), K) = {
+    (run(messages), mapper(this))
+  }
 }

@@ -220,9 +220,10 @@ class CreateCode(initCode: String,
     val run_until: String = runUntil.run()
     val parameters: String = parametersString.run()
     val cloneString: String = cloneAgent.run()
+    val resetAgentString: String = resetAgent.run()
     def parents: String = parentString.run()
 
-    val methods: String = s"${methodss}${run_until}${handleMsg}${gotoHandleMsg}${cloneString}"
+    val methods: String = s"${methodss}${run_until}${handleMsg}${gotoHandleMsg}${cloneString}${resetAgentString}"
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars, methods, parents)
   }

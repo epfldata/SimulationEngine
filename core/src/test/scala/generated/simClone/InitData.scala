@@ -1,12 +1,8 @@
-package generated.meta.test.custAgent
+package generated.meta.test.simClone
 
 object InitData  {
     
-        def apply(): scala.`package`.List[meta.runtime.Actor] = {
-  val x = new NewSim2(null);
-  val y = new NewSim2(x);
-  scala.collection.immutable.List.apply[generated.meta.test.custAgent.NewSim2](x, y)
-} 
+        def apply(): scala.`package`.List[meta.runtime.Actor] = scala.collection.immutable.List.apply[generated.meta.test.simClone.MutableSim](new MutableSim()) 
         
         def wrapper(args: List[Any]): List[meta.runtime.Actor] = {
           apply()

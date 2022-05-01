@@ -3,7 +3,6 @@ package example.cellularAutomata.wator
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
 import meta.runtime.{Actor, Future}
-import lib.Grid.AgentWithNeighbors
 
 trait watorCell {
     var energy: Int
@@ -17,16 +16,16 @@ case class Water(var energy: Int=0, var age: Int = 0) extends watorCell
 case class Shark(var energy: Int, var age: Int = 0) extends watorCell
 
 @lift
-class Cell(var identity: watorCell, var cfreq: Int) extends AgentWithNeighbors {
+class Cell(var identity: watorCell, var cfreq: Int) extends Actor {
 
     private var isReserved: Boolean = false
 
-    private var peekNeighbors: List[Future[(Long, watorCell)]] = List()
+    private var peekNeighbors: List[Future[watorCell]] = List()
     private var tryMoving: Future[Boolean] = null
 
     private var targetCell: Cell = null
 
-    def getIdentity(): (Long, watorCell) = (id, identity)
+    def getIdentity(): watorCell = identity
 
     def relocate(newId: watorCell): Boolean = {
         if (!isReserved){
@@ -50,42 +49,34 @@ class Cell(var identity: watorCell, var cfreq: Int) extends AgentWithNeighbors {
                 // See if there is any fish or shark around
                 // println(id + " sends messages to neighbors!")
 
-                peekNeighbors = connectedAgents.map(x => x._2.asInstanceOf[Cell]).toList.map(v => asyncMessage[(Long, watorCell)](() => v.getIdentity))
+                peekNeighbors = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => asyncMessage[watorCell](() => v.getIdentity))
 
                 while (!(peekNeighbors.nonEmpty && peekNeighbors.forall(x => x.isCompleted))) {
                     waitAndReply(1)
                 }
 
-                val neighborIds = peekNeighbors.map(i => i.popValue.get).asInstanceOf[List[(Long, watorCell)]]
+                val neighborIds: List[(watorCell, Int)] = peekNeighbors.map(i => i.popValue.get).asInstanceOf[List[watorCell]].zipWithIndex
 
                 // println("Neighbor ids are " + neighborIds)
 
-                val waterCells: List[(Long, watorCell)] = neighborIds.filter(x => x._2.isInstanceOf[Water])
+                val waterCells: List[(watorCell, Int)] = neighborIds.filter(x => x._1.isInstanceOf[Water])
 
                 val emptySpot: Option[Cell] = if (waterCells.isEmpty){ 
                     None
                 } else {
                     val r: Int = scala.util.Random.nextInt(waterCells.length)
-                    // println("The index of next empty spot in water cells is " + r + " " + waterCells(r)._1)
-
-                    assert(connectedAgents.get(waterCells(r)._1).isDefined)
-                    Some(connectedAgents(waterCells(r)._1).asInstanceOf[Cell])
+                    Some(connectedAgents(waterCells(r)._2).asInstanceOf[Cell])
                 }
 
-                val fishCells: List[(Long, watorCell)] = neighborIds.filter(x => x._2.isInstanceOf[Fish])
+                val fishCells: List[(watorCell, Int)] = neighborIds.filter(x => x._1.isInstanceOf[Fish])
 
                 val nearbyFish: Option[Cell] = if (fishCells.isEmpty){
                     None
                 } else {
                     val r: Int = scala.util.Random.nextInt(fishCells.length)
                     // println("The index of next fish spot is " + r + " " + fishCells(r)._1)
-
-                    assert(connectedAgents.get(fishCells(r)._1).isDefined)
-                    Some(connectedAgents(fishCells(r)._1).asInstanceOf[Cell])
+                    Some(connectedAgents(fishCells(r)._2).asInstanceOf[Cell])
                 }
-
-                // println(id + " " + identity + " nearby fish: " + nearbyFish + " empty spots " + emptySpot)
-
 
                 val currentAge = identity.age
                 if (identity.isInstanceOf[Fish]){
