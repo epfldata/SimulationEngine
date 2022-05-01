@@ -174,6 +174,9 @@ class Actor extends Serializable {
     this
   }
 
+  // In-place reset the user-defined attributes of a Sim. Runtime attributes, such as id and connectedAgents, are unaffected.
+  def SimReset(): Unit = {}
+
   // Get the code position of the handleMessage and go to that location. Process the code related to handle message, reset the instruction pointer, and return the agent
   // def handleNonblockingMessages(): Actor = ??? 
   def gotoHandleMessages(new_ir: Int = -1): Actor = ??? 

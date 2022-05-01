@@ -107,6 +107,40 @@ override def SimClone(): ${actorName} = {
     }
 }
 
+case object resetAgent extends GeneratedMethods {
+    import GeneratedMethods._
+
+    override def run(): String = {
+        val parameterApplication: String = 
+            compiledActorGraph.actorTypes.flatMap(actorType => {
+                actorType.states.filter(x => x.parameter).map(s => {
+                s.name
+                })
+            }).mkString(", ")
+
+        val mutableVariableNames: List[String] = compiledActorGraph.actorTypes.flatMap(actorType => {
+            actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
+                s.name  
+            })
+        })
+
+        if (!mutableVariableNames.isEmpty){
+s"""
+override def SimReset(): Unit = {
+  val newAgent = new ${actorName}(${parameterApplication})
+${compiledActorGraph.actorTypes.flatMap(actorType => {
+    actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
+        s"  ${s.name} = newAgent.${s.name}"  
+    })
+}).mkString("\n")}
+}
+"""
+        } else {
+            ""
+        }
+    }
+}
+
 case object reflectionMethods extends GeneratedMethods {
     import GeneratedMethods._
 

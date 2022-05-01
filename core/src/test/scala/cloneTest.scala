@@ -35,7 +35,7 @@ class CloneTest extends FlatSpec {
     //     compileSims(List(liftMyClass), 
     //         mainInit = Some(liftedMain), 
     //         initPkgName = Some(this.getClass().getPackage().getName()),
-    //         destFolder = "core/src/test/scala/generated/cloneSim/")
+    //         destFolder = "core/src/test/scala/generated/simClone/")
     // }
 
     "Clone the mutable agent at round 5 and resume the cloner" should "have different states for clonee and cloner for base simulation" in {

@@ -3,7 +3,7 @@ package generated.meta.test.simClone
 class MutableSim() extends meta.runtime.Actor {
 
   var counter: Int = 0;
-  private var  reflectionIR_62: Int = -1
+  private var  reflectionIR_28: Int = -1
   var resetData_0: scala.Any = null
   val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
   var resetData_2: meta.runtime.ResponseMessage = null
@@ -126,8 +126,8 @@ class MutableSim() extends meta.runtime.Actor {
       // first entry, save the current IR to reflectionIR
       unblockFlag_8 = true
 
-      if (reflectionIR_62 == -1){
-        reflectionIR_62 = positionVar_9
+      if (reflectionIR_28 == -1){
+        reflectionIR_28 = positionVar_9
         positionVar_9 = new_ir
       }
 
@@ -137,8 +137,8 @@ class MutableSim() extends meta.runtime.Actor {
 
       // reset instruction register when finishes processing
       if (positionVar_9 > 6) {
-        positionVar_9 = reflectionIR_62
-        reflectionIR_62 = -1
+        positionVar_9 = reflectionIR_28
+        reflectionIR_28 = -1
       }
       this
     }
@@ -147,6 +147,11 @@ override def SimClone(): MutableSim = {
   val newAgent = new MutableSim()
   newAgent.counter = counter
   newAgent
+}
+
+override def SimReset(): Unit = {
+  val newAgent = new MutableSim()
+  counter = newAgent.counter
 }
 
 }

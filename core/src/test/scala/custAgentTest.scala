@@ -79,4 +79,12 @@ class CustAgentTest extends FlatSpec {
         val c = new SimulationConfig(agents, 5)
         StartSimulation[BaseMessagingLayer.type](c)
     }
+
+    "Reset an agent without any field" should "not change anything" in {
+        val agents = generated.meta.test.custAgent.InitData()
+        val c = new SimulationConfig(agents, 5)
+        StartSimulation[BaseMessagingLayer.type](c)
+        agents.foreach(a => a.SimReset)
+        StartSimulation[BaseMessagingLayer.type](new SimulationConfig(agents, 5))
+    } 
 }
