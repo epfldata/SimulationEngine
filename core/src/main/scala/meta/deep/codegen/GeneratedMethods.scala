@@ -98,9 +98,9 @@ override def SimClone(): ${actorName} = {
   val newAgent = new ${actorName}(${parameterApplication})
   ${compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
-        s"newAgent.${s.name} = ${s.name}"  
+        s"  newAgent.${s.name} = ${s.name}"  
       })
-    }).mkString("  \n")}
+    }).mkString("\n")}
   newAgent
 }
 """
