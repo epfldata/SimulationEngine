@@ -162,7 +162,7 @@ class CreateCode(initCode: String,
 
     var methodss: String = ""
 
-    val methodCases: String = methodsIdMap.filterNot(x => {x._1.endsWith("handleMessages") || methodsMap(x._1).blocking || x._1.endsWith("main")}).filter(x => x._1.split("\\.").head == actorName).map(x => {
+    val methodCases: String = methodsIdMap.filterNot(x => {x._1.endsWith("handleMessages") || methodsMap.get(x._1).isEmpty || methodsMap(x._1).blocking || x._1.endsWith("main")}).filter(x => x._1.split("\\.").head == actorName).map(x => {
       val foo = methodsMap(x._1)
       methodss += changeTypes(foo.toDeclaration())
       methodss += changeTypes(foo.toWrapperDeclaration())

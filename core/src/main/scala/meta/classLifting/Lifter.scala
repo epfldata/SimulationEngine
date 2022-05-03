@@ -86,9 +86,19 @@ class Lifter {
           val raw_mtdName: String = method.symbol.toString()
           
           val decoded_name = decode_modifiers(raw_mtdName)
+
           val mtdName = decoded_name._2
-          mnamess = mtdName :: mnamess 
-          methodsIdMap = methodsIdMap + (mtdName -> Method.getNextMethodId)
+
+          val nextId: Int = Method.getNextMethodId
+
+          mnamess = mtdName :: mnamess
+          
+          methodsIdMap = methodsIdMap + (mtdName -> nextId)
+          // Have both symbols pointing to the same impl
+          if (mtdName != raw_mtdName) {
+            mnamess = raw_mtdName :: mnamess
+            methodsIdMap = methodsIdMap + (raw_mtdName -> nextId)
+          }
 
           val cde: OpenCode[method.A] = method.body.asOpenCode
 
@@ -259,7 +269,7 @@ class Lifter {
           code"$actorSelfVariable.addReceiveMessages(List($p1))")
 
         // main is not callable 
-        val callRequest = MMap(actorName).filterNot(x => x.endsWith(".main")).foldRight(reqAlgo)((actorMtd, rest) => {
+        val callRequest = MMap(actorName).filterNot(x => x.endsWith(".main") || methodsMap.get(x).isEmpty).foldRight(reqAlgo)((actorMtd, rest) => {
           val methodId: Int = methodsIdMap(actorMtd)
           val methodInfo: MethodInfo[_] = methodsMap(actorMtd)
 
@@ -398,7 +408,7 @@ class Lifter {
 
         // asynchronously call a remote method
         case code"SpecialInstructions.asyncMessage[$mt]((() => {${m@ MethodApplication(msg)}}: mt))" =>
-          if (methodsIdMap.get(msg.symbol.toString()).isDefined){
+          if (methodsIdMap.get(msg.symbol.toString).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
 
@@ -421,7 +431,7 @@ class Lifter {
                     AsyncSend[T, mt.Typ](
                       actorSelfVariable.toCode,
                       recipientActorVariable,
-                      methodsIdMap(msg.symbol.toString()),
+                      methodsIdMap(msg.symbol.toString),
                       argss)))
             cache += (cde -> f)
             f
@@ -436,6 +446,7 @@ class Lifter {
               curriedMtd match {
                 case code"($sa: $st) => ${MethodApplication(mtd2)}: Any" => {
                   mtd = mtd2.symbol.toString()
+                  println(f"Curried method name is ${mtd}")
                   if (methodsIdMap.get(mtd).isDefined){
                     recipientActorVariable = mtd2.args.head.head.asInstanceOf[OpenCode[Actor]]
                     if (mtd2.args.last.length != argss.length){
@@ -452,7 +463,7 @@ class Lifter {
                     try {
                       argss.append(mtd2.args.last.head)
                     } catch {
-                      case e: Exception => throw new Exception(s"Error in asyncMessage! $cde")
+                      case e: Exception => throw new Exception(s"Unable to find ${mtd} in the method table in $cde")
                     }
                   }
                   curriedMtd = mtd2.args.head.head
@@ -677,7 +688,7 @@ class Lifter {
     }
 
 
-    var endMethods: List[LiftedMethod[_]] = MMap(actorName).map(actorMtd => {
+    var endMethods: List[LiftedMethod[_]] = MMap(actorName).filter(x => methodsMap.get(x).isDefined).map(actorMtd => {
       val lm = liftMethod(methodsMap(actorMtd))(cache)
       if (lm.symbol.endsWith(".main")) {
         mainAlgo = lm.body 
