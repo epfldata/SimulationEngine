@@ -50,27 +50,27 @@ class lifterTest3 extends FlatSpec {
     import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 
-    "Lifting agents with overriding keywords" should "compile" in {
-        val workerClass: ClassWithObject[Worker] = Worker.reflect(IR)
-        val teacherClass: ClassWithObject[Teacher] = Teacher.reflect(IR)
+    // "Lifting agents with overriding keywords" should "compile" in {
+    //     val workerClass: ClassWithObject[Worker] = Worker.reflect(IR)
+    //     val teacherClass: ClassWithObject[Teacher] = Teacher.reflect(IR)
 
-        val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
-                val teacher = new Teacher()
-                val worker = new Worker()
-                List(teacher, worker)
-            }
-        }
+    //     val liftedMain = meta.classLifting.liteLift {
+    //         def apply(): List[Actor] = {
+    //             val teacher = new Teacher()
+    //             val worker = new Worker()
+    //             List(teacher, worker)
+    //         }
+    //     }
 
-        compileSims(List(workerClass, teacherClass), 
-            mainInit = Some(liftedMain), 
-            initPkgName = Some(this.getClass().getPackage().getName()+".inheritance"),
-            destFolder = "core/src/test/scala/generated/inheritance/")
-    }
-
-    // "Calling overriden methods" should "invoke local methods" in {
-    //     val agents = generated.meta.test.inheritance.InitData()
-    //     val c = new SimulationConfig(agents, 5)
-    //     val r = StartSimulation[BaseMessagingLayer.type](c)
+    //     compileSims(List(workerClass, teacherClass), 
+    //         mainInit = Some(liftedMain), 
+    //         initPkgName = Some(this.getClass().getPackage().getName()+".inheritance"),
+    //         destFolder = "core/src/test/scala/generated/inheritance/")
     // }
+
+    "Calling overriden methods" should "invoke local methods" in {
+        val agents = generated.meta.test.inheritance.InitData()
+        val c = new SimulationConfig(agents, 5)
+        val r = StartSimulation[BaseMessagingLayer.type](c)
+    }
 }
