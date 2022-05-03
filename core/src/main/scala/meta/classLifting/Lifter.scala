@@ -13,8 +13,26 @@ import scala.collection.mutable.{Map => MutMap, ListBuffer}
   *
   * lifts the code into the deep representation [[meta.deep]]
   */
-class Lifter {
+object Lifter {
+  val recognized_modifiers: Set[String] = Set("override")
+  val modifier_separator: String = "_"
+  val className_separator: String = "\\."
 
+  // modifier string, name string
+  def decode_modifiers(name: String): (String, String) = {
+    val names: Array[String] = name.split(className_separator)
+    assert(names.length==2)
+    val class_name = names(0)
+    val mtd_name = names(1)
+    val mtd_name_components = mtd_name.split(modifier_separator)
+    val modifierStr = mtd_name_components.filter(recognized_modifiers.contains(_)).mkString(" ")
+    val nameStr = f"${class_name}.${mtd_name_components.filter(!recognized_modifiers.contains(_)).mkString(modifier_separator)}"
+    (modifierStr, nameStr)
+  }
+}
+
+class Lifter {
+  import Lifter._
   /** Maps method symbols to their IDs
     *
     */
@@ -56,6 +74,8 @@ class Lifter {
 
   var branchActors: Map[String, Clasz[_ <: Actor]] = Map() 
 
+  
+
   def init(initClasses: List[Clasz[_ <: Actor]]): Unit = {
     for (c <- initClasses) {
       var mnamess: List[String] = List[String]()  // array of all the symbol names of this class's methods (owner.method) 
@@ -63,17 +83,23 @@ class Lifter {
         case method: c.Method[_, _] =>
           import method.A 
 
-          val mtdName: String = method.symbol.toString()
+          val raw_mtdName: String = method.symbol.toString()
+          
+          val decoded_name = decode_modifiers(raw_mtdName)
+          val mtdName = decoded_name._2
           mnamess = mtdName :: mnamess 
           methodsIdMap = methodsIdMap + (mtdName -> Method.getNextMethodId)
 
           val cde: OpenCode[method.A] = method.body.asOpenCode
+
           methodsMap = methodsMap + (mtdName -> new MethodInfo(
+            decoded_name._1,
             mtdName, 
             method.tparams, 
             method.vparamss, 
             cde, 
             blockingAnalysis(cde, mtdName))(method.A))
+          
           if (!method.body.toString().contains("this@")) {
             ssoMtds = mtdName :: ssoMtds 
           }
@@ -110,10 +136,10 @@ class Lifter {
       if (agentParents.nonEmpty){
         inheritance = inheritance.updated(c.name, agentParents)
       } else {
-        unplaced -= c.name 
+        unplaced -= c.name
       }
     }
-    
+
     while (unplaced.nonEmpty) {
       unplaced.foreach(a => {
         val nextLayer: Set[String] = inheritance(a) 
@@ -164,7 +190,7 @@ class Lifter {
   def apply(startClasses: List[Clasz[_ <: Actor]])
     : (List[ActorType[_]], Map[String, Int], Map[String, MethodInfo[_]]) = {
 
-    // ssoEnabled = Optimization.sso    
+    // ssoEnabled = Optimization.sso
     init(startClasses)
     addRedirectMethods() 
 
@@ -443,7 +469,7 @@ class Lifter {
 
         // If a method is both redirect and sso? We would like sso to merge it. 
         case code"${MethodApplication(ma)}:Any "
-          if methodsIdMap.get(ma.symbol.toString()).isDefined =>
+          if methodsIdMap.get(ma.symbol.toString).isDefined =>
             //extracting arguments and formatting them
             var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
 
@@ -511,38 +537,39 @@ class Lifter {
                     argss, true))
                 )
             } else {
-              // ScalaCode(cde)
+              // println(f"Generate call method for method ${methodName}")
               CallMethod[T](methodsIdMap(methodName), argss)
             }
             cache += (cde -> f)
             f 
-
+          
         case _ =>
-          //here there is space for some more code patterns to be lifted, by using the liftCodeOther method which can be overriden
-          val liftedCode = liftCodeOther(cde)
-          //if liftCodeOther returns something, return that
-          if (liftedCode.isDefined) {
-            liftedCode.get
-          }
-          //otherwise, analyze if the cde is legitimate ScalaCode (does not contain any other recognizable code pattern
-          // somewhere inside (e.g. an unsupported code pattern could contain a Foreach somewhere inside of it and that
-          // would cause problems if it was lifted as ScalaCode)
-          else {
-            cde analyse {
-              case d if d != cde =>
-                val c = liftCode(d)
-                c match {
-                  case scalacode: ScalaCode[_] => 
-                  case _                       =>
-                    // println(Console.RED + s"Lifter warning: possible unsupported code: $cde" + Console.RESET)
-                    throw new Exception("Unsupported code inside " + cde)
-                }
-            }
-            val f = ScalaCode(cde)
-            cache += (cde -> f)
-            f.asInstanceOf[Algo[T]]
-          }
+          liftCodeLastResort(cde)
         }
+      }
+    }
+
+    def liftCodeLastResort[T: CodeType](cde: OpenCode[T]): Algo[T] = {
+      val liftedCode = liftCodeOther(cde)
+      //if liftCodeOther returns something, return that
+      if (liftedCode.isDefined) {
+        liftedCode.get
+      } else {
+        //otherwise, analyze if the cde is legitimate ScalaCode (does not contain any other recognizable code pattern
+        // somewhere inside (e.g. an unsupported code pattern could contain a Foreach somewhere inside of it and that
+        // would cause problems if it was lifted as ScalaCode)
+        cde analyse {
+          case d if d != cde =>
+            val c = liftCode(d)
+            c match {
+              case scalacode: ScalaCode[_] => 
+              case _                       =>
+                // println(Console.RED + s"Lifter warning: possible unsupported code: $cde" + Console.RESET)
+                throw new Exception("Unsupported code inside " + cde)
+            }
+        }
+        val f = ScalaCode(cde)
+        f.asInstanceOf[Algo[T]]
       }
     }
 
@@ -609,19 +636,6 @@ class Lifter {
             liftCode(code"$body"))
           Some(f.asInstanceOf[Algo[T]])
 
-          // Comment out filter. Use default Scala for better performance. Currently filter doesn't involve DSLs
-  //      case code"($x: List[$tb]).filter(($y: tb) => $body: Boolean): List[tb] " =>
-  //        val el = Variable[Boolean]
-  //
-  //        val f = FlatMap[tb.Typ, tb.Typ](x, y,
-  //          LetBinding(Some(el),
-  //            liftCode(code"$body", clasz),
-  //            IfThenElse(code"$el",
-  //              ScalaCode(code"List($y)"),
-  //              ScalaCode(code"List()"),
-  //            )))
-  //        Some(f.asInstanceOf[Algo[T]])
-
         case code"($x: List[$tb]).foldLeft($a: $ta)(($y: ta, $z: tb) => $body): ta" =>
           // todo
           Some(ScalaCode(cde))
@@ -637,7 +651,28 @@ class Lifter {
             ScalaCode(code"true"),
             liftCode(y))
           Some(f.asInstanceOf[Algo[T]])
-        case _ => None
+
+        case code"${MethodApplication(ma)}:Any " =>
+          val recipientActorVariable = ma.args.head.head.asInstanceOf[OpenCode[Actor]]
+          var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+          // Check if calling an overloaded method
+          if(actorSelfVariable.toCode == recipientActorVariable){
+            val actorRep = actorSelfVariable.Typ.rep.toString.split(className_separator).last
+            val funcName = ma.symbol.toString.split(className_separator).last
+            val mtdName = f"${actorRep}.${funcName}"
+            if (methodsIdMap.get(mtdName).isDefined){
+              // println(f"Call an overloaded method! ${mtdName}")
+              Some(CallMethod[T](methodsIdMap(mtdName), argss).asInstanceOf[Algo[T]])
+            } else {
+              None
+            }
+          } else {
+            // println("Method application " + ma.symbol.toString.split(className_separator).last)
+            None
+          }
+
+        case _ => 
+          None
       }
     }
 
