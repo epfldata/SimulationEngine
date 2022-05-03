@@ -53,26 +53,29 @@ class shortestPathTest extends org.scalatest.FlatSpec {
 
 class pageRankTest extends org.scalatest.FlatSpec {
 
-    "Reset vertices in page rank example with 200 nodes" should "obtain the same result" in {
-        val agents = generated.example.graphAlgorithm.pageRank.InitData(200, 0.1)
-        type MapperOut = (Long, Double)
-        type ReducerOut = List[Double]
+    val agents = generated.example.graphAlgorithm.pageRank.InitData(100, 0.1)
+    type MapperOut = (Long, Double)
+    type ReducerOut = List[Double]
 
-        val mapper: Actor => MapperOut = (agent) => (agent.id, agent.asInstanceOf[generated.example.graphAlgorithm.pageRank.Vertex].rank)
-        val reducer: List[MapperOut] => ReducerOut = (x) => x.sortWith((s, t) => s._1 < t._1).map(a => a._2)
+    // record the shortest distance from each vertex to the single source
+    val mapper: Actor => MapperOut = (agent) => (agent.id, agent.asInstanceOf[generated.example.graphAlgorithm.pageRank.Vertex].rank)
 
-        val totalRounds: Int = 10
+    val reducer: List[MapperOut] => ReducerOut = (x) => x.sortWith((s, t) => s._1 < t._1).map(a => a._2)
 
+    val totalRounds: Int = 30
+
+    "Reset vertices in page rank example with 100 nodes" should "obtain the same result" in {
         val c = new SimulationConfig(agents, totalRounds)
+        // val containerConfig = c.staticPartition(10)(BoundedLatency)
         val results = StartSimulation.runAndReduce[AkkaMessagingLayer.type, MapperOut, ReducerOut](c)(mapper, reducer)
-        // Reset agents to their initial states
         agents.foreach(_.SimReset)
         val c2 = new SimulationConfig(agents, totalRounds)
+        // val containerConfig = c.staticPartition(10)(BoundedLatency)
         val results2 = StartSimulation.runAndReduce[AkkaMessagingLayer.type, MapperOut, ReducerOut](c2)(mapper, reducer)
 
-        0.to(totalRounds-1).foreach(i => {
-            assert(results(i) == results2(i))
-            println(f"Time ${i} in both timeseries match")
-        })
+        println(results)
+        println(results2)
+        assert(results == results2)
+        // results.foreach(println)
     }
 }

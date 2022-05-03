@@ -32,7 +32,7 @@ object ContainerFactory {
                     containedAgents ++= agents.map(x => (x.id, x)).toMap
                     addProxyIds(agents.flatMap(x => x.getProxyIds))
                     override def run(msg: List[Message]): (List[Message], Int) = {
-                        var countDown: Int = 0
+                        var localTurns: Int = 0
                         mx = (internalMessages ++ msg).toList.groupBy(_.receiverId)
                         sendMessages.clear()
                         do {
@@ -47,10 +47,10 @@ object ContainerFactory {
                             internalMessages = sendMessages.filter(x => (proxyIds.contains(x.receiverId)))
                             sendMessages --= internalMessages
 
-                            countDown += 1
+                            localTurns += 1
                             mx = internalMessages.toList.groupBy(_.receiverId)
-                        } while (!internalMessages.isEmpty && countDown<kbound)
-                        (sendMessages.toList, countDown)
+                        } while (!internalMessages.isEmpty && localTurns<kbound)
+                        (sendMessages.toList, localTurns)
                     }
                 }
         }
