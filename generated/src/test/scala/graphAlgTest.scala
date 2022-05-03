@@ -40,7 +40,7 @@ class shortestPathTest extends org.scalatest.FlatSpec {
         val results2: List[List[Int]] = StartSimulation.runAndReduce[AkkaMessagingLayer.type, MapperOut, ReducerOut](c2)(mapper, reducer)
 
         val resultsTail2 = results2.tail
-        
+
         val measured_diffs2 = (0 until totalRounds-1).map(i => {
             total_diff(results2(i), resultsTail2(i))
         })
@@ -52,22 +52,30 @@ class shortestPathTest extends org.scalatest.FlatSpec {
 }
 
 class pageRankTest extends org.scalatest.FlatSpec {
-    "Compiled page rank example with 100 nodes" should "run" in {
-        val agents = generated.example.graphAlgorithm.pageRank.InitData(100, 0.1)
 
-        type MapperOut = (Long, Double)
-        type ReducerOut = List[Double]
+    val agents = generated.example.graphAlgorithm.pageRank.InitData(100, 0.1)
+    type MapperOut = (Long, Double)
+    type ReducerOut = List[Double]
 
-        // record the shortest distance from each vertex to the single source
-        val mapper: Actor => MapperOut = (agent) => (agent.id, agent.asInstanceOf[generated.example.graphAlgorithm.pageRank.Vertex].rank)
+    // record the shortest distance from each vertex to the single source
+    val mapper: Actor => MapperOut = (agent) => (agent.id, agent.asInstanceOf[generated.example.graphAlgorithm.pageRank.Vertex].rank)
 
-        val reducer: List[MapperOut] => ReducerOut = (x) => x.sortWith((s, t) => s._1 < t._1).map(a => a._2)
+    val reducer: List[MapperOut] => ReducerOut = (x) => x.sortWith((s, t) => s._1 < t._1).map(a => a._2)
 
-        val c = new SimulationConfig(agents, 30)
+    val totalRounds: Int = 30
+
+    "Reset vertices in page rank example with 100 nodes" should "obtain the same result" in {
+        val c = new SimulationConfig(agents, totalRounds)
         // val containerConfig = c.staticPartition(10)(BoundedLatency)
         val results = StartSimulation.runAndReduce[AkkaMessagingLayer.type, MapperOut, ReducerOut](c)(mapper, reducer)
+        agents.foreach(_.SimReset)
+        val c2 = new SimulationConfig(agents, totalRounds)
+        // val containerConfig = c.staticPartition(10)(BoundedLatency)
+        val results2 = StartSimulation.runAndReduce[AkkaMessagingLayer.type, MapperOut, ReducerOut](c2)(mapper, reducer)
 
-        // val results = StartSimulation[AkkaMessagingLayer.type](c)
-        results.foreach(println)
+        println(results)
+        println(results2)
+        assert(results == results2)
+        // results.foreach(println)
     }
 }
