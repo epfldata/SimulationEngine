@@ -1,4 +1,4 @@
-package meta.test.liteLift
+package meta.test
 
 import scala.collection.mutable.ListBuffer
 import org.scalatest.{Matchers, FlatSpec}

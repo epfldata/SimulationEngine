@@ -49,7 +49,7 @@ class MyClass5(var s: MyClass4) extends Actor {
     }
 }
 
-class lifterMethodTest2 extends FlatSpec with org.scalatest.Matchers {
+class lifterTest2 extends FlatSpec with org.scalatest.Matchers {
     import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 
