@@ -14,13 +14,14 @@ import meta.deep.IR.Predef._
   * @tparam A return value type
   */
 
-class MethodInfo[A0](val symbol: String,
+class MethodInfo[A0](val modifiers: String,
+                    val symbol: String,
                     val tparams: List[IR.TypParam],
                     val vparams: List[List[IR.Variable[_]]], 
                     val body: OpenCode[A0], 
                     val blocking: Boolean)(implicit val A: CodeType[A0]) {
   def replica(newSym: String): MethodInfo[A] = {
-    new MethodInfo[A](newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
+    new MethodInfo[A](modifiers, newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
   }
 
   val mtdName: String = symbol.split("\\.").tail.mkString(".")
@@ -66,20 +67,19 @@ class MethodInfo[A0](val symbol: String,
     argSyms match {
       case None =>
   f"""
-  def ${mtdName}: ${A.rep.toString} =
+  ${modifiers} def ${mtdName}: ${A.rep.toString} =
       ${bodyStr}
-
   """
       case Some(x) =>
   f"""
-  def ${mtdName}(${x.map(p => p._1 + ": " + p._2).mkString(",")}): ${A.rep.toString} = 
+  ${modifiers} def ${mtdName}(${x.map(p => p._1 + ": " + p._2).mkString(",")}): ${A.rep.toString} = 
       ${bodyStr}
   """
     }
   }
 
   def toWrapperInvocation(): String = {
-    f"""wrapper_${mtdName}(args)"""
+    f"wrapper_${mtdName}(args)"
   }
 
   def toInvocation(): String = {
@@ -87,7 +87,7 @@ class MethodInfo[A0](val symbol: String,
       case None =>
         f"${mtdName}"
       case Some(x) =>
-        f"""${mtdName}(${x.map(p => p._1).mkString(",")})"""
+        f"${mtdName}(${x.map(p => p._1).mkString(",")})"
     }
   }
 
