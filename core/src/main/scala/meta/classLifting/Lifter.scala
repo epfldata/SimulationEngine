@@ -24,9 +24,9 @@ object Lifter {
     assert(names.length==2)
     val class_name = names(0)
     val mtd_name = names(1)
-    val mtd_name_components = mtd_name.split(modifier_separator)
-    val modifierStr = mtd_name_components.filter(recognized_modifiers.contains(_)).mkString(" ")
-    val nameStr = f"${class_name}.${mtd_name_components.filter(!recognized_modifiers.contains(_)).mkString(modifier_separator)}"
+    val mtd_name_components = mtd_name.split(modifier_separator).partition(x => recognized_modifiers.contains(x))
+    val modifierStr = mtd_name_components._1.mkString(" ")
+    val nameStr = f"${class_name}.${mtd_name_components._2.mkString(modifier_separator)}"
     (modifierStr, nameStr)
   }
 }
