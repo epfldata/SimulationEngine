@@ -18,7 +18,8 @@ trait Person extends Actor {
 
 @lift
 class Worker() extends Person {
-    // Equivalent to override def work() ...
+    // If both override_work and @override work are defined, then
+    // the compiler uses the definition in override_ as final
     def override_work(): Unit = {
         println("Work in a factory.")
     }
