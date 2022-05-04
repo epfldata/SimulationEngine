@@ -96,11 +96,11 @@ case object cloneAgent extends GeneratedMethods {
         s"""
 override def SimClone(): ${actorName} = {
   val newAgent = new ${actorName}(${parameterApplication})
-  ${compiledActorGraph.actorTypes.flatMap(actorType => {
+${compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
-        s"newAgent.${s.name} = ${s.name}"  
+        s"  newAgent.${s.name} = ${s.name}"  
       })
-    }).mkString("  \n")}
+    }).mkString("\n")}
   newAgent
 }
 """
@@ -124,21 +124,25 @@ case object resetAgent extends GeneratedMethods {
             })
         })
 
-        if (!mutableVariableNames.isEmpty){
-s"""
+        val systemReset: String = f"${instructionRegister} = 0"
+
+        val userVarsReset: String = 
+            if (!mutableVariableNames.isEmpty){
+                s"val newAgent = new ${actorName}(${parameterApplication})\n" + " "*2 + 
+                compiledActorGraph.actorTypes.flatMap(actorType => {
+                    actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
+                        s"${s.name} = newAgent.${s.name}"  
+                    })
+                }).mkString("\n" + " "*2)
+            } else ""
+
+        s"""
 override def SimReset(): Unit = {
-  val newAgent = new ${actorName}(${parameterApplication})
-${compiledActorGraph.actorTypes.flatMap(actorType => {
-    actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
-        s"  ${s.name} = newAgent.${s.name}"  
-    })
-}).mkString("\n")}
+  ${systemReset}
+  ${userVarsReset}
 }
-"""
-        } else {
-            ""
-        }
-    }
+""" 
+}
 }
 
 case object reflectionMethods extends GeneratedMethods {

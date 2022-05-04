@@ -11,9 +11,9 @@ object MainInit {
         def apply(n: Int, p: Double): List[Actor] = {
             val allAgents: List[Vertex] = 1.to(n).map(i => {
                 if (i == n/2) {
-                    new Vertex(true)
+                    new Vertex(true, 1)
                 } else {
-                    new Vertex(false)
+                    new Vertex(false, 1)
                 }
             }).toList
 
@@ -22,7 +22,6 @@ object MainInit {
                     x !=vertex && p>Random.nextDouble()
                 })
                 vertex.connectedAgents = nodes
-                vertex.outEdgeWeights = (1 to nodes.length).map(_=>1).toList
             }
 
             (new Graph).build[Vertex](allAgents, built)

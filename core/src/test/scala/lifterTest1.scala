@@ -32,7 +32,7 @@ class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
 }
 
 
-class lifterMethodTest extends FlatSpec with org.scalatest.Matchers {
+class lifterTest1 extends FlatSpec with org.scalatest.Matchers {
     import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 

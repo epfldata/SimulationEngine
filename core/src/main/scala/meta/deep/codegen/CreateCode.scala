@@ -125,8 +125,9 @@ class CreateCode(initCode: String,
 
     this.typesReplaceWith = ("this@[a-zA-Z0-9]*", "this") :: this.typesReplaceWith
 
-    val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)) + parts(1))
+    val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)))
 
+    val stepFunctions: String = changeTypes(parts(1))
 
     // get the reference to memory
     val memAddr: String = parts(1).split(" = ").head.trim().split(" ").find(x => x.startsWith("commands_")).get 
@@ -161,7 +162,7 @@ class CreateCode(initCode: String,
 
     var methodss: String = ""
 
-    val methodCases: String = methodsIdMap.filterNot(x => {x._1.endsWith("handleMessages") || methodsMap(x._1).blocking || x._1.endsWith("main")}).filter(x => x._1.split("\\.").head == actorName).map(x => {
+    val methodCases: String = methodsIdMap.filterNot(x => {x._1.endsWith("handleMessages") || methodsMap.get(x._1).isEmpty || methodsMap(x._1).blocking || x._1.endsWith("main")}).filter(x => x._1.split("\\.").head == actorName).map(x => {
       val foo = methodsMap(x._1)
       methodss += changeTypes(foo.toDeclaration())
       methodss += changeTypes(foo.toWrapperDeclaration())
@@ -225,7 +226,7 @@ class CreateCode(initCode: String,
 
     val methods: String = s"${methodss}${run_until}${handleMsg}${gotoHandleMsg}${cloneString}${resetAgentString}"
 
-    createClass(compiledActorGraph.name, parameters, initParams, initVars, methods, parents)
+    createClass(compiledActorGraph.name, parameters, initParams, initVars + stepFunctions, methods, parents)
   }
 
   // given method info, generate string corresponding to method definition
@@ -473,7 +474,7 @@ class CreateCode(initCode: String,
                   run_until: String,
                   parents: String): Unit = {
 
-    val agentName: String = className.split("\\.").last            
+    val agentName: String = className.split("\\.").last
     val classString =
       s"""package ${generatedPackage}
 
