@@ -1,9 +1,9 @@
 package generated.meta.test.inheritance2
 
-class Student(var teacher: generated.meta.test.inheritance2.Teacher) extends meta.runtime.Actor with meta.test.Person {
+class Student(var neighbor: generated.meta.test.inheritance2.Teacher) extends meta.runtime.Actor with meta.test.Person {
 
 
-  private var  reflectionIR_80: Int = -1
+  private var  reflectionIR_73: Int = -1
   var resetData_0: scala.Any = null
   val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
   var resetData_2: meta.runtime.ResponseMessage = null
@@ -65,7 +65,7 @@ class Student(var teacher: generated.meta.test.inheritance2.Teacher) extends met
   data_9.update(7, (() => {
     val x_28 = listValMut_4;
     val x_29 = x_28.methodInfo;
-    val x_30 = scala.`package`.Right.apply[scala.Nothing, scala.Int](3);
+    val x_30 = scala.`package`.Right.apply[scala.Nothing, scala.Int](4);
     val x_31 = x_29.==(x_30);
     if (x_31)
       positionVar_8 = 8
@@ -88,7 +88,7 @@ class Student(var teacher: generated.meta.test.inheritance2.Teacher) extends met
   data_9.update(10, (() => {
     val x_36 = listValMut_4;
     val x_37 = x_36.methodInfo;
-    val x_38 = scala.`package`.Right.apply[scala.Nothing, scala.Int](3);
+    val x_38 = scala.`package`.Right.apply[scala.Nothing, scala.Int](4);
     val x_39 = x_37.==(x_38);
     val x_40 = x_39.`unary_!`;
     if (x_40)
@@ -154,7 +154,7 @@ class Student(var teacher: generated.meta.test.inheritance2.Teacher) extends met
   }));
   data_9.update(21, (() => positionVar_8 = 20));
   data_9.update(22, (() => {
-    val receiver_58 = this.teacher;
+    val receiver_58 = this.neighbor;
     val x_59 = ((this): meta.runtime.Actor).id;
     val x_60 = receiver_58.id;
     val x_61 = scala.`package`.Right.apply[scala.Nothing, scala.Int](0);
@@ -211,7 +211,7 @@ class Student(var teacher: generated.meta.test.inheritance2.Teacher) extends met
     val response = m.methodInfo match {
       case Right(x) => {
         x match {
-          case 3 => wrapper_work(args)
+          case 4 => wrapper_work(args)
         }
       }
       case Left(x) => println("For staged implementation only")
@@ -223,8 +223,8 @@ class Student(var teacher: generated.meta.test.inheritance2.Teacher) extends met
       // first entry, save the current IR to reflectionIR
       unblockFlag_7 = true
 
-      if (reflectionIR_80 == -1){
-        reflectionIR_80 = positionVar_8
+      if (reflectionIR_73 == -1){
+        reflectionIR_73 = positionVar_8
         positionVar_8 = new_ir
       }
 
@@ -234,14 +234,14 @@ class Student(var teacher: generated.meta.test.inheritance2.Teacher) extends met
 
       // reset instruction register when finishes processing
       if (positionVar_8 > 17) {
-        positionVar_8 = reflectionIR_80
-        reflectionIR_80 = -1
+        positionVar_8 = reflectionIR_73
+        reflectionIR_73 = -1
       }
       this
     }
     
 override def SimClone(): Student = {
-  val newAgent = new Student(teacher)
+  val newAgent = new Student(neighbor)
 
   newAgent
 }

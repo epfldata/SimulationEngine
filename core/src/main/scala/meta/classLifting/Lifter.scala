@@ -93,25 +93,29 @@ class Lifter {
 
           mnamess = mtdName :: mnamess
           
-          methodsIdMap = methodsIdMap + (mtdName -> nextId)
-          // Have both symbols pointing to the same impl
-          if (mtdName != raw_mtdName) {
-            mnamess = raw_mtdName :: mnamess
-            methodsIdMap = methodsIdMap + (raw_mtdName -> nextId)
-          }
+          // If both @override and override_ are used, then consider override_ as the constructor
+          // Allow the method body of override_ to replace that of @override, but not the other way
+          if (!(methodsIdMap.get(mtdName).isDefined && mtdName==raw_mtdName)){
+            methodsIdMap = methodsIdMap + (mtdName -> nextId)
+            // Have both symbols pointing to the same impl
+            if (mtdName != raw_mtdName) {
+              mnamess = raw_mtdName :: mnamess
+              methodsIdMap = methodsIdMap + (raw_mtdName -> nextId)
+            }
 
-          val cde: OpenCode[method.A] = method.body.asOpenCode
+            val cde: OpenCode[method.A] = method.body.asOpenCode
 
-          methodsMap = methodsMap + (mtdName -> new MethodInfo(
-            decoded_name._1,
-            mtdName, 
-            method.tparams, 
-            method.vparamss, 
-            cde, 
-            blockingAnalysis(cde, mtdName))(method.A))
-          
-          if (!method.body.toString().contains("this@")) {
-            ssoMtds = mtdName :: ssoMtds 
+            methodsMap = methodsMap + (mtdName -> new MethodInfo(
+              decoded_name._1,
+              mtdName, 
+              method.tparams, 
+              method.vparamss, 
+              cde, 
+              blockingAnalysis(cde, mtdName))(method.A))
+            
+            if (!method.body.toString().contains("this@")) {
+              ssoMtds = mtdName :: ssoMtds 
+            }
           }
       })
 

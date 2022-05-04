@@ -14,7 +14,7 @@ import java.io.File
  */
 
 @lift
-class Student(var teacher: Teacher) extends Person {
+class Student(var neighbor: Teacher) extends Person {
 
     def override_work(): Unit = {
         println("Study at school")
@@ -25,7 +25,8 @@ class Student(var teacher: Teacher) extends Person {
             work()
             // Ask what does the teacher do
             // teacher.work() would invoke Person.work() instead
-            asyncMessage[Unit](() => teacher.override_work())
+            // asyncMessage[Unit](() => neighbor.override_work())
+            asyncMessage[Unit](() => neighbor.work())
             waitAndReply(1)
         }
     }

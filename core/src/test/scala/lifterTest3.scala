@@ -23,6 +23,10 @@ class Worker() extends Person {
         println("Work in a factory.")
     }
 
+    override def work(): Unit = {
+        override_work()
+    }
+
     def main(): Unit = {
         while (true) {
             work()
@@ -36,6 +40,10 @@ class Teacher() extends Person {
     def override_work(): Unit = {
         println("Teach in a classroom. ")
         waitLabel(Turn, 1)
+    }
+
+    override def work(): Unit = {
+        override_work()
     }
 
     def main(): Unit = {
