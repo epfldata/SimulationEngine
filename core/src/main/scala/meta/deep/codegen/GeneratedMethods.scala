@@ -74,11 +74,9 @@ case object parentString extends GeneratedMethods {
     import GeneratedMethods._
 
     override def run(): String = {
-        var parentNames: List[String] = compiledActorGraph.parentNames
-        if (!parentNames.contains("meta.runtime.Actor")) {
-            parentNames = "meta.runtime.Actor" :: parentNames 
-        }
-        s"${parentNames.head}${parentNames.tail.foldLeft("")((a,b) => a + " with " + createCode.changeTypes(b))}"
+        val parentNames: List[String] = compiledActorGraph.parentNames
+        val changedParentNames = parentNames.map(i => createCode.changeTypes(i))
+        changedParentNames.mkString(" with ")
     }
 }
 
