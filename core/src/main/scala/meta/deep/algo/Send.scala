@@ -5,13 +5,12 @@ import meta.runtime.Actor
 
 case class Send[R](actorFrom: OpenCode[Actor],
                    actorRef: OpenCode[Actor],
-                   methodId: Int,
+                   methodSym: String,
                    argss: List[List[OpenCode[_]]],
                    blocking: Boolean)(implicit val R: CodeType[R])
     extends Algo[R] {
 
   override def codegen(): Unit = {
-    val methodIdC = Const(methodId)
 
     // Convert arguments to opencode, so hat the can be used as argument inside of OpenCode
     val initCodeO: OpenCode[List[List[Any]]] = code"Nil"
@@ -32,7 +31,7 @@ case class Send[R](actorFrom: OpenCode[Actor],
         code"""
           val sender = $actorFrom;
           val receiver = $actorRef;
-          val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, true, Right($methodIdC), $convertedArgs);
+          val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, true, ${Const(methodSym)}, $convertedArgs);
           sender.sendMessage(requestMessage);
           sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.runtime.Message) => {
             ${AlgoInfo.responseMessage} := response.asInstanceOf[meta.runtime.ResponseMessage]
@@ -108,7 +107,7 @@ case class Send[R](actorFrom: OpenCode[Actor],
           code"""
             val sender = $actorFrom;
             val receiver = $actorRef;
-            val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, Right($methodIdC), $convertedArgs);
+            val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, ${Const(methodSym)}, $convertedArgs);
             sender.sendMessage(requestMessage);
             ${AlgoInfo.returnValue} := None
             ()"""

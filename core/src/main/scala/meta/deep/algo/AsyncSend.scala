@@ -5,14 +5,12 @@ import meta.runtime.{Actor}
 
 case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
                            actorRef: OpenCode[Actor],
-                           methodId: Int,
+                           methodSym: String,
                            argss: List[List[OpenCode[_]]])
                           (implicit val R: CodeType[R], implicit val T: CodeType[T])
     extends Algo[R] {
 
   override def codegen(): Unit = {
-    val methodIdC = Const(methodId)
-
     // Convert arguments to opencode, so that can be used as argument inside of OpenCode
     val initCodeO: OpenCode[List[List[Any]]] = code"Nil"
     val convertedArgs: OpenCode[List[List[Any]]] =
@@ -27,7 +25,7 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
       code"""
         val sender = $actorFrom;
         val receiver = $actorRef;
-        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, Right($methodIdC), $convertedArgs);
+        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, ${Const(methodSym)}, $convertedArgs);
         var future = meta.runtime.Future[$T](requestMessage.sessionId); 
         sender.sendMessage(requestMessage);
         sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.runtime.Message) => {
@@ -41,7 +39,7 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
           CodeNodePos(AlgoInfo.posCounter),
           CodeNodePos(AlgoInfo.posCounter + 1),
           f1,
-          sendInfo = (Send[R](actorFrom, actorRef, methodId, argss, false), true)
+          sendInfo = (Send[R](actorFrom, actorRef, methodSym, argss, false), true)
         ))
 
       AlgoInfo.nextPos()

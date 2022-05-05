@@ -137,10 +137,6 @@ class Lifter {
 
   var MMap: Map[String, List[String]] = Map()
 
-  /**
-   * Map the original method symbol and the method symbol it re-directs to 
-   */
-  var redirectMap: Map[String, List[String]] = Map()
   
   /**
    * Map each subclass with its super classes, if exist 
@@ -316,7 +312,6 @@ class Lifter {
         //generates an IfThenElse for each of this class' methods, which checks if the called method id is the same
         //as any of this class' methods, and calls the method if it is
         val resultMessageCall = Variable[Any]
-
         val p1 = Variable[RequestMessage]
 
         //Default, add back, if message is not for my message handler, it is for a merged actor
@@ -326,6 +321,7 @@ class Lifter {
         // main is not callable 
         val callRequest = MMap(actorName).filterNot(x => x.endsWith(".main") || methodsMap.get(x).isEmpty).foldRight(reqAlgo)((actorMtd, rest) => {
           val methodId: Int = methodsIdMap(actorMtd)
+          val methodSymStr: String = actorMtd.split(method_separator).last
           val methodInfo: MethodInfo[_] = methodsMap(actorMtd)
 
           val argss: List[List[OpenCode[_]]] =
@@ -336,7 +332,7 @@ class Lifter {
             })
            
           IfThenElse(
-            code"$p1.methodInfo==Right(${Const(methodId)})",
+            code"""$p1.methodInfo==${Const(methodSymStr)}""",
             IfThenElse(
               code"${Const(methodInfo.blocking)}",
               LetBinding(
@@ -344,6 +340,7 @@ class Lifter {
               CallMethod[Any](methodId, argss),
               ScalaCode(
                 code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")),
+              // ScalaCode(f"wrapper_${methodSym}($p1.argss.flatten)")
               ScalaCode(code"$actorSelfVariable.handleNonblockingMessage($p1)")
             ),
             rest
@@ -466,7 +463,7 @@ class Lifter {
           if (methodsIdMap.get(msg.symbol.toString).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
-
+            val mname = msg.symbol.toString.split(method_separator).last
             val convertLocal = Variable[Boolean]
 
             val f = LetBinding(Some(convertLocal),
@@ -486,7 +483,7 @@ class Lifter {
                     AsyncSend[T, mt.Typ](
                       actorSelfVariable.toCode,
                       recipientActorVariable,
-                      methodsIdMap(msg.symbol.toString),
+                      mname,
                       argss)))
             cache += (cde -> f)
             f
@@ -529,11 +526,10 @@ class Lifter {
             AsyncSend[T, mt.Typ](
               actorSelfVariable.toCode,
               recipientActorVariable,
-              methodsIdMap(mtd),
+              mtd.split(method_separator).last,
               List(argss.toList))
         }
 
-        // If a method is both redirect and sso? We would like sso to merge it. 
         case code"${MethodApplication(ma)}:Any "
           if methodsIdMap.get(ma.symbol.toString).isDefined =>
             // println("Method application name is " + ma.symbol.toString)
@@ -544,50 +540,10 @@ class Lifter {
 
             val recipientActorVariable =
               ma.args.head.head.asInstanceOf[OpenCode[Actor]]
-
-            // val f = if (redirectMap.contains(methodName)) {
-            //   val renamedMethods: List[String] = redirectMap(methodName)
-
-            //   val redirectedLocalMtdName: String = s"${actorName}.${methodName.split("\\.").last}"
-            //   val redirectedChildMtdName: String = s"${recipientActorVariable.Typ.rep.toString.split("\\.").last}.${methodName.split("\\.").last}"
-
-            //   if (renamedMethods.contains(redirectedLocalMtdName)) {
-            //     println(s"Redirect ${methodName} to local call ${redirectedLocalMtdName}")
-            //     // ScalaCode(cde)
-            //     CallMethod[T](methodsIdMap(redirectedLocalMtdName), argss)
-            //   } else if (renamedMethods.contains(redirectedChildMtdName)) {
-            //     println(s"Redirect ${methodName} to child ${redirectedChildMtdName}")
-            //     Send[T](actorSelfVariable.toCode,
-            //       recipientActorVariable,
-            //       methodsIdMap(redirectedChildMtdName),
-            //       argss, true)
-            //   } else {
-            //     throw new Exception(s"Redirected method ${methodName} to no known dest! ${redirectedLocalMtdName}, ${redirectedChildMtdName}")
-            //   }
-            // } else {
-            //   if (ssoMtds.contains(methodName) && ssoEnabled) {
-            //     val ssoMtdName: String = s"${actorName}.${methodName.split("\\.").last}_sso"
-            //     if (methodsIdMap.get(ssoMtdName).isEmpty) {
-            //       methodsIdMap = methodsIdMap + (ssoMtdName -> Method.getNextMethodId)
-            //       val newMtdInfo = methodsMap(methodName).replica(ssoMtdName)
-            //       methodsMap = methodsMap + (ssoMtdName -> newMtdInfo)
-            //       addedSSOMtd = newMtdInfo :: addedSSOMtd 
-            //     }
-            //     CallMethod[T](methodsIdMap(ssoMtdName), argss)
-            //     // ScalaCode(cde)
-            //   } else 
-            //if (actorSelfVariable.toCode == recipientActorVariable) {
-            //     CallMethod[T](methodsIdMap(methodName), argss)
-            //   } else {
-              //   Send[T](actorSelfVariable.toCode,
-              //     recipientActorVariable,
-              //     methodsIdMap(methodName),
-              //     argss, true)
-              // }
-            // }
             
             val convertLocal = Variable[Boolean]
 
+            val funcName = ma.symbol.toString.split(method_separator).last
             val f = if (actorSelfVariable.toCode != recipientActorVariable) {
                 LetBinding(Some(convertLocal), 
                   ScalaCode(code"""
@@ -600,16 +556,15 @@ class Lifter {
                     ScalaCode(cde), // If convert local, then call directly
                     Send[T](actorSelfVariable.toCode,
                     recipientActorVariable,
-                    methodsIdMap(methodName),
+                    funcName,
                     argss, true))
                 )
             } else {
               // Calling an overloaded method locally
               val actorRep = actorSelfVariable.Typ.rep.toString.split(method_separator).last
-              val funcName = ma.symbol.toString.split(method_separator).last
-              val mtdName = f"${actorRep}.${funcName}"
-              assert(methodsIdMap.get(mtdName).isDefined)
-              CallMethod[T](methodsIdMap(mtdName), argss).asInstanceOf[Algo[T]]
+              val mid = methodsIdMap.get(f"${actorRep}.${funcName}")
+              assert(mid.isDefined)
+              CallMethod[T](mid.get, argss).asInstanceOf[Algo[T]]
             }
             cache += (cde -> f)
             f 
