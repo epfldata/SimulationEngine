@@ -65,32 +65,32 @@ object GraphDrawing {
     * @param graph graph which should be drawn
     * @param name  some name to make file name unique
     */
-  def drawMergeGraph(graph: ListBuffer[MergeInfo], name: String = ""): Unit = {
-    var g: Graph = Factory
-      .graph("ExecutionGraph")
-      .directed()
-      .graphAttr()
-      .`with`(RankDir.LEFT_TO_RIGHT)
+  // def drawMergeGraph(graph: ListBuffer[MergeInfo], name: String = ""): Unit = {
+  //   var g: Graph = Factory
+  //     .graph("ExecutionGraph")
+  //     .directed()
+  //     .graphAttr()
+  //     .`with`(RankDir.LEFT_TO_RIGHT)
 
-    graph
-      .groupBy(_.from.getId)
-      .foreach(y => {
-        // It is required to create each node only once, otherwise some links get lost
-        var nStart = Factory.node(y._1)
-        y._2.foreach(x => {
-          nStart = nStart.link(
-            Factory
-              .to(Factory.node(x.to.getId))
-              .`with`(Color.BLACK)
-              .`with`(Label.of(
-                x.graph1._1 + "->" + x.graph1._2 + "|" + x.graph2._1 + "->" + x.graph2._2)))
-        })
-        g = g.`with`(nStart)
-      })
+  //   graph
+  //     .groupBy(_.from.getId)
+  //     .foreach(y => {
+  //       // It is required to create each node only once, otherwise some links get lost
+  //       var nStart = Factory.node(y._1)
+  //       y._2.foreach(x => {
+  //         nStart = nStart.link(
+  //           Factory
+  //             .to(Factory.node(x.to.getId))
+  //             .`with`(Color.BLACK)
+  //             .`with`(Label.of(
+  //               x.graph1._1 + "->" + x.graph1._2 + "|" + x.graph2._1 + "->" + x.graph2._2)))
+  //       })
+  //       g = g.`with`(nStart)
+  //     })
 
-    val gviz = Graphviz.fromGraph(g)
+  //   val gviz = Graphviz.fromGraph(g)
 
-    gviz.render(Format.PNG).toFile(new File("debug/graph_" + name + ".png"))
-  }
+  //   gviz.render(Format.PNG).toFile(new File("debug/graph_" + name + ".png"))
+  // }
 
 }
