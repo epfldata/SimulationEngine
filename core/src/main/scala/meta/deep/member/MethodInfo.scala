@@ -20,8 +20,12 @@ class MethodInfo[A0](val modifiers: String,
                     val vparams: List[List[IR.Variable[_]]], 
                     val body: OpenCode[A0], 
                     val blocking: Boolean)(implicit val A: CodeType[A0]) {
-  def replica(newSym: String): MethodInfo[A] = {
-    new MethodInfo[A](modifiers, newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
+  def replica(newSym: String, inSubclass: Boolean): MethodInfo[A0] = {
+    if (!inSubclass || modifiers.contains("override")){
+      new MethodInfo[A0](modifiers, newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
+    } else {
+      new MethodInfo[A0]("override "+modifiers, newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
+    }
   }
 
   val mtdName: String = symbol.split("\\.").tail.mkString(".")
@@ -57,7 +61,7 @@ class MethodInfo[A0](val modifiers: String,
     }
 
   f"""
-  def wrapper_${mtdName}(args: List[Any]): ${A.rep.toString} = {
+  private def wrapper_${mtdName}(args: List[Any]): ${A.rep.toString()} = {
     ${argBinds}
   }
   """
