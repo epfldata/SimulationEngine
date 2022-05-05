@@ -48,7 +48,7 @@ abstract class Message extends JsonSerializable {
 case class RequestMessage(override val senderId: AgentId,
                           override val receiverId: AgentId,
                           blocking: Boolean,
-                          methodInfo: Either[String, Int],
+                          methodInfo: String,
                           argss: List[List[Any]])
     extends Message {
 
