@@ -57,6 +57,7 @@ class NewSim2(val n: NewSim2) extends custActor {
 
 class CustAgentTest extends FlatSpec {
     import meta.deep.IR.Predef._
+    import meta.classLifting.Lifter
 
     "Generating new custom agents" should "compile" in {
         val liftMyClass: ClassWithObject[NewSim2] = NewSim2.reflect(IR)
@@ -68,6 +69,7 @@ class CustAgentTest extends FlatSpec {
             }
         }
 
+        Lifter.rootAgents = "custActor" :: Lifter.rootAgents
         compileSims(List(liftMyClass), 
             mainInit = Some(liftedMain), 
             initPkgName = Some(this.getClass().getPackage().getName()),

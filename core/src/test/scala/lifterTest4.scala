@@ -50,6 +50,7 @@ class lifterTest4 extends FlatSpec {
     //         }
     //     }
 
+    //     Lifter.rootAgents = "Person" :: Lifter.rootAgents
     //     compileSims(List(teacherClass, studentClass), 
     //         mainInit = Some(liftedMain), 
     //         initPkgName = Some(this.getClass().getPackage().getName()+".inheritance2"),

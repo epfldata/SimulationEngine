@@ -110,12 +110,12 @@ class CreateCode(initCode: String,
 
     // Some generated variables cause compile error (also dead code), such as List.Coll, thus track for deletion
 
-    def rewriteVariables(code: String): String = {
+    def rewriteVariables(code: String, scope: String): String = {
       code.split(";").map(s => {
         if (s.contains("scala.collection.Iterator") || (s.contains("scala.collection.immutable") && s.contains(".Coll"))){
-          f"  @transient ${s.trim}" 
+          f"@transient ${scope} ${s.trim}" 
         } else {
-          f"  ${s.trim}"
+          f"${scope} ${s.trim}"
         }
       }).mkString("\n")
     }
@@ -125,11 +125,12 @@ class CreateCode(initCode: String,
 
     this.typesReplaceWith = ("this@[a-zA-Z0-9]*", "this") :: this.typesReplaceWith
 
-    val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2)))
+    val initVars: String = changeTypes(rewriteVariables(parts(0).substring(2), "private"))
 
     val stepFunctions: String = changeTypes(parts(1))
 
     // get the reference to memory
+    // println(parts(1))
     val memAddr: String = parts(1).split(" = ").head.trim().split(" ").find(x => x.startsWith("commands_")).get 
 
     GeneratedMethods.memAddr = memAddr
@@ -144,13 +145,12 @@ class CreateCode(initCode: String,
     var initParams: String = changeTypes(
       "\n" + compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.filterNot(x => x.parameter).map(s =>{
-        if (s.mutable) {
-          s"  var ${s.name}: ${s.tpeRep} = ${s.init};"
+        val mutablity: String = if (s.mutable) "var" else "val"
+        if (s.modifiers.contains("override") && s.mutable) {
+          s"  ${s.name} = ${s.init};"
         } else {
-          s"  val ${s.name}: ${s.tpeRep} = ${s.init};"
+          s"  ${s.modifiers.mkString(" ")} ${mutablity} ${s.name}: ${s.tpeRep} = ${s.init};"
         }
-
-        //        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
       })}).mkString("\n"))
 
     // Add the registers related to reflection to the initParams
@@ -523,7 +523,7 @@ $run_until
     if (isMain){
       result
     } else {
-      // new Sims are added to newActors at runtime    
+      // new Sims are added to newActors at runtime
       result = typedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
       nonTypedPattern.replaceAllIn(result, m => {(m + s"${m.group(1)}meta.runtime.SimRuntime.newActors.append(${m.group(2).substring(4)});")})
     }

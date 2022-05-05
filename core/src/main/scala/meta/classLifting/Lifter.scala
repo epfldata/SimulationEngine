@@ -14,20 +14,103 @@ import scala.collection.mutable.{Map => MutMap, ListBuffer}
   * lifts the code into the deep representation [[meta.deep]]
   */
 object Lifter {
-  val recognized_modifiers: Set[String] = Set("override")
-  val modifier_separator: String = "_"
-  val className_separator: String = "\\."
+  val recognizedModifiers: Set[String] = Set("override", "private")
+  // Custom encoding
+  private val modifier_separator: String = "_"    // override_getPrice
+  // Squid-specific
+  private val method_separator: String = "\\." // "Vehicle.getPrice"
+  private val field_separator: String = " "    // "variable price"
 
-  // modifier string, name string
-  def decode_modifiers(name: String): (String, String) = {
-    val names: Array[String] = name.split(className_separator)
+  var rootAgents: List[String] = List("Actor")
+
+  // Return a list of modifiers and the name w.o modifiers
+  private def decode_modifiers(input: String): (List[String], String) = {
+    val components = input.split(modifier_separator).partition(x => recognizedModifiers.contains(x))
+    (components._1.toList, components._2.mkString(modifier_separator))
+  }
+
+  // Parse the method symbol and call decode modifiers
+  private def parse_method_symbol(name: String): (List[String], String) = {
+    val names: Array[String] = name.split(method_separator)
     assert(names.length==2)
-    val class_name = names(0)
-    val mtd_name = names(1)
-    val mtd_name_components = mtd_name.split(modifier_separator).partition(x => recognized_modifiers.contains(x))
-    val modifierStr = mtd_name_components._1.mkString(" ")
-    val nameStr = f"${class_name}.${mtd_name_components._2.mkString(modifier_separator)}"
-    (modifierStr, nameStr)
+    decode_modifiers(names(1))
+  }
+  
+  private def parse_field_symbol(name: String): (List[String], String) = {
+    val names: Array[String] = name.split(field_separator)
+    assert(names.length==2)
+    assert(names(0)=="variable" || names(0)=="value")
+    decode_modifiers(names(1))
+  }
+
+  // The dependency graph of the agents as an adjacency matrix
+  private def buildDependencyGraph(agents: List[Clasz[_ <: Actor]]): Map[String, List[String]] = {
+    val graph: MutMap[String, List[String]] = MutMap()
+    // Initialize the graph with the dependency at definition time
+    for (agent <- agents) {
+      val parents = agent.parents.map(p => p.rep.toString.split("\\.").last)
+      graph(agent.name) = parents
+    }
+    // Identify root nodes of the graph. Assume DAG
+    val separatedAgents = graph.partition(x => x._2.diff(rootAgents).isEmpty)
+    val parentAgents = separatedAgents._1.map(_._1)
+    val childAgentsMap = separatedAgents._2
+    // Recursively update children with the dependency of parents
+    val unplaced: ListBuffer[String] = ListBuffer()
+    unplaced++=childAgentsMap.map(x => x._1)
+    while (unplaced.nonEmpty) {
+      val a = unplaced.remove(0)
+      val nextLayer: List[String] = childAgentsMap(a) 
+      if (!nextLayer.exists(x => unplaced.contains(x))) {
+        try{
+          // Preserve the definition order and remove duplicates
+          graph(a) = (nextLayer ::: nextLayer.flatMap(a => graph(a))).distinct
+        } catch {
+          case e: Exception => throw new Exception(f"Exception when building the dependency graph entry for ${a}. ${e}")
+        }
+      } else {
+        unplaced.append(a)
+      }
+    }
+    graph.toMap
+  }
+
+  // Return a new graph with parents in rootAgents removed and remove agents w/o parents.
+  private def dependencyGraphNoRoot(graph: Map[String, List[String]]): Map[String, List[String]] = {
+    graph.map(i => (i._1, i._2.filterNot(x => rootAgents.contains(x))))
+      .filterNot(_._2.isEmpty)
+  }
+
+  // Each class in Scala can inherit from at most one class and 
+  // Squid does not lift traits, we can evaluate the parents sequentially
+  private def copyToSubclasses[T](dependencyGraph: Map[String, List[String]], classValuesMap: Map[String, List[T]], newItemsUpdate: (String, List[(String, T)]) => Unit) = {
+    // Each class in Scala can inherit from at most one class and 
+    // Squid does not lift traits, we can evaluate the parents sequentially
+    val unplaced: ListBuffer[String] = ListBuffer()
+    unplaced++=dependencyGraph.map(x => x._1)
+
+    while (unplaced.nonEmpty) {
+      // copy to agent class a
+      val a = unplaced.remove(0)
+      // all the agent classes tha a depends on
+      val nextLayer: List[String] = dependencyGraph(a) 
+      // Recursively traverse all dependent agents. 
+      if (!nextLayer.exists(x => unplaced.contains(x))) {
+        try{
+          // Resolve conflicts using shadowing
+          val newItems = nextLayer.map(i => (i, classValuesMap(i))).foldLeft(classValuesMap(a).map((a, _)))((x, red) => {
+            red._2.diff(x.map(_._2)).map((red._1, _)) ::: x
+          }).filter(_._1!=a)
+          // Items in newItems have form (copyFromClass, content)
+          newItemsUpdate(a, newItems)
+        }
+        catch {
+          case e: Exception => throw new Exception(f"Exception when copying to subclass ${a}. ${e}")
+        }
+      } else {
+        unplaced.append(a)
+      }
+    }
   }
 }
 
@@ -43,6 +126,11 @@ class Lifter {
     */
   var methodsMap: Map[String, MethodInfo[_]] = Map()
 
+  /** Maps field names to their field objects
+   * 
+   */ 
+  val fieldsMap: MutMap[String, List[Field]] = MutMap()
+
   /* Map actor name and symbol names (owner.method) of its methods
     * store in String because we would like to add new methods 
     */
@@ -55,9 +143,9 @@ class Lifter {
   var redirectMap: Map[String, List[String]] = Map()
   
   /**
-   * Map each agent (both branch and leaf) with its branch agent parents 
+   * Map each subclass with its super classes, if exist 
    */
-  var inheritance: Map[String, Set[String]] = Map() 
+  var dependencyGraph: Map[String, List[String]] = Map() 
 
   /**
    * Contain the name of methods which are SSO 
@@ -66,45 +154,26 @@ class Lifter {
 
   var ssoEnabled: Boolean = false
 
-  /**
-   * We separate between leafActors and branchActors syntactically 
-   * An actor is leaf iff it has a main method that defines its behaviour; otherwise it is a branch 
-   */ 
-  val leafActors: ListBuffer[Clasz[_ <: Actor]] = new ListBuffer[Clasz[_ <: Actor]]()
-
-  var branchActors: Map[String, Clasz[_ <: Actor]] = Map() 
-
-  
-
   def init(initClasses: List[Clasz[_ <: Actor]]): Unit = {
     for (c <- initClasses) {
-      var mnamess: List[String] = List[String]()  // array of all the symbol names of this class's methods (owner.method) 
-      c.methods.foreach({  
+      val classMethodNames = c.methods.flatMap({
         case method: c.Method[_, _] =>
-          import method.A 
-
+          import method.A
+          // Decode method symbol for possible modifier string
           val raw_mtdName: String = method.symbol.toString()
-          
-          val decoded_name = decode_modifiers(raw_mtdName)
-
-          val mtdName = decoded_name._2
-
+          val decoded_name = parse_method_symbol(raw_mtdName)
+          val mtdName = f"${c.name}.${decoded_name._2}"
           val nextId: Int = Method.getNextMethodId
-
-          mnamess = mtdName :: mnamess
           
-          // If both @override and override_ are used, then consider override_ as the constructor
-          // Allow the method body of override_ to replace that of @override, but not the other way
+          // If both @override X and override_X are defined, then override_X shadows the other
           if (!(methodsIdMap.get(mtdName).isDefined && mtdName==raw_mtdName)){
             methodsIdMap = methodsIdMap + (mtdName -> nextId)
-            // Have both symbols pointing to the same impl
+            // Add a method tag for the raw method name with prefix to simplify matching process
             if (mtdName != raw_mtdName) {
-              mnamess = raw_mtdName :: mnamess
+              // Both raw and decoded method names point to the same function
               methodsIdMap = methodsIdMap + (raw_mtdName -> nextId)
             }
-
             val cde: OpenCode[method.A] = method.body.asOpenCode
-
             methodsMap = methodsMap + (mtdName -> new MethodInfo(
               decoded_name._1,
               mtdName, 
@@ -112,86 +181,81 @@ class Lifter {
               method.vparamss, 
               cde, 
               blockingAnalysis(cde, mtdName))(method.A))
-            
             if (!method.body.toString().contains("this@")) {
               ssoMtds = mtdName :: ssoMtds 
             }
           }
+
+          if (mtdName!=raw_mtdName){
+            List(mtdName, raw_mtdName)
+          } else {
+            List(mtdName)
+          }
       })
-
-      // add the handleMessages to the methodsIdMap and methodsMap 
+      // assert(classMethodNames.distinct.size == classMethodNames.size)
+      // Inject each agent type with method handleMessages to increase code reuse
       methodsIdMap += (c.name +".handleMessages" -> Method.getNextMethodId)
+      // Track function definitions of each class
+      MMap = MMap + (c.name -> classMethodNames)
 
-      if (mnamess.contains(s"${c.name}.main")) {
-        leafActors.append(c) 
-        // println(s"Leaf actor: ${c.name}")
-      } else {
-        branchActors = branchActors + (c.name -> c)
-        // println(s"Branch actor: ${c.name}")
-      }
-      MMap = MMap + (c.name -> mnamess) 
+      val fields: List[Field] = c.fields.map(x => {
+        val varName: String = x.symbol.asTerm.toString()
+        val decodedName = parse_field_symbol(varName)
+        if (x.init.isDefined) {   // state variable
+          Field(decodedName._1,
+            decodedName._2, 
+            x.A.rep.tpe.toString, 
+            IR.showScala(x.init.get.rep), 
+            x.set.nonEmpty, 
+            false)
+        } else {                  // parameter
+          Field(decodedName._1,
+            decodedName._2, 
+            x.A.rep.tpe.toString, 
+            "",
+            x.set.nonEmpty, 
+            true)
+        }})
+      fieldsMap += (c.name -> fields)
     }
   }
 
-     // If a branch agent doesn't have any branch parent, it's completed  
-   // 
-  def addRedirectMethods(): Unit = {
+  def addMethodsToSubclasses(): Unit = {
+    // Create a map for class name and methods including only the suffix
+    val localMethodNamesMap: Map[String, List[String]] = 
+      MMap.map(x => (x._1, x._2.map(i => parse_method_symbol(i))
+        .filterNot(j => j._2=="main"    // do not add main 
+          || MMap(x._1).contains(f"${x._1}.private_${j._2}")  // or private
+          || recognizedModifiers.exists(i => j._1.contains(i))) // or methods with encoding, which are duplicated
+          .map(_._2).distinct))
 
-    val branchActorNames: Set[String] = branchActors.keySet 
-
-    // the buffer contains the names of the branch agents which are yet to find its parents 
-    val unplaced = branchActorNames.toBuffer
-    
-    // a branch agent may inherit from another branch agent 
-    for (c <- branchActors.values) {
-      val parents: Set[String] = c.parents.map(p => p.rep.toString.split("\\.").last).toSet[String]
-      val agentParents: Set[String] = branchActorNames.intersect(parents) 
-
-      if (agentParents.nonEmpty){
-        inheritance = inheritance.updated(c.name, agentParents)
-      } else {
-        unplaced -= c.name
-      }
-    }
-
-    while (unplaced.nonEmpty) {
-      unplaced.foreach(a => {
-        val nextLayer: Set[String] = inheritance(a) 
-        if (!nextLayer.exists(x => unplaced.contains(x))) {
-          inheritance = inheritance.updated(a, nextLayer.flatMap(x => inheritance.getOrElse(x, Set())).union(nextLayer))
-          unplaced -= a
-        }
-      })
-    }
-
-    for (c <- leafActors) {
-      val parents: Set[String] = c.parents.map(p => p.rep.toString.split("\\.").last).toSet[String]
-
-      val cMethods: List[String] = MMap(c.name).toList.map(x => x.split("\\.").last)
-
-      // parents who are also agents 
-      val directAgentParents: Set[String] = branchActorNames.intersect(parents) 
-
-      // include dependencies from its parents
-      val agentParents: Set[String] = directAgentParents
-        .union(directAgentParents.flatMap(x => inheritance.getOrElse(x, Set())))
-      
-      inheritance = inheritance.updated(c.name, agentParents)
-
-      agentParents.foreach(p => { 
-        MMap(p).foreach(n => {
-          val nStr: String = n.split("\\.").last 
-          if (!cMethods.contains(nStr)) {
-            val mtdName: String = s"${c.name}.${nStr}"
+    val newMethodsUpdate: (String, List[(String, String)]) => Unit = 
+      (copyToClass: String, newMethods: List[(String, String)]) => {
+          val newMtdNames = newMethods.map(p => {
+            val mtdName = s"$copyToClass.${p._2}"
             methodsIdMap = methodsIdMap + (mtdName -> Method.getNextMethodId)
-            val origMtdInfo = methodsMap.get(n.toString).get 
-            methodsMap = methodsMap + (mtdName -> origMtdInfo.replica(mtdName))
-            redirectMap = redirectMap.updated(n, mtdName :: redirectMap.getOrElse(n, List()))
-            MMap = MMap.updated(c.name, mtdName :: MMap(c.name))
-          } 
-        })
-      })
-    }
+            methodsMap = methodsMap + (mtdName -> methodsMap(s"${p._1}.${p._2}").replica(mtdName, true))
+            mtdName
+          })
+          MMap = MMap.updated(copyToClass, MMap(copyToClass):::newMtdNames)
+        }
+    copyToSubclasses(this.dependencyGraph, localMethodNamesMap, newMethodsUpdate)
+  }
+
+  // No need to override a value inherited from parents. Just copy the def
+  def addFieldsToSubclasses(): Unit = {
+    // keep only public fields of each agent class
+    val publicFieldsMap: Map[String, List[Field]] = 
+      fieldsMap.map(x => {
+        (x._1, x._2.filterNot(i => i.modifiers.contains("private")))
+      }).toMap
+
+    // Update the fieldsMap with newly added fields
+    val newFieldsUpdate: (String, List[(String, Field)]) => Unit = 
+      (copyToClass: String, newFields: List[(String, Field)]) => {
+          fieldsMap(copyToClass) = fieldsMap(copyToClass) ::: newFields.map(_._2).map(i => i.replica)
+      }
+    copyToSubclasses[Field](this.dependencyGraph, publicFieldsMap, newFieldsUpdate)
   }
 
   /** Lifts the classes and object initialization
@@ -204,15 +268,22 @@ class Lifter {
   def apply(startClasses: List[Clasz[_ <: Actor]])
     : (List[ActorType[_]], Map[String, Int], Map[String, MethodInfo[_]]) = {
 
-    // ssoEnabled = Optimization.sso
-    init(startClasses)
-    addRedirectMethods() 
+      // ssoEnabled = Optimization.sso
+      init(startClasses)
+      val fullDepGraph = buildDependencyGraph(startClasses)
+      val childrenDepGraph = dependencyGraphNoRoot(fullDepGraph)
+      this.dependencyGraph = childrenDepGraph
 
-    val endTypes = leafActors.toList.map(c => {
-      liftActor(c)
-    })
+      if (childrenDepGraph.size>0){
+        addMethodsToSubclasses()
+        addFieldsToSubclasses()
+      }
 
-    (endTypes, methodsIdMap, methodsMap)
+      val endTypes = startClasses.map(c => {
+        liftActor(c)
+      })
+
+      (endTypes, methodsIdMap, methodsMap)
   }
 
   /** Lifts a specific [[Actor]] class into an ActorType
@@ -226,28 +297,8 @@ class Lifter {
     
     val handleMessageSym: String = actorName + ".handleMessages"
     val handleMessageId: Int = methodsIdMap(handleMessageSym)
-
-    val discoveredParents: List[String] = clasz.parents.map(parent => 
-      parent.rep.toString())
-    val agentParents: List[String] = inheritance.getOrElse(actorName, Set()).toList.map(p => branchActors(p).self.Typ.rep.toString())
-    val parentNames: List[String] = discoveredParents.diff(agentParents)
-
-    val fields: List[Field] = 
-      (clasz :: inheritance.getOrElse(actorName, Set()).toList.map(x => branchActors(x))).flatMap(c => c.fields.map(x => {
-        val varName: String = x.symbol.asTerm.toString().split(" ").last
-        if (x.init.isDefined) {   // state variable
-          Field(varName, 
-            x.A.rep.tpe.toString, 
-            IR.showScala(x.init.get.rep), 
-            x.set.nonEmpty, 
-            false)
-        } else {                  // parameter
-          Field(varName, 
-            x.A.rep.tpe.toString, 
-          "",
-            x.set.nonEmpty, 
-            true)
-        }}))
+    val parentNames: List[String] = clasz.parents.map(parent => 
+      parent.rep.toString)
 
     import clasz.C
     val actorSelfVariable: Variable[_ <: Actor] =
@@ -258,7 +309,7 @@ class Lifter {
 
     var mainAlgo: Algo[_] = DoWhile(code"true", Wait())
 
-    var addedSSOMtd: List[MethodInfo[_]] = List() 
+    var addedSSOMtd: List[MethodInfo[_]] = List()
 
     // Add handle message of this actor to the method tables as a special method. Populate the methodsIdMap as well as mehodsMap, but not MMap 
     def addHandleMessageMtd(): LiftedMethod[Unit] = {
@@ -450,7 +501,7 @@ class Lifter {
               curriedMtd match {
                 case code"($sa: $st) => ${MethodApplication(mtd2)}: Any" => {
                   mtd = mtd2.symbol.toString()
-                  println(f"Curried method name is ${mtd}")
+                  // println(f"Curried method name is ${mtd}")
                   if (methodsIdMap.get(mtd).isDefined){
                     recipientActorVariable = mtd2.args.head.head.asInstanceOf[OpenCode[Actor]]
                     if (mtd2.args.last.length != argss.length){
@@ -485,6 +536,7 @@ class Lifter {
         // If a method is both redirect and sso? We would like sso to merge it. 
         case code"${MethodApplication(ma)}:Any "
           if methodsIdMap.get(ma.symbol.toString).isDefined =>
+            // println("Method application name is " + ma.symbol.toString)
             //extracting arguments and formatting them
             var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
 
@@ -552,8 +604,12 @@ class Lifter {
                     argss, true))
                 )
             } else {
-              // println(f"Generate call method for method ${methodName}")
-              CallMethod[T](methodsIdMap(methodName), argss)
+              // Calling an overloaded method locally
+              val actorRep = actorSelfVariable.Typ.rep.toString.split(method_separator).last
+              val funcName = ma.symbol.toString.split(method_separator).last
+              val mtdName = f"${actorRep}.${funcName}"
+              assert(methodsIdMap.get(mtdName).isDefined)
+              CallMethod[T](methodsIdMap(mtdName), argss).asInstanceOf[Algo[T]]
             }
             cache += (cde -> f)
             f 
@@ -670,19 +726,19 @@ class Lifter {
         case code"${MethodApplication(ma)}:Any " =>
           val recipientActorVariable = ma.args.head.head.asInstanceOf[OpenCode[Actor]]
           var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+          // println(cde + " recipient variable is " + recipientActorVariable)
           // Check if calling an overloaded method
           if(actorSelfVariable.toCode == recipientActorVariable){
-            val actorRep = actorSelfVariable.Typ.rep.toString.split(className_separator).last
-            val funcName = ma.symbol.toString.split(className_separator).last
+            val actorRep = actorSelfVariable.Typ.rep.toString.split(method_separator).last
+            val funcName = ma.symbol.toString.split(method_separator).last
             val mtdName = f"${actorRep}.${funcName}"
             if (methodsIdMap.get(mtdName).isDefined){
-              // println(f"Call an overloaded method! ${mtdName}")
               Some(CallMethod[T](methodsIdMap(mtdName), argss).asInstanceOf[Algo[T]])
             } else {
               None
             }
           } else {
-            // println("Method application " + ma.symbol.toString.split(className_separator).last)
+            // println("Method application " + ma.symbol.toString.split(method_separator).last)
             None
           }
 
@@ -702,13 +758,11 @@ class Lifter {
       }}).filter(x => x!=None).toList.map(x => x.get)
     endMethods = endMethods ::: addedSSOMtd.map(m => {liftMethod(m)(cache)})
     val handleMsg = addHandleMessageMtd()
-
-
     endMethods = handleMsg :: endMethods 
-
+    // println(f"Parent names are ${parentNames}")
     ActorType[T](clasz.name,
                  parentNames,
-                 fields,
+                 fieldsMap(clasz.name),
                  endMethods,
                  mainAlgo,
                  clasz.self.asInstanceOf[Variable[T]])
