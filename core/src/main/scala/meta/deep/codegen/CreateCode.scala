@@ -166,7 +166,7 @@ class CreateCode(initCode: String,
       val foo = methodsMap(x._1)
       methodss += changeTypes(foo.toDeclaration())
       methodss += changeTypes(foo.toWrapperDeclaration())
-      f"case ${x._2} => ${foo.toWrapperInvocation()}"
+      f"""case "${x._1.split("\\.").last}" => ${foo.toWrapperInvocation()}"""
     }).mkString("\n")
 
     val handleMsg: String = if (methodCases.isEmpty()) ""  else 
@@ -174,12 +174,7 @@ class CreateCode(initCode: String,
   override def handleNonblockingMessage(m: meta.runtime.RequestMessage): Unit = {
     val args = m.argss.flatten
     val response = m.methodInfo match {
-      case Right(x) => {
-        x match {
-          ${methodCases.split("\n").mkString("\n" + " "*8)}
-        }
-      }
-      case Left(x) => println("For staged implementation only")
+      ${methodCases.split("\n").mkString("\n" + " "*4)}
     }
     m.reply(this, response)
   }
