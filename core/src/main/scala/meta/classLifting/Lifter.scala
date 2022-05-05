@@ -14,25 +14,37 @@ import scala.collection.mutable.{Map => MutMap, ListBuffer}
   * lifts the code into the deep representation [[meta.deep]]
   */
 object Lifter {
-  val recognized_modifiers: Set[String] = Set("override")
-  val modifier_separator: String = "_"
-  val className_separator: String = "\\."
+  val recognizedModifiers: Set[String] = Set("override", "private")
+  // Custom encoding
+  private val modifier_separator: String = "_"    // override_getPrice
+  // Squid-specific
+  private val method_separator: String = "\\." // "Vehicle.getPrice"
+  private val field_separator: String = " "    // "variable price"
+
   var rootAgents: List[String] = List("Actor")
 
-  // Return (modifier, name)
-  def decode_modifiers(name: String): (String, String) = {
-    val names: Array[String] = name.split(className_separator)
+  // Return a list of modifiers and the name w.o modifiers
+  private def decode_modifiers(input: String): (List[String], String) = {
+    val components = input.split(modifier_separator).partition(x => recognizedModifiers.contains(x))
+    (components._1.toList, components._2.mkString(modifier_separator))
+  }
+
+  // Parse the method symbol and call decode modifiers
+  private def parse_method_symbol(name: String): (List[String], String) = {
+    val names: Array[String] = name.split(method_separator)
     assert(names.length==2)
-    val class_name = names(0)
-    val mtd_name = names(1)
-    val mtd_name_components = mtd_name.split(modifier_separator).partition(x => recognized_modifiers.contains(x))
-    val modifierStr = mtd_name_components._1.mkString(" ")
-    val nameStr = f"${class_name}.${mtd_name_components._2.mkString(modifier_separator)}"
-    (modifierStr, nameStr)
+    decode_modifiers(names(1))
+  }
+  
+  private def parse_field_symbol(name: String): (List[String], String) = {
+    val names: Array[String] = name.split(field_separator)
+    assert(names.length==2)
+    assert(names(0)=="variable" || names(0)=="value")
+    decode_modifiers(names(1))
   }
 
   // The dependency graph of the agents as an adjacency matrix
-  def buildDependencyGraph(agents: List[Clasz[_ <: Actor]]): Map[String, List[String]] = {
+  private def buildDependencyGraph(agents: List[Clasz[_ <: Actor]]): Map[String, List[String]] = {
     val graph: MutMap[String, List[String]] = MutMap()
     // Initialize the graph with the dependency at definition time
     for (agent <- agents) {
@@ -64,9 +76,41 @@ object Lifter {
   }
 
   // Return a new graph with parents in rootAgents removed and remove agents w/o parents.
-  def dependencyGraphNoRoot(graph: Map[String, List[String]]): Map[String, List[String]] = {
+  private def dependencyGraphNoRoot(graph: Map[String, List[String]]): Map[String, List[String]] = {
     graph.map(i => (i._1, i._2.filterNot(x => rootAgents.contains(x))))
       .filterNot(_._2.isEmpty)
+  }
+
+  // Each class in Scala can inherit from at most one class and 
+  // Squid does not lift traits, we can evaluate the parents sequentially
+  private def copyToSubclasses[T](dependencyGraph: Map[String, List[String]], classValuesMap: Map[String, List[T]], newItemsUpdate: (String, List[(String, T)]) => Unit) = {
+    // Each class in Scala can inherit from at most one class and 
+    // Squid does not lift traits, we can evaluate the parents sequentially
+    val unplaced: ListBuffer[String] = ListBuffer()
+    unplaced++=dependencyGraph.map(x => x._1)
+
+    while (unplaced.nonEmpty) {
+      // copy to agent class a
+      val a = unplaced.remove(0)
+      // all the agent classes tha a depends on
+      val nextLayer: List[String] = dependencyGraph(a) 
+      // Recursively traverse all dependent agents. 
+      if (!nextLayer.exists(x => unplaced.contains(x))) {
+        try{
+          // Resolve conflicts using shadowing
+          val newItems = nextLayer.map(i => (i, classValuesMap(i))).foldLeft(classValuesMap(a).map((a, _)))((x, red) => {
+            red._2.diff(x.map(_._2)).map((red._1, _)) ::: x
+          }).filter(_._1!=a)
+          // Items in newItems have form (copyFromClass, content)
+          newItemsUpdate(a, newItems)
+        }
+        catch {
+          case e: Exception => throw new Exception(f"Exception when copying to subclass ${a}. ${e}")
+        }
+      } else {
+        unplaced.append(a)
+      }
+    }
   }
 }
 
@@ -81,6 +125,11 @@ class Lifter {
     *
     */
   var methodsMap: Map[String, MethodInfo[_]] = Map()
+
+  /** Maps field names to their field objects
+   * 
+   */ 
+  val fieldsMap: MutMap[String, List[Field]] = MutMap()
 
   /* Map actor name and symbol names (owner.method) of its methods
     * store in String because we would like to add new methods 
@@ -109,11 +158,11 @@ class Lifter {
     for (c <- initClasses) {
       val classMethodNames = c.methods.flatMap({
         case method: c.Method[_, _] =>
-          import method.A 
+          import method.A
           // Decode method symbol for possible modifier string
           val raw_mtdName: String = method.symbol.toString()
-          val decoded_name = decode_modifiers(raw_mtdName)
-          val mtdName = decoded_name._2
+          val decoded_name = parse_method_symbol(raw_mtdName)
+          val mtdName = f"${c.name}.${decoded_name._2}"
           val nextId: Int = Method.getNextMethodId
           
           // If both @override X and override_X are defined, then override_X shadows the other
@@ -148,43 +197,65 @@ class Lifter {
       methodsIdMap += (c.name +".handleMessages" -> Method.getNextMethodId)
       // Track function definitions of each class
       MMap = MMap + (c.name -> classMethodNames)
+
+      val fields: List[Field] = c.fields.map(x => {
+        val varName: String = x.symbol.asTerm.toString()
+        val decodedName = parse_field_symbol(varName)
+        if (x.init.isDefined) {   // state variable
+          Field(decodedName._1,
+            decodedName._2, 
+            x.A.rep.tpe.toString, 
+            IR.showScala(x.init.get.rep), 
+            x.set.nonEmpty, 
+            false)
+        } else {                  // parameter
+          Field(decodedName._1,
+            decodedName._2, 
+            x.A.rep.tpe.toString, 
+            "",
+            x.set.nonEmpty, 
+            true)
+        }})
+      fieldsMap += (c.name -> fields)
     }
   }
 
-  // graph is an adjaceny matrix for children agents, i.e. with dependencies
-  def addMethodsToSubclasses(graph: Map[String, List[String]]): Unit = {
-      val unplaced: ListBuffer[String] = ListBuffer()
-      unplaced++=graph.map(x => x._1)
-      // Create a map for class name and methods including only the suffix
-      val localMethodNamesMap: Map[String, List[String]] = 
-        MMap.map(x => (x._1, x._2.map(i => i.split(className_separator).last)
-          .filterNot(j => j=="main" || recognized_modifiers.exists(i => j.startsWith(i)))))
+  def addMethodsToSubclasses(): Unit = {
+    // Create a map for class name and methods including only the suffix
+    val localMethodNamesMap: Map[String, List[String]] = 
+      MMap.map(x => (x._1, x._2.map(i => parse_method_symbol(i))
+        .filterNot(j => j._2=="main"    // do not add main 
+          || MMap(x._1).contains(f"${x._1}.private_${j._2}")  // or private
+          || recognizedModifiers.exists(i => j._1.contains(i))) // or methods with encoding, which are duplicated
+          .map(_._2).distinct))
 
-      // Each class in Scala can inherit from at most one class and 
-      // Squid does not lift traits, we can evaluate the parents sequentially
-      while (unplaced.nonEmpty) {
-        val a = unplaced.remove(0)
-        val nextLayer: List[String] = graph(a) 
-        if (!nextLayer.exists(x => unplaced.contains(x))) {
-          try{
-            val newMethods = nextLayer.map(i => (i, localMethodNamesMap(i))).foldLeft(localMethodNamesMap(a).map((a, _)))((x, red) => {
-              red._2.diff(x.map(_._2)).map((red._1, _)) ::: x
-            }).filter(_._1!=a).map(p => {
-              val mtdName = s"$a.${p._2}"
-              // println(f"Add new method ${mtdName} based on impl of ${p._1}.${p._2}")
-              methodsIdMap = methodsIdMap + (mtdName -> Method.getNextMethodId)
-              methodsMap = methodsMap + (mtdName -> methodsMap(s"${p._1}.${p._2}").replica(mtdName, true))
-              mtdName
-            })
-            MMap = MMap.updated(a, MMap(a):::newMethods)
-          }
-          catch {
-            case e: Exception => throw new Exception(f"Exception when adding methods to subclass ${a}. ${e}")
-          }
-        } else {
-          unplaced.append(a)
+    val newMethodsUpdate: (String, List[(String, String)]) => Unit = 
+      (copyToClass: String, newMethods: List[(String, String)]) => {
+          val newMtdNames = newMethods.map(p => {
+            val mtdName = s"$copyToClass.${p._2}"
+            methodsIdMap = methodsIdMap + (mtdName -> Method.getNextMethodId)
+            methodsMap = methodsMap + (mtdName -> methodsMap(s"${p._1}.${p._2}").replica(mtdName, true))
+            mtdName
+          })
+          MMap = MMap.updated(copyToClass, MMap(copyToClass):::newMtdNames)
         }
+    copyToSubclasses(this.dependencyGraph, localMethodNamesMap, newMethodsUpdate)
+  }
+
+  // No need to override a value inherited from parents. Just copy the def
+  def addFieldsToSubclasses(): Unit = {
+    // keep only public fields of each agent class
+    val publicFieldsMap: Map[String, List[Field]] = 
+      fieldsMap.map(x => {
+        (x._1, x._2.filterNot(i => i.modifiers.contains("private")))
+      }).toMap
+
+    // Update the fieldsMap with newly added fields
+    val newFieldsUpdate: (String, List[(String, Field)]) => Unit = 
+      (copyToClass: String, newFields: List[(String, Field)]) => {
+          fieldsMap(copyToClass) = fieldsMap(copyToClass) ::: newFields.map(_._2).map(i => i.replica)
       }
+    copyToSubclasses[Field](this.dependencyGraph, publicFieldsMap, newFieldsUpdate)
   }
 
   /** Lifts the classes and object initialization
@@ -204,7 +275,8 @@ class Lifter {
       this.dependencyGraph = childrenDepGraph
 
       if (childrenDepGraph.size>0){
-        addMethodsToSubclasses(childrenDepGraph)
+        addMethodsToSubclasses()
+        addFieldsToSubclasses()
       }
 
       val endTypes = startClasses.map(c => {
@@ -227,25 +299,6 @@ class Lifter {
     val handleMessageId: Int = methodsIdMap(handleMessageSym)
     val parentNames: List[String] = clasz.parents.map(parent => 
       parent.rep.toString)
-    // val parentNames: List[String] = dependencyGraph.getOrElse(actorName, List("meta.runtime.Actor"))
-
-    // Do not support inheriting values yet
-    val fields: List[Field] = 
-      clasz.fields.map(x => {
-        val varName: String = x.symbol.asTerm.toString().split(" ").last
-        if (x.init.isDefined) {   // state variable
-          Field(varName, 
-            x.A.rep.tpe.toString, 
-            IR.showScala(x.init.get.rep), 
-            x.set.nonEmpty, 
-            false)
-        } else {                  // parameter
-          Field(varName, 
-            x.A.rep.tpe.toString, 
-          "",
-            x.set.nonEmpty, 
-            true)
-        }})
 
     import clasz.C
     val actorSelfVariable: Variable[_ <: Actor] =
@@ -256,7 +309,7 @@ class Lifter {
 
     var mainAlgo: Algo[_] = DoWhile(code"true", Wait())
 
-    var addedSSOMtd: List[MethodInfo[_]] = List() 
+    var addedSSOMtd: List[MethodInfo[_]] = List()
 
     // Add handle message of this actor to the method tables as a special method. Populate the methodsIdMap as well as mehodsMap, but not MMap 
     def addHandleMessageMtd(): LiftedMethod[Unit] = {
@@ -552,8 +605,8 @@ class Lifter {
                 )
             } else {
               // Calling an overloaded method locally
-              val actorRep = actorSelfVariable.Typ.rep.toString.split(className_separator).last
-              val funcName = ma.symbol.toString.split(className_separator).last
+              val actorRep = actorSelfVariable.Typ.rep.toString.split(method_separator).last
+              val funcName = ma.symbol.toString.split(method_separator).last
               val mtdName = f"${actorRep}.${funcName}"
               assert(methodsIdMap.get(mtdName).isDefined)
               CallMethod[T](methodsIdMap(mtdName), argss).asInstanceOf[Algo[T]]
@@ -676,8 +729,8 @@ class Lifter {
           // println(cde + " recipient variable is " + recipientActorVariable)
           // Check if calling an overloaded method
           if(actorSelfVariable.toCode == recipientActorVariable){
-            val actorRep = actorSelfVariable.Typ.rep.toString.split(className_separator).last
-            val funcName = ma.symbol.toString.split(className_separator).last
+            val actorRep = actorSelfVariable.Typ.rep.toString.split(method_separator).last
+            val funcName = ma.symbol.toString.split(method_separator).last
             val mtdName = f"${actorRep}.${funcName}"
             if (methodsIdMap.get(mtdName).isDefined){
               Some(CallMethod[T](methodsIdMap(mtdName), argss).asInstanceOf[Algo[T]])
@@ -685,7 +738,7 @@ class Lifter {
               None
             }
           } else {
-            // println("Method application " + ma.symbol.toString.split(className_separator).last)
+            // println("Method application " + ma.symbol.toString.split(method_separator).last)
             None
           }
 
@@ -709,7 +762,7 @@ class Lifter {
     // println(f"Parent names are ${parentNames}")
     ActorType[T](clasz.name,
                  parentNames,
-                 fields,
+                 fieldsMap(clasz.name),
                  endMethods,
                  mainAlgo,
                  clasz.self.asInstanceOf[Variable[T]])

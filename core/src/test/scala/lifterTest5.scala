@@ -16,6 +16,9 @@ import org.scalatest.FlatSpec
 class Vehicle() extends Actor {
     var price: Int = 20
     var load: Int = 10
+    val licensePlate: Int = 0
+
+    private val private_donot_copy: Double = 512
 
     def getLoad(): Int = {
         load
@@ -23,6 +26,11 @@ class Vehicle() extends Actor {
 
     def getPrice(): Int = {
         price
+    }
+
+    // Should not get copied to children
+    private def private_local_mtd(): Unit = {
+        println("This is an invisible local method!")
     }
 
     def main(): Unit = {
@@ -34,16 +42,21 @@ class Vehicle() extends Actor {
 
 @lift
 class ShortDistanceTransport() extends Vehicle {
+    val licensePlace: Int = 800
 
-    price = 15
+    private val private_donot_copy: Double = 521
+    // price = 15
     def override_getPrice(): Int = {
+        // Make sure this method is called
+        price = price + 2
         price
     }
 
     override def main(): Unit = {
+        price = 15
         while (true) {
             val x = getPrice()
-            println("Short distance transport price is " + x + " should be 15")
+            println("Short distance transport price is " + x)
             val y = getLoad()
             println("Short distance transport load is " + y + " should be 10")
             waitAndReply(1)
@@ -59,6 +72,10 @@ class Bus() extends ShortDistanceTransport {
         currentPassengers
     }
 
+    override def override_getPrice(): Int = {
+        price
+    }
+
     override def main(): Unit = {
         while (true) {
             val x = getPrice()
@@ -71,7 +88,7 @@ class Bus() extends ShortDistanceTransport {
 }
 
 @lift
-class Van() extends ShortDistanceTransport {
+class Van() extends Vehicle {
 
     override def main(): Unit = {
         while (true) {
@@ -105,7 +122,10 @@ class lifterTest5 extends FlatSpec {
             }
         }
 
-        compileSims(List(vehicleClass, shortDistanceClass, busClass, vanClass
+        compileSims(List(
+        vehicleClass, 
+        shortDistanceClass, 
+        busClass, vanClass
         ), 
             mainInit = Some(liftedMain), 
             initPkgName = Some(this.getClass().getPackage().getName()+".inheritance3"),

@@ -145,13 +145,12 @@ class CreateCode(initCode: String,
     var initParams: String = changeTypes(
       "\n" + compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.filterNot(x => x.parameter).map(s =>{
-        if (s.mutable) {
-          s"  var ${s.name}: ${s.tpeRep} = ${s.init};"
+        val mutablity: String = if (s.mutable) "var" else "val"
+        if (s.modifiers.contains("override") && s.mutable) {
+          s"  ${s.name} = ${s.init};"
         } else {
-          s"  val ${s.name}: ${s.tpeRep} = ${s.init};"
+          s"  ${s.modifiers.mkString(" ")} ${mutablity} ${s.name}: ${s.tpeRep} = ${s.init};"
         }
-
-        //        s"  var ${actorType.name}_${s.sym.name}: ${changeTypes(s.tpe.rep.toString)} = ${changeTypes(IR.showScala(s.init.rep))}"
       })}).mkString("\n"))
 
     // Add the registers related to reflection to the initParams

@@ -14,7 +14,7 @@ import meta.deep.IR.Predef._
   * @tparam A return value type
   */
 
-class MethodInfo[A0](val modifiers: String,
+class MethodInfo[A0](val modifiers: List[String],
                     val symbol: String,
                     val tparams: List[IR.TypParam],
                     val vparams: List[List[IR.Variable[_]]], 
@@ -24,7 +24,7 @@ class MethodInfo[A0](val modifiers: String,
     if (!inSubclass || modifiers.contains("override")){
       new MethodInfo[A0](modifiers, newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
     } else {
-      new MethodInfo[A0]("override "+modifiers, newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
+      new MethodInfo[A0]("override"::modifiers, newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
     }
   }
 
@@ -71,12 +71,12 @@ class MethodInfo[A0](val modifiers: String,
     argSyms match {
       case None =>
   f"""
-  ${modifiers} def ${mtdName}: ${A.rep.toString} =
+  ${modifiers.mkString(" ")} def ${mtdName}: ${A.rep.toString} =
       ${bodyStr}
   """
       case Some(x) =>
   f"""
-  ${modifiers} def ${mtdName}(${x.map(p => p._1 + ": " + p._2).mkString(",")}): ${A.rep.toString} = 
+  ${modifiers.mkString(" ")} def ${mtdName}(${x.map(p => p._1 + ": " + p._2).mkString(",")}): ${A.rep.toString} = 
       ${bodyStr}
   """
     }

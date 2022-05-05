@@ -10,10 +10,17 @@ import meta.runtime.Actor
   * @param init: the initial value of the field 
   * @param mutable: a boolean indicating whether the field is mutable 
   * @param parameter: a boolean indicating whether the field is in the parameter 
+  * @param isCopiedToSubclass: a boolean
   */
 case class Field (
+    modifiers: List[String],
     name: String,
     tpeRep: String, 
     init: String, 
     mutable: Boolean, 
-    parameter: Boolean) 
+    parameter: Boolean) {
+      // add "override" to the modifier in replicated fields
+      def replica(): Field = {
+        Field("override":: modifiers, name, tpeRep, init, mutable, parameter)
+      }
+    }
