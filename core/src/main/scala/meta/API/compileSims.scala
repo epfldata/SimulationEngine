@@ -44,8 +44,8 @@ object compileSims {
     statemachineElements = mode match {
       case Vanilla => 
         statemachineElements
-      case SimsMerge(namePairs) =>
-        new ActorMerge(namePairs) :: statemachineElements
+      // case SimsMerge(namePairs) =>
+      //   new ActorMerge(namePairs) :: statemachineElements
     }
 
     mode.setPackage(nameMap)

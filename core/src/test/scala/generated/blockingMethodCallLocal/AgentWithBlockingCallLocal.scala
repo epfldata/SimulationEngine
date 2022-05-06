@@ -3,23 +3,23 @@ package generated.meta.test.blockingMethodCallLocal
 class AgentWithBlockingCallLocal() extends meta.runtime.Actor {
 
 
-  private var  reflectionIR_14: Int = -1
-  var resetData_0: scala.Any = null
-  val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
-  var resetData_2: meta.runtime.ResponseMessage = null
-  var bindingMut_3: java.lang.String = null
-  var bindingMut_4: scala.Long = 0L
-  var bindingMut_5: scala.Double = 0.0
-  var bindingMut_6: java.lang.String = null
-  var bindingMut_7: scala.Long = 0L
-  var bindingMut_8: scala.Any = null
-  var listValMut_9: meta.runtime.RequestMessage = null
-  @transient var iterMut_10: scala.collection.Iterator[meta.runtime.RequestMessage] = null
-  var bindingMut_11: scala.Double = 0.0
-  var unblockFlag_12: scala.Boolean = true
-  var positionVar_13: scala.Int = 0
-  
-  val commands_120 = (() => {
+  private var  reflectionIR_77: Int = -1
+private var resetData_0: scala.Any = null
+private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
+private var resetData_2: meta.runtime.ResponseMessage = null
+private var bindingMut_3: java.lang.String = null
+private var bindingMut_4: scala.Long = 0L
+private var bindingMut_5: scala.Double = 0.0
+private var bindingMut_6: java.lang.String = null
+private var bindingMut_7: scala.Long = 0L
+private var bindingMut_8: scala.Any = null
+private var listValMut_9: meta.runtime.RequestMessage = null
+@transient private var iterMut_10: scala.collection.Iterator[meta.runtime.RequestMessage] = null
+private var bindingMut_11: scala.Double = 0.0
+private var unblockFlag_12: scala.Boolean = true
+private var positionVar_13: scala.Int = 0
+private 
+  val commands_116 = (() => {
   val data_14 = new scala.Array[scala.Function0[scala.Unit]](35);
   data_14.update(0, (() => positionVar_13 = 1));
   data_14.update(1, (() => {
@@ -130,145 +130,141 @@ class AgentWithBlockingCallLocal() extends meta.runtime.Actor {
   data_14.update(10, (() => {
     val x_60 = listValMut_9;
     val x_61 = x_60.methodInfo;
-    val x_62 = scala.`package`.Right.apply[scala.Nothing, scala.Int](5);
-    val x_63 = x_61.==(x_62);
-    if (x_63)
+    val x_62 = x_61.==("blockingMtd");
+    if (x_62)
       positionVar_13 = 11
     else
-      positionVar_13 = 20
+      positionVar_13 = 13
   }));
-  data_14.update(11, (() => {
-    val x_64 = listValMut_9;
-    this.handleNonblockingMessage(x_64);
-    resetData_0 = ();
-    positionVar_13 = 12
+  data_14.update(11, (() => positionVar_13 = 12));
+  data_14.update(12, (() => {
+    positionVar_13 = 2;
+    val x_63 = scala.Tuple2.apply[scala.Int, scala.Int](-1, -1);
+    val x_64 = scala.Tuple2.apply[scala.Tuple2[scala.Int, scala.Int], scala.Int](x_63, 6);
+    val x_65 = scala.collection.immutable.Nil.::[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]](x_64);
+    resetData_1.prepend(x_65)
   }));
-  data_14.update(12, (() => positionVar_13 = 8));
   data_14.update(13, (() => {
-    positionVar_13 = 14;
-    val x_65 = scala.Tuple2.apply[scala.Int, scala.Int](-1, -1);
-    val x_66 = scala.Tuple2.apply[scala.Tuple2[scala.Int, scala.Int], scala.Int](x_65, 15);
-    val x_67 = scala.collection.immutable.Nil.::[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]](x_66);
-    resetData_1.prepend(x_67)
-  }));
-  data_14.update(14, (() => {
-    val x_68 = this.id;
-    val x_69 = x_68.+(" processes a nonblocking mtd!");
-    scala.Predef.println(x_69);
-    resetData_0 = false;
-    val x_70 = resetData_1.remove(0);
-    val x_74 = x_70.find(((x_71: scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]) => {
-      val x_72 = x_71._1;
-      val x_73 = scala.Tuple2.apply[scala.Int, scala.Int](-1, -1);
-      x_72.==(x_73)
-    }));
-    val x_75 = x_74.get;
-    val x_76 = x_75._2;
-    positionVar_13 = x_76
-  }));
-  data_14.update(15, (() => {
-    val x_77 = resetData_0;
-    val x_78 = x_77.asInstanceOf[scala.Any];
-    bindingMut_8 = x_78;
-    val x_79 = bindingMut_8;
-    val x_80 = listValMut_9;
-    x_80.reply(this, x_79);
-    resetData_0 = ();
-    positionVar_13 = 12
-  }));
-  data_14.update(16, (() => {
-    resetData_0 = 0.0;
-    val x_81 = resetData_0;
-    val x_82 = x_81.asInstanceOf[scala.Double];
-    bindingMut_11 = x_82;
-    positionVar_13 = 17
-  }));
-  data_14.update(17, (() => {
-    val x_83 = bindingMut_11;
-    val x_84 = x_83.+(1);
-    resetData_0 = x_84;
-    val x_85 = resetData_0;
-    val x_86 = x_85.asInstanceOf[scala.Double];
-    bindingMut_11 = x_86;
-    positionVar_13 = 18;
-    unblockFlag_12 = false
-  }));
-  data_14.update(18, (() => positionVar_13 = 19));
-  data_14.update(19, (() => {
-    val x_87 = this.popRequestMessages;
-    val x_88 = x_87.iterator;
-    iterMut_10 = x_88;
-    positionVar_13 = 9
-  }));
-  data_14.update(20, (() => {
-    val x_89 = listValMut_9;
-    val x_90 = x_89.methodInfo;
-    val x_91 = scala.`package`.Right.apply[scala.Nothing, scala.Int](5);
-    val x_92 = x_90.==(x_91);
-    val x_93 = x_92.`unary_!`;
-    if (x_93)
-      positionVar_13 = 21
+    val x_66 = listValMut_9;
+    val x_67 = x_66.methodInfo;
+    val x_68 = x_67.==("blockingMtd");
+    val x_69 = x_68.`unary_!`;
+    if (x_69)
+      positionVar_13 = 14
     else
       ()
   }));
-  data_14.update(21, (() => {
-    val x_94 = listValMut_9;
-    val x_95 = x_94.methodInfo;
-    val x_96 = scala.`package`.Right.apply[scala.Nothing, scala.Int](4);
-    val x_97 = x_95.==(x_96);
-    if (x_97)
-      positionVar_13 = 22
+  data_14.update(14, (() => {
+    val x_70 = listValMut_9;
+    val x_71 = x_70.methodInfo;
+    val x_72 = x_71.==("nonBlockingMtd");
+    if (x_72)
+      positionVar_13 = 15
     else
       positionVar_13 = 24
   }));
+  data_14.update(15, (() => {
+    val x_73 = listValMut_9;
+    this.handleNonblockingMessage(x_73);
+    resetData_0 = ();
+    positionVar_13 = 16
+  }));
+  data_14.update(16, (() => positionVar_13 = 8));
+  data_14.update(17, (() => {
+    positionVar_13 = 18;
+    val x_74 = scala.Tuple2.apply[scala.Int, scala.Int](-1, -1);
+    val x_75 = scala.Tuple2.apply[scala.Tuple2[scala.Int, scala.Int], scala.Int](x_74, 19);
+    val x_76 = scala.collection.immutable.Nil.::[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]](x_75);
+    resetData_1.prepend(x_76)
+  }));
+  data_14.update(18, (() => {
+    val x_77 = this.id;
+    val x_78 = x_77.+(" processes a nonblocking mtd!");
+    scala.Predef.println(x_78);
+    resetData_0 = false;
+    val x_79 = resetData_1.remove(0);
+    val x_83 = x_79.find(((x_80: scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]) => {
+      val x_81 = x_80._1;
+      val x_82 = scala.Tuple2.apply[scala.Int, scala.Int](-1, -1);
+      x_81.==(x_82)
+    }));
+    val x_84 = x_83.get;
+    val x_85 = x_84._2;
+    positionVar_13 = x_85
+  }));
+  data_14.update(19, (() => {
+    val x_86 = resetData_0;
+    val x_87 = x_86.asInstanceOf[scala.Any];
+    bindingMut_8 = x_87;
+    val x_88 = bindingMut_8;
+    val x_89 = listValMut_9;
+    x_89.reply(this, x_88);
+    resetData_0 = ();
+    positionVar_13 = 16
+  }));
+  data_14.update(20, (() => {
+    resetData_0 = 0.0;
+    val x_90 = resetData_0;
+    val x_91 = x_90.asInstanceOf[scala.Double];
+    bindingMut_11 = x_91;
+    positionVar_13 = 21
+  }));
+  data_14.update(21, (() => {
+    val x_92 = bindingMut_11;
+    val x_93 = x_92.+(1);
+    resetData_0 = x_93;
+    val x_94 = resetData_0;
+    val x_95 = x_94.asInstanceOf[scala.Double];
+    bindingMut_11 = x_95;
+    positionVar_13 = 22;
+    unblockFlag_12 = false
+  }));
   data_14.update(22, (() => positionVar_13 = 23));
   data_14.update(23, (() => {
-    positionVar_13 = 2;
-    val x_98 = scala.Tuple2.apply[scala.Int, scala.Int](-1, -1);
-    val x_99 = scala.Tuple2.apply[scala.Tuple2[scala.Int, scala.Int], scala.Int](x_98, 6);
-    val x_100 = scala.collection.immutable.Nil.::[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]](x_99);
-    resetData_1.prepend(x_100)
+    val x_96 = this.popRequestMessages;
+    val x_97 = x_96.iterator;
+    iterMut_10 = x_97;
+    positionVar_13 = 9
   }));
   data_14.update(24, (() => {
-    val x_101 = listValMut_9;
-    val x_102 = x_101.methodInfo;
-    val x_103 = scala.`package`.Right.apply[scala.Nothing, scala.Int](4);
-    val x_104 = x_102.==(x_103);
-    val x_105 = x_104.`unary_!`;
-    if (x_105)
+    val x_98 = listValMut_9;
+    val x_99 = x_98.methodInfo;
+    val x_100 = x_99.==("nonBlockingMtd");
+    val x_101 = x_100.`unary_!`;
+    if (x_101)
       {
-        val x_106 = listValMut_9;
-        val x_107 = scala.collection.immutable.List.apply[meta.runtime.RequestMessage](x_106);
-        val x_108 = this.addReceiveMessages(x_107);
-        resetData_0 = x_108;
+        val x_102 = listValMut_9;
+        val x_103 = scala.collection.immutable.List.apply[meta.runtime.RequestMessage](x_102);
+        val x_104 = this.addReceiveMessages(x_103);
+        resetData_0 = x_104;
         positionVar_13 = 8
       }
     else
       ()
   }));
   data_14.update(25, (() => {
-    val x_109 = iterMut_10;
-    val x_110 = x_109.hasNext;
-    val x_111 = x_110.`unary_!`;
-    if (x_111)
+    val x_105 = iterMut_10;
+    val x_106 = x_105.hasNext;
+    val x_107 = x_106.`unary_!`;
+    if (x_107)
       positionVar_13 = 26
     else
       ()
   }));
   data_14.update(26, (() => positionVar_13 = 27));
   data_14.update(27, (() => {
-    val x_112 = bindingMut_11;
-    val x_113 = x_112.<(1.0);
-    if (x_113)
-      positionVar_13 = 17
+    val x_108 = bindingMut_11;
+    val x_109 = x_108.<(1.0);
+    if (x_109)
+      positionVar_13 = 21
     else
       positionVar_13 = 28
   }));
   data_14.update(28, (() => {
-    val x_114 = bindingMut_11;
-    val x_115 = x_114.<(1.0);
-    val x_116 = x_115.`unary_!`;
-    if (x_116)
+    val x_110 = bindingMut_11;
+    val x_111 = x_110.<(1.0);
+    val x_112 = x_111.`unary_!`;
+    if (x_112)
       positionVar_13 = 29
     else
       ()
@@ -281,18 +277,18 @@ class AgentWithBlockingCallLocal() extends meta.runtime.Actor {
   }));
   data_14.update(32, (() => positionVar_13 = 31));
   data_14.update(33, (() => {
-    positionVar_13 = 14;
-    val x_117 = scala.Tuple2.apply[scala.Int, scala.Int](-1, -1);
-    val x_118 = scala.Tuple2.apply[scala.Tuple2[scala.Int, scala.Int], scala.Int](x_117, 16);
-    val x_119 = scala.collection.immutable.Nil.::[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]](x_118);
-    resetData_1.prepend(x_119)
+    positionVar_13 = 18;
+    val x_113 = scala.Tuple2.apply[scala.Int, scala.Int](-1, -1);
+    val x_114 = scala.Tuple2.apply[scala.Tuple2[scala.Int, scala.Int], scala.Int](x_113, 20);
+    val x_115 = scala.collection.immutable.Nil.::[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]](x_114);
+    resetData_1.prepend(x_115)
   }));
   data_14.update(34, (() => positionVar_13 = 31));
   data_14
 }).apply();
   
 
-  def nonBlockingMtd(): Boolean = 
+   def nonBlockingMtd(): Boolean = 
       {
   val x_0 = this.id;
   val x_1 = x_0.+(" processes a nonblocking mtd!");
@@ -300,7 +296,7 @@ class AgentWithBlockingCallLocal() extends meta.runtime.Actor {
   false
 }
   
-  def wrapper_nonBlockingMtd(args: List[Any]): Boolean = {
+  private def wrapper_nonBlockingMtd(args: List[Any]): Boolean = {
     
           
           nonBlockingMtd()
@@ -312,7 +308,7 @@ class AgentWithBlockingCallLocal() extends meta.runtime.Actor {
     sendMessages.clear()
     unblockFlag_12 = true
     while (unblockFlag_12 && (positionVar_13 < 35)) {
-      commands_120(positionVar_13)()
+      commands_116(positionVar_13)()
     }
     (sendMessages.toList, 1)
   }
@@ -320,12 +316,7 @@ class AgentWithBlockingCallLocal() extends meta.runtime.Actor {
   override def handleNonblockingMessage(m: meta.runtime.RequestMessage): Unit = {
     val args = m.argss.flatten
     val response = m.methodInfo match {
-      case Right(x) => {
-        x match {
-          case 5 => wrapper_nonBlockingMtd(args)
-        }
-      }
-      case Left(x) => println("For staged implementation only")
+      case "nonBlockingMtd" => wrapper_nonBlockingMtd(args)
     }
     m.reply(this, response)
   }
@@ -334,27 +325,32 @@ class AgentWithBlockingCallLocal() extends meta.runtime.Actor {
       // first entry, save the current IR to reflectionIR
       unblockFlag_12 = true
 
-      if (reflectionIR_14 == -1){
-        reflectionIR_14 = positionVar_13
+      if (reflectionIR_77 == -1){
+        reflectionIR_77 = positionVar_13
         positionVar_13 = new_ir
       }
 
-      while (positionVar_13 <= 23 && unblockFlag_12) {
-        commands_120(positionVar_13)()
+      while (positionVar_13 <= 24 && unblockFlag_12) {
+        commands_116(positionVar_13)()
       }
 
       // reset instruction register when finishes processing
-      if (positionVar_13 > 23) {
-        positionVar_13 = reflectionIR_14
-        reflectionIR_14 = -1
+      if (positionVar_13 > 24) {
+        positionVar_13 = reflectionIR_77
+        reflectionIR_77 = -1
       }
       this
     }
     
 override def SimClone(): AgentWithBlockingCallLocal = {
   val newAgent = new AgentWithBlockingCallLocal()
-  
+
   newAgent
+}
+
+override def SimReset(): Unit = {
+  positionVar_13 = 0
+  
 }
 
 }

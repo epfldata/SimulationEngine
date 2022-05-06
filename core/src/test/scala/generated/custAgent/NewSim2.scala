@@ -3,24 +3,24 @@ package generated.meta.test.custAgent
 class NewSim2(val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime.Actor with meta.test.custAgent.custActor {
 
 
-  private var  reflectionIR_79: Int = -1
-  var resetData_0: scala.Any = null
-  val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
-  var resetData_2: meta.runtime.ResponseMessage = null
-  var bindingMut_3: scala.Any = null
-  var listValMut_4: meta.runtime.RequestMessage = null
-  @transient var iterMut_5: scala.collection.Iterator[meta.runtime.RequestMessage] = null
-  var bindingMut_6: scala.Double = 0.0
-  var bindingMut_7: scala.Boolean = false
-  var bindingMut_8: generated.meta.test.custAgent.NewSim2 = null
-  var bindingMut_9: scala.Boolean = false
-  var bindingMut_10: generated.meta.test.custAgent.NewSim2 = null
-  var bindingMut_11: java.lang.String = null
-  var bindingMut_12: scala.Long = 0L
-  var unblockFlag_13: scala.Boolean = true
-  var positionVar_14: scala.Int = 0
-  
-  val commands_102 = (() => {
+  private var  reflectionIR_86: Int = -1
+private var resetData_0: scala.Any = null
+private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
+private var resetData_2: meta.runtime.ResponseMessage = null
+private var bindingMut_3: scala.Any = null
+private var listValMut_4: meta.runtime.RequestMessage = null
+@transient private var iterMut_5: scala.collection.Iterator[meta.runtime.RequestMessage] = null
+private var bindingMut_6: scala.Double = 0.0
+private var bindingMut_7: scala.Boolean = false
+private var bindingMut_8: generated.meta.test.custAgent.NewSim2 = null
+private var bindingMut_9: scala.Boolean = false
+private var bindingMut_10: generated.meta.test.custAgent.NewSim2 = null
+private var bindingMut_11: java.lang.String = null
+private var bindingMut_12: scala.Long = 0L
+private var unblockFlag_13: scala.Boolean = true
+private var positionVar_14: scala.Int = 0
+private 
+  val commands_99 = (() => {
   val data_15 = new scala.Array[scala.Function0[scala.Unit]](32);
   data_15.update(0, (() => positionVar_14 = 1));
   data_15.update(1, (() => {
@@ -99,16 +99,15 @@ class NewSim2(val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime
   data_15.update(8, (() => {
     val x_45 = listValMut_4;
     val x_46 = x_45.methodInfo;
-    val x_47 = scala.`package`.Right.apply[scala.Nothing, scala.Int](0);
-    val x_48 = x_46.==(x_47);
-    if (x_48)
+    val x_47 = x_46.==("someMtd");
+    if (x_47)
       positionVar_14 = 9
     else
       positionVar_14 = 15
   }));
   data_15.update(9, (() => {
-    val x_49 = listValMut_4;
-    this.handleNonblockingMessage(x_49);
+    val x_48 = listValMut_4;
+    this.handleNonblockingMessage(x_48);
     resetData_0 = ();
     positionVar_14 = 10
   }));
@@ -121,55 +120,54 @@ class NewSim2(val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime
     positionVar_14 = 14
   }));
   data_15.update(14, (() => {
-    val x_50 = resetData_0;
-    val x_51 = x_50.asInstanceOf[scala.Any];
-    bindingMut_3 = x_51;
-    val x_52 = bindingMut_3;
-    val x_53 = listValMut_4;
-    x_53.reply(this, x_52);
+    val x_49 = resetData_0;
+    val x_50 = x_49.asInstanceOf[scala.Any];
+    bindingMut_3 = x_50;
+    val x_51 = bindingMut_3;
+    val x_52 = listValMut_4;
+    x_52.reply(this, x_51);
     resetData_0 = ();
     positionVar_14 = 10
   }));
   data_15.update(15, (() => {
-    val x_54 = listValMut_4;
-    val x_55 = x_54.methodInfo;
-    val x_56 = scala.`package`.Right.apply[scala.Nothing, scala.Int](0);
-    val x_57 = x_55.==(x_56);
-    val x_58 = x_57.`unary_!`;
-    if (x_58)
+    val x_53 = listValMut_4;
+    val x_54 = x_53.methodInfo;
+    val x_55 = x_54.==("someMtd");
+    val x_56 = x_55.`unary_!`;
+    if (x_56)
       {
-        val x_59 = listValMut_4;
-        val x_60 = scala.collection.immutable.List.apply[meta.runtime.RequestMessage](x_59);
-        val x_61 = this.addReceiveMessages(x_60);
-        resetData_0 = x_61;
+        val x_57 = listValMut_4;
+        val x_58 = scala.collection.immutable.List.apply[meta.runtime.RequestMessage](x_57);
+        val x_59 = this.addReceiveMessages(x_58);
+        resetData_0 = x_59;
         positionVar_14 = 11
       }
     else
       ()
   }));
   data_15.update(16, (() => {
-    val x_62 = iterMut_5;
-    val x_63 = x_62.hasNext;
-    val x_64 = x_63.`unary_!`;
-    if (x_64)
+    val x_60 = iterMut_5;
+    val x_61 = x_60.hasNext;
+    val x_62 = x_61.`unary_!`;
+    if (x_62)
       positionVar_14 = 17
     else
       ()
   }));
   data_15.update(17, (() => positionVar_14 = 18));
   data_15.update(18, (() => {
-    val x_65 = bindingMut_6;
-    val x_66 = x_65.<(1.0);
-    if (x_66)
+    val x_63 = bindingMut_6;
+    val x_64 = x_63.<(1.0);
+    if (x_64)
       positionVar_14 = 4
     else
       positionVar_14 = 19
   }));
   data_15.update(19, (() => {
-    val x_67 = bindingMut_6;
-    val x_68 = x_67.<(1.0);
-    val x_69 = x_68.`unary_!`;
-    if (x_69)
+    val x_65 = bindingMut_6;
+    val x_66 = x_65.<(1.0);
+    val x_67 = x_66.`unary_!`;
+    if (x_67)
       positionVar_14 = 20
     else
       ()
@@ -182,48 +180,47 @@ class NewSim2(val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime
   }));
   data_15.update(23, (() => positionVar_14 = 22));
   data_15.update(24, (() => {
-    val x_70 = bindingMut_9;
-    squid.lib.`package`.IfThenElse[scala.Unit](x_70, {
-      val x_71 = this.n;
-      resetData_0 = x_71;
-      val x_72 = resetData_0;
-      val x_73 = x_72.asInstanceOf[generated.meta.test.custAgent.NewSim2];
-      bindingMut_8 = x_73;
-      val x_74 = this._container;
-      val x_75 = x_74.!=(null);
-      val x_80 = if (x_75)
+    val x_68 = bindingMut_9;
+    squid.lib.`package`.IfThenElse[scala.Unit](x_68, {
+      val x_69 = this.n;
+      resetData_0 = x_69;
+      val x_70 = resetData_0;
+      val x_71 = x_70.asInstanceOf[generated.meta.test.custAgent.NewSim2];
+      bindingMut_8 = x_71;
+      val x_72 = this._container;
+      val x_73 = x_72.!=(null);
+      val x_78 = if (x_73)
         {
-          val x_76 = this._container;
-          val x_77 = x_76.proxyIds;
-          val x_78 = bindingMut_8;
-          val x_79 = x_78.id;
-          x_77.contains[scala.Long](x_79)
+          val x_74 = this._container;
+          val x_75 = x_74.proxyIds;
+          val x_76 = bindingMut_8;
+          val x_77 = x_76.id;
+          x_75.contains[scala.Long](x_77)
         }
       else
         false;
-      resetData_0 = x_80;
-      val x_81 = resetData_0;
-      val x_82 = x_81.asInstanceOf[scala.Boolean];
-      bindingMut_7 = x_82;
+      resetData_0 = x_78;
+      val x_79 = resetData_0;
+      val x_80 = x_79.asInstanceOf[scala.Boolean];
+      bindingMut_7 = x_80;
       positionVar_14 = 25
     }, ())
   }));
   data_15.update(25, (() => {
-    val x_83 = bindingMut_7;
-    val x_84 = x_83.`unary_!`;
-    if (x_84)
+    val x_81 = bindingMut_7;
+    val x_82 = x_81.`unary_!`;
+    if (x_82)
       {
-        val x_85 = ((this): meta.runtime.Actor).id;
-        val x_86 = bindingMut_8;
-        val x_87 = x_86.id;
-        val x_88 = scala.`package`.Right.apply[scala.Nothing, scala.Int](0);
-        val x_89 = scala.collection.immutable.Nil.::[scala.collection.immutable.List[scala.Any]](((scala.collection.immutable.Nil): scala.collection.immutable.List[scala.Any]));
-        val x_90 = meta.runtime.RequestMessage.apply(x_85, x_87, true, x_88, x_89);
-        ((this): meta.runtime.Actor).sendMessage(x_90);
-        val x_91 = x_90.sessionId;
-        ((this): meta.runtime.Actor).setMessageResponseHandler(x_91, ((response_92: meta.runtime.Message) => {
-          val x_93 = response_92.asInstanceOf[meta.runtime.ResponseMessage];
-          resetData_2 = x_93
+        val x_83 = ((this): meta.runtime.Actor).id;
+        val x_84 = bindingMut_8;
+        val x_85 = x_84.id;
+        val x_86 = scala.collection.immutable.Nil.::[scala.collection.immutable.List[scala.Any]](((scala.collection.immutable.Nil): scala.collection.immutable.List[scala.Any]));
+        val x_87 = meta.runtime.RequestMessage.apply(x_83, x_85, true, "someMtd", x_86);
+        ((this): meta.runtime.Actor).sendMessage(x_87);
+        val x_88 = x_87.sessionId;
+        ((this): meta.runtime.Actor).setMessageResponseHandler(x_88, ((response_89: meta.runtime.Message) => {
+          val x_90 = response_89.asInstanceOf[meta.runtime.ResponseMessage];
+          resetData_2 = x_90
         }));
         resetData_0 = null;
         positionVar_14 = 26
@@ -236,21 +233,21 @@ class NewSim2(val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime
     unblockFlag_13 = false
   }));
   data_15.update(27, (() => {
-    val x_94 = resetData_2;
-    val x_95 = x_94.==(null);
-    if (x_95)
+    val x_91 = resetData_2;
+    val x_92 = x_91.==(null);
+    if (x_92)
       positionVar_14 = 26
     else
       positionVar_14 = 28
   }));
   data_15.update(28, (() => {
-    val x_96 = resetData_2;
-    val x_97 = x_96.!=(null);
-    if (x_97)
+    val x_93 = resetData_2;
+    val x_94 = x_93.!=(null);
+    if (x_94)
       {
-        val x_98 = resetData_2;
-        val x_99 = x_98.arg;
-        resetData_0 = x_99;
+        val x_95 = resetData_2;
+        val x_96 = x_95.arg;
+        resetData_0 = x_96;
         resetData_2 = null;
         positionVar_14 = 29
       }
@@ -259,10 +256,10 @@ class NewSim2(val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime
   }));
   data_15.update(29, (() => positionVar_14 = 3));
   data_15.update(30, (() => {
-    val x_100 = bindingMut_7;
-    squid.lib.`package`.IfThenElse[scala.Unit](x_100, {
-      val x_101 = bindingMut_8;
-      x_101.someMtd();
+    val x_97 = bindingMut_7;
+    squid.lib.`package`.IfThenElse[scala.Unit](x_97, {
+      val x_98 = bindingMut_8;
+      x_98.someMtd();
       resetData_0 = ();
       positionVar_14 = 29
     }, ())
@@ -272,10 +269,10 @@ class NewSim2(val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime
 }).apply();
   
 
-  def someMtd(): Unit = 
+   def someMtd(): Unit = 
       scala.Predef.println("Hello world!")
   
-  def wrapper_someMtd(args: List[Any]): Unit = {
+  private def wrapper_someMtd(args: List[Any]): Unit = {
     
           
           someMtd()
@@ -287,7 +284,7 @@ class NewSim2(val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime
     sendMessages.clear()
     unblockFlag_13 = true
     while (unblockFlag_13 && (positionVar_14 < 32)) {
-      commands_102(positionVar_14)()
+      commands_99(positionVar_14)()
     }
     (sendMessages.toList, 1)
   }
@@ -295,12 +292,7 @@ class NewSim2(val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime
   override def handleNonblockingMessage(m: meta.runtime.RequestMessage): Unit = {
     val args = m.argss.flatten
     val response = m.methodInfo match {
-      case Right(x) => {
-        x match {
-          case 0 => wrapper_someMtd(args)
-        }
-      }
-      case Left(x) => println("For staged implementation only")
+      case "someMtd" => wrapper_someMtd(args)
     }
     m.reply(this, response)
   }
@@ -309,27 +301,32 @@ class NewSim2(val n: generated.meta.test.custAgent.NewSim2) extends meta.runtime
       // first entry, save the current IR to reflectionIR
       unblockFlag_13 = true
 
-      if (reflectionIR_79 == -1){
-        reflectionIR_79 = positionVar_14
+      if (reflectionIR_86 == -1){
+        reflectionIR_86 = positionVar_14
         positionVar_14 = new_ir
       }
 
       while (positionVar_14 <= 15 && unblockFlag_13) {
-        commands_102(positionVar_14)()
+        commands_99(positionVar_14)()
       }
 
       // reset instruction register when finishes processing
       if (positionVar_14 > 15) {
-        positionVar_14 = reflectionIR_79
-        reflectionIR_79 = -1
+        positionVar_14 = reflectionIR_86
+        reflectionIR_86 = -1
       }
       this
     }
     
 override def SimClone(): NewSim2 = {
   val newAgent = new NewSim2(n)
-  
+
   newAgent
+}
+
+override def SimReset(): Unit = {
+  positionVar_14 = 0
+  
 }
 
 }

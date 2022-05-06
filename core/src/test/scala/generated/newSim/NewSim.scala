@@ -3,21 +3,21 @@ package generated.meta.test.newSim
 class NewSim() extends meta.runtime.Actor {
 
 
-  private var  reflectionIR_35: Int = -1
-  var resetData_0: scala.Any = null
-  val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
-  var resetData_2: meta.runtime.ResponseMessage = null
-  var listValMut_3: meta.runtime.RequestMessage = null
-  @transient var iterMut_4: scala.collection.Iterator[meta.runtime.RequestMessage] = null
-  var bindingMut_5: scala.Double = 0.0
-  var bindingMut_6: java.lang.String = null
-  var bindingMut_7: scala.Long = 0L
-  var bindingMut_8: generated.meta.test.newSim.NewSim = null
-  var bindingMut_9: java.lang.String = null
-  var bindingMut_10: scala.Long = 0L
-  var unblockFlag_11: scala.Boolean = true
-  var positionVar_12: scala.Int = 0
-  
+  private var  reflectionIR_86: Int = -1
+private var resetData_0: scala.Any = null
+private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
+private var resetData_2: meta.runtime.ResponseMessage = null
+private var listValMut_3: meta.runtime.RequestMessage = null
+@transient private var iterMut_4: scala.collection.Iterator[meta.runtime.RequestMessage] = null
+private var bindingMut_5: scala.Double = 0.0
+private var bindingMut_6: java.lang.String = null
+private var bindingMut_7: scala.Long = 0L
+private var bindingMut_8: generated.meta.test.newSim.NewSim = null
+private var bindingMut_9: java.lang.String = null
+private var bindingMut_10: scala.Long = 0L
+private var unblockFlag_11: scala.Boolean = true
+private var positionVar_12: scala.Int = 0
+private 
   val commands_57 = (() => {
   val data_13 = new scala.Array[scala.Function0[scala.Unit]](15);
   data_13.update(0, (() => positionVar_12 = 1));
@@ -150,8 +150,8 @@ class NewSim() extends meta.runtime.Actor {
       // first entry, save the current IR to reflectionIR
       unblockFlag_11 = true
 
-      if (reflectionIR_35 == -1){
-        reflectionIR_35 = positionVar_12
+      if (reflectionIR_86 == -1){
+        reflectionIR_86 = positionVar_12
         positionVar_12 = new_ir
       }
 
@@ -161,16 +161,21 @@ class NewSim() extends meta.runtime.Actor {
 
       // reset instruction register when finishes processing
       if (positionVar_12 > 6) {
-        positionVar_12 = reflectionIR_35
-        reflectionIR_35 = -1
+        positionVar_12 = reflectionIR_86
+        reflectionIR_86 = -1
       }
       this
     }
     
 override def SimClone(): NewSim = {
   val newAgent = new NewSim()
-  
+
   newAgent
+}
+
+override def SimReset(): Unit = {
+  positionVar_12 = 0
+  
 }
 
 }

@@ -2,24 +2,24 @@ package generated.meta.test.resetSim
 
 class Vertex() extends meta.runtime.Actor {
 
-  var counter: Int = 0;
-  var neighbor: generated.meta.test.resetSim.Vertex = null;
-  private var  reflectionIR_29: Int = -1
-  var resetData_0: scala.Any = null
-  val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
-  var resetData_2: meta.runtime.ResponseMessage = null
-  var bindingMut_3: scala.Any = null
-  var listValMut_4: meta.runtime.RequestMessage = null
-  @transient var iterMut_5: scala.collection.Iterator[meta.runtime.RequestMessage] = null
-  var bindingMut_6: scala.Double = 0.0
-  var bindingMut_7: generated.meta.test.resetSim.Vertex = null
-  var listValMut_8: meta.runtime.Actor = null
-  @transient var iterMut_9: scala.collection.Iterator[meta.runtime.Actor] = null
-  var bindingMut_10: scala.collection.immutable.List[meta.runtime.Actor] = null
-  var unblockFlag_11: scala.Boolean = true
-  var positionVar_12: scala.Int = 0
-  
-  val commands_86 = (() => {
+   var counter: Int = 0;
+   var neighbor: generated.meta.test.resetSim.Vertex = null;
+  private var  reflectionIR_37: Int = -1
+private var resetData_0: scala.Any = null
+private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
+private var resetData_2: meta.runtime.ResponseMessage = null
+private var bindingMut_3: scala.Any = null
+private var listValMut_4: meta.runtime.RequestMessage = null
+@transient private var iterMut_5: scala.collection.Iterator[meta.runtime.RequestMessage] = null
+private var bindingMut_6: scala.Double = 0.0
+private var bindingMut_7: generated.meta.test.resetSim.Vertex = null
+private var listValMut_8: meta.runtime.Actor = null
+@transient private var iterMut_9: scala.collection.Iterator[meta.runtime.Actor] = null
+private var bindingMut_10: scala.collection.immutable.List[meta.runtime.Actor] = null
+private var unblockFlag_11: scala.Boolean = true
+private var positionVar_12: scala.Int = 0
+private 
+  val commands_83 = (() => {
   val data_13 = new scala.Array[scala.Function0[scala.Unit]](25);
   data_13.update(0, (() => positionVar_12 = 1));
   data_13.update(1, (() => {
@@ -53,87 +53,85 @@ class Vertex() extends meta.runtime.Actor {
         val receiver_28 = this.neighbor;
         val x_29 = ((this): meta.runtime.Actor).id;
         val x_30 = receiver_28.id;
-        val x_31 = scala.`package`.Right.apply[scala.Nothing, scala.Int](0);
-        val x_32 = scala.collection.immutable.Nil.::[scala.collection.immutable.List[scala.Any]](((scala.collection.immutable.Nil): scala.collection.immutable.List[scala.Any]));
-        val x_33 = meta.runtime.RequestMessage.apply(x_29, x_30, false, x_31, x_32);
-        val x_34 = x_33.sessionId;
-        val x_35 = meta.runtime.Future.apply$default$2[scala.Unit];
-        val x_36 = meta.runtime.Future.apply[scala.Unit](x_34, x_35);
-        var v_37: meta.runtime.Future[scala.Unit] = x_36;
-        ((this): meta.runtime.Actor).sendMessage(x_33);
-        val x_38 = x_33.sessionId;
-        ((this): meta.runtime.Actor).setMessageResponseHandler(x_38, ((response_39: meta.runtime.Message) => {
-          val x_40 = v_37;
-          val x_41 = response_39.asInstanceOf[meta.runtime.ResponseMessage];
-          val x_42 = x_41.arg;
-          x_42.asInstanceOf[scala.Unit];
-          x_40.setValue(())
+        val x_31 = scala.collection.immutable.Nil.::[scala.collection.immutable.List[scala.Any]](((scala.collection.immutable.Nil): scala.collection.immutable.List[scala.Any]));
+        val x_32 = meta.runtime.RequestMessage.apply(x_29, x_30, false, "API", x_31);
+        val x_33 = x_32.sessionId;
+        val x_34 = meta.runtime.Future.apply$default$2[scala.Unit];
+        val x_35 = meta.runtime.Future.apply[scala.Unit](x_33, x_34);
+        var v_36: meta.runtime.Future[scala.Unit] = x_35;
+        ((this): meta.runtime.Actor).sendMessage(x_32);
+        val x_37 = x_32.sessionId;
+        ((this): meta.runtime.Actor).setMessageResponseHandler(x_37, ((response_38: meta.runtime.Message) => {
+          val x_39 = v_36;
+          val x_40 = response_38.asInstanceOf[meta.runtime.ResponseMessage];
+          val x_41 = x_40.arg;
+          x_41.asInstanceOf[scala.Unit];
+          x_39.setValue(())
         }));
-        val x_43 = v_37;
-        resetData_0 = x_43;
+        val x_42 = v_36;
+        resetData_0 = x_42;
         positionVar_12 = 2
       }
     else
       positionVar_12 = 3
   }));
   data_13.update(3, (() => {
-    val x_44 = iterMut_9;
-    val x_45 = x_44.hasNext;
-    val x_46 = x_45.`unary_!`;
-    if (x_46)
+    val x_43 = iterMut_9;
+    val x_44 = x_43.hasNext;
+    val x_45 = x_44.`unary_!`;
+    if (x_45)
       {
         resetData_0 = 0.0;
-        val x_47 = resetData_0;
-        val x_48 = x_47.asInstanceOf[scala.Double];
-        bindingMut_6 = x_48;
+        val x_46 = resetData_0;
+        val x_47 = x_46.asInstanceOf[scala.Double];
+        bindingMut_6 = x_47;
         positionVar_12 = 4
       }
     else
       ()
   }));
   data_13.update(4, (() => {
-    val x_49 = bindingMut_6;
-    val x_50 = x_49.+(1);
-    resetData_0 = x_50;
-    val x_51 = resetData_0;
-    val x_52 = x_51.asInstanceOf[scala.Double];
-    bindingMut_6 = x_52;
+    val x_48 = bindingMut_6;
+    val x_49 = x_48.+(1);
+    resetData_0 = x_49;
+    val x_50 = resetData_0;
+    val x_51 = x_50.asInstanceOf[scala.Double];
+    bindingMut_6 = x_51;
     positionVar_12 = 5;
     unblockFlag_11 = false
   }));
   data_13.update(5, (() => positionVar_12 = 6));
   data_13.update(6, (() => {
-    val x_53 = this.popRequestMessages;
-    val x_54 = x_53.iterator;
-    iterMut_5 = x_54;
+    val x_52 = this.popRequestMessages;
+    val x_53 = x_52.iterator;
+    iterMut_5 = x_53;
     positionVar_12 = 7
   }));
   data_13.update(7, (() => {
-    val x_55 = iterMut_5;
-    val x_56 = x_55.hasNext;
-    if (x_56)
+    val x_54 = iterMut_5;
+    val x_55 = x_54.hasNext;
+    if (x_55)
       {
-        val x_57 = iterMut_5;
-        val x_58 = x_57.next();
-        listValMut_4 = x_58;
+        val x_56 = iterMut_5;
+        val x_57 = x_56.next();
+        listValMut_4 = x_57;
         positionVar_12 = 8
       }
     else
       positionVar_12 = 16
   }));
   data_13.update(8, (() => {
-    val x_59 = listValMut_4;
-    val x_60 = x_59.methodInfo;
-    val x_61 = scala.`package`.Right.apply[scala.Nothing, scala.Int](0);
-    val x_62 = x_60.==(x_61);
-    if (x_62)
+    val x_58 = listValMut_4;
+    val x_59 = x_58.methodInfo;
+    val x_60 = x_59.==("API");
+    if (x_60)
       positionVar_12 = 9
     else
       positionVar_12 = 15
   }));
   data_13.update(9, (() => {
-    val x_63 = listValMut_4;
-    this.handleNonblockingMessage(x_63);
+    val x_61 = listValMut_4;
+    this.handleNonblockingMessage(x_61);
     resetData_0 = ();
     positionVar_12 = 10
   }));
@@ -141,62 +139,61 @@ class Vertex() extends meta.runtime.Actor {
   data_13.update(11, (() => positionVar_12 = 7));
   data_13.update(12, (() => positionVar_12 = 13));
   data_13.update(13, (() => {
-    val x_64 = this.counter;
-    val x_65 = x_64.+(1);
-    this.`counter_=`(x_65);
+    val x_62 = this.counter;
+    val x_63 = x_62.+(1);
+    this.`counter_=`(x_63);
     resetData_0 = ();
     positionVar_12 = 14
   }));
   data_13.update(14, (() => {
-    val x_66 = resetData_0;
-    val x_67 = x_66.asInstanceOf[scala.Any];
-    bindingMut_3 = x_67;
-    val x_68 = bindingMut_3;
-    val x_69 = listValMut_4;
-    x_69.reply(this, x_68);
+    val x_64 = resetData_0;
+    val x_65 = x_64.asInstanceOf[scala.Any];
+    bindingMut_3 = x_65;
+    val x_66 = bindingMut_3;
+    val x_67 = listValMut_4;
+    x_67.reply(this, x_66);
     resetData_0 = ();
     positionVar_12 = 10
   }));
   data_13.update(15, (() => {
-    val x_70 = listValMut_4;
-    val x_71 = x_70.methodInfo;
-    val x_72 = scala.`package`.Right.apply[scala.Nothing, scala.Int](0);
-    val x_73 = x_71.==(x_72);
-    val x_74 = x_73.`unary_!`;
-    if (x_74)
+    val x_68 = listValMut_4;
+    val x_69 = x_68.methodInfo;
+    val x_70 = x_69.==("API");
+    val x_71 = x_70.`unary_!`;
+    if (x_71)
       {
-        val x_75 = listValMut_4;
-        val x_76 = scala.collection.immutable.List.apply[meta.runtime.RequestMessage](x_75);
-        val x_77 = this.addReceiveMessages(x_76);
-        resetData_0 = x_77;
+        val x_72 = listValMut_4;
+        val x_73 = scala.collection.immutable.List.apply[meta.runtime.RequestMessage](x_72);
+        val x_74 = this.addReceiveMessages(x_73);
+        resetData_0 = x_74;
         positionVar_12 = 11
       }
     else
       ()
   }));
   data_13.update(16, (() => {
-    val x_78 = iterMut_5;
-    val x_79 = x_78.hasNext;
-    val x_80 = x_79.`unary_!`;
-    if (x_80)
+    val x_75 = iterMut_5;
+    val x_76 = x_75.hasNext;
+    val x_77 = x_76.`unary_!`;
+    if (x_77)
       positionVar_12 = 17
     else
       ()
   }));
   data_13.update(17, (() => positionVar_12 = 18));
   data_13.update(18, (() => {
-    val x_81 = bindingMut_6;
-    val x_82 = x_81.<(1.0);
-    if (x_82)
+    val x_78 = bindingMut_6;
+    val x_79 = x_78.<(1.0);
+    if (x_79)
       positionVar_12 = 4
     else
       positionVar_12 = 19
   }));
   data_13.update(19, (() => {
-    val x_83 = bindingMut_6;
-    val x_84 = x_83.<(1.0);
-    val x_85 = x_84.`unary_!`;
-    if (x_85)
+    val x_80 = bindingMut_6;
+    val x_81 = x_80.<(1.0);
+    val x_82 = x_81.`unary_!`;
+    if (x_82)
       positionVar_12 = 20
     else
       ()
@@ -213,14 +210,14 @@ class Vertex() extends meta.runtime.Actor {
 }).apply();
   
 
-  def API(): Unit = 
+   def API(): Unit = 
       {
   val x_0 = this.counter;
   val x_1 = x_0.+(1);
   this.`counter_=`(x_1)
 }
   
-  def wrapper_API(args: List[Any]): Unit = {
+  private def wrapper_API(args: List[Any]): Unit = {
     
           
           API()
@@ -232,7 +229,7 @@ class Vertex() extends meta.runtime.Actor {
     sendMessages.clear()
     unblockFlag_11 = true
     while (unblockFlag_11 && (positionVar_12 < 25)) {
-      commands_86(positionVar_12)()
+      commands_83(positionVar_12)()
     }
     (sendMessages.toList, 1)
   }
@@ -240,12 +237,7 @@ class Vertex() extends meta.runtime.Actor {
   override def handleNonblockingMessage(m: meta.runtime.RequestMessage): Unit = {
     val args = m.argss.flatten
     val response = m.methodInfo match {
-      case Right(x) => {
-        x match {
-          case 0 => wrapper_API(args)
-        }
-      }
-      case Left(x) => println("For staged implementation only")
+      case "API" => wrapper_API(args)
     }
     m.reply(this, response)
   }
@@ -254,31 +246,32 @@ class Vertex() extends meta.runtime.Actor {
       // first entry, save the current IR to reflectionIR
       unblockFlag_11 = true
 
-      if (reflectionIR_29 == -1){
-        reflectionIR_29 = positionVar_12
+      if (reflectionIR_37 == -1){
+        reflectionIR_37 = positionVar_12
         positionVar_12 = new_ir
       }
 
       while (positionVar_12 <= 15 && unblockFlag_11) {
-        commands_86(positionVar_12)()
+        commands_83(positionVar_12)()
       }
 
       // reset instruction register when finishes processing
       if (positionVar_12 > 15) {
-        positionVar_12 = reflectionIR_29
-        reflectionIR_29 = -1
+        positionVar_12 = reflectionIR_37
+        reflectionIR_37 = -1
       }
       this
     }
     
 override def SimClone(): Vertex = {
   val newAgent = new Vertex()
-  newAgent.counter = counter  
-newAgent.neighbor = neighbor
+  newAgent.counter = counter
+  newAgent.neighbor = neighbor
   newAgent
 }
 
 override def SimReset(): Unit = {
+  positionVar_12 = 0
   val newAgent = new Vertex()
   counter = newAgent.counter
   neighbor = newAgent.neighbor

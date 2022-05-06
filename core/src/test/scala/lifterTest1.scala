@@ -41,7 +41,6 @@ class lifterTest1 extends FlatSpec with org.scalatest.Matchers {
         val liftedRes = new Lifter().apply(List(liftMyClass2)) 
         liftedRes._1.head.methods.foreach(x => {
             // println(x.body + "\n===============\n")
-            assert(!x.body.toString.contains("blockingMtd"))
             assert(!x.body.toString.contains("SpecialInstructions"))
         })
 

@@ -2,19 +2,19 @@ package generated.meta.test.simClone
 
 class MutableSim() extends meta.runtime.Actor {
 
-  var counter: Int = 0;
-  private var  reflectionIR_28: Int = -1
-  var resetData_0: scala.Any = null
-  val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
-  var resetData_2: meta.runtime.ResponseMessage = null
-  var listValMut_3: meta.runtime.RequestMessage = null
-  @transient var iterMut_4: scala.collection.Iterator[meta.runtime.RequestMessage] = null
-  var bindingMut_5: scala.Double = 0.0
-  var bindingMut_6: scala.Int = 0
-  var bindingMut_7: scala.Int = 0
-  var unblockFlag_8: scala.Boolean = true
-  var positionVar_9: scala.Int = 0
-  
+   var counter: Int = 0;
+  private var  reflectionIR_23: Int = -1
+private var resetData_0: scala.Any = null
+private val resetData_1 = scala.collection.mutable.ListBuffer.apply[scala.collection.immutable.List[scala.Tuple2[scala.Tuple2[scala.Int, scala.Int], scala.Int]]]()
+private var resetData_2: meta.runtime.ResponseMessage = null
+private var listValMut_3: meta.runtime.RequestMessage = null
+@transient private var iterMut_4: scala.collection.Iterator[meta.runtime.RequestMessage] = null
+private var bindingMut_5: scala.Double = 0.0
+private var bindingMut_6: scala.Int = 0
+private var bindingMut_7: scala.Int = 0
+private var unblockFlag_8: scala.Boolean = true
+private var positionVar_9: scala.Int = 0
+private 
   val commands_42 = (() => {
   val data_10 = new scala.Array[scala.Function0[scala.Unit]](15);
   data_10.update(0, (() => positionVar_9 = 1));
@@ -126,8 +126,8 @@ class MutableSim() extends meta.runtime.Actor {
       // first entry, save the current IR to reflectionIR
       unblockFlag_8 = true
 
-      if (reflectionIR_28 == -1){
-        reflectionIR_28 = positionVar_9
+      if (reflectionIR_23 == -1){
+        reflectionIR_23 = positionVar_9
         positionVar_9 = new_ir
       }
 
@@ -137,8 +137,8 @@ class MutableSim() extends meta.runtime.Actor {
 
       // reset instruction register when finishes processing
       if (positionVar_9 > 6) {
-        positionVar_9 = reflectionIR_28
-        reflectionIR_28 = -1
+        positionVar_9 = reflectionIR_23
+        reflectionIR_23 = -1
       }
       this
     }
@@ -150,6 +150,7 @@ override def SimClone(): MutableSim = {
 }
 
 override def SimReset(): Unit = {
+  positionVar_9 = 0
   val newAgent = new MutableSim()
   counter = newAgent.counter
 }
