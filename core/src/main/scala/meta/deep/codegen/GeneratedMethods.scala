@@ -61,9 +61,9 @@ case object parametersString extends GeneratedMethods {
         compiledActorGraph.actorTypes.flatMap(actorType => {
             actorType.states.filter(x => x.parameter).map(s => {
                 if (s.mutable) {
-                s"var ${s.name}: ${createCode.changeTypes(s.tpeRep)}"
+                s"var ${s.name} : ${createCode.changeTypes(s.tpeRep)}"
                 } else {
-                s"val ${s.name}: ${createCode.changeTypes(s.tpeRep)}"
+                s"val ${s.name} : ${createCode.changeTypes(s.tpeRep)}"
                 }
             })
             }).mkString(", ")
