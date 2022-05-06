@@ -14,9 +14,10 @@ import scala.collection.mutable.{Map => MutMap, ListBuffer}
   * lifts the code into the deep representation [[meta.deep]]
   */
 object Lifter {
-  val recognizedModifiers: Set[String] = Set("override", "private")
   // Custom encoding
-  private val modifier_separator: String = "_"    // override_getPrice
+  private val modifier_suffix: String = "_"
+  val recognizedModifiers: List[String] = List("override", "private").map(i => s"${i}${modifier_suffix}")
+
   // Squid-specific
   private val method_separator: String = "\\." // "Vehicle.getPrice"
   private val field_separator: String = " "    // "variable price"
@@ -25,8 +26,11 @@ object Lifter {
 
   // Return a list of modifiers and the name w.o modifiers
   private def decode_modifiers(input: String): (List[String], String) = {
-    val components = input.split(modifier_separator).partition(x => recognizedModifiers.contains(x))
-    (components._1.toList, components._2.mkString(modifier_separator))
+    recognizedModifiers.foldLeft((List[String](), input))((x, modifier) => {
+      if (x._2.contains(modifier)){
+        ((x._1 ::: List(modifier.stripSuffix("_"))), x._2.replace(modifier, ""))
+      } else x
+    })
   }
 
   // Parse the method symbol and call decode modifiers

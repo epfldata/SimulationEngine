@@ -78,7 +78,7 @@ class MethodInfo[A0](val modifiers: List[String],
     argSyms match {
       case None =>
   f"""
-  ${modifiers.mkString(" ")} def ${mtdName}: ${returnType} =
+  ${modifiers.mkString(" ")} def ${mtdName} : ${returnType} =
       ${bodyStr}
   """
       case Some(x) =>
