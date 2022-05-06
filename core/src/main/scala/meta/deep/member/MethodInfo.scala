@@ -28,10 +28,17 @@ class MethodInfo[A0](val modifiers: List[String],
     }
   }
 
-  val mtdName: String = symbol.split("\\.").tail.mkString(".")
+  val mtdName: String = symbol.split("\\.").tail.mkString("\\.")
 
   // symbol name, type
   private var bodyStr: String = body.showScala
+  
+  // A hack to get around the weired inlining CodeType
+  private var returnType: String = A.rep.toString
+  private val inlinedPrimitives: List[String] = List("Int", "Boolean", "Double", "String").map(x => f"${x}(")
+  if (inlinedPrimitives.exists(x => returnType.startsWith(x))) {
+    returnType = returnType.split("\\(").head
+  }
 
   private val argSyms: Option[List[(String, String)]]
   =
@@ -61,7 +68,7 @@ class MethodInfo[A0](val modifiers: List[String],
     }
 
   f"""
-  private def wrapper_${mtdName}(args: List[Any]): ${A.rep.toString()} = {
+  private def wrapper_${mtdName}(args: List[Any]): ${returnType} = {
     ${argBinds}
   }
   """
@@ -71,12 +78,12 @@ class MethodInfo[A0](val modifiers: List[String],
     argSyms match {
       case None =>
   f"""
-  ${modifiers.mkString(" ")} def ${mtdName}: ${A.rep.toString} =
+  ${modifiers.mkString(" ")} def ${mtdName}: ${returnType} =
       ${bodyStr}
   """
       case Some(x) =>
   f"""
-  ${modifiers.mkString(" ")} def ${mtdName}(${x.map(p => p._1 + ": " + p._2).mkString(",")}): ${A.rep.toString} = 
+  ${modifiers.mkString(" ")} def ${mtdName}(${x.map(p => p._1 + ": " + p._2).mkString(",")}): ${returnType} = 
       ${bodyStr}
   """
     }
