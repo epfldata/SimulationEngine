@@ -180,7 +180,7 @@ class Lifter {
               method.tparams, 
               method.vparamss, 
               cde, 
-              blockingAnalysis(cde, mtdName))(method.A))
+              needLifting(cde.showScala, mtdName))(method.A))
             if (!method.body.toString().contains("this@")) {
               ssoMtds = mtdName :: ssoMtds 
             }
@@ -367,6 +367,7 @@ class Lifter {
         // println("Save translation! " + cde)
         cache(cde).asInstanceOf[Algo[T]]
       } else {
+        // println(cde)
         cde match {
         case code"val $x: squid.lib.MutVar[$xt] = squid.lib.MutVar.apply[xt]($v); $rest: T  " =>
           val f = LetBinding(
@@ -376,19 +377,21 @@ class Lifter {
             mutVar = true,
             xt)
           f.asInstanceOf[Algo[T]]
+        
         case code"val $x: $xt = $v; $rest: T" =>
           val f = LetBinding(Some(x),
                     liftCode(v),
                     liftCode[T](rest))
                     .asInstanceOf[Algo[T]]
           f.asInstanceOf[Algo[T]]
+
         case code"$e; $rest: T  " =>
           val f = LetBinding(None,
                             liftCode(e),
                             liftCode(rest))
           f.asInstanceOf[Algo[T]]
 
-        case code"($x: List[$tb]).foreach[$ta](($y: tb) => $foreachbody)" =>
+        case code"($x: Iterable[$tb]).foreach[$ta](($y: tb) => $foreachbody)" =>
           val f: Foreach[tb.Typ, Unit] = Foreach(
             x,
             y,
@@ -403,7 +406,6 @@ class Lifter {
             NoOp[Unit]())
           f.asInstanceOf[Algo[T]]
         case code"if($cond: Boolean) $ifBody:T else $elseBody: T  " =>
-          
           val f = IfThenElse(cond,
                             liftCode(ifBody),
                             liftCode(elseBody))
@@ -616,8 +618,8 @@ class Lifter {
 
             if (m.symbol.endsWith(".main")) {
               new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), true)
-            } else if (blockingAnalysis(cde, m.symbol)) {
-              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), true)
+            } else if (needLifting(cde.showScala, m.symbol)) {
+              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), m.blocking)
             } else {
               new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol), false)
             }
@@ -639,17 +641,24 @@ class Lifter {
           val f = NoOp[T]()
           Some(f.asInstanceOf[Algo[T]])
 
+        // Failed patterns
+        // code"($x: Iterable[$tb]).map[$a1, Iterable[a1]](($y: tb) => $body: a1)($z): Iterable[a1] "
+        // code"($x: List[$tb]).map(($y: tb) => $body: a1)($z): List[a1] "
+        // code"($x: Traversable[$tb]).map[$a1, Traversable[a1]](($y: tb) => $body: a1)($z): Traversable[a1] "
+        // code"($x: Traversable[$tb]).map(($y: tb) => $body: $a1)($z): Traversable[a1] "
+        // work
         case code"($x: List[$tb]).map[$a1, List[a1]](($y: tb) => $body: a1)($z): List[a1] " =>
           val f = FlatMap[tb.Typ, a1.Typ](x, y,
             liftCode(code"List($body)"))
           Some(f.asInstanceOf[Algo[T]])
 
+        // case code"($x: Iterable[$tb]).flatMap[$a1, Iterable[a1]](($y: tb) => $body: Iterable[a1])($z): Iterable[a1] " =>
         case code"($x: List[$tb]).flatMap[$a1, List[a1]](($y: tb) => $body: List[a1])($z): List[a1] " =>
           val f = FlatMap[tb.Typ, a1.Typ](x, y,
             liftCode(code"$body"))
           Some(f.asInstanceOf[Algo[T]])
 
-        case code"($x: List[$tb]).forall(($y: tb) => $body): Boolean" =>
+        case code"($x: Iterable[$tb]).forall(($y: tb) => $body): Boolean" =>
           val res = Variable[Boolean]
           val f = LetBinding(Some(res),
             Exists[tb.Typ](x, y,
@@ -661,7 +670,7 @@ class Lifter {
           )
           Some(f.asInstanceOf[Algo[T]])
 
-        case code"($x: List[$tb]).exists(($y: tb) => $body): Boolean" =>
+        case code"($x: Iterable[$tb]).exists(($y: tb) => $body): Boolean" =>
           val f = Exists[tb.Typ](x, y,
             liftCode(code"$body"))
           Some(f.asInstanceOf[Algo[T]])
@@ -706,7 +715,6 @@ class Lifter {
       }
     }
 
-
     var endMethods: List[LiftedMethod[_]] = MMap(actorName).filter(x => methodsMap.get(x).isDefined).map(actorMtd => {
       val lm = liftMethod(methodsMap(actorMtd))(cache)
       if (lm.symbol.endsWith(".main")) {
@@ -728,23 +736,26 @@ class Lifter {
   }
 
   /**
-   * This method analyses whether a method body is blocking: contains either blocking call or wait statements. 
-   * It also analysis whether a method contains special instructions.
+   * This method analyses whether a method contains requires lifting
    */
-  def blockingAnalysis(cde: OpenCode[_], mtdName: String): Boolean = {
+  def needLifting(rawCode: String, mtdName: String): Boolean = {
     val mtdNameSegs = mtdName.split("\\.")
     val mtdSymbolNoPrefix = mtdNameSegs.last
     val agentPath = mtdNameSegs.dropRight(1).mkString("\\.")
 
-    cde analyse {
-      // case code"SpecialInstructions.handleMessages()" =>
-      //   if (mtdSymbolNoPrefix != "main"){
-      //     throw new Exception(f"${mtdName} contains special instruction handleMessages!")
-      //   }
-      case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
-        return true
-      case code"SpecialInstructions.waitAndReply($y: Double)" =>
-        return true
+    var hasSpecialInst = false
+    var isBlocking = false
+
+    // Check if any illegal pattern
+    if (mtdSymbolNoPrefix!="main"){
+      if (rawCode.contains("SpecialInstructions.waitAndReply") 
+        || rawCode.contains("SpecialInstructions.handleMessages")){
+          throw new Exception(f"${mtdName} should not process messages!")
+        }
+    }
+
+    if (rawCode.contains("SpecialInstructions.")){
+      return true
     }
     false
   }

@@ -27,16 +27,10 @@ class CommunicatingVehicleType2() extends Vehicle {
 }
 
 @lift
-class CommunicatingVehicle(val n: ShortDistanceTransport, val n2: Vehicle) extends Vehicle {
+class CommunicatingVehicle(val neighbors: Vector[Vehicle]) extends Vehicle {
     override def main(): Unit = {
         while (true) {
-            if (n != null) {
-                val x = n.getPrice()
-                println("The price for a short distance transport vehicle is " + x + " should change")
-            }
-            if (n2!=null) {
-                asyncMessage(() => n2.getPrice())
-            }
+            neighbors.foreach(n => asyncMessage(() => n.getPrice()))
             waitAndReply(1)
         }
     }
@@ -58,7 +52,7 @@ class lifterTest6 extends FlatSpec {
             def apply(): List[Actor] = {
                 val s = new ShortDistanceTransport()
                 val c2 = new CommunicatingVehicleType2()
-                val c = new CommunicatingVehicle(s, c2)
+                val c = new CommunicatingVehicle(Vector(s, c2))
                 List(s, c, c2)
             }
         }
@@ -69,13 +63,7 @@ class lifterTest6 extends FlatSpec {
             cVehicleClass,
             cVehicleClass2), 
             mainInit = Some(liftedMain), 
-            initPkgName = Some(this.getClass().getPackage().getName()+".inheritance4"),
-            destFolder = "core/src/test/scala/generated/inheritance4/")
+            initPkgName = Some("core.test.inheritance4"),
+            destFolder = "gen-core/src/main/scala/inheritance4/")
     }
-
-    // "Calling a remote overriden method" should "invoke the child method" in {
-    //     val agents = generated.meta.test.inheritance4.InitData()
-    //     val c = new SimulationConfig(agents, 10)
-    //     val r = StartSimulation[BaseMessagingLayer.type](c)
-    // }
 }

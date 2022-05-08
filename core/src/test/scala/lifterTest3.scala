@@ -75,13 +75,7 @@ class lifterTest3 extends FlatSpec {
         Lifter.rootAgents = "Person" :: Lifter.rootAgents
         compileSims(List(workerClass, teacherClass), 
             mainInit = Some(liftedMain), 
-            initPkgName = Some(this.getClass().getPackage().getName()+".inheritance"),
-            destFolder = "core/src/test/scala/generated/inheritance/")
+            initPkgName = Some("core.test.inheritance"),
+            destFolder = "gen-core/src/main/scala/inheritance/")
     }
-
-    // "Calling overriden methods" should "invoke local methods" in {
-    //     val agents = generated.meta.test.inheritance.InitData()
-    //     val c = new SimulationConfig(agents, 5)
-    //     val r = StartSimulation[BaseMessagingLayer.type](c)
-    // }
 }

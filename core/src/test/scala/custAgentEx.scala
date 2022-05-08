@@ -54,39 +54,3 @@ class NewSim2(val n: NewSim2) extends custActor {
         }
     }
 }
-
-class CustAgentTest extends FlatSpec {
-    import meta.deep.IR.Predef._
-    import meta.classLifting.Lifter
-
-    "Generating new custom agents" should "compile" in {
-        val liftMyClass: ClassWithObject[NewSim2] = NewSim2.reflect(IR)
-        val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
-                val x = new NewSim2(null)
-                val y = new NewSim2(x)
-                List(x, y)
-            }
-        }
-
-        Lifter.rootAgents = "custActor" :: Lifter.rootAgents
-        compileSims(List(liftMyClass), 
-            mainInit = Some(liftedMain), 
-            initPkgName = Some(this.getClass().getPackage().getName()),
-            destFolder = "core/src/test/scala/generated/custAgent")
-    }
-
-    "Adding receive messages at run time" should "print the custom debug message" in {
-        val agents = generated.meta.test.custAgent.InitData()
-        val c = new SimulationConfig(agents, 5)
-        StartSimulation[BaseMessagingLayer.type](c)
-    }
-
-    "Reset an agent without any field" should "not change anything" in {
-        val agents = generated.meta.test.custAgent.InitData()
-        val c = new SimulationConfig(agents, 5)
-        StartSimulation[BaseMessagingLayer.type](c)
-        agents.foreach(a => a.SimReset)
-        StartSimulation[BaseMessagingLayer.type](new SimulationConfig(agents, 5))
-    } 
-}

@@ -3,13 +3,15 @@ ThisBuild / scalaVersion := "2.12.8"
 ThisBuild / version := "1.3-SNAPSHOT"
 
 import com.trueaccord.scalapb.compiler.Version.scalapbVersion
+// import com.typesafe.sbt.SbtMultiJvm.multiJvmSettings
+// import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 
 val project_name = "TickTalk"
 name := project_name
 
 val paradiseVersion = "2.1.0"
 val breezeVersion = "0.13.2"
-val scalaTestVersion = "3.0.0"
+val scalaTestVersion = "3.1.2"
 val squidVersion = "0.4.1-SNAPSHOT"
 val sparkVersion = "3.0.1"
 val graphVizVersion = "0.10.0"
@@ -73,6 +75,14 @@ lazy val core = (project in file("core"))
     Test / parallelExecution := false,
   )
 
+lazy val genCore = (project in file("gen-core"))
+  .settings(
+    name := f"${project_name}-genCore",
+    Test / parallelExecution := false,
+    commonSettings, akkaSettings, sparkSettings,
+  )
+  .dependsOn(core % "compile->compile;compile->test", library)
+
 lazy val library = (project in file("library"))
   .settings(
     name := f"${project_name}-library",
@@ -112,4 +122,6 @@ lazy val genExample = (project in file("generated"))
     Test / parallelExecution := false,
     commonSettings, akkaSettings, sparkSettings,
   )
+  // .settings(multiJvmSettings: _*)
+  // .configs(MultiJvm)
   .dependsOn(core, library, example, gui)

@@ -81,37 +81,37 @@ class blockingMethodCallTest extends FlatSpec {
     import meta.runtime.Actor
     import meta.deep.IR.Predef._ 
 
-    // "An agent with blocking method call" should "compile" in {
-    //     val liftMyClass: ClassWithObject[AgentWithBlockingCall] = AgentWithBlockingCall.reflect(IR)
-    //     val liftedMain = meta.classLifting.liteLift {
-    //         def apply(): List[Actor] = {
-    //             val a = new AgentWithBlockingCall(null)
-    //             val b = new AgentWithBlockingCall(a)
-    //             val c = new AgentWithBlockingCall(a)
-    //             List(a, b, c)
-    //         }
-    //     }
+    "An agent with blocking method call" should "compile" in {
+        val liftMyClass: ClassWithObject[AgentWithBlockingCall] = AgentWithBlockingCall.reflect(IR)
+        val liftedMain = meta.classLifting.liteLift {
+            def apply(): List[Actor] = {
+                val a = new AgentWithBlockingCall(null)
+                val b = new AgentWithBlockingCall(a)
+                val c = new AgentWithBlockingCall(a)
+                List(a, b, c)
+            }
+        }
 
-    //     compileSims(List(liftMyClass), 
-    //         mainInit = Some(liftedMain), 
-    //         initPkgName = Some(this.getClass().getPackage().getName()),
-    //         destFolder = "core/src/test/scala/generated/blockingMethodCall/")
-    // }
+        compileSims(List(liftMyClass), 
+            mainInit = Some(liftedMain), 
+            initPkgName = Some("core.test.blockingMethodCall"),
+            destFolder = "gen-core/src/main/scala/blockingMethodCall/")
+    }
 
-    // "An agent that calls a local blocking method call" should "compile" in {
-    //     val liftMyClass: ClassWithObject[AgentWithBlockingCallLocal] = AgentWithBlockingCallLocal.reflect(IR)
-    //     val liftedMain = meta.classLifting.liteLift {
-    //         def apply(): List[Actor] = {
-    //             val a = new AgentWithBlockingCallLocal()
-    //             List(a)
-    //         }
-    //     }
+    "An agent that calls a local blocking method call" should "compile" in {
+        val liftMyClass: ClassWithObject[AgentWithBlockingCallLocal] = AgentWithBlockingCallLocal.reflect(IR)
+        val liftedMain = meta.classLifting.liteLift {
+            def apply(): List[Actor] = {
+                val a = new AgentWithBlockingCallLocal()
+                List(a)
+            }
+        }
 
-    //     compileSims(List(liftMyClass), 
-    //         mainInit = Some(liftedMain), 
-    //         initPkgName = Some("meta.test.blockingMethodCallLocal"),
-    //         destFolder = "core/src/test/scala/generated/blockingMethodCallLocal/")
-    // }
+        compileSims(List(liftMyClass), 
+            mainInit = Some(liftedMain), 
+            initPkgName = Some("core.test.blockingMethodCallLocal"),
+            destFolder = "gen-core/src/main/scala/blockingMethodCallLocal/")
+    }
 
     val custRunner = new SimsRunner[BaseMessagingLayer.type] {
             class showRound(c: SimulationConfig) extends Base(c.actors, c.totalTurn, c.messages) {
@@ -135,16 +135,4 @@ class blockingMethodCallTest extends FlatSpec {
                 new showRound(c).run()
             }
         }
-
-    "Calling the blocking method of another agent" should "complete in 2 rounds" in {
-        val agents = generated.meta.test.blockingMethodCall.InitData()
-        val c = new SimulationConfig(agents, 20)
-        StartSimulation[BaseMessagingLayer.type](c)(custRunner)
-    }
-
-    "Calling the blocking method of itself" should "run in multiple rounds" in {
-        val agents = generated.meta.test.blockingMethodCallLocal.InitData()
-        val c = new SimulationConfig(agents, 5)
-        StartSimulation[BaseMessagingLayer.type](c)(custRunner)
-    }
 }

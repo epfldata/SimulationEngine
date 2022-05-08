@@ -512,8 +512,8 @@ $run_until
       result = result.replaceAll(k._1, k._2)
     }
 
-    val typedPattern = s"(\\s*)(va[r|l] .*): (.*) = new generated\\.(.*);".r    // general form of var assignments
-    val nonTypedPattern = s"(\\s*)(val .*) = new generated\\.(.*);".r    // general form of val assignments
+    val typedPattern = s"(\\s*)(va[r|l] [a-zA-Z0-9_]+): (.*) = new generated\\.(.*);".r    // general form of var assignments
+    val nonTypedPattern = s"(\\s*)(val [a-zA-Z0-9_]+) = new generated\\.(.*);".r    // general form of val assignments
 
     if (isMain){
       result

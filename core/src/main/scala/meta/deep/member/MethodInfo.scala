@@ -35,7 +35,7 @@ class MethodInfo[A0](val modifiers: List[String],
   
   // A hack to get around the weired inlining CodeType
   private var returnType: String = A.rep.toString
-  private val inlinedPrimitives: List[String] = List("Int", "Boolean", "Double", "String").map(x => f"${x}(")
+  private val inlinedPrimitives: List[String] = List("Int", "Boolean", "Double", "String", "Long", "Short", "Float", "Char").map(x => f"${x}(")
   if (inlinedPrimitives.exists(x => returnType.startsWith(x))) {
     returnType = returnType.split("\\(").head
   }

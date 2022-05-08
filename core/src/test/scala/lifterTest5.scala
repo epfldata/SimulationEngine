@@ -66,10 +66,17 @@ class ShortDistanceTransport() extends Vehicle {
 
 @lift
 class Bus() extends ShortDistanceTransport {
-    var currentPassengers: Int = 30
 
     def override_getLoad(): Int = {
-        currentPassengers
+        30
+    }
+
+    def get_Name__ : String = {
+        "Hello"
+    }
+
+    def __get___Name__ : String = {
+        "World"
     }
 
     override def override_getPrice(): Int = {
@@ -82,6 +89,10 @@ class Bus() extends ShortDistanceTransport {
             println("Bus price is " + x + " should be 20")
             val y = getLoad()
             println("Bus load is " + y + " should be 30")
+            val z = get_Name__
+            println("Bus name is " + z + " should be Hello")
+            val f = __get___Name__
+            println("Bus other name is " + f + " should be World")
             waitAndReply(1)
         }
     }
@@ -128,13 +139,7 @@ class lifterTest5 extends FlatSpec {
         busClass, vanClass
         ), 
             mainInit = Some(liftedMain), 
-            initPkgName = Some(this.getClass().getPackage().getName()+".inheritance3"),
-            destFolder = "core/src/test/scala/generated/inheritance3/")
+            initPkgName = Some("core.test.inheritance3"),
+            destFolder = "gen-core/src/main/scala/inheritance3/")
     }
-
-    // "Calling a remote overriden method" should "invoke the child method" in {
-    //     val agents = generated.meta.test.inheritance3.InitData()
-    //     val c = new SimulationConfig(agents, 5)
-    //     val r = StartSimulation[BaseMessagingLayer.type](c)
-    // }
 }
