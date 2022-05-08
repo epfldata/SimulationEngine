@@ -367,6 +367,7 @@ class Lifter {
         // println("Save translation! " + cde)
         cache(cde).asInstanceOf[Algo[T]]
       } else {
+        // println(cde)
         cde match {
         case code"val $x: squid.lib.MutVar[$xt] = squid.lib.MutVar.apply[xt]($v); $rest: T  " =>
           val f = LetBinding(
@@ -376,12 +377,14 @@ class Lifter {
             mutVar = true,
             xt)
           f.asInstanceOf[Algo[T]]
+        
         case code"val $x: $xt = $v; $rest: T" =>
           val f = LetBinding(Some(x),
                     liftCode(v),
                     liftCode[T](rest))
                     .asInstanceOf[Algo[T]]
           f.asInstanceOf[Algo[T]]
+
         case code"$e; $rest: T  " =>
           val f = LetBinding(None,
                             liftCode(e),
@@ -403,7 +406,6 @@ class Lifter {
             NoOp[Unit]())
           f.asInstanceOf[Algo[T]]
         case code"if($cond: Boolean) $ifBody:T else $elseBody: T  " =>
-          
           val f = IfThenElse(cond,
                             liftCode(ifBody),
                             liftCode(elseBody))
@@ -639,17 +641,24 @@ class Lifter {
           val f = NoOp[T]()
           Some(f.asInstanceOf[Algo[T]])
 
+        // Failed patterns
+        // code"($x: Iterable[$tb]).map[$a1, Iterable[a1]](($y: tb) => $body: a1)($z): Iterable[a1] "
+        // code"($x: List[$tb]).map(($y: tb) => $body: a1)($z): List[a1] "
+        // code"($x: Traversable[$tb]).map[$a1, Traversable[a1]](($y: tb) => $body: a1)($z): Traversable[a1] "
+        // code"($x: Traversable[$tb]).map(($y: tb) => $body: $a1)($z): Traversable[a1] "
+        // work
         case code"($x: List[$tb]).map[$a1, List[a1]](($y: tb) => $body: a1)($z): List[a1] " =>
           val f = FlatMap[tb.Typ, a1.Typ](x, y,
             liftCode(code"List($body)"))
           Some(f.asInstanceOf[Algo[T]])
 
+        // case code"($x: Iterable[$tb]).flatMap[$a1, Iterable[a1]](($y: tb) => $body: Iterable[a1])($z): Iterable[a1] " =>
         case code"($x: List[$tb]).flatMap[$a1, List[a1]](($y: tb) => $body: List[a1])($z): List[a1] " =>
           val f = FlatMap[tb.Typ, a1.Typ](x, y,
             liftCode(code"$body"))
           Some(f.asInstanceOf[Algo[T]])
 
-        case code"($x: List[$tb]).forall(($y: tb) => $body): Boolean" =>
+        case code"($x: Iterable[$tb]).forall(($y: tb) => $body): Boolean" =>
           val res = Variable[Boolean]
           val f = LetBinding(Some(res),
             Exists[tb.Typ](x, y,
@@ -661,7 +670,7 @@ class Lifter {
           )
           Some(f.asInstanceOf[Algo[T]])
 
-        case code"($x: List[$tb]).exists(($y: tb) => $body): Boolean" =>
+        case code"($x: Iterable[$tb]).exists(($y: tb) => $body): Boolean" =>
           val f = Exists[tb.Typ](x, y,
             liftCode(code"$body"))
           Some(f.asInstanceOf[Algo[T]])
@@ -705,7 +714,6 @@ class Lifter {
           None
       }
     }
-
 
     var endMethods: List[LiftedMethod[_]] = MMap(actorName).filter(x => methodsMap.get(x).isDefined).map(actorMtd => {
       val lm = liftMethod(methodsMap(actorMtd))(cache)

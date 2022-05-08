@@ -2,7 +2,7 @@ package meta.deep.algo
 
 import meta.deep.IR.Predef._
 
-case class Exists[E](ls: OpenCode[List[E]],
+case class Exists[E](ls: OpenCode[Iterable[E]],
                          variable: Variable[E],
                          body: Algo[Boolean])
                         (implicit val E: CodeType[E]) extends Algo[Boolean] {
