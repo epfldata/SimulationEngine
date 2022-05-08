@@ -4,7 +4,7 @@ import meta.deep.IR.Predef._
 import squid.lib.MutVar
 import meta.deep.member.VarWrapper 
 
-case class Foreach[E, R: CodeType](ls: OpenCode[List[E]],
+case class Foreach[E, R: CodeType](ls: OpenCode[Iterable[E]],
                                    variable: Variable[E],
                                    f: Algo[R])(implicit val E: CodeType[E])
     extends Algo[Unit] {

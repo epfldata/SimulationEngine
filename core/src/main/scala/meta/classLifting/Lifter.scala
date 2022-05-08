@@ -180,7 +180,7 @@ class Lifter {
               method.tparams, 
               method.vparamss, 
               cde, 
-              blockingAnalysis(cde, mtdName))(method.A))
+              needLifting(cde.showScala, mtdName))(method.A))
             if (!method.body.toString().contains("this@")) {
               ssoMtds = mtdName :: ssoMtds 
             }
@@ -388,7 +388,7 @@ class Lifter {
                             liftCode(rest))
           f.asInstanceOf[Algo[T]]
 
-        case code"($x: List[$tb]).foreach[$ta](($y: tb) => $foreachbody)" =>
+        case code"($x: Iterable[$tb]).foreach[$ta](($y: tb) => $foreachbody)" =>
           val f: Foreach[tb.Typ, Unit] = Foreach(
             x,
             y,
@@ -616,8 +616,8 @@ class Lifter {
 
             if (m.symbol.endsWith(".main")) {
               new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), true)
-            } else if (blockingAnalysis(cde, m.symbol)) {
-              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), true)
+            } else if (needLifting(cde.showScala, m.symbol)) {
+              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), m.blocking)
             } else {
               new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol), false)
             }
@@ -728,23 +728,26 @@ class Lifter {
   }
 
   /**
-   * This method analyses whether a method body is blocking: contains either blocking call or wait statements. 
-   * It also analysis whether a method contains special instructions.
+   * This method analyses whether a method contains requires lifting
    */
-  def blockingAnalysis(cde: OpenCode[_], mtdName: String): Boolean = {
+  def needLifting(rawCode: String, mtdName: String): Boolean = {
     val mtdNameSegs = mtdName.split("\\.")
     val mtdSymbolNoPrefix = mtdNameSegs.last
     val agentPath = mtdNameSegs.dropRight(1).mkString("\\.")
 
-    cde analyse {
-      // case code"SpecialInstructions.handleMessages()" =>
-      //   if (mtdSymbolNoPrefix != "main"){
-      //     throw new Exception(f"${mtdName} contains special instruction handleMessages!")
-      //   }
-      case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
-        return true
-      case code"SpecialInstructions.waitAndReply($y: Double)" =>
-        return true
+    var hasSpecialInst = false
+    var isBlocking = false
+
+    // Check if any illegal pattern
+    if (mtdSymbolNoPrefix!="main"){
+      if (rawCode.contains("SpecialInstructions.waitAndReply") 
+        || rawCode.contains("SpecialInstructions.handleMessages")){
+          throw new Exception(f"${mtdName} should not process messages!")
+        }
+    }
+
+    if (rawCode.contains("SpecialInstructions.")){
+      return true
     }
     false
   }
