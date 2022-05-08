@@ -16,6 +16,7 @@ class MyClass() extends Actor {
     val c: String = "Hello"
 
     def foo1(): Double = {
+        List(1, 2, 3, 4).foreach(i => println(i))
         1.0
     }
 
@@ -34,30 +35,12 @@ class MyClass() extends Actor {
 
 class lifterTest extends FlatSpec {
     import meta.deep.IR.Predef._
+    import meta.classLifting.Lifter
 
     val liftMyClass: ClassWithObject[MyClass] = MyClass.reflect(IR)
-    // val init = code"val agent: MyClass = new MyClass()"
 
     "lifting a method" should "preserve the arguments of lifted method" in {
-        liftMyClass.methods.foreach(m => {
-            println("Method symbol: " + m.symbol)
-            println("Method args: " + m.vparamss)
-            println("Method body: " + m.body)
-        })
-
-        val ms = liftMyClass.methods.filterNot(x => x.symbol.asMtdSymbol == "main").tail
-    
-        ms.foreach(m => {
-            var body = m.body.showScala
-            m.vparamss.head.foreach({
-                case v =>
-                    body = body.replaceAll(v.toString(), v.toString().split("@").head)
-            })
-            println(body)
-        })
+        val x = liftMyClass.methods
+        assert(x.map(_.symbol.toString).toSet == Set("MyClass.main", "MyClass.foo", "MyClass.z", "MyClass.foo1"))
     }
-
-    // "Compile methods" should "work" in {
-    //     compileSims(List(liftMyClass), mainInit = init, initPkgName = this.getClass().getPackage().getName())
-    // }
 }

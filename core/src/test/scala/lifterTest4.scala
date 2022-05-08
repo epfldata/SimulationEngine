@@ -37,29 +37,23 @@ class lifterTest4 extends FlatSpec {
     import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 
-    // "Calling an override method from another agent" should "invoke the right function" in {
+    "Calling an override method from another agent" should "invoke the right function" in {
         
-    //     val teacherClass: ClassWithObject[Teacher] = Teacher.reflect(IR)
-    //     val studentClass: ClassWithObject[Student] = Student.reflect(IR)
+        val teacherClass: ClassWithObject[Teacher] = Teacher.reflect(IR)
+        val studentClass: ClassWithObject[Student] = Student.reflect(IR)
 
-    //     val liftedMain = meta.classLifting.liteLift {
-    //         def apply(): List[Actor] = {
-    //             val teacher = new Teacher()
-    //             val student = new Student(teacher)
-    //             List(teacher, student)
-    //         }
-    //     }
+        val liftedMain = meta.classLifting.liteLift {
+            def apply(): List[Actor] = {
+                val teacher = new Teacher()
+                val student = new Student(teacher)
+                List(teacher, student)
+            }
+        }
 
-    //     Lifter.rootAgents = "Person" :: Lifter.rootAgents
-    //     compileSims(List(teacherClass, studentClass), 
-    //         mainInit = Some(liftedMain), 
-    //         initPkgName = Some(this.getClass().getPackage().getName()+".inheritance2"),
-    //         destFolder = "core/src/test/scala/generated/inheritance2/")
-    // }
-
-    "Calling a remote overriden method" should "invoke the child method" in {
-        val agents = generated.meta.test.inheritance2.InitData()
-        val c = new SimulationConfig(agents, 5)
-        val r = StartSimulation[BaseMessagingLayer.type](c)
+        Lifter.rootAgents = "Person" :: Lifter.rootAgents
+        compileSims(List(teacherClass, studentClass), 
+            mainInit = Some(liftedMain), 
+            initPkgName = Some("core.test.inheritance2"),
+            destFolder = "gen-core/src/main/scala/inheritance2/")
     }
 }

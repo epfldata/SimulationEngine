@@ -92,29 +92,23 @@ class methodNameTest extends FlatSpec {
     import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 
-    // "Calling methods with underscores locally" should "compile and resolve correctly" in {    
-    //     val foo: ClassWithObject[FooA] = FooA.reflect(IR)
-    //     val bar: ClassWithObject[BarA] = BarA.reflect(IR)
-    //     val foobar: ClassWithObject[FooBar] = FooBar.reflect(IR)
+    "Calling methods with underscores locally" should "compile and resolve correctly" in {    
+        val foo: ClassWithObject[FooA] = FooA.reflect(IR)
+        val bar: ClassWithObject[BarA] = BarA.reflect(IR)
+        val foobar: ClassWithObject[FooBar] = FooBar.reflect(IR)
 
-    //     val liftedMain = meta.classLifting.liteLift {
-    //         def apply(): List[Actor] = {
-    //             val a = new FooA()
-    //             val b = new BarA()
-    //             val c = new FooBar()
-    //             List(a, b, c)
-    //         }
-    //     }
+        val liftedMain = meta.classLifting.liteLift {
+            def apply(): List[Actor] = {
+                val a = new FooA()
+                val b = new BarA()
+                val c = new FooBar()
+                List(a, b, c)
+            }
+        }
 
-    //     compileSims(List(foo, bar, foobar), 
-    //         mainInit = Some(liftedMain), 
-    //         initPkgName = Some(this.getClass().getPackage().getName()+".methodNames"),
-    //         destFolder = "core/src/test/scala/generated/methodNames/")
-    // }
-
-    "Calling methods whose names contain separator characters" should "invoke the correct method" in {
-        val agents = generated.meta.test.methodNames.InitData()
-        val c = new SimulationConfig(agents, 30)
-        val r = StartSimulation[BaseMessagingLayer.type](c)
+        compileSims(List(foo, bar, foobar), 
+            mainInit = Some(liftedMain), 
+            initPkgName = Some("core.test.methodNames"),
+            destFolder = "gen-core/src/main/scala/methodNames/")
     }
 }

@@ -9,6 +9,7 @@ import meta.API._
 import org.scalatest.FlatSpec
 import scala.util.Random
 import meta.runtime.Future
+import scala.collection.mutable.ListBuffer
 
 @lift
 class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
@@ -17,6 +18,14 @@ class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
         println(id + " processes blocking mtd!")
         waitLabel(Turn, 1)
         println(id + " finishes processing!")
+        true
+    }
+
+    def sendAsyncMsg(): Boolean = {
+        List(n).foreach(i => asyncMessage(() => i.blockingMtd()))
+        Set(n).foreach(i => asyncMessage(() => i.blockingMtd()))
+        Map(1 -> n).map(i => i._2).foreach(i => asyncMessage(() => i.blockingMtd()))
+        ListBuffer(1, 2, 3, 4).foreach(j => asyncMessage(() => n.blockingMtd()))
         true
     }
 
@@ -40,12 +49,10 @@ class lifterTest1 extends FlatSpec with org.scalatest.Matchers {
         val liftMyClass2: ClassWithObject[AgentWithBlockingCall] = AgentWithBlockingCall.reflect(IR)
         val liftedRes = new Lifter().apply(List(liftMyClass2)) 
         liftedRes._1.head.methods.foreach(x => {
-            // println(x.body + "\n===============\n")
             assert(!x.body.toString.contains("SpecialInstructions"))
         })
 
         val liftedMainClass = liftedRes._1.head.main
-        // println(liftedMainClass)
         assert(!liftedMainClass.toString.contains("SpecialInstructions"))
     }
 }

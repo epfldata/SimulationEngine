@@ -53,41 +53,7 @@ class Test extends FlatSpec {
 
         compileSims(List(liftMyClass), 
             mainInit = Some(liftedMain), 
-            initPkgName = Some(this.getClass().getPackage().getName()),
-            destFolder = "core/src/test/scala/generated/resetSim/")
-    }
-
-    "SimReset" should "update the agent in-place" in {
-        val agents = generated.meta.test.resetSim.InitData()
-        val c = new SimulationConfig(agents, 5)
-        val r = StartSimulation[BaseMessagingLayer.type](c)
-        val beforeReset = agents(2).asInstanceOf[generated.meta.test.resetSim.Vertex]
-        // println(beforeReset.counter)
-        assert(beforeReset.counter == 12)
-        beforeReset.SimReset()
-        assert(beforeReset.counter == 0)
-        
-        // Run another simulation from cloner won't change the state of clonee
-        agents.foreach(x => x.SimReset())
-        val r3 = StartSimulation[BaseMessagingLayer.type](new SimulationConfig(agents, 5))
-        
-        assert(agents(1).asInstanceOf[generated.meta.test.resetSim.Vertex].counter == 12)
-    }
-
-
-    "SimReset" should "update the agent in-place in Akka" in {
-        val agents = generated.meta.test.resetSim.InitData()
-        val c = new SimulationConfig(agents, 5)
-        val r = StartSimulation[AkkaMessagingLayer.type](c)
-        val beforeReset = agents(2).asInstanceOf[generated.meta.test.resetSim.Vertex]
-        // println(beforeReset.counter)
-        assert(beforeReset.counter == 12)
-        beforeReset.SimReset()
-        assert(beforeReset.counter == 0)
-        
-        // Run another simulation from cloner won't change the state of clonee
-        agents.foreach(x => x.SimReset())
-        val r3 = StartSimulation[AkkaMessagingLayer.type](new SimulationConfig(agents, 5))
-        assert(agents(1).asInstanceOf[generated.meta.test.resetSim.Vertex].counter == 12)
+            initPkgName = Some("core.test.resetSim"),
+            destFolder = "gen-core/src/main/scala/resetSim/")
     }
 }
