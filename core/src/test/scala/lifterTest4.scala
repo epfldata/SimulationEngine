@@ -24,8 +24,6 @@ class Student(var neighbor: Teacher) extends Person {
         while (true) {
             work()
             // Ask what does the neighbor do
-            // Due to bind time analysis, if neighbor is of type Person, then will crash
-            // worker.work() would invoke Person.work() instead
             // asyncMessage[Unit](() => neighbor.override_work())
             asyncMessage[Unit](() => neighbor.work())
             waitAndReply(1)
