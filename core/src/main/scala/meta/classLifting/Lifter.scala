@@ -25,22 +25,22 @@ object Lifter {
   var rootAgents: List[String] = List("Actor")
 
   // Return a list of modifiers and the name w.o modifiers
-  private def decode_modifiers(input: String): (List[String], String) = {
-    recognizedModifiers.foldLeft((List[String](), input))((x, modifier) => {
+  private def decode_modifiers(input: String): (ListBuffer[String], String) = {
+    recognizedModifiers.foldLeft((ListBuffer[String](), input))((x, modifier) => {
       if (x._2.contains(modifier)){
-        ((x._1 ::: List(modifier.stripSuffix("_"))), x._2.replace(modifier, ""))
+        ((x._1 += modifier.stripSuffix("_")), x._2.replace(modifier, ""))
       } else x
     })
   }
 
   // Parse the method symbol and call decode modifiers
-  private def parse_method_symbol(name: String): (List[String], String) = {
+  private def parse_method_symbol(name: String): (ListBuffer[String], String) = {
     val names: Array[String] = name.split(method_separator)
     assert(names.length==2)
     decode_modifiers(names(1))
   }
   
-  private def parse_field_symbol(name: String): (List[String], String) = {
+  private def parse_field_symbol(name: String): (ListBuffer[String], String) = {
     val names: Array[String] = name.split(field_separator)
     assert(names.length==2)
     assert(names(0)=="variable" || names(0)=="value")
@@ -282,12 +282,16 @@ class Lifter {
 
       if (childrenDepGraph.size>0){
         addMethodsToSubclasses()
-        addFieldsToSubclasses()
       }
 
       val endTypes = startClasses.map(c => {
         liftActor(c)
       })
+
+      // The modifier of fields may change during lifting. Add to subclass later.
+      if (childrenDepGraph.size>0){
+        addFieldsToSubclasses()
+      }
 
       (endTypes, methodsIdMap, methodsMap)
   }
@@ -420,6 +424,15 @@ class Lifter {
                             liftCode(ifBody),
                             liftCode(elseBody))
           f.asInstanceOf[Algo[T]]
+
+        case code"SpecialInstructions.markPrivate(${Const(n)}: String): Unit" =>
+          val targetField = fieldsMap(actorName).find(f => f.name==n)
+          if (targetField.isEmpty){
+            println(f"Warning: private attribute ${n} is not found in agent ${actorName}")
+          } else {
+            targetField.get.modifiers += "private"
+          }
+          NoOp[Unit].asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.handleMessages()" =>
           defInGeneratedCode = false

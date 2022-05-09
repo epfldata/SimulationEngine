@@ -50,4 +50,6 @@ object SpecialInstructions {
     * The syntax for Sim to check its mailbox.
     */
   def handleMessages(): Unit = ???
+
+  def markPrivate(fieldName: String): Unit = {}
 }

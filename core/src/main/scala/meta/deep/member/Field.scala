@@ -3,6 +3,7 @@ package meta.deep.member
 import meta.deep.IR.Predef._
 import meta.deep.algo.Algo
 import meta.runtime.Actor
+import scala.collection.mutable.ListBuffer
 
 /**
   * Class representation of a field for code generation
@@ -13,7 +14,7 @@ import meta.runtime.Actor
   * @param isCopiedToSubclass: a boolean
   */
 case class Field (
-    modifiers: List[String],
+    modifiers: ListBuffer[String],
     name: String,
     tpeRep: String, 
     init: String, 
@@ -21,6 +22,6 @@ case class Field (
     parameter: Boolean) {
       // add "override" to the modifier in replicated fields
       def replica(): Field = {
-        Field("override":: modifiers, name, tpeRep, init, mutable, parameter)
+        Field("override" +: modifiers, name, tpeRep, init, mutable, parameter)
       }
     }

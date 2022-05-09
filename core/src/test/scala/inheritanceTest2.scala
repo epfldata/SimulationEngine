@@ -18,7 +18,7 @@ class Vehicle() extends Actor {
     var load: Int = 10
     val licensePlate: Int = 0
 
-    private val private_donot_copy: Int = 12
+    private val donot_copy: Int = 12
 
     def getLoad(): Int = {
         load
@@ -36,6 +36,7 @@ class Vehicle() extends Actor {
     }
 
     def main(): Unit = {
+        markPrivate("donot_copy")
         while (true) {
             waitAndReply(1)
         }
@@ -46,7 +47,7 @@ class Vehicle() extends Actor {
 class ShortDistanceTransport() extends Vehicle {
     val licensePlace: Int = 800
 
-    private val private_donot_copy: Double = 521
+    private val donot_copy: Double = 521
     // price = 15
     def override_getPrice(): Int = {
         // Make sure this method is called
@@ -54,6 +55,7 @@ class ShortDistanceTransport() extends Vehicle {
     }
 
     override def main(): Unit = {
+        markPrivate("donot_copy")
         price = 15
         while (true) {
             price = getPrice()

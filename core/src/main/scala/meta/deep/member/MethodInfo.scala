@@ -2,6 +2,7 @@ package meta.deep.member
 
 import meta.deep.IR
 import meta.deep.IR.Predef._
+import scala.collection.mutable.ListBuffer
 
 /** contains all info about a method except the body of the method
   * used body methods to gather the needed data when calling this method
@@ -14,7 +15,7 @@ import meta.deep.IR.Predef._
   * @tparam A return value type
   */
 
-class MethodInfo[A0](val modifiers: List[String],
+class MethodInfo[A0](val modifiers: ListBuffer[String],
                     val symbol: String,
                     val tparams: List[IR.TypParam],
                     val vparams: List[List[IR.Variable[_]]], 
@@ -24,7 +25,7 @@ class MethodInfo[A0](val modifiers: List[String],
     if (!inSubclass || modifiers.contains("override")){
       new MethodInfo[A0](modifiers, newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
     } else {
-      new MethodInfo[A0]("override"::modifiers, newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
+      new MethodInfo[A0]("override"+:modifiers, newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
     }
   }
 
