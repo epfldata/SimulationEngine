@@ -6,6 +6,9 @@ import org.scalatest.{DoNotDiscover, FunSuite}
 
 @DoNotDiscover
 class RemoteBlockingMtdTest extends FunSuite{
+  // Messages are processed randomly, so both lists are possible.
+  val possibleReplyValues = Set(List(9, 7, 5, 3, 1), List(8, 6, 4, 2))
+
   test("Call a blocking method remotely should take time to process"){
     val agents = generated.core.test.blockingMethodCall.InitData()
     val totalRounds: Int = 20
@@ -13,17 +16,21 @@ class RemoteBlockingMtdTest extends FunSuite{
     val finalState = StartSimulation[BaseMessagingLayer.type](c)
     val finalAgents = finalState.sims.map(x => x.asInstanceOf[generated.core.test.blockingMethodCall.AgentWithBlockingCall])
     assert(finalAgents.map(_.totalBlockingMtdCalls)==List(10, 0, 0))
-    assert(finalAgents.map(_.blockingReplyValue)==List(List(), List(9, 7, 5, 3, 1), List(8, 6, 4, 2)))
+    assert(finalAgents(0).blockingReplyValue == List())
+    assert(possibleReplyValues.contains(finalAgents(1).blockingReplyValue))
+    assert(possibleReplyValues.contains(finalAgents(2).blockingReplyValue))
   }
 
-test("Call a blocking method remotely should take time to process in Akka"){
+  test("Call a blocking method remotely should take time to process in Akka"){
     val agents = generated.core.test.blockingMethodCall.InitData()
     val totalRounds: Int = 20
     val c = new SimulationConfig(agents, totalRounds)
     val finalState = StartSimulation[AkkaMessagingLayer.type](c)
     val finalAgents = finalState.sims.map(x => x.asInstanceOf[generated.core.test.blockingMethodCall.AgentWithBlockingCall])
     assert(finalAgents.map(_.totalBlockingMtdCalls)==List(10, 0, 0))
-    assert(finalAgents.map(_.blockingReplyValue)==List(List(), List(9, 7, 5, 3, 1), List(8, 6, 4, 2)))
+    assert(finalAgents(0).blockingReplyValue == List())
+    assert(possibleReplyValues.contains(finalAgents(1).blockingReplyValue))
+    assert(possibleReplyValues.contains(finalAgents(2).blockingReplyValue))
   }
 }
 

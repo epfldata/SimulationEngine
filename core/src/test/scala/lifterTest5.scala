@@ -29,8 +29,8 @@ class Vehicle() extends Actor {
     }
 
     // Should not get copied to children
-    private def private_local_mtd(): Unit = {
-        println("This is an invisible local method!")
+    private def private_local_mtd(): String = {
+        "Invisible!"
     }
 
     def main(): Unit = {
@@ -48,17 +48,14 @@ class ShortDistanceTransport() extends Vehicle {
     // price = 15
     def override_getPrice(): Int = {
         // Make sure this method is called
-        price = price + 2
-        price
+        price + 2
     }
 
     override def main(): Unit = {
         price = 15
         while (true) {
-            val x = getPrice()
-            println("Short distance transport price is " + x)
-            val y = getLoad()
-            println("Short distance transport load is " + y + " should be 10")
+            price = getPrice()
+            load = getLoad()
             waitAndReply(1)
         }
     }
@@ -71,28 +68,14 @@ class Bus() extends ShortDistanceTransport {
         30
     }
 
-    def get_Name__ : String = {
-        "Hello"
-    }
-
-    def __get___Name__ : String = {
-        "World"
-    }
-
     override def override_getPrice(): Int = {
         price
     }
 
     override def main(): Unit = {
         while (true) {
-            val x = getPrice()
-            println("Bus price is " + x + " should be 20")
-            val y = getLoad()
-            println("Bus load is " + y + " should be 30")
-            val z = get_Name__
-            println("Bus name is " + z + " should be Hello")
-            val f = __get___Name__
-            println("Bus other name is " + f + " should be World")
+            price = getPrice()
+            load = getLoad()
             waitAndReply(1)
         }
     }
@@ -103,10 +86,8 @@ class Van() extends Vehicle {
 
     override def main(): Unit = {
         while (true) {
-            val x = getPrice()
-            println("Van price is " + x + " should be 20")
-            val y = getLoad()
-            println("Van load " + y + " should be 10")
+            price = getPrice()
+            load = getLoad()
             waitAndReply(1)
         }
     }
@@ -139,7 +120,7 @@ class lifterTest5 extends FlatSpec {
         busClass, vanClass
         ), 
             mainInit = Some(liftedMain), 
-            initPkgName = Some("core.test.inheritance3"),
-            destFolder = "gen-core/src/main/scala/inheritance3/")
+            initPkgName = Some("core.test.inheritance2"),
+            destFolder = "gen-core/src/main/scala/inheritance2/")
     }
 }
