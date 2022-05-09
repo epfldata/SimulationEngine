@@ -1,4 +1,4 @@
-package meta.test.blockingMethodCall
+package meta.test
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
@@ -13,37 +13,24 @@ import meta.runtime.simulation.Base
 @lift
 class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
 
-    var future: Future[Boolean] = null
+    var future: Future[Int] = null
+    var blockingReplyValue: List[Int] = List()
+    var totalBlockingMtdCalls: Int = 0
 
-    def blockingMtd(): Boolean = {
-        println(id + " processes blocking mtd!")
+    def blockingMtd(): Int = {
+        totalBlockingMtdCalls = totalBlockingMtdCalls + 1
         waitLabel(Turn, 1)
-        println(id + " finishes processing!")
-        true
-    }
-
-    def nonBlockingMtd(): Boolean = {
-        println(id + " processes an asynchrnous mtd!")
-        false
+        totalBlockingMtdCalls
     }
 
     def main(): Unit = {
         while (true){
             if (n != null){
-                future = asyncMessage(() => n.nonBlockingMtd())
-                while (!future.isCompleted){
-                    waitAndReply(1)
-                }
-                println("Receive the reply for nonBlockingMtd " + future.popValue.get)
-
                 future = asyncMessage(() => n.blockingMtd())
                 while (!future.isCompleted){
                     waitAndReply(1)
                 }
-                println("Receive the reply for blockingMtd " + future.popValue.get)
-                
-                // n.nonBlockingMtd()
-                // n.blockingMtd()
+                blockingReplyValue = future.popValue.get :: blockingReplyValue
             }
             waitAndReply(1)
         }
@@ -53,22 +40,23 @@ class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
 @lift
 class AgentWithBlockingCallLocal() extends Actor {
 
-    def blockingMtd(): Boolean = {
-        println(id + " processes blocking mtd!")
+    var future: Future[Int] = null
+    var totalBlockingMtdCalls: Int = 0
+    var totalNonBlockingMtdCalls: Int = 0
+
+    def blockingMtd(): Unit = {
+        totalBlockingMtdCalls = totalBlockingMtdCalls + 1
         waitLabel(Turn, 1)
-        println(id + " finishes processing!")
-        true
     }
 
-    def nonBlockingMtd(): Boolean = {
-        println(id + " processes a nonblocking mtd!")
-        false
+    def nonBlockingMtd(): Unit = {
+        totalNonBlockingMtdCalls = totalNonBlockingMtdCalls + 1
     }
 
     def main(): Unit = {
         while (true){
-            blockingMtd()
             nonBlockingMtd()
+            blockingMtd()
             waitAndReply(1)
         }
     }

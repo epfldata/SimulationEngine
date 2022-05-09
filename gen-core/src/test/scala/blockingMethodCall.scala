@@ -1,53 +1,49 @@
-package generated.core.blockingMethodCall
+package generated.core
 
-import meta.classLifting.SpecialInstructions._
-import squid.quasi.lift
-import meta.deep.IR.TopLevel.ClassWithObject
-import meta.deep.IR
-import meta.runtime.{Actor, Future, Message}
 import meta.API._
-import org.scalatest.FlatSpec
-import meta.runtime.simulation.Base
+import org.scalatest.Suites
+import org.scalatest.{DoNotDiscover, FunSuite}
 
-class blockingMethodCallTest extends FlatSpec {
-    import meta.classLifting.Lifter
-    import meta.deep.IR.TopLevel._
-    import meta.deep.codegen._
-    import meta.runtime.Actor
-    import meta.deep.IR.Predef._ 
+@DoNotDiscover
+class RemoteBlockingMtdTest extends FunSuite{
+  test("Call a blocking method remotely should take time to process"){
+    val agents = generated.core.test.blockingMethodCall.InitData()
+    val totalRounds: Int = 20
+    val c = new SimulationConfig(agents, totalRounds)
+    val finalState = StartSimulation[BaseMessagingLayer.type](c)
+    val finalAgents = finalState.sims.map(x => x.asInstanceOf[generated.core.test.blockingMethodCall.AgentWithBlockingCall])
+    assert(finalAgents.map(_.totalBlockingMtdCalls)==List(10, 0, 0))
+    assert(finalAgents.map(_.blockingReplyValue)==List(List(), List(9, 7, 5, 3, 1), List(8, 6, 4, 2)))
+  }
 
-    val custRunner = new SimsRunner[BaseMessagingLayer.type] {
-            class showRound(c: SimulationConfig) extends Base(c.actors, c.totalTurn, c.messages) {
-                override def run(): SimulationSnapshot = {
-                    while (currentTurn < totalTurn) {
-                        println(meta.runtime.simulation.util.displayTime(currentTurn))
-                        val mx = collectedMessages.groupBy(_.receiverId)
-                        val res = actors.filterNot(_.deleted).map(a => {
-                        val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
-                        a.run(targetMessages)
-                        }).foldLeft((List[Message](), 1))((a, b) => ((a._1 ::: b._1), if (a._2 > b._2) a._2 else b._2))
-                        collect()
-                        collectedMessages = res._1
-                        proceed(res._2)
-                    }
-                    SimulationSnapshot(actors, collectedMessages)
-                    }
-            }
-
-            def run(c: SimulationConfig): SimulationSnapshot = {
-                new showRound(c).run()
-            }
-        }
-
-    "Calling the blocking method of another agent" should "complete in 2 rounds" in {
-        val agents = generated.core.test.blockingMethodCall.InitData()
-        val c = new SimulationConfig(agents, 20)
-        StartSimulation[BaseMessagingLayer.type](c)(custRunner)
-    }
-
-    "Calling the blocking method of itself" should "run in multiple rounds" in {
-        val agents = generated.core.test.blockingMethodCallLocal.InitData()
-        val c = new SimulationConfig(agents, 5)
-        StartSimulation[BaseMessagingLayer.type](c)(custRunner)
-    }
+test("Call a blocking method remotely should take time to process in Akka"){
+    val agents = generated.core.test.blockingMethodCall.InitData()
+    val totalRounds: Int = 20
+    val c = new SimulationConfig(agents, totalRounds)
+    val finalState = StartSimulation[AkkaMessagingLayer.type](c)
+    val finalAgents = finalState.sims.map(x => x.asInstanceOf[generated.core.test.blockingMethodCall.AgentWithBlockingCall])
+    assert(finalAgents.map(_.totalBlockingMtdCalls)==List(10, 0, 0))
+    assert(finalAgents.map(_.blockingReplyValue)==List(List(), List(9, 7, 5, 3, 1), List(8, 6, 4, 2)))
+  }
 }
+
+@DoNotDiscover
+class LocalBlockingMtdTest extends FunSuite{
+  test("Call a blocking method locally should take time to process"){
+    val agents = generated.core.test.blockingMethodCallLocal.InitData()
+    val finalState = StartSimulation[BaseMessagingLayer.type](new SimulationConfig(agents, 10))
+    val finalSim = finalState.sims.head.asInstanceOf[generated.core.test.blockingMethodCallLocal.AgentWithBlockingCallLocal]
+    assert(finalSim.totalBlockingMtdCalls==5)
+    assert(finalSim.totalNonBlockingMtdCalls==5)
+  }
+
+  test("Call a blocking method locally should take time to process in Akka"){
+    val agents = generated.core.test.blockingMethodCallLocal.InitData()
+    val finalState = StartSimulation[AkkaMessagingLayer.type](new SimulationConfig(agents, 10))
+    val finalSim = finalState.sims.head.asInstanceOf[generated.core.test.blockingMethodCallLocal.AgentWithBlockingCallLocal]
+    assert(finalSim.totalBlockingMtdCalls==5)
+    assert(finalSim.totalNonBlockingMtdCalls==5)
+  }
+}
+
+class blockingMethodSuite extends Suites (new RemoteBlockingMtdTest, new LocalBlockingMtdTest)
