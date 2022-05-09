@@ -171,11 +171,6 @@ class Lifter {
             // If both @override X and override_X are defined, then override_X shadows the other
             if (!(methodsIdMap.get(mtdName).isDefined && mtdName==raw_mtdName)){
               methodsIdMap = methodsIdMap + (mtdName -> nextId)
-              // Add a method tag for the raw method name with prefix to simplify matching process
-              if (mtdName != raw_mtdName) {
-                // Both raw and decoded method names point to the same function
-                methodsIdMap = methodsIdMap + (raw_mtdName -> nextId)
-              }
               val cde: OpenCode[method.A] = method.body.asOpenCode
               methodsMap = methodsMap + (mtdName -> new MethodInfo(
                 decoded_name._1,
@@ -187,17 +182,22 @@ class Lifter {
               if (!method.body.toString().contains("this@")) {
                 ssoMtds = mtdName :: ssoMtds 
               }
-            }
-
-            if (mtdName!=raw_mtdName){
-              List(mtdName, raw_mtdName)
+              // Add a method tag for the raw method name with prefix to simplify matching process
+              if (mtdName != raw_mtdName) {
+                // Both raw and decoded method names point to the same function
+                methodsIdMap = methodsIdMap + (raw_mtdName -> nextId)
+                List(mtdName, raw_mtdName)
+              } else {
+                List(mtdName)
+              }
             } else {
-              List(mtdName)
+              // discard the shadowed method def
+              List()
             }
           } else {
             throw new Exception(f"Invalid definition for method ${raw_mtdName}")
           }
-      }).distinct
+      })
       // assert(classMethodNames.distinct.size == classMethodNames.size)
       // Inject each agent type with method handleMessages to increase code reuse
       methodsIdMap += (c.name +".handleMessages" -> Method.getNextMethodId)
