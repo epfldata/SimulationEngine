@@ -143,7 +143,7 @@ class Lifter {
 
   
   /**
-   * Map each subclass with its super classes, if exist 
+   * Map each subclass with its superclasses, if any
    */
   var dependencyGraph: Map[String, List[String]] = Map() 
 
@@ -163,35 +163,41 @@ class Lifter {
           val raw_mtdName: String = method.symbol.toString()
           val decoded_name = parse_method_symbol(raw_mtdName)
           val mtdName = f"${c.name}.${decoded_name._2}"
-          val nextId: Int = Method.getNextMethodId
-          
-          // If both @override X and override_X are defined, then override_X shadows the other
-          if (!(methodsIdMap.get(mtdName).isDefined && mtdName==raw_mtdName)){
-            methodsIdMap = methodsIdMap + (mtdName -> nextId)
-            // Add a method tag for the raw method name with prefix to simplify matching process
-            if (mtdName != raw_mtdName) {
-              // Both raw and decoded method names point to the same function
-              methodsIdMap = methodsIdMap + (raw_mtdName -> nextId)
-            }
-            val cde: OpenCode[method.A] = method.body.asOpenCode
-            methodsMap = methodsMap + (mtdName -> new MethodInfo(
-              decoded_name._1,
-              mtdName, 
-              method.tparams, 
-              method.vparamss, 
-              cde, 
-              needLifting(cde.showScala, mtdName))(method.A))
-            if (!method.body.toString().contains("this@")) {
-              ssoMtds = mtdName :: ssoMtds 
-            }
-          }
+          // println(f"Inside init. Mtd name is ${mtdName} raw name is ${raw_mtdName}")
 
-          if (mtdName!=raw_mtdName){
-            List(mtdName, raw_mtdName)
+          if (validMethodDef(decoded_name._2, method.body.asOpenCode.showScala)){ 
+            val nextId: Int = Method.getNextMethodId
+
+            // If both @override X and override_X are defined, then override_X shadows the other
+            if (!(methodsIdMap.get(mtdName).isDefined && mtdName==raw_mtdName)){
+              methodsIdMap = methodsIdMap + (mtdName -> nextId)
+              // Add a method tag for the raw method name with prefix to simplify matching process
+              if (mtdName != raw_mtdName) {
+                // Both raw and decoded method names point to the same function
+                methodsIdMap = methodsIdMap + (raw_mtdName -> nextId)
+              }
+              val cde: OpenCode[method.A] = method.body.asOpenCode
+              methodsMap = methodsMap + (mtdName -> new MethodInfo(
+                decoded_name._1,
+                mtdName, 
+                method.tparams, 
+                method.vparamss, 
+                cde, 
+                true)(method.A))
+              if (!method.body.toString().contains("this@")) {
+                ssoMtds = mtdName :: ssoMtds 
+              }
+            }
+
+            if (mtdName!=raw_mtdName){
+              List(mtdName, raw_mtdName)
+            } else {
+              List(mtdName)
+            }
           } else {
-            List(mtdName)
+            throw new Exception(f"Invalid definition for method ${raw_mtdName}")
           }
-      })
+      }).distinct
       // assert(classMethodNames.distinct.size == classMethodNames.size)
       // Inject each agent type with method handleMessages to increase code reuse
       methodsIdMap += (c.name +".handleMessages" -> Method.getNextMethodId)
@@ -229,7 +235,7 @@ class Lifter {
           || recognizedModifiers.exists(i => j._1.contains(i))) // or methods with encoding, which are duplicated
           .map(_._2).distinct))
 
-    val newMethodsUpdate: (String, List[(String, String)]) => Unit = 
+    val newMethodsUpdate: (String, List[(String, String)]) => Unit =
       (copyToClass: String, newMethods: List[(String, String)]) => {
           val newMtdNames = newMethods.map(p => {
             val mtdName = s"$copyToClass.${p._2}"
@@ -334,18 +340,20 @@ class Lifter {
                 code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
               })
             })
-           
+          
+          // println(f"Method ${methodSymStr} defInGeneratedCode is ${methodInfo.defInGeneratedCode}")
+
           IfThenElse(
             code"""$p1.methodInfo==${Const(methodSymStr)}""",
             IfThenElse(
-              code"${Const(methodInfo.blocking)}",
+              code"${Const(methodInfo.defInGeneratedCode)}",
+              // ScalaCode(f"wrapper_${methodSym}($p1.argss.flatten)")
+              ScalaCode(code"$actorSelfVariable.handleNonblockingMessage($p1)"),
               LetBinding(
               Option(resultMessageCall),
               CallMethod[Any](methodId, argss),
               ScalaCode(
-                code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")),
-              // ScalaCode(f"wrapper_${methodSym}($p1.argss.flatten)")
-              ScalaCode(code"$actorSelfVariable.handleNonblockingMessage($p1)")
+                code"""$p1.reply($actorSelfVariable, $resultMessageCall)"""))
             ),
             rest
           )
@@ -360,6 +368,8 @@ class Lifter {
         
         new LiftedMethod[Unit](handleMessageSym, handleMessage, List(), List(List()), handleMessageId, true)
     }
+
+    var defInGeneratedCode: Boolean = true
 
     // avoid translating same code repeatedly
     def liftCode[T: CodeType](cde: OpenCode[T]): Algo[T] = {
@@ -412,11 +422,13 @@ class Lifter {
           f.asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.handleMessages()" =>
+          defInGeneratedCode = false
           val handleMessage = CallMethod[Unit](handleMessageId, List(List()))
           cache += (cde -> handleMessage)
           handleMessage.asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
+          defInGeneratedCode = false
           val waitCounter = Variable[Double]
           y match {
             case code"${Const(n)}: Double" =>
@@ -440,6 +452,7 @@ class Lifter {
           f
 
         case code"SpecialInstructions.waitAndReply($y: Double)" =>
+          defInGeneratedCode = false
           val waitCounter = Variable[Double]
           y match {
             case code"${Const(n)}: Double" =>
@@ -466,6 +479,7 @@ class Lifter {
 
         // asynchronously call a remote method
         case code"SpecialInstructions.asyncMessage[$mt]((() => {${m@ MethodApplication(msg)}}: mt))" =>
+          defInGeneratedCode = false
           if (methodsIdMap.get(msg.symbol.toString).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
@@ -551,20 +565,21 @@ class Lifter {
 
             val funcName = ma.symbol.toString.split(method_separator).last
             val f = if (actorSelfVariable.toCode != recipientActorVariable) {
-                LetBinding(Some(convertLocal), 
-                  ScalaCode(code"""
-                  if ($actorSelfVariable._container!= null) {
-                    $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
-                  } else {
-                    false
-                  }"""),
-                  IfThenElse(code"$convertLocal",
-                    ScalaCode(cde), // If convert local, then call directly
-                    Send[T](actorSelfVariable.toCode,
-                    recipientActorVariable,
-                    funcName,
-                    argss, true))
-                )
+              defInGeneratedCode = false
+              LetBinding(Some(convertLocal), 
+                ScalaCode(code"""
+                if ($actorSelfVariable._container!= null) {
+                  $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
+                } else {
+                  false
+                }"""),
+                IfThenElse(code"$convertLocal",
+                  ScalaCode(cde), // If convert local, then call directly
+                  Send[T](actorSelfVariable.toCode,
+                  recipientActorVariable,
+                  funcName,
+                  argss, true))
+              )
             } else {
               // Calling an overloaded method locally
               val actorRep = actorSelfVariable.Typ.rep.toString.split(method_separator).last
@@ -607,22 +622,14 @@ class Lifter {
 
     /**
      * This method lift a method from MethodInfo representation to LiftedMethod 
-     * We only call liftCode if method body contains a special instruction or issues calls. 
-     * Otherwise, we use the ScalaCode representation directly 
      */ 
     def liftMethod(mtd: MethodInfo[_])(cache: MutMap[OpenCode[_], Algo[_]]): LiftedMethod[_] = {
       mtd match {
         case m: MethodInfo[a] => {
             import m.A 
-            val cde: OpenCode[m.A] = m.body.asOpenCode 
-
-            if (m.symbol.endsWith(".main")) {
-              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), true)
-            } else if (needLifting(cde.showScala, m.symbol)) {
-              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), m.blocking)
-            } else {
-              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol), false)
-            }
+            val cde: OpenCode[m.A] = m.body.asOpenCode
+            val body: Algo[m.A] = liftCode[m.A](cde)
+            new LiftedMethod[m.A](m.symbol, body, m.tparams, m.vparams, methodsIdMap(m.symbol), true)
         }
       }
     }
@@ -715,8 +722,15 @@ class Lifter {
       }
     }
 
+    // println(f"MMap is ${MMap}")
+    // println(f"Methods map is ${methodsMap}")
+
     var endMethods: List[LiftedMethod[_]] = MMap(actorName).filter(x => methodsMap.get(x).isDefined).map(actorMtd => {
       val lm = liftMethod(methodsMap(actorMtd))(cache)
+      // println(f"Lifting method ${actorMtd} ${defInGeneratedCode}")
+      methodsMap(actorMtd).defInGeneratedCode = defInGeneratedCode
+      defInGeneratedCode = true // overwritten by liftCode when encountering special inst.
+
       if (lm.symbol.endsWith(".main")) {
         mainAlgo = lm.body 
         None 
@@ -724,6 +738,7 @@ class Lifter {
         Some(lm)
       }}).filter(x => x!=None).toList.map(x => x.get)
     endMethods = endMethods ::: addedSSOMtd.map(m => {liftMethod(m)(cache)})
+    // Generate handleMessageMtd strictly after defInGeneratedCode has been updated
     val handleMsg = addHandleMessageMtd()
     endMethods = handleMsg :: endMethods 
     // println(f"Parent names are ${parentNames}")
@@ -736,27 +751,10 @@ class Lifter {
   }
 
   /**
-   * This method analyses whether a method contains requires lifting
+   * Check if any local method calls handle messages or wait and reply
    */
-  def needLifting(rawCode: String, mtdName: String): Boolean = {
-    val mtdNameSegs = mtdName.split("\\.")
-    val mtdSymbolNoPrefix = mtdNameSegs.last
-    val agentPath = mtdNameSegs.dropRight(1).mkString("\\.")
-
-    var hasSpecialInst = false
-    var isBlocking = false
-
-    // Check if any illegal pattern
-    if (mtdSymbolNoPrefix!="main"){
-      if (rawCode.contains("SpecialInstructions.waitAndReply") 
-        || rawCode.contains("SpecialInstructions.handleMessages")){
-          throw new Exception(f"${mtdName} should not process messages!")
-        }
-    }
-
-    if (rawCode.contains("SpecialInstructions.")){
-      return true
-    }
-    false
+  def validMethodDef(name: String, rawCode: String): Boolean = {
+    !(name!="main" && (rawCode.contains("SpecialInstructions.waitAndReply") 
+      || rawCode.contains("SpecialInstructions.handleMessages")))
   }
 }
