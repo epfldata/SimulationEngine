@@ -10,7 +10,7 @@ import meta.deep.IR.Predef._
   * @param tparams  method type parameters
   * @param vparams  method parameters
   * @param body method body
-  * @param blocking indicates if the method body contains wait or blocking calls B.b()
+  * @param defInGeneratedCode indicates if the method should be defined in the generated code or compiled away
   * @tparam A return value type
   */
 
@@ -19,12 +19,12 @@ class MethodInfo[A0](val modifiers: List[String],
                     val tparams: List[IR.TypParam],
                     val vparams: List[List[IR.Variable[_]]], 
                     val body: OpenCode[A0], 
-                    val blocking: Boolean)(implicit val A: CodeType[A0]) {
+                    var defInGeneratedCode: Boolean)(implicit val A: CodeType[A0]) {
   def replica(newSym: String, inSubclass: Boolean): MethodInfo[A0] = {
     if (!inSubclass || modifiers.contains("override")){
-      new MethodInfo[A0](modifiers, newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
+      new MethodInfo[A0](modifiers, newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
     } else {
-      new MethodInfo[A0]("override"::modifiers, newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
+      new MethodInfo[A0]("override"::modifiers, newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
     }
   }
 
