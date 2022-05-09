@@ -66,9 +66,9 @@ Here are some tips for writing meta-programs in this framework:
   * val x = code or var x = code
   * List.map(code)
   * List.flatMap(code)
-  * Traversable.foreach(code)
-  * Traversable.exists(code)
-  * Traversable.forall(code)
+  * Iterable.foreach(code)
+  * Iterable.exists(code)
+  * Iterable.forall(code)
   * if(cond) code else code2
 * You can extend the lifting by:
   * creating a subclass of algo
