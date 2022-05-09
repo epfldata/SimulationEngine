@@ -112,27 +112,4 @@ class blockingMethodCallTest extends FlatSpec {
             initPkgName = Some("core.test.blockingMethodCallLocal"),
             destFolder = "gen-core/src/main/scala/blockingMethodCallLocal/")
     }
-
-    val custRunner = new SimsRunner[BaseMessagingLayer.type] {
-            class showRound(c: SimulationConfig) extends Base(c.actors, c.totalTurn, c.messages) {
-                override def run(): SimulationSnapshot = {
-                    while (currentTurn < totalTurn) {
-                        println(meta.runtime.simulation.util.displayTime(currentTurn))
-                        val mx = collectedMessages.groupBy(_.receiverId)
-                        val res = actors.filterNot(_.deleted).map(a => {
-                        val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
-                        a.run(targetMessages)
-                        }).foldLeft((List[Message](), 1))((a, b) => ((a._1 ::: b._1), if (a._2 > b._2) a._2 else b._2))
-                        collect()
-                        collectedMessages = res._1
-                        proceed(res._2)
-                    }
-                    SimulationSnapshot(actors, collectedMessages)
-                    }
-            }
-
-            def run(c: SimulationConfig): SimulationSnapshot = {
-                new showRound(c).run()
-            }
-        }
 }
