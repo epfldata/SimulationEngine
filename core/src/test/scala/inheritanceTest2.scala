@@ -4,7 +4,7 @@ import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import meta.deep.IR.TopLevel.ClassWithObject
 import meta.deep.IR
-import meta.runtime.{Actor}
+import meta.runtime.{Actor, Future}
 import meta.API._
 import org.scalatest.FlatSpec
 
@@ -18,13 +18,15 @@ class Vehicle() extends Actor {
     var load: Int = 10
     val licensePlate: Int = 0
 
-    private val private_donot_copy: Double = 512
+    private val private_donot_copy: Int = 12
 
     def getLoad(): Int = {
         load
     }
 
+    // Does not support using a private var in local mtd
     def getPrice(): Int = {
+        // price + private_donot_copy
         price
     }
 
@@ -93,7 +95,23 @@ class Van() extends Vehicle {
     }
 }
 
-class lifterTest5 extends FlatSpec {
+@lift
+class CommunicatingVehicle(val neighbors: List[Vehicle]) extends Vehicle {
+    var neighborPrices: List[Int] = List()
+    
+    private var f: List[Future[Int]] = null
+    override def main(): Unit = {
+        while (true) {
+            f = neighbors.map(n => asyncMessage(() => n.getPrice()))
+            while (f.exists(i => !i.isCompleted)){
+                waitAndReply(1)
+            }
+            neighborPrices = f.map(i => i.popValue.get)
+        }
+    }
+}
+
+class InheritanceTest2 extends FlatSpec {
     import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 
@@ -103,21 +121,22 @@ class lifterTest5 extends FlatSpec {
         val shortDistanceClass: ClassWithObject[ShortDistanceTransport] = ShortDistanceTransport.reflect(IR)
         val busClass: ClassWithObject[Bus] = Bus.reflect(IR)
         val vanClass: ClassWithObject[Van] = Van.reflect(IR)
-
+        val cVehicleClass: ClassWithObject[CommunicatingVehicle] = CommunicatingVehicle.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
             def apply(): List[Actor] = {
                 val v = new Vehicle()
                 val s = new ShortDistanceTransport()
                 val bus = new Bus()
                 val van = new Van()
-                List(v, s, bus, van)
+                val c = new CommunicatingVehicle(List(v, s, bus, van))
+                List(v, s, bus, van, c)
             }
         }
 
         compileSims(List(
         vehicleClass, 
         shortDistanceClass, 
-        busClass, vanClass
+        busClass, vanClass, cVehicleClass
         ), 
             mainInit = Some(liftedMain), 
             initPkgName = Some("core.test.inheritance2"),

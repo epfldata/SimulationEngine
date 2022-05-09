@@ -76,6 +76,12 @@ class RootLifted extends FunSuite{
     assert(f.finalAgents(3).load==10)
   }
 
+  test("Calling an overriden method should invoke the child definition"){
+    val f = fixture
+    // vehicle
+    assert(f.finalAgents(4).asInstanceOf[generated.core.test.inheritance2.CommunicatingVehicle].neighborPrices==List(20, 23, 20, 20))
+  }
+
   test("Private attributes in parent classes no longer have modifier prefix") {
       val f = fixture
       assertDoesNotCompile("f.finalAgents(0).asInstanceOf[generated.core.test.inheritance2.Vehicle].private_donot_copy==512")

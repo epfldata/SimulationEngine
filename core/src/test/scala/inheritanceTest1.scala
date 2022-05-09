@@ -78,7 +78,7 @@ class Student(var neighbor: Teacher) extends Person {
     }
 }
 
-class lifterTest3 extends FlatSpec {
+class InheritanceTest1 extends FlatSpec {
     import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 
