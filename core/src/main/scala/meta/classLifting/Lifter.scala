@@ -189,7 +189,7 @@ class Lifter {
             val cde: OpenCode[method.A] = rewriteAnnotations[method.A](method.body.asOpenCode, privateNames, overrideNames)
             methodsMap = methodsMap + (mtdName -> new MethodInfo(
               ListBuffer(),
-              mtdName, 
+              localMtdName, 
               method.tparams, 
               method.vparamss, 
               cde, 
@@ -244,7 +244,7 @@ class Lifter {
           val newMtdNames = newMethods.map(p => {
             val mtdName = s"$copyToClass.${p._2}"
             methodsIdMap = methodsIdMap + (mtdName -> Method.getNextMethodId)
-            methodsMap = methodsMap + (mtdName -> methodsMap(s"${p._1}.${p._2}").replica(mtdName, true))
+            methodsMap = methodsMap + (mtdName -> methodsMap(s"${p._1}.${p._2}").replica(p._2, true))
             mtdName
           })
           MMap = MMap.updated(copyToClass, MMap(copyToClass):::newMtdNames)
@@ -638,7 +638,8 @@ class Lifter {
             import m.A 
             val cde: OpenCode[m.A] = m.body.asOpenCode
             val body: Algo[m.A] = liftCode[m.A](cde)
-            new LiftedMethod[m.A](m.symbol, body, m.tparams, m.vparams, methodsIdMap(m.symbol), true)
+            val mtdName: String = s"${actorName}.${m.name}"
+            new LiftedMethod[m.A](mtdName, body, m.tparams, m.vparams, methodsIdMap(mtdName), true)
         }
       }
     }

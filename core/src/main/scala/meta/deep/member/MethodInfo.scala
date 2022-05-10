@@ -19,7 +19,7 @@ import scala.collection.mutable.ListBuffer
   */
 
 class MethodInfo[A0](val modifiers: ListBuffer[String],
-                    val symbol: String,
+                    val name: String,
                     val tparams: List[IR.TypParam],
                     val vparams: List[List[IR.Variable[_]]], 
                     val body: OpenCode[A0], 
@@ -31,8 +31,6 @@ class MethodInfo[A0](val modifiers: ListBuffer[String],
       new MethodInfo[A0]("override"+:modifiers, newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
     }
   }
-
-  val mtdName: String = symbol.split("\\.").tail.mkString("\\.")
 
   // symbol name, type
   private var bodyStr: String = body.showScala
@@ -63,17 +61,17 @@ class MethodInfo[A0](val modifiers: ListBuffer[String],
     val argBinds: String = {
       argSyms match {
         case None => 
-          s"${mtdName}"
+          s"${name}"
         case Some(x) => 
           s"""
           ${x.zipWithIndex.map(p => "val " + p._1._1  + ": " + p._1._2 + " = " + "args(" + p._2 + ").asInstanceOf[" + p._1._2 + "]").mkString("\n    ")}
-          ${mtdName}(${x.map(p => p._1).mkString(",")})
+          ${name}(${x.map(p => p._1).mkString(",")})
           """
       }
     }
 
   s"""
-  private def wrapper_${mtdName}(args: List[Any]): ${returnType} = {
+  private def wrapper_${name}(args: List[Any]): ${returnType} = {
     ${argBinds}
   }
   """
@@ -83,12 +81,12 @@ class MethodInfo[A0](val modifiers: ListBuffer[String],
     argSyms match {
       case None =>
   f"""
-  ${modifiers.mkString(" ")} def ${mtdName} : ${returnType} =
+  ${modifiers.mkString(" ")} def ${name} : ${returnType} =
       ${bodyStr}
   """
       case Some(x) =>
   f"""
-  ${modifiers.mkString(" ")} def ${mtdName}${vparams.map(vps => vps.map(vp =>
+  ${modifiers.mkString(" ")} def ${name}${vparams.map(vps => vps.map(vp =>
           s"${vp.`internal bound`.name}: ${vp.Typ.rep}"
         ).mkString("(",",",")")).mkString} : ${returnType} = 
       ${bodyStr}
@@ -97,15 +95,15 @@ class MethodInfo[A0](val modifiers: ListBuffer[String],
   }
 
   def toWrapperInvocation(): String = {
-    f"wrapper_${mtdName}(args)"
+    f"wrapper_${name}(args)"
   }
 
   def toInvocation(): String = {
     argSyms match {
       case None =>
-        f"${mtdName}"
+        f"${name}"
       case Some(x) =>
-        f"${mtdName}(${x.map(_._1).mkString(",")})"
+        f"${name}(${x.map(_._1).mkString(",")})"
     }
   }
 
