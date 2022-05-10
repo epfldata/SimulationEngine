@@ -13,9 +13,7 @@ class NewSim() extends Actor {
 
     def main(): Unit = {
         while (true){
-            println("This is agent " + id)
             val c = new NewSim()
-            println("Create new agent " + c.id)
             waitAndReply(1)
         }
     }
