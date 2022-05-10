@@ -56,9 +56,7 @@ Here are some tips for writing meta-programs in this framework:
 * We support limited inheritance. 
   * The parent classes can not contain parameter lists. 
   * If a parent class is not a lifted agent, then you need to append it to the rootAgents in the Lifter, see example `inheritance1`. 
-  * To override a method, prefix the method name with `override_` in addition to `@override`, see examples `inheritance1` and `inheritance2`.
-  * To mark a method as private, add prefix `private_` to the name. See example `inheritance2`.
-  * To mark an attribute as private, call instruction `markPrivate("name")` in the `main` method. See example `inheritance2`.
+  * To add modifiers, use instructions `markPrivate(names: String*)` or `markOverride(names: String*)`, see examples `inheritance1` and `inheritance2`.
   * Public methods in the parent class which are inherited by children should *not* have references to private variables.
 
 * The lifter recognizes following code patterns: 

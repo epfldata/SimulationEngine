@@ -8,6 +8,7 @@ import meta.deep.algo.AlgoInfo
 import meta.deep.member.{EdgeInfo, CompiledActorGraph, VarValue, VarWrapper, MethodInfo}
 import meta.runtime.Actor
 
+import meta.classLifting.Lifter
 import scala.collection.mutable.ListBuffer
 import meta.API.CompilationMode
 import scala.util.Random
@@ -162,7 +163,7 @@ class CreateCode(initCode: String,
 
     var methodss: String = ""
 
-    val methodCases: String = methodsIdMap.filterNot(x => {x._1.endsWith("handleMessages") || methodsMap.get(x._1).isEmpty || !methodsMap(x._1).defInGeneratedCode || x._1.endsWith("main")}).filter(x => x._1.split("\\.").head == actorName).map(x => {
+    val methodCases: String = methodsIdMap.filterNot(x => {x._1.endsWith(Lifter.handleMessageSym) || methodsMap.get(x._1).isEmpty || !methodsMap(x._1).defInGeneratedCode || x._1.endsWith("main")}).filter(x => x._1.split("\\.").head == actorName).map(x => {
       val foo = methodsMap(x._1)
       methodss += changeTypes(foo.toDeclaration())
       methodss += changeTypes(foo.toWrapperDeclaration())
@@ -236,7 +237,7 @@ class CreateCode(initCode: String,
       compiledActorGraph: CompiledActorGraph): List[OpenCode[Unit]] = {
     val graph: ListBuffer[EdgeInfo] = compiledActorGraph.graph
     //Reassign positions
-    val handleMessageMethodId: Int = methodsIdMap(compiledActorGraph.name + ".handleMessages")
+    val handleMessageMethodId: Int = methodsIdMap(s"${compiledActorGraph.name}.${Lifter.handleMessageSym}")
     // assert(graph.filter(x => x.methodId1 == handleMessageMethodId).nonEmpty)
 
     var positionMap: Map[Int, Int] = Map()

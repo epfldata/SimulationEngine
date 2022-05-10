@@ -19,9 +19,9 @@ case class Field (
     tpeRep: String, 
     init: String, 
     mutable: Boolean, 
-    parameter: Boolean) {
+    parameter: Boolean) extends FieldOrMethod {
       // add "override" to the modifier in replicated fields
       def replica(): Field = {
         Field("override" +: modifiers, name, tpeRep, init, mutable, parameter)
       }
-    }
+    } 

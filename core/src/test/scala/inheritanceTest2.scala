@@ -32,12 +32,12 @@ class Vehicle() extends Actor {
     }
 
     // Should not get copied to children
-    private def private_local_mtd(): String = {
+    private def local_mtd(): String = {
         "Invisible!"
     }
 
     def main(): Unit = {
-        markPrivate("donot_copy", "another_private_var")
+        markPrivate("donot_copy", "another_private_var", "local_mtd")
         while (true) {
             waitAndReply(1)
         }
@@ -50,13 +50,16 @@ class ShortDistanceTransport() extends Vehicle {
 
     private val donot_copy: Double = 521
     // price = 15
-    def override_getPrice(): Int = {
+    override def getPrice(): Int = {
         // Make sure this method is called
         price + 2
     }
 
     override def main(): Unit = {
-        markPrivate("donot_copy")
+        // Invalid fields and main are ignored
+        markPrivate("donot_copy", "non_existing_attribute")
+        markOverride("getPrice", "main", "non_existing_attribute")
+
         price = 15
         while (true) {
             price = getPrice()
@@ -69,15 +72,17 @@ class ShortDistanceTransport() extends Vehicle {
 @lift
 class Bus() extends ShortDistanceTransport {
 
-    def override_getLoad(): Int = {
+    override def getLoad(): Int = {
         30
     }
 
-    override def override_getPrice(): Int = {
+    override def getPrice(): Int = {
         price
     }
 
     override def main(): Unit = {
+        markOverride("getLoad")
+        markOverride("getPrice")
         while (true) {
             price = getPrice()
             load = getLoad()

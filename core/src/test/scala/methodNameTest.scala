@@ -49,10 +49,12 @@ class FooA() extends Actor {
 
 @lift
 class BarA() extends FooA {
-    def override_get_Name__() : String = {
+    override def get_Name__() : String = {
+        markOverride("get_Name__")
         println(id + " get_Name__ is called!")
         "Bar!"
     }
+    
     override def main(): Unit = {
         // println(get_Name__())
         // println(__get___Name__)

@@ -54,9 +54,11 @@ object SpecialInstructions {
   def handleMessages(): Unit = ???
 
   /**
-    * Notify to the lifter which variables or methods are private
+    * Helper methods to inform lifter which variables or methods require private or override modifier
     *
     * @param fieldName
     */
   def markPrivate(fieldName: String*): Unit = {}
+  
+  def markOverride(fieldName: String*): Unit = {}
 }

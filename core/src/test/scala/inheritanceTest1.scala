@@ -22,17 +22,13 @@ trait Person extends Actor {
 @lift
 class Worker() extends Person {
     var workplace: String = ""
-    // If both override_work and @override work are defined, then
-    // the compiler uses the definition in override_ as final
-    def override_work(): String = {
+
+    override def work(): String = {
         "Factory"
     }
 
-    override def work(): String = {
-        override_work()
-    }
-
     def main(): Unit = {
+        markOverride("work")
         while (true) {
             workplace = work()
             waitAndReply(1)
@@ -43,16 +39,13 @@ class Worker() extends Person {
 @lift
 class Teacher() extends Person {
     var workplace: String = ""
-    def override_work(): String = {
+    override def work(): String = {
         waitLabel(Turn, 1)
         "School"
     }
 
-    override def work(): String = {
-        override_work()
-    }
-
     def main(): Unit = {
+        markOverride("work")
         while (true) {
             workplace = work()
             waitAndReply(1)
@@ -68,7 +61,6 @@ class Student(var neighbor: Teacher) extends Person {
     def main(): Unit = {
         while (true) {
             // Ask what does the neighbor do
-            // asyncMessage[Unit](() => neighbor.override_work())
             f = asyncMessage(() => neighbor.work())
             while (!f.isCompleted){
                 waitAndReply(1)

@@ -23,7 +23,7 @@ class MethodInfo[A0](val modifiers: ListBuffer[String],
                     val tparams: List[IR.TypParam],
                     val vparams: List[List[IR.Variable[_]]], 
                     val body: OpenCode[A0], 
-                    var defInGeneratedCode: Boolean)(implicit val A: CodeType[A0]) {
+                    var defInGeneratedCode: Boolean)(implicit val A: CodeType[A0]) extends FieldOrMethod {
   def replica(newSym: String, inSubclass: Boolean): MethodInfo[A0] = {
     if (!inSubclass || modifiers.contains("override")){
       new MethodInfo[A0](modifiers, newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
