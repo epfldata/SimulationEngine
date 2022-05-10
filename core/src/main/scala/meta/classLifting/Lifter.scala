@@ -20,7 +20,6 @@ object Lifter {
 
   // Squid-specific
   private val method_separator: String = "\\." // "Vehicle.getPrice"
-  private val field_separator: String = " "    // "variable price"
 
   var rootAgents: List[String] = List("Actor")
 
@@ -40,13 +39,6 @@ object Lifter {
     decode_modifiers(names(1))
   }
   
-  private def parse_field_symbol(name: String): (ListBuffer[String], String) = {
-    val names: Array[String] = name.split(field_separator)
-    assert(names.length==2)
-    assert(names(0)=="variable" || names(0)=="value")
-    decode_modifiers(names(1))
-  }
-
   // The dependency graph of the agents as an adjacency matrix
   private def buildDependencyGraph(agents: List[Clasz[_ <: Actor]]): Map[String, List[String]] = {
     val graph: MutMap[String, List[String]] = MutMap()
@@ -205,18 +197,17 @@ class Lifter {
       MMap = MMap + (c.name -> classMethodNames)
 
       val fields: List[Field] = c.fields.map(x => {
-        val varName: String = x.symbol.asTerm.toString()
-        val decodedName = parse_field_symbol(varName)
+        val varName: String = x.symbol.asTerm.name.toString
         if (x.init.isDefined) {   // state variable
-          Field(decodedName._1,
-            decodedName._2, 
+          Field(ListBuffer(),
+            varName, 
             x.A.rep.tpe.toString, 
             IR.showScala(x.init.get.rep), 
             x.set.nonEmpty, 
             false)
         } else {                  // parameter
-          Field(decodedName._1,
-            decodedName._2, 
+          Field(ListBuffer(),
+            varName, 
             x.A.rep.tpe.toString, 
             "",
             x.set.nonEmpty, 
@@ -425,13 +416,15 @@ class Lifter {
                             liftCode(elseBody))
           f.asInstanceOf[Algo[T]]
 
-        case code"SpecialInstructions.markPrivate(${Const(n)}: String): Unit" =>
-          val targetField = fieldsMap(actorName).find(f => f.name==n)
-          if (targetField.isEmpty){
-            println(f"Warning: private attribute ${n} is not found in agent ${actorName}")
-          } else {
-            targetField.get.modifiers += "private"
-          }
+        case code"SpecialInstructions.markPrivate($n: _*): Unit" =>
+          n.unsafe_asClosedCode.run.foreach(i => {
+            val targetField = fieldsMap(actorName).find(f => f.name==i)
+            if (targetField.isEmpty){
+              println(f"Warning: private attribute ${i} is not found in agent ${actorName}")
+            } else {
+              targetField.get.modifiers += "private"
+            }
+          })          
           NoOp[Unit].asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.handleMessages()" =>

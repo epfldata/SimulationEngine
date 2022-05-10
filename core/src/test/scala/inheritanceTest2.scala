@@ -19,6 +19,7 @@ class Vehicle() extends Actor {
     val licensePlate: Int = 0
 
     private val donot_copy: Int = 12
+    private val another_private_var: List[Double] = List(1.2, 1.4)
 
     def getLoad(): Int = {
         load
@@ -36,7 +37,7 @@ class Vehicle() extends Actor {
     }
 
     def main(): Unit = {
-        markPrivate("donot_copy")
+        markPrivate("donot_copy", "another_private_var")
         while (true) {
             waitAndReply(1)
         }

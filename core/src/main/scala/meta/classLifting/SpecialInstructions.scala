@@ -1,5 +1,7 @@
 package meta.classLifting
 
+import meta.deep.IR.Predef._
+
 object SpecialInstructions {
   import meta.runtime.Future
 
@@ -51,5 +53,10 @@ object SpecialInstructions {
     */
   def handleMessages(): Unit = ???
 
-  def markPrivate(fieldName: String): Unit = {}
+  /**
+    * Notify to the lifter which variables or methods are private
+    *
+    * @param fieldName
+    */
+  def markPrivate(fieldName: String*): Unit = {}
 }
