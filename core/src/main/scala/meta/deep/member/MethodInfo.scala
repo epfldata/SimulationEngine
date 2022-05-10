@@ -2,6 +2,10 @@ package meta.deep.member
 
 import meta.deep.IR
 import meta.deep.IR.Predef._
+import meta.deep.IR.TopLevel._
+import meta.deep.algo._
+import meta.deep.member._
+import scala.collection.mutable.ListBuffer
 
 /** contains all info about a method except the body of the method
   * used body methods to gather the needed data when calling this method
@@ -10,21 +14,21 @@ import meta.deep.IR.Predef._
   * @param tparams  method type parameters
   * @param vparams  method parameters
   * @param body method body
-  * @param blocking indicates if the method body contains wait or blocking calls B.b()
+  * @param defInGeneratedCode indicates if the method should be defined in the generated code or compiled away
   * @tparam A return value type
   */
 
-class MethodInfo[A0](val modifiers: List[String],
+class MethodInfo[A0](val modifiers: ListBuffer[String],
                     val symbol: String,
                     val tparams: List[IR.TypParam],
                     val vparams: List[List[IR.Variable[_]]], 
                     val body: OpenCode[A0], 
-                    val blocking: Boolean)(implicit val A: CodeType[A0]) {
+                    var defInGeneratedCode: Boolean)(implicit val A: CodeType[A0]) extends FieldOrMethod {
   def replica(newSym: String, inSubclass: Boolean): MethodInfo[A0] = {
     if (!inSubclass || modifiers.contains("override")){
-      new MethodInfo[A0](modifiers, newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
+      new MethodInfo[A0](modifiers, newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
     } else {
-      new MethodInfo[A0]("override"::modifiers, newSym, this.tparams, this.vparams, this.body, this.blocking)(A)
+      new MethodInfo[A0]("override"+:modifiers, newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
     }
   }
 
@@ -53,21 +57,22 @@ class MethodInfo[A0](val modifiers: List[String],
       }
     }
 
+
   // Bind the list of Any in argss to corresponding parameters  
   def toWrapperDeclaration(): String = {
     val argBinds: String = {
       argSyms match {
         case None => 
-          f"${mtdName}"
+          s"${mtdName}"
         case Some(x) => 
-          f"""
+          s"""
           ${x.zipWithIndex.map(p => "val " + p._1._1  + ": " + p._1._2 + " = " + "args(" + p._2 + ").asInstanceOf[" + p._1._2 + "]").mkString("\n    ")}
           ${mtdName}(${x.map(p => p._1).mkString(",")})
           """
       }
     }
 
-  f"""
+  s"""
   private def wrapper_${mtdName}(args: List[Any]): ${returnType} = {
     ${argBinds}
   }
@@ -83,7 +88,9 @@ class MethodInfo[A0](val modifiers: List[String],
   """
       case Some(x) =>
   f"""
-  ${modifiers.mkString(" ")} def ${mtdName}(${x.map(p => p._1 + ": " + p._2).mkString(",")}): ${returnType} = 
+  ${modifiers.mkString(" ")} def ${mtdName}${vparams.map(vps => vps.map(vp =>
+          s"${vp.`internal bound`.name}: ${vp.Typ.rep}"
+        ).mkString("(",",",")")).mkString} : ${returnType} = 
       ${bodyStr}
   """
     }
@@ -98,7 +105,7 @@ class MethodInfo[A0](val modifiers: List[String],
       case None =>
         f"${mtdName}"
       case Some(x) =>
-        f"${mtdName}(${x.map(p => p._1).mkString(",")})"
+        f"${mtdName}(${x.map(_._1).mkString(",")})"
     }
   }
 

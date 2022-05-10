@@ -32,6 +32,10 @@ class FooA() extends Actor {
         "World"
     }
 
+    def ___manyArgs___(x: Int, y: Boolean, z: Double) : Unit = {
+        println(x + " ___manyArgs___ is called! "+y.toString + z.toString)
+    }
+
     def main(): Unit = {
         // println(get_Name__())
         // println(__get___Name__)
@@ -45,10 +49,12 @@ class FooA() extends Actor {
 
 @lift
 class BarA() extends FooA {
-    def override_get_Name__() : String = {
+    override def get_Name__() : String = {
+        markOverride("get_Name__")
         println(id + " get_Name__ is called!")
         "Bar!"
     }
+    
     override def main(): Unit = {
         // println(get_Name__())
         // println(__get___Name__)
@@ -71,6 +77,7 @@ class FooBar() extends FooA {
             foo.get_Name__()
             foo.__get___Name__
             foo.___get_Name___
+            foo.___manyArgs___(5, false, 101.01)
             println("FooBar messages Bar!")
             bar.get_Name__()
             bar.__get___Name__

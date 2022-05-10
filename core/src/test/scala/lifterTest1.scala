@@ -12,7 +12,7 @@ import meta.runtime.Future
 import scala.collection.mutable.ListBuffer
 
 @lift
-class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
+class AgentWithSpecialInst(val n: AgentWithSpecialInst) extends Actor {
 
     def blockingMtd(): Boolean = {
         println(id + " processes blocking mtd!")
@@ -78,7 +78,7 @@ class lifterTest1 extends FlatSpec with org.scalatest.Matchers {
     import meta.classLifting.Lifter
 
     "Lift a blocking method" should "compile" in {
-        val liftMyClass2: ClassWithObject[AgentWithBlockingCall] = AgentWithBlockingCall.reflect(IR)
+        val liftMyClass2: ClassWithObject[AgentWithSpecialInst] = AgentWithSpecialInst.reflect(IR)
         val liftedRes = new Lifter().apply(List(liftMyClass2)) 
         liftedRes._1.head.methods.foreach(x => {
             assert(!x.body.toString.contains("SpecialInstructions"))

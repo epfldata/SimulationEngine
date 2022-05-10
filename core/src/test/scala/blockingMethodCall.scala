@@ -1,4 +1,4 @@
-package meta.test.blockingMethodCall
+package meta.test
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
@@ -13,37 +13,24 @@ import meta.runtime.simulation.Base
 @lift
 class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
 
-    var future: Future[Boolean] = null
+    var future: Future[Int] = null
+    var blockingReplyValue: List[Int] = List()
+    var totalBlockingMtdCalls: Int = 0
 
-    def blockingMtd(): Boolean = {
-        println(id + " processes blocking mtd!")
+    def blockingMtd(): Int = {
+        totalBlockingMtdCalls = totalBlockingMtdCalls + 1
         waitLabel(Turn, 1)
-        println(id + " finishes processing!")
-        true
-    }
-
-    def nonBlockingMtd(): Boolean = {
-        println(id + " processes an asynchrnous mtd!")
-        false
+        totalBlockingMtdCalls
     }
 
     def main(): Unit = {
         while (true){
             if (n != null){
-                future = asyncMessage(() => n.nonBlockingMtd())
-                while (!future.isCompleted){
-                    waitAndReply(1)
-                }
-                println("Receive the reply for nonBlockingMtd " + future.popValue.get)
-
                 future = asyncMessage(() => n.blockingMtd())
                 while (!future.isCompleted){
                     waitAndReply(1)
                 }
-                println("Receive the reply for blockingMtd " + future.popValue.get)
-                
-                // n.nonBlockingMtd()
-                // n.blockingMtd()
+                blockingReplyValue = future.popValue.get :: blockingReplyValue
             }
             waitAndReply(1)
         }
@@ -53,22 +40,23 @@ class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
 @lift
 class AgentWithBlockingCallLocal() extends Actor {
 
-    def blockingMtd(): Boolean = {
-        println(id + " processes blocking mtd!")
+    var future: Future[Int] = null
+    var totalBlockingMtdCalls: Int = 0
+    var totalNonBlockingMtdCalls: Int = 0
+
+    def blockingMtd(): Unit = {
+        totalBlockingMtdCalls = totalBlockingMtdCalls + 1
         waitLabel(Turn, 1)
-        println(id + " finishes processing!")
-        true
     }
 
-    def nonBlockingMtd(): Boolean = {
-        println(id + " processes a nonblocking mtd!")
-        false
+    def nonBlockingMtd(): Unit = {
+        totalNonBlockingMtdCalls = totalNonBlockingMtdCalls + 1
     }
 
     def main(): Unit = {
         while (true){
-            blockingMtd()
             nonBlockingMtd()
+            blockingMtd()
             waitAndReply(1)
         }
     }
@@ -112,27 +100,4 @@ class blockingMethodCallTest extends FlatSpec {
             initPkgName = Some("core.test.blockingMethodCallLocal"),
             destFolder = "gen-core/src/main/scala/blockingMethodCallLocal/")
     }
-
-    val custRunner = new SimsRunner[BaseMessagingLayer.type] {
-            class showRound(c: SimulationConfig) extends Base(c.actors, c.totalTurn, c.messages) {
-                override def run(): SimulationSnapshot = {
-                    while (currentTurn < totalTurn) {
-                        println(meta.runtime.simulation.util.displayTime(currentTurn))
-                        val mx = collectedMessages.groupBy(_.receiverId)
-                        val res = actors.filterNot(_.deleted).map(a => {
-                        val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
-                        a.run(targetMessages)
-                        }).foldLeft((List[Message](), 1))((a, b) => ((a._1 ::: b._1), if (a._2 > b._2) a._2 else b._2))
-                        collect()
-                        collectedMessages = res._1
-                        proceed(res._2)
-                    }
-                    SimulationSnapshot(actors, collectedMessages)
-                    }
-            }
-
-            def run(c: SimulationConfig): SimulationSnapshot = {
-                new showRound(c).run()
-            }
-        }
 }

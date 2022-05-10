@@ -14,39 +14,12 @@ import scala.collection.mutable.{Map => MutMap, ListBuffer}
   * lifts the code into the deep representation [[meta.deep]]
   */
 object Lifter {
-  // Custom encoding
-  private val modifier_suffix: String = "_"
-  val recognizedModifiers: List[String] = List("override", "private").map(i => s"${i}${modifier_suffix}")
-
   // Squid-specific
-  private val method_separator: String = "\\." // "Vehicle.getPrice"
-  private val field_separator: String = " "    // "variable price"
-
   var rootAgents: List[String] = List("Actor")
 
-  // Return a list of modifiers and the name w.o modifiers
-  private def decode_modifiers(input: String): (List[String], String) = {
-    recognizedModifiers.foldLeft((List[String](), input))((x, modifier) => {
-      if (x._2.contains(modifier)){
-        ((x._1 ::: List(modifier.stripSuffix("_"))), x._2.replace(modifier, ""))
-      } else x
-    })
-  }
+  val handleMessageSym: String = "lifter@handleMessages"
 
-  // Parse the method symbol and call decode modifiers
-  private def parse_method_symbol(name: String): (List[String], String) = {
-    val names: Array[String] = name.split(method_separator)
-    assert(names.length==2)
-    decode_modifiers(names(1))
-  }
-  
-  private def parse_field_symbol(name: String): (List[String], String) = {
-    val names: Array[String] = name.split(field_separator)
-    assert(names.length==2)
-    assert(names(0)=="variable" || names(0)=="value")
-    decode_modifiers(names(1))
-  }
-
+  val method_separator: String = "\\."
   // The dependency graph of the agents as an adjacency matrix
   private def buildDependencyGraph(agents: List[Clasz[_ <: Actor]]): Map[String, List[String]] = {
     val graph: MutMap[String, List[String]] = MutMap()
@@ -83,6 +56,33 @@ object Lifter {
   private def dependencyGraphNoRoot(graph: Map[String, List[String]]): Map[String, List[String]] = {
     graph.map(i => (i._1, i._2.filterNot(x => rootAgents.contains(x))))
       .filterNot(_._2.isEmpty)
+  }
+
+  /**
+   * Check if any local method calls handle messages or wait and reply
+   */
+  private def validLocalMethodDef(cde: OpenCode[_]): Boolean = {
+    cde analyse {
+      case code"SpecialInstructions.waitAndReply($y: Double): Unit" =>
+        return false
+      case code"SpecialInstructions.handleMessages(): Unit" =>
+        return false
+    }
+    true
+  }
+
+  /**
+    * Find markPrivate or markOverride in pgrm, extract, and remove
+    */
+  private def rewriteAnnotations[T](cde: OpenCode[T], privateNames: ListBuffer[String], overrideNames: ListBuffer[String]): OpenCode[T] = {
+    cde rewrite {
+      case code"SpecialInstructions.markPrivate($n: _*): Unit" =>
+        privateNames ++= n.unsafe_asClosedCode.run
+        code"()"
+      case code"SpecialInstructions.markOverride($n: _*): Unit" =>
+        overrideNames ++= n.unsafe_asClosedCode.run
+        code"()"
+    }    
   }
 
   // Each class in Scala can inherit from at most one class and 
@@ -133,7 +133,7 @@ class Lifter {
   /** Maps field names to their field objects
    * 
    */ 
-  val fieldsMap: MutMap[String, List[Field]] = MutMap()
+  var fieldsMap: Map[String, List[Field]] = Map()
 
   /* Map actor name and symbol names (owner.method) of its methods
     * store in String because we would like to add new methods 
@@ -143,7 +143,7 @@ class Lifter {
 
   
   /**
-   * Map each subclass with its super classes, if exist 
+   * Map each subclass with its superclasses, if any
    */
   var dependencyGraph: Map[String, List[String]] = Map() 
 
@@ -154,82 +154,92 @@ class Lifter {
 
   var ssoEnabled: Boolean = false
 
+  // Update the modifiers for fields or methods in fieldsMap and methodsMap
+  def updateModifiers(actorName: String, privateNames: ListBuffer[String], overrideNames: ListBuffer[String]): Unit = {
+    val updateHelper = (n: String, names: ListBuffer[String]) => {
+      names.foreach(name => 
+        if (name!="main"){  // ignore any modifiers for main
+          val targetField = fieldsMap(actorName).find(_.name==name)
+          val targetMtd = methodsMap.filter(_._1==s"${actorName}.${name}").map(_._2).headOption
+          List(targetField, targetMtd).filterNot(_.isEmpty).map(i => {
+            // println(f"Add modifier ${n} to ${name} in class ${actorName}")
+            i.get.asInstanceOf[FieldOrMethod].modifiers += n
+          })
+        })
+      }
+    updateHelper("private", privateNames)
+    updateHelper("override", overrideNames)
+  }
+
   def init(initClasses: List[Clasz[_ <: Actor]]): Unit = {
     for (c <- initClasses) {
-      val classMethodNames = c.methods.flatMap({
+      val actorName: String = c.name
+      val privateNames: ListBuffer[String] = new ListBuffer[String]()
+      val overrideNames: ListBuffer[String] = new ListBuffer[String]()
+
+      val classMethodNames = c.methods.map({
         case method: c.Method[_, _] =>
           import method.A
-          // Decode method symbol for possible modifier string
-          val raw_mtdName: String = method.symbol.toString()
-          val decoded_name = parse_method_symbol(raw_mtdName)
-          val mtdName = f"${c.name}.${decoded_name._2}"
-          val nextId: Int = Method.getNextMethodId
           
-          // If both @override X and override_X are defined, then override_X shadows the other
-          if (!(methodsIdMap.get(mtdName).isDefined && mtdName==raw_mtdName)){
+          val localMtdName: String = method.symbol.asTerm.name.toString
+          val mtdName = f"${actorName}.${localMtdName}"
+          if (localMtdName=="main"||(localMtdName!="main" && validLocalMethodDef(method.body.asOpenCode))){
+            val nextId: Int = Method.getNextMethodId
             methodsIdMap = methodsIdMap + (mtdName -> nextId)
-            // Add a method tag for the raw method name with prefix to simplify matching process
-            if (mtdName != raw_mtdName) {
-              // Both raw and decoded method names point to the same function
-              methodsIdMap = methodsIdMap + (raw_mtdName -> nextId)
-            }
-            val cde: OpenCode[method.A] = method.body.asOpenCode
+            val cde: OpenCode[method.A] = rewriteAnnotations[method.A](method.body.asOpenCode, privateNames, overrideNames)
             methodsMap = methodsMap + (mtdName -> new MethodInfo(
-              decoded_name._1,
+              ListBuffer(),
               mtdName, 
               method.tparams, 
               method.vparamss, 
               cde, 
-              needLifting(cde.showScala, mtdName))(method.A))
+              true)(method.A))
             if (!method.body.toString().contains("this@")) {
               ssoMtds = mtdName :: ssoMtds 
             }
-          }
-
-          if (mtdName!=raw_mtdName){
-            List(mtdName, raw_mtdName)
+            mtdName
           } else {
-            List(mtdName)
+            throw new Exception(f"Invalid definition for method ${localMtdName} in actor ${actorName}")
           }
       })
-      // assert(classMethodNames.distinct.size == classMethodNames.size)
+
       // Inject each agent type with method handleMessages to increase code reuse
-      methodsIdMap += (c.name +".handleMessages" -> Method.getNextMethodId)
+      methodsIdMap += (s"${actorName}.${handleMessageSym}" -> Method.getNextMethodId)
+      
       // Track function definitions of each class
-      MMap = MMap + (c.name -> classMethodNames)
+      MMap = MMap + (actorName -> classMethodNames)
 
       val fields: List[Field] = c.fields.map(x => {
-        val varName: String = x.symbol.asTerm.toString()
-        val decodedName = parse_field_symbol(varName)
+        val varName: String = x.symbol.asTerm.name.toString
         if (x.init.isDefined) {   // state variable
-          Field(decodedName._1,
-            decodedName._2, 
+          Field(ListBuffer(),
+            varName, 
             x.A.rep.tpe.toString, 
             IR.showScala(x.init.get.rep), 
             x.set.nonEmpty, 
             false)
         } else {                  // parameter
-          Field(decodedName._1,
-            decodedName._2, 
+          Field(ListBuffer(),
+            varName, 
             x.A.rep.tpe.toString, 
             "",
             x.set.nonEmpty, 
             true)
         }})
-      fieldsMap += (c.name -> fields)
+      fieldsMap += (actorName -> fields)
+
+      // Update the modifiers after the fieldsMap and methodsMap are updated
+      updateModifiers(actorName, privateNames.distinct, overrideNames.distinct)
     }
   }
 
   def addMethodsToSubclasses(): Unit = {
-    // Create a map for class name and methods including only the suffix
     val localMethodNamesMap: Map[String, List[String]] = 
-      MMap.map(x => (x._1, x._2.map(i => parse_method_symbol(i))
-        .filterNot(j => j._2=="main"    // do not add main 
-          || MMap(x._1).contains(f"${x._1}.private_${j._2}")  // or private
-          || recognizedModifiers.exists(i => j._1.contains(i))) // or methods with encoding, which are duplicated
-          .map(_._2).distinct))
+      MMap.map(x => (x._1, x._2.filterNot(m => methodsMap(m).modifiers.contains("private"))
+        .map(i => i.split("\\.").last)
+        .filterNot(_=="main")))
 
-    val newMethodsUpdate: (String, List[(String, String)]) => Unit = 
+    val newMethodsUpdate: (String, List[(String, String)]) => Unit =
       (copyToClass: String, newMethods: List[(String, String)]) => {
           val newMtdNames = newMethods.map(p => {
             val mtdName = s"$copyToClass.${p._2}"
@@ -248,12 +258,12 @@ class Lifter {
     val publicFieldsMap: Map[String, List[Field]] = 
       fieldsMap.map(x => {
         (x._1, x._2.filterNot(i => i.modifiers.contains("private")))
-      }).toMap
+      })
 
     // Update the fieldsMap with newly added fields
     val newFieldsUpdate: (String, List[(String, Field)]) => Unit = 
       (copyToClass: String, newFields: List[(String, Field)]) => {
-          fieldsMap(copyToClass) = fieldsMap(copyToClass) ::: newFields.map(_._2).map(i => i.replica)
+          fieldsMap = fieldsMap.updated(copyToClass, fieldsMap(copyToClass) ::: newFields.map(_._2).map(i => i.replica))
       }
     copyToSubclasses[Field](this.dependencyGraph, publicFieldsMap, newFieldsUpdate)
   }
@@ -269,19 +279,25 @@ class Lifter {
     : (List[ActorType[_]], Map[String, Int], Map[String, MethodInfo[_]]) = {
 
       // ssoEnabled = Optimization.sso
+      // Initialize the methodsMap, methodsIdMap, etc and update their modifiers
       init(startClasses)
+      
       val fullDepGraph = buildDependencyGraph(startClasses)
       val childrenDepGraph = dependencyGraphNoRoot(fullDepGraph)
       this.dependencyGraph = childrenDepGraph
 
       if (childrenDepGraph.size>0){
         addMethodsToSubclasses()
-        addFieldsToSubclasses()
       }
 
       val endTypes = startClasses.map(c => {
         liftActor(c)
       })
+
+      // The modifier of fields may change during lifting. Add to subclass later.
+      if (childrenDepGraph.size>0){
+        addFieldsToSubclasses()
+      }
 
       (endTypes, methodsIdMap, methodsMap)
   }
@@ -294,9 +310,8 @@ class Lifter {
     */
   def liftActor[T <: Actor](clasz: Clasz[T]) = {
     val actorName: String = clasz.name 
-    
-    val handleMessageSym: String = actorName + ".handleMessages"
-    val handleMessageId: Int = methodsIdMap(handleMessageSym)
+    val localHandleMessage: String = s"${actorName}.${handleMessageSym}"
+    val handleMessageId: Int = methodsIdMap(localHandleMessage)
     val parentNames: List[String] = clasz.parents.map(parent => 
       parent.rep.toString)
 
@@ -325,7 +340,7 @@ class Lifter {
         // main is not callable 
         val callRequest = MMap(actorName).filterNot(x => x.endsWith(".main") || methodsMap.get(x).isEmpty).foldRight(reqAlgo)((actorMtd, rest) => {
           val methodId: Int = methodsIdMap(actorMtd)
-          val methodSymStr: String = actorMtd.split(method_separator).last
+          val methodSymStr: String = actorMtd.split("\\.").last
           val methodInfo: MethodInfo[_] = methodsMap(actorMtd)
 
           val argss: List[List[OpenCode[_]]] =
@@ -334,18 +349,20 @@ class Lifter {
                 code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
               })
             })
-           
+          
+          // println(f"Method ${methodSymStr} defInGeneratedCode is ${methodInfo.defInGeneratedCode}")
+
           IfThenElse(
             code"""$p1.methodInfo==${Const(methodSymStr)}""",
             IfThenElse(
-              code"${Const(methodInfo.blocking)}",
+              code"${Const(methodInfo.defInGeneratedCode)}",
+              // ScalaCode(f"wrapper_${methodSym}($p1.argss.flatten)")
+              ScalaCode(code"$actorSelfVariable.handleNonblockingMessage($p1)"),
               LetBinding(
               Option(resultMessageCall),
               CallMethod[Any](methodId, argss),
               ScalaCode(
-                code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")),
-              // ScalaCode(f"wrapper_${methodSym}($p1.argss.flatten)")
-              ScalaCode(code"$actorSelfVariable.handleNonblockingMessage($p1)")
+                code"""$p1.reply($actorSelfVariable, $resultMessageCall)"""))
             ),
             rest
           )
@@ -358,8 +375,10 @@ class Lifter {
               p1,
               callRequest)
         
-        new LiftedMethod[Unit](handleMessageSym, handleMessage, List(), List(List()), handleMessageId, true)
+        new LiftedMethod[Unit](localHandleMessage, handleMessage, List(), List(List()), handleMessageId, true)
     }
+
+    var defInGeneratedCode: Boolean = true
 
     // avoid translating same code repeatedly
     def liftCode[T: CodeType](cde: OpenCode[T]): Algo[T] = {
@@ -412,11 +431,13 @@ class Lifter {
           f.asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.handleMessages()" =>
+          defInGeneratedCode = false
           val handleMessage = CallMethod[Unit](handleMessageId, List(List()))
           cache += (cde -> handleMessage)
           handleMessage.asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
+          defInGeneratedCode = false
           val waitCounter = Variable[Double]
           y match {
             case code"${Const(n)}: Double" =>
@@ -440,6 +461,7 @@ class Lifter {
           f
 
         case code"SpecialInstructions.waitAndReply($y: Double)" =>
+          defInGeneratedCode = false
           val waitCounter = Variable[Double]
           y match {
             case code"${Const(n)}: Double" =>
@@ -466,10 +488,11 @@ class Lifter {
 
         // asynchronously call a remote method
         case code"SpecialInstructions.asyncMessage[$mt]((() => {${m@ MethodApplication(msg)}}: mt))" =>
+          defInGeneratedCode = false
           if (methodsIdMap.get(msg.symbol.toString).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
-            val mname = msg.symbol.toString.split(method_separator).last
+            val mname = msg.symbol.toString.split("\\.").last
             val convertLocal = Variable[Boolean]
 
             val f = LetBinding(Some(convertLocal),
@@ -551,20 +574,21 @@ class Lifter {
 
             val funcName = ma.symbol.toString.split(method_separator).last
             val f = if (actorSelfVariable.toCode != recipientActorVariable) {
-                LetBinding(Some(convertLocal), 
-                  ScalaCode(code"""
-                  if ($actorSelfVariable._container!= null) {
-                    $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
-                  } else {
-                    false
-                  }"""),
-                  IfThenElse(code"$convertLocal",
-                    ScalaCode(cde), // If convert local, then call directly
-                    Send[T](actorSelfVariable.toCode,
-                    recipientActorVariable,
-                    funcName,
-                    argss, true))
-                )
+              defInGeneratedCode = false
+              LetBinding(Some(convertLocal), 
+                ScalaCode(code"""
+                if ($actorSelfVariable._container!= null) {
+                  $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
+                } else {
+                  false
+                }"""),
+                IfThenElse(code"$convertLocal",
+                  ScalaCode(cde), // If convert local, then call directly
+                  Send[T](actorSelfVariable.toCode,
+                  recipientActorVariable,
+                  funcName,
+                  argss, true))
+              )
             } else {
               // Calling an overloaded method locally
               val actorRep = actorSelfVariable.Typ.rep.toString.split(method_separator).last
@@ -607,22 +631,14 @@ class Lifter {
 
     /**
      * This method lift a method from MethodInfo representation to LiftedMethod 
-     * We only call liftCode if method body contains a special instruction or issues calls. 
-     * Otherwise, we use the ScalaCode representation directly 
      */ 
     def liftMethod(mtd: MethodInfo[_])(cache: MutMap[OpenCode[_], Algo[_]]): LiftedMethod[_] = {
       mtd match {
         case m: MethodInfo[a] => {
             import m.A 
-            val cde: OpenCode[m.A] = m.body.asOpenCode 
-
-            if (m.symbol.endsWith(".main")) {
-              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), true)
-            } else if (needLifting(cde.showScala, m.symbol)) {
-              new LiftedMethod[m.A](m.symbol, liftCode[m.A](cde), m.tparams, m.vparams, methodsIdMap(m.symbol), m.blocking)
-            } else {
-              new LiftedMethod[m.A](m.symbol, ScalaCode(cde), m.tparams, m.vparams, methodsIdMap(m.symbol), false)
-            }
+            val cde: OpenCode[m.A] = m.body.asOpenCode
+            val body: Algo[m.A] = liftCode[m.A](cde)
+            new LiftedMethod[m.A](m.symbol, body, m.tparams, m.vparams, methodsIdMap(m.symbol), true)
         }
       }
     }
@@ -715,8 +731,15 @@ class Lifter {
       }
     }
 
+    // println(f"MMap is ${MMap}")
+    // println(f"Methods map is ${methodsMap}")
+
     var endMethods: List[LiftedMethod[_]] = MMap(actorName).filter(x => methodsMap.get(x).isDefined).map(actorMtd => {
       val lm = liftMethod(methodsMap(actorMtd))(cache)
+      // println(f"Lifting method ${actorMtd} ${defInGeneratedCode}")
+      methodsMap(actorMtd).defInGeneratedCode = defInGeneratedCode
+      defInGeneratedCode = true // overwritten by liftCode when encountering special inst.
+
       if (lm.symbol.endsWith(".main")) {
         mainAlgo = lm.body 
         None 
@@ -724,6 +747,7 @@ class Lifter {
         Some(lm)
       }}).filter(x => x!=None).toList.map(x => x.get)
     endMethods = endMethods ::: addedSSOMtd.map(m => {liftMethod(m)(cache)})
+    // Generate handleMessageMtd strictly after defInGeneratedCode has been updated
     val handleMsg = addHandleMessageMtd()
     endMethods = handleMsg :: endMethods 
     // println(f"Parent names are ${parentNames}")
@@ -733,30 +757,5 @@ class Lifter {
                  endMethods,
                  mainAlgo,
                  clasz.self.asInstanceOf[Variable[T]])
-  }
-
-  /**
-   * This method analyses whether a method contains requires lifting
-   */
-  def needLifting(rawCode: String, mtdName: String): Boolean = {
-    val mtdNameSegs = mtdName.split("\\.")
-    val mtdSymbolNoPrefix = mtdNameSegs.last
-    val agentPath = mtdNameSegs.dropRight(1).mkString("\\.")
-
-    var hasSpecialInst = false
-    var isBlocking = false
-
-    // Check if any illegal pattern
-    if (mtdSymbolNoPrefix!="main"){
-      if (rawCode.contains("SpecialInstructions.waitAndReply") 
-        || rawCode.contains("SpecialInstructions.handleMessages")){
-          throw new Exception(f"${mtdName} should not process messages!")
-        }
-    }
-
-    if (rawCode.contains("SpecialInstructions.")){
-      return true
-    }
-    false
   }
 }
