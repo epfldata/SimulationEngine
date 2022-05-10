@@ -2,6 +2,9 @@ package meta.deep.member
 
 import meta.deep.IR
 import meta.deep.IR.Predef._
+import meta.deep.IR.TopLevel._
+import meta.deep.algo._
+import meta.deep.member._
 import scala.collection.mutable.ListBuffer
 
 /** contains all info about a method except the body of the method
@@ -54,21 +57,22 @@ class MethodInfo[A0](val modifiers: ListBuffer[String],
       }
     }
 
+
   // Bind the list of Any in argss to corresponding parameters  
   def toWrapperDeclaration(): String = {
     val argBinds: String = {
       argSyms match {
         case None => 
-          f"${mtdName}"
+          s"${mtdName}"
         case Some(x) => 
-          f"""
+          s"""
           ${x.zipWithIndex.map(p => "val " + p._1._1  + ": " + p._1._2 + " = " + "args(" + p._2 + ").asInstanceOf[" + p._1._2 + "]").mkString("\n    ")}
           ${mtdName}(${x.map(p => p._1).mkString(",")})
           """
       }
     }
 
-  f"""
+  s"""
   private def wrapper_${mtdName}(args: List[Any]): ${returnType} = {
     ${argBinds}
   }
@@ -84,7 +88,9 @@ class MethodInfo[A0](val modifiers: ListBuffer[String],
   """
       case Some(x) =>
   f"""
-  ${modifiers.mkString(" ")} def ${mtdName}(${x.map(p => p._1 + ": " + p._2).mkString(",")}): ${returnType} = 
+  ${modifiers.mkString(" ")} def ${mtdName}${vparams.map(vps => vps.map(vp =>
+          s"${vp.`internal bound`.name}: ${vp.Typ.rep}"
+        ).mkString("(",",",")")).mkString} : ${returnType} = 
       ${bodyStr}
   """
     }
@@ -99,7 +105,7 @@ class MethodInfo[A0](val modifiers: ListBuffer[String],
       case None =>
         f"${mtdName}"
       case Some(x) =>
-        f"${mtdName}(${x.map(p => p._1).mkString(",")})"
+        f"${mtdName}(${x.map(_._1).mkString(",")})"
     }
   }
 
