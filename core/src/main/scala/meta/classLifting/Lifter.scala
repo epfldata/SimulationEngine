@@ -77,6 +77,14 @@ object Lifter {
       .filterNot(_._2.isEmpty)
   }
 
+  /**
+   * Check if any local method calls handle messages or wait and reply
+   */
+  def validMethodDef(name: String, rawCode: String): Boolean = {
+    !(name!="main" && (rawCode.contains("SpecialInstructions.waitAndReply") 
+      || rawCode.contains("SpecialInstructions.handleMessages")))
+  }
+
   // Each class in Scala can inherit from at most one class and 
   // Squid does not lift traits, we can evaluate the parents sequentially
   private def copyToSubclasses[T](dependencyGraph: Map[String, List[String]], classValuesMap: Map[String, List[T]], newItemsUpdate: (String, List[(String, T)]) => Unit) = {
@@ -754,13 +762,5 @@ class Lifter {
                  endMethods,
                  mainAlgo,
                  clasz.self.asInstanceOf[Variable[T]])
-  }
-
-  /**
-   * Check if any local method calls handle messages or wait and reply
-   */
-  def validMethodDef(name: String, rawCode: String): Boolean = {
-    !(name!="main" && (rawCode.contains("SpecialInstructions.waitAndReply") 
-      || rawCode.contains("SpecialInstructions.handleMessages")))
   }
 }
