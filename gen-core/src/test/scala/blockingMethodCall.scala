@@ -26,7 +26,7 @@ class RemoteBlockingMtdTest extends FunSuite{
     val totalRounds: Int = 20
     val c = new SimulationConfig(agents, totalRounds)
     val finalState = StartSimulation[AkkaMessagingLayer.type](c)
-    val finalAgents = finalState.sims.map(x => x.asInstanceOf[generated.core.test.blockingMethodCall.AgentWithBlockingCall])
+    val finalAgents = finalState.sims.map(x => x.asInstanceOf[generated.core.test.blockingMethodCall.AgentWithBlockingCall]).sortBy(_.id)
     assert(finalAgents.map(_.totalBlockingMtdCalls)==List(10, 0, 0))
     assert(finalAgents(0).blockingReplyValue == List())
     assert(possibleReplyValues.contains(finalAgents(1).blockingReplyValue))
@@ -53,4 +53,4 @@ class LocalBlockingMtdTest extends FunSuite{
   }
 }
 
-class blockingMethodSuite extends Suites (new RemoteBlockingMtdTest, new LocalBlockingMtdTest)
+class BlockingMethodSuite extends Suites (new RemoteBlockingMtdTest, new LocalBlockingMtdTest)
