@@ -1,4 +1,4 @@
-package generated.core.test
+package generated.core
 
 import meta.API._
 import org.scalatest.Suites
