@@ -71,6 +71,10 @@ object Lifter {
     true
   }
 
+  def actorVarToStr(actorSelfVariable: Variable[_ <: Actor]): String = {
+    actorSelfVariable.Typ.rep.toString.split("\\.").last
+  }
+
   /**
     * Find markPrivate or markOverride in pgrm, extract, and remove
     */
@@ -492,7 +496,7 @@ class Lifter {
           if (methodsIdMap.get(msg.symbol.toString).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
-            val mname = msg.symbol.toString.split("\\.").last
+            val mname = msg.symbol.asTerm.name.toString
             val convertLocal = Variable[Boolean]
 
             val f = LetBinding(Some(convertLocal),
@@ -519,14 +523,14 @@ class Lifter {
           } else {
             var recipientActorVariable: OpenCode[Actor] = msg.args.last.head.asInstanceOf[OpenCode[Actor]]
             val argss: ListBuffer[OpenCode[_]] = ListBuffer[OpenCode[_]]() // in the reverse order
-            var mtd = msg.symbol.toString()
+            var mtd = msg.symbol.toString
             var curriedMtd: IR.Predef.base.Code[Any, _] = msg.args.head.head
             argss.append(msg.args.last.head)
 
             while (!methodsIdMap.get(mtd).isDefined) {
               curriedMtd match {
                 case code"($sa: $st) => ${MethodApplication(mtd2)}: Any" => {
-                  mtd = mtd2.symbol.toString()
+                  mtd = mtd2.symbol.toString
                   // println(f"Curried method name is ${mtd}")
                   if (methodsIdMap.get(mtd).isDefined){
                     recipientActorVariable = mtd2.args.head.head.asInstanceOf[OpenCode[Actor]]
@@ -572,7 +576,7 @@ class Lifter {
             
             val convertLocal = Variable[Boolean]
 
-            val funcName = ma.symbol.toString.split(method_separator).last
+            val funcName = ma.symbol.asTerm.name.toString
             val f = if (actorSelfVariable.toCode != recipientActorVariable) {
               defInGeneratedCode = false
               LetBinding(Some(convertLocal), 
@@ -591,7 +595,7 @@ class Lifter {
               )
             } else {
               // Calling an overloaded method locally
-              val actorRep = actorSelfVariable.Typ.rep.toString.split(method_separator).last
+              val actorRep = actorVarToStr(actorSelfVariable)
               val mid = methodsIdMap.get(f"${actorRep}.${funcName}")
               assert(mid.isDefined)
               CallMethod[T](mid.get, argss).asInstanceOf[Algo[T]]
@@ -714,8 +718,8 @@ class Lifter {
           // println(cde + " recipient variable is " + recipientActorVariable)
           // Check if calling an overloaded method
           if(actorSelfVariable.toCode == recipientActorVariable){
-            val actorRep = actorSelfVariable.Typ.rep.toString.split(method_separator).last
-            val funcName = ma.symbol.toString.split(method_separator).last
+            val actorRep = actorVarToStr(actorSelfVariable)
+            val funcName = ma.symbol.asTerm.name.toString
             val mtdName = f"${actorRep}.${funcName}"
             if (methodsIdMap.get(mtdName).isDefined){
               Some(CallMethod[T](methodsIdMap(mtdName), argss).asInstanceOf[Algo[T]])
