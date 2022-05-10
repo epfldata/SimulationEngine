@@ -1,4 +1,4 @@
-package meta.test.snapshot
+package meta.test
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
@@ -23,7 +23,6 @@ class Sender(val r: Receiver) extends Actor {
 @lift
 class Receiver() extends Actor {
     def rpc1(): Int = {
-        println("rpc 1!")
         2
     }
 

@@ -1,4 +1,4 @@
-package generated.core.simClone
+package generated.core
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift

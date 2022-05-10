@@ -113,4 +113,4 @@ class RootLifted extends FunSuite{
   }
 }
 
-class inheritanceTest extends Suites (new RootNonlifted, new RootLifted)
+class InheritanceTest extends Suites (new RootNonlifted, new RootLifted)

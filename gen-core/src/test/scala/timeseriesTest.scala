@@ -1,4 +1,4 @@
-package generated.core.timeseries
+package generated.core
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
@@ -8,7 +8,7 @@ import meta.runtime.{Actor, Message}
 import meta.API._
 import org.scalatest.FlatSpec
 
-class timeseriesTest extends FlatSpec {
+class TimeseriesTest extends FlatSpec {
     import meta.deep.IR.Predef._
 
     "Stepwise eval materialized from snapshots" should "contain correct value" in {
@@ -55,7 +55,7 @@ class timeseriesTest extends FlatSpec {
         val timeseries = 
             StartSimulation.runAndReduce[BaseMessagingLayer.type, Int, List[Int]](c)(mapper, reducer)
         
-        println(timeseries)
+        // println(timeseries)
         // Record each time stamp
         assert(timeseries.length == 5)
         // Initial states
@@ -116,7 +116,7 @@ class timeseriesTest extends FlatSpec {
         val timeseries =
             StartSimulation.runAndReduce[AkkaMessagingLayer.type, Int, List[Int]](c)(mapper, reducer)
         
-        println(timeseries)
+        // println(timeseries)
         // Record each time stamp
         assert(timeseries.length == 5)
         // Initial states

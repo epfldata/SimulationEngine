@@ -1,4 +1,4 @@
-package generated.core.snapshot
+package generated.core
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
@@ -50,7 +50,6 @@ class SnapshotMessageTest extends FlatSpec {
         val c = new SimulationConfig(agents, 1)
         val snapshot1 = StartSimulation[SparkMessagingLayer.type](c)
         // After 1 epoch, we have 7 messages, sent by sender
-        println(snapshot1.messages)
         assert(snapshot1.messages.length == 7)
         assert(snapshot1.sims.length == 8)
 

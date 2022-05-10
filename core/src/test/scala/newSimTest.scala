@@ -1,4 +1,4 @@
-package meta.test.newSim
+package meta.test
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift

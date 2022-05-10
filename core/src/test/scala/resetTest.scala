@@ -1,4 +1,4 @@
-package meta.test.resetSim
+package meta.test
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
@@ -30,7 +30,7 @@ class Vertex() extends Actor {
     }
 }
 
-class Test extends FlatSpec {
+class ResetTest extends FlatSpec {
     import meta.deep.IR.Predef._
 
     "Vertex with connections" should "compile" in {

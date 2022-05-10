@@ -1,4 +1,4 @@
-package generated.core.resetSim
+package generated.core
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
@@ -8,7 +8,7 @@ import meta.runtime.{Actor}
 import meta.API._
 import org.scalatest.FlatSpec
 
-class Test extends FlatSpec {
+class ResetSimTest extends FlatSpec {
     import meta.deep.IR.Predef._
 
     "SimReset" should "update the agent in-place" in {
