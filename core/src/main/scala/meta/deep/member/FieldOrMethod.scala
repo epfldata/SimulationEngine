@@ -4,4 +4,5 @@ import scala.collection.mutable.ListBuffer
 
 abstract class FieldOrMethod {
     val modifiers: ListBuffer[String]
+    val name: String
 }
