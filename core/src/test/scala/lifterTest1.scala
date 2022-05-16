@@ -10,10 +10,12 @@ import org.scalatest.FlatSpec
 import scala.util.Random
 import meta.runtime.Future
 import scala.collection.mutable.ListBuffer
+import squid.lib.transparencyPropagating
 
 @lift
 class AgentWithSpecialInst(val n: AgentWithSpecialInst) extends Actor {
 
+    @transparencyPropagating
     def blockingMtd(): Boolean = {
         println(id + " processes blocking mtd!")
         waitLabel(Turn, 1)
@@ -22,42 +24,42 @@ class AgentWithSpecialInst(val n: AgentWithSpecialInst) extends Actor {
     }
 
     def testForallOperation(): Boolean = {
-        List(1, 2, 3, 4).forall(_ => asyncMessage(() => n.blockingMtd()).isCompleted)
-        ListBuffer(1, 2, 3, 4).forall(_ => asyncMessage(() => n.blockingMtd()).isCompleted)
-        Set(1, 2, 3, 4).forall(_ => asyncMessage(() => n.blockingMtd()).isCompleted)
-        Vector(1, 2, 3, 4).forall(_ => asyncMessage(() => n.blockingMtd()).isCompleted)
+        List(1, 2, 3, 4).forall(_ => asyncSend(n.blockingMtd()).isCompleted)
+        ListBuffer(1, 2, 3, 4).forall(_ => asyncSend(n.blockingMtd()).isCompleted)
+        Set(1, 2, 3, 4).forall(_ => asyncSend(n.blockingMtd()).isCompleted)
+        Vector(1, 2, 3, 4).forall(_ => asyncSend(n.blockingMtd()).isCompleted)
     }
 
     def testExistsOperation(): Boolean = {
-        List(1, 2, 3, 4).exists(_ => asyncMessage(() => n.blockingMtd()).isCompleted)
-        ListBuffer(1, 2, 3, 4).exists(_ => asyncMessage(() => n.blockingMtd()).isCompleted)
-        Set(1, 2, 3, 4).exists(_ => asyncMessage(() => n.blockingMtd()).isCompleted)
-        Vector(1, 2, 3, 4).exists(_ => asyncMessage(() => n.blockingMtd()).isCompleted)
+        List(1, 2, 3, 4).exists(_ => asyncSend(n.blockingMtd()).isCompleted)
+        ListBuffer(1, 2, 3, 4).exists(_ => asyncSend(n.blockingMtd()).isCompleted)
+        Set(1, 2, 3, 4).exists(_ => asyncSend(n.blockingMtd()).isCompleted)
+        Vector(1, 2, 3, 4).exists(_ => asyncSend(n.blockingMtd()).isCompleted)
     }
 
     // .map and .flatMap only work for List
     def testMapOperation(): Boolean = {
-        List(1, 2, 3, 4).map(_ => asyncMessage(() => n.blockingMtd()))
-        List(1, 2, 3, 4).flatMap(_ => List(asyncMessage(() => n.blockingMtd())))
+        List(1, 2, 3, 4).map(_ => asyncSend(n.blockingMtd()))
+        List(1, 2, 3, 4).flatMap(_ => List(asyncSend(n.blockingMtd())))
         
         // Fail
-        // ListBuffer(1, 2, 3, 4).map[Future[Boolean], ListBuffer[Future[Boolean]]](_ => asyncMessage(() => n.blockingMtd()))
-        // Set(1, 2, 3, 4).map(_ => asyncMessage(() => n.blockingMtd()))
-        // (1 to 10).map(_ => asyncMessage(() => n.blockingMtd()))
+        // ListBuffer(1, 2, 3, 4).map[Future[Boolean], ListBuffer[Future[Boolean]]](_ => asyncSend(n.blockingMtd()))
+        // Set(1, 2, 3, 4).map(_ => asyncSend(n.blockingMtd()))
+        // (1 to 10).map(_ => asyncSend(n.blockingMtd()))
         true
     }
 
     def testForeachOperation(): Boolean = {
-        List(1, 2, 3, 4).foreach(_ => asyncMessage(() => n.blockingMtd()))
-        ListBuffer(1, 2, 3, 4).foreach(_ => asyncMessage(() => n.blockingMtd()))
-        Set(1, 2, 3, 4).foreach(_ => asyncMessage(() => n.blockingMtd()))
-        Vector(1, 2, 3, 4).foreach(_ => asyncMessage(() => n.blockingMtd()))
-        1.to(10).foreach(_ => asyncMessage(() => n.blockingMtd()))
+        List(1, 2, 3, 4).foreach(_ => asyncSend(n.blockingMtd()))
+        ListBuffer(1, 2, 3, 4).foreach(_ => asyncSend(n.blockingMtd()))
+        Set(1, 2, 3, 4).foreach(_ => asyncSend(n.blockingMtd()))
+        Vector(1, 2, 3, 4).foreach(_ => asyncSend(n.blockingMtd()))
+        1.to(10).foreach(_ => asyncSend(n.blockingMtd()))
         // Array does not work
-        // Array(1, 2, 3, 4).foreach(_ => asyncMessage(() => n.blockingMtd()))
-        List(n).foreach(i => asyncMessage(() => i.blockingMtd()))
-        Set(n).foreach(i => asyncMessage(() => i.blockingMtd()))
-        Map(1 -> n).map(i => i._2).foreach(i => asyncMessage(() => i.blockingMtd()))
+        // Array(1, 2, 3, 4).foreach(_ => asyncSend(n.blockingMtd()))
+        List(n).foreach(i => asyncSend(i.blockingMtd()))
+        Set(n).foreach(i => asyncSend(i.blockingMtd()))
+        Map(1 -> n).map(i => i._2).foreach(i => asyncSend(i.blockingMtd()))
         true
     }
 

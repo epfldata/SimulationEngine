@@ -9,9 +9,12 @@ import meta.API._
 import org.scalatest.FlatSpec
 import scala.util.Random
 import meta.runtime.Future
+import squid.lib.transparencyPropagating
+
 
 @lift
 case class School(val name: String){
+    @transparencyPropagating
     def schoolName(): String = name
 }
 
@@ -23,7 +26,7 @@ class MyClass3(var s: School) extends Actor {
     def hello(): String = c
 
     def main(): Unit = {
-        asyncMessage[String](() => s.schoolName())
+        asyncSend(s.schoolName())
         println("Hello world!")
     }
 }
@@ -32,6 +35,7 @@ class MyClass3(var s: School) extends Actor {
 @lift
 class MyClass4() extends Actor {
     
+    @transparencyPropagating
     def hello(): String = "world"
 
     def main(): Unit = {
@@ -45,7 +49,7 @@ class MyClass4() extends Actor {
 class MyClass5(var s: MyClass4) extends Actor {
     
     def main(): Unit = {
-        asyncMessage[String](() => s.hello())
+        asyncSend[String](s.hello())
     }
 }
 

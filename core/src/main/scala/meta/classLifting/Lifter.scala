@@ -490,6 +490,38 @@ class Lifter {
           cache += (cde -> f)
           f
 
+        case code"SpecialInstructions.asyncSend[$mt]({${m@ MethodApplication(msg)}}: mt)" =>
+          if (methodsIdMap.get(msg.symbol.toString).isDefined) {
+            defInGeneratedCode = false
+            val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
+            val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+            val mname = msg.symbol.asTerm.name.toString
+            val convertLocal = Variable[Boolean]
+
+            val f = LetBinding(Some(convertLocal),
+                  ScalaCode(code"""
+                  if ($actorSelfVariable._container!= null) {
+                    $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
+                  } else {
+                    false
+                  }"""),
+                  IfThenElse(code"$convertLocal",
+                    ScalaCode(
+                      code"""
+                      val future = meta.runtime.Future[$mt](value = Some($m))
+                      future
+                      """
+                    ).asInstanceOf[Algo[T]],
+                    AsyncSend[T, mt.Typ](
+                      actorSelfVariable.toCode,
+                      recipientActorVariable,
+                      mname,
+                      argss)))
+            cache += (cde -> f)
+            f
+          } else {
+            throw new Exception(f"Unable to find method ${msg.symbol} in ${cde}. Did you lift the receiver?")
+          }
         // asynchronously call a remote method
         case code"SpecialInstructions.asyncMessage[$mt]((() => {${m@ MethodApplication(msg)}}: mt))" =>
           defInGeneratedCode = false
@@ -711,6 +743,9 @@ class Lifter {
             ScalaCode(code"true"),
             liftCode(y))
           Some(f.asInstanceOf[Algo[T]])
+
+        case code"SpecialInstructions.asyncSend[$mt]($a): meta.runtime.Future[mt]" =>
+          throw new Exception(s"Invalid asyncSend in ${actorName}! Did you mark the callee method with transparencyPropagating?")
 
         case code"${MethodApplication(ma)}:Any " =>
           val recipientActorVariable = ma.args.head.head.asInstanceOf[OpenCode[Actor]]
