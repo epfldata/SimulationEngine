@@ -9,6 +9,7 @@ import meta.API._
 import org.scalatest.FlatSpec
 import scala.util.Random
 import meta.runtime.Future
+import squid.lib.transparencyPropagating
 
 @lift
 class MyClass() extends Actor {
@@ -17,13 +18,35 @@ class MyClass() extends Actor {
 
     private val d: Int = 50
 
-    def foo1(): Double = {
-        List(1, 2, 3, 4).foreach(i => println(i))
-        1.0
+    private var neighbors: List[Actor] = List()
+
+    @transparencyPropagating
+    def foo1(a: Int): Double = {
+        List(1, 2, 3.2, 4).map(i => a + i).sum
     }
 
-    def foo(bar: Int): Double = {
-        bar + d
+    def testLocalVarBindings1(): Unit = {
+        neighbors.foreach(i => {
+            val tmp = scala.util.Random.nextInt()
+            asyncSend(i.asInstanceOf[MyClass].foo1(tmp)).isCompleted
+        })
+    }
+
+    def testLocalVarBindings2(): List[Boolean] = {
+        // Trigger exception
+        // neighbors.map(i => {
+        //     val tmp = scala.util.Random.nextInt()
+        //     asyncMessage(() => i.asInstanceOf[MyClass].foo(tmp, 30, 43)).isCompleted
+        // })
+        neighbors.map(i => {
+            val tmp = scala.util.Random.nextInt()
+            asyncSend(i.asInstanceOf[MyClass].foo(tmp, 30, 43)).isCompleted
+        })
+    }
+
+    @transparencyPropagating
+    def foo(bar: Int, bar2: Int, bar3: Int): Int = {
+        bar + bar2 + bar3
     }
 
     def z(x: List[Int]): Unit = {
@@ -31,6 +54,7 @@ class MyClass() extends Actor {
     }
 
     def main(): Unit = {
+        neighbors = (1 to d).map(i => new MyClass()).toList
         markPrivate("d")
         println("Hello world!")
     }
@@ -44,9 +68,10 @@ class lifterTest extends FlatSpec {
 
     "lifting a method" should "preserve the arguments of lifted method" in {
         val x = liftMyClass.methods
-        assert(x.map(_.symbol.toString).toSet == Set("MyClass.main", "MyClass.foo", "MyClass.z", "MyClass.foo1"))
+        assert(x.map(_.symbol.toString).toSet == Set("MyClass.main", "MyClass.foo", "MyClass.z", "MyClass.foo1", "MyClass.testLocalVarBindings1", "MyClass.testLocalVarBindings2"))
     }
 
+    "Variable binding in async message" should ""
     "lifting variables with private" should "trigger the private keyword" in {
         val liftedRes = new Lifter().apply(List(liftMyClass)) 
         liftedRes._1.head.methods.foreach(x => {
