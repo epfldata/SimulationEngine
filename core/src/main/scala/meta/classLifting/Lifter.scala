@@ -573,7 +573,7 @@ class Lifter {
                         argss.remove(0)
                       } else {
                         println(s"msg: $msg, argss: $argss, mtd argss: ${mtd2.args.last}")
-                        throw new Exception("Async msg does't support local variables yet. Please make it a Sim variable instead")
+                        throw new Exception("asyncMessage does't support local variables. Please use asyncSend.")
                       }
                     }
                   } else {
@@ -585,7 +585,7 @@ class Lifter {
                   }
                   curriedMtd = mtd2.args.head.head
                 }
-                case _ => throw new Exception(s"Error state in asyncMessage! $cde $recipientActorVariable $curriedMtd")
+                case _ => throw new Exception(s"Error in asyncMessage! Please use asyncSend. $cde $recipientActorVariable $curriedMtd")
               }
           }
             AsyncSend[T, mt.Typ](
