@@ -22,7 +22,7 @@ The syntax for sending a blocking message is the same as dynamic dispatch in obj
 
 given that `tellMeThis()` and `doThat()` are public methods in Sim2's class. The transpiler converts it to delivering a message to Sim2 and waiting for a reply. When the reply arrives, the function returns and Sim1's variables `secret` and `workDone`  get their values. 
 
-Besides blocking calls, Sims can also send asynchronous messages, with a different syntax `asyncMessage(() => receiver.API(args))`. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. The non-block message return a Future object, which user can query about the status of the message. `core/src/main/scala/meta/runtime/Future.scala`.
+Besides blocking calls, Sims can also send asynchronous messages, with a different syntax `asyncSend(receiver.API(args))`. You need to mark the callee method with annotation `@transparencyPropagating`, see example in `core/src/test/scala/lifterTest1`. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. The non-block message return a Future object, which user can query about the status of the message. `core/src/main/scala/meta/runtime/Future.scala`.
 
 Instruction `waitLabel(Turn, someTicks)` signals that messages in the Sim's mailbox are ready and agents will wait for the specified ticks. The agent will *not* do anything besides waiting. To process incoming messages at each round while waiting, please use instruction `waitAndReply(n)`. Another instruction is `handleMessages()`, which iterates over messages in the mailbox and processes them. You can find the syntax of the DSLs here ```core/src/main/scala/meta/classLifting/SpecialInstructions.scala```
 
@@ -74,22 +74,7 @@ Here are some tips for writing meta-programs in this framework:
   * Extend the lifter and override the method liftCodeOther  
   and handle there your created algos.
 * To lift a class, annotate it with @lift and extend from runtime.Actor
-* At the moment, *args* in the syntax of asyncMessage must be class variables. For example, code snippet below is incorrect. 
 
-```allProducts.map(elem => asyncMessage[Product](() => market.consumerPrice(elem))) ```
-
-But the following code snippet works fine.
-```neighbors.map(n => asyncMessage[Int](() => n.getStatus()))```
-
-To fix it, simply bind *elem* with a class variable. 
-```
-var product: Product = null // class variable
-
-allProducts.map(elem => {
-  product = elem
-  asyncMessage[Product](() => market.consumerPrice(product))
-})
-```
 * The `main` method is the entrypoint of the compiler. Please initialize any variables that require references to `this` inside `main`. 
 
 ### <a name="Simulation"></a> Start Simulation 
