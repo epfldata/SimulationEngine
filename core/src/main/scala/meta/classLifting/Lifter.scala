@@ -496,32 +496,18 @@ class Lifter {
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
             val mname = msg.symbol.asTerm.name.toString
-            val convertLocal = Variable[Boolean]
 
-            val f = LetBinding(Some(convertLocal),
-                  ScalaCode(code"""
-                  if ($actorSelfVariable._container!= null) {
-                    $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
-                  } else {
-                    false
-                  }"""),
-                  IfThenElse(code"$convertLocal",
-                    ScalaCode(
-                      code"""
-                      val future = meta.runtime.Future[$mt](value = Some($m))
-                      future
-                      """
-                    ).asInstanceOf[Algo[T]],
-                    AsyncSend[T, mt.Typ](
+            val f = AsyncSend[T, mt.Typ](
                       actorSelfVariable.toCode,
                       recipientActorVariable,
                       mname,
-                      argss)))
+                      argss)
             cache += (cde -> f)
             f
           } else {
             throw new Exception(f"Unable to find method ${msg.symbol} in ${cde}. Did you lift the receiver?")
           }
+          
         // asynchronously call a remote method
         case code"SpecialInstructions.asyncMessage[$mt]((() => {${m@ MethodApplication(msg)}}: mt))" =>
           defInGeneratedCode = false
@@ -529,27 +515,12 @@ class Lifter {
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
             val mname = msg.symbol.asTerm.name.toString
-            val convertLocal = Variable[Boolean]
 
-            val f = LetBinding(Some(convertLocal),
-                  ScalaCode(code"""
-                  if ($actorSelfVariable._container!= null) {
-                    $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
-                  } else {
-                    false
-                  }"""),
-                  IfThenElse(code"$convertLocal",
-                    ScalaCode(
-                      code"""
-                      val future = meta.runtime.Future[$mt](value = Some($m))
-                      future
-                      """
-                    ).asInstanceOf[Algo[T]],
-                    AsyncSend[T, mt.Typ](
+            val f = AsyncSend[T, mt.Typ](
                       actorSelfVariable.toCode,
                       recipientActorVariable,
                       mname,
-                      argss)))
+                      argss)
             cache += (cde -> f)
             f
           } else {
