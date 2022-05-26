@@ -7,6 +7,7 @@ class Stock(var priceAdjustmentFactor: Double) {
     private var period: Int = 0
     private var currentPrice: Double = -1
 
+    private var lastDividend: Double = 0
     // Update 10-day-average and return whether the updated val has increased
     private val updateLastAvg10: trackLastAvg = new trackLastAvg(10)
     // Update 100-day-average and return whether the updated val has increased
@@ -43,12 +44,19 @@ class Stock(var priceAdjustmentFactor: Double) {
         }
     }
 
-    def addPrice(p: Double): List[Option[Boolean]] = {
+    def updateMarketInfo(p: Double, d: Double): List[Option[Boolean]] = {
         currentPrice = p
         period += 1
         prices.append(p)
-        val dividendIncrease: Option[Boolean] = Some(scala.util.Random.nextBoolean)
+
+        // Short-term info: whether dividend has increased
+        val dividendIncrease: Option[Boolean] = {
+            Some(lastDividend < d)
+        }
+        lastDividend = d
+        // Mid-term info: whether 10-day avg has increased
         val recent10AvgInc: Option[Boolean] = updateLastAvg10.update
+        // Long-term info: whether 100-day avg has increased
         val recent100AvgInc: Option[Boolean] = updateLastAvg100.update
         // println("Market state is " + List(dividendIncrease, recent10AvgInc, recent100AvgInc))
         // Market state encodes both short-term and long-term information
@@ -59,7 +67,12 @@ class Stock(var priceAdjustmentFactor: Double) {
     // z*(buy - sell) << 1
     def priceAdjustment(buy: Int, sell: Int): Double = {
         assert(currentPrice>0)
-        assert(priceAdjustmentFactor*(buy - sell) > -1)
         currentPrice * (1 + priceAdjustmentFactor*(buy - sell))
+    }
+
+    // Model the dividend stream using a stochastic process
+    def getDividend(): Double = {
+        val x = Random.nextGaussian()*0.001
+        if (x < 0) 0 else x
     }
 }

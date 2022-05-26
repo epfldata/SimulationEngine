@@ -5,7 +5,7 @@ object Example extends App {
     
     val liftedMain = meta.classLifting.liteLift {
         def apply(): List[Actor] = {
-            val traders = (1 to 4).map(x => new Trader(100, 0.01)).toList
+            val traders = (1 to 4).map(x => new Trader(1000, 0.0001)).toList
             val market = new Market(traders)
             market :: traders
         }
