@@ -14,11 +14,12 @@ class Market(val traders: List[Trader]) extends Actor {
     private var marketState: List[Option[Boolean]] = null
     // Initial price
     var stockPrice: Double = 100
+    var dividendPerShare: Double = 0
 
     def main(): Unit = {
         while (true) {
-            marketState = stock.addPrice(stockPrice)
-            futures = traders.map(x => asyncSend(x.action(marketState)))
+            marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
+            futures = traders.map(x => asyncSend(x.action(stockPrice, dividendPerShare, marketState)))
             while (!futures.forall(x => x.isCompleted)){
                 waitAndReply(1)
             }
@@ -27,6 +28,7 @@ class Market(val traders: List[Trader]) extends Actor {
             val sellOrders = x.count(_ == Some(false))
             // println("Current buy orders are " + buyOrders + " sell orders are " + sellOrders)
             stockPrice = stock.priceAdjustment(buyOrders, sellOrders)
+            dividendPerShare = stock.getDividend()
             // println("Current stock price is " + stockPrice)
         }
     }
