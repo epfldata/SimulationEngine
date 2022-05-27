@@ -32,7 +32,11 @@ class WealthManagement(var initWealth: Double, val interestRate: Double) {
 
     def addDividends(dividendPerShare: Double): Unit = {
         assert(dividendPerShare >= 0)
-        shares = shares * (1 + dividendPerShare)
+        // dividend in shares
+        // shares = shares * (1 + dividendPerShare)
+
+        // dividend in cash
+        cash += shares * dividendPerShare
     }
 
     def takeAction(stockPrice: Double, marketState: List[Option[Boolean]]): Option[Boolean] = {

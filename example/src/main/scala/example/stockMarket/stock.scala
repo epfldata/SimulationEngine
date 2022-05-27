@@ -49,11 +49,17 @@ class Stock(var priceAdjustmentFactor: Double) {
         period += 1
         prices.append(p)
 
-        // Short-term info: whether dividend has increased
+        // Short-term info: whether dividend has increased. 0 means no dividend
         val dividendIncrease: Option[Boolean] = {
-            Some(lastDividend < d)
+            if (d == 0){
+                None
+            } else {
+                val lastDividend_copy = lastDividend
+                lastDividend = d
+                Some(lastDividend_copy < d)
+            }
         }
-        lastDividend = d
+
         // Mid-term info: whether 10-day avg has increased
         val recent10AvgInc: Option[Boolean] = updateLastAvg10.update
         // Long-term info: whether 100-day avg has increased
@@ -70,9 +76,9 @@ class Stock(var priceAdjustmentFactor: Double) {
         currentPrice * (1 + priceAdjustmentFactor*(buy - sell))
     }
 
-    // Model the dividend stream using a stochastic process
+    // Model the dividend stream (pay in cash) using a stochastic process
     def getDividend(): Double = {
-        val x = Random.nextGaussian()*0.001
+        val x = Random.nextGaussian()
         if (x < 0) 0 else x
     }
 }
