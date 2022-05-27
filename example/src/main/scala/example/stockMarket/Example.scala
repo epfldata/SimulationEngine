@@ -4,8 +4,8 @@ package stockMarket
 object Example extends App {
     
     val liftedMain = meta.classLifting.liteLift {
-        def apply(): List[Actor] = {
-            val traders = (1 to 4).map(x => new Trader(1000, 0.0001)).toList
+        def apply(totalTraders: Int): List[Actor] = {
+            val traders = (1 to totalTraders).map(x => new Trader(1000, 0.0001)).toList
             val market = new Market(traders)
             market :: traders
         }
