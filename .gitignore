@@ -10,6 +10,9 @@ generated/src/main/*
 benchmark/*
 *.csv 
 
+### Generated plot
+*.html
+
 ### Build server support ###
 .bsp/*
 
