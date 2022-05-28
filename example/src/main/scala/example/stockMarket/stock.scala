@@ -3,7 +3,7 @@ package stockMarket
 
 // Artificial economic life: a simple model of a stockmarket
 class Stock(var priceAdjustmentFactor: Double) {
-    private var prices: ListBuffer[Double] = new ListBuffer()
+    var prices: ListBuffer[Double] = new ListBuffer()
     private var period: Int = 0
     private var currentPrice: Double = -1
 

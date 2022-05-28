@@ -9,7 +9,7 @@ class WealthManagement(var initWealth: Double, val interestRate: Double) {
     var currentAction: conditionActionRule = null
     var currentWealth: Double = initWealth
 
-    val rules: Set[conditionActionRule] = Set(new rule1(this), new rule2(this), new rule3(this))
+    val rules: Set[conditionActionRule] = Set(new rule1(this), new rule2(this), new rule3(this), new rule4(this), new rule5(this))
 
     def buyStock(stockPrice: Double): Unit = {
         shares += 1
