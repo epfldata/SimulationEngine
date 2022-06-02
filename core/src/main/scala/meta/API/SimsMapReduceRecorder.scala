@@ -23,4 +23,12 @@ object SimsMapReduceRecorder {
             }
         }
     }
+
+    implicit val sparkSimulation = {
+        new SimsMapReduceRecorder[SparkMessagingLayer.type] {
+            def run[K, T](c: SimulationConfig)(mapper: Actor=>K, reducer: List[K]=>T): List[T] = {
+                new SparkWithReducer(c).run[K, T](mapper, reducer)
+            }
+        }
+    }
 }

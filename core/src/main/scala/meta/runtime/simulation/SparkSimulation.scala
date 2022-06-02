@@ -4,7 +4,7 @@ package simulation
 import SimRuntime._
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
 import meta.runtime.Actor.AgentId
-import meta.API.SimulationSnapshot
+import meta.API.{SimulationSnapshot, SimulationConfig}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
@@ -68,5 +68,69 @@ class SparkRun(var actors: List[Actor], val totalTurn: Int, val messages: List[M
     val snapshot = SimulationSnapshot(updatedActors, collectedMessages)
     sc.stop()
     snapshot
+  }
+}
+
+class SparkWithEval(c: SimulationConfig) extends SparkRun(c.actors, c.totalTurn, c.messages) {
+  def run[T](filter:(List[Actor], List[Message]) => T): List[T] = {
+      val ans: ListBuffer[T] = new ListBuffer[T]()
+
+      while (currentTurn < totalTurn ) {
+          println(util.displayTime(currentTurn))
+
+          // if (currentTurn % 10 == 0) {
+          //   actorRDD.checkpoint()
+          // }
+
+          val mx = collectedMessages.groupBy(_.receiverId)
+          val res = actorRDD.map(a => {
+            val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
+            (a.run(targetMessages), a)
+          })
+          res.cache()
+          val materializeRes = res.collect().toList
+          
+          actorRDD = res.map(_._2)
+          collect()
+          actorRDD.cache()
+          collectedMessages = materializeRes.flatMap(_._1._1)
+          proceed(materializeRes.map(_._1._2.asInstanceOf[Int]).max)
+          ans.append(filter(actorRDD.collect().toList, collectedMessages))
+      }
+
+      sc.stop()
+      ans.toList
+    }
+}
+
+class SparkWithReducer(c: SimulationConfig) extends SparkRun(c.actors, c.totalTurn, c.messages) {
+  def run[K, T](mapper: Actor => K, reducer: List[K] => T): List[T] = {
+    val ans: ListBuffer[T] = new ListBuffer[T]()
+
+    while (currentTurn < totalTurn ) {
+        println(util.displayTime(currentTurn))
+
+        // if (currentTurn % 10 == 0) {
+        //   actorRDD.checkpoint()
+        // }
+
+        val mx = collectedMessages.groupBy(_.receiverId)
+        val res = actorRDD.map(a => {
+          val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
+          (a.runAndEval[K](targetMessages, mapper), a)
+        })
+        res.cache()
+        val materializeRes = res.collect().toList
+        
+        actorRDD = res.map(_._2)
+        collect()
+        actorRDD.cache()
+        collectedMessages = materializeRes.flatMap(_._1._1._1)
+        proceed(materializeRes.map(_._1._1._2.asInstanceOf[Int]).max)
+        ans.append(reducer(materializeRes.map(_._1._2)))
+    }
+
+    sc.stop()
+    ans.toList
   }
 }
