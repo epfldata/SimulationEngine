@@ -5,6 +5,7 @@
 ### Project specific ###
 checkpoint/*
 debug/*
+log/*
 gen-core/src/main/*
 generated/src/main/*
 benchmark/*
