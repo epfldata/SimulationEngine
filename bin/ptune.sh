@@ -6,13 +6,14 @@ MEM=220000
 exp=gameOfLife
 repeats=3
 
-tests=("${exp}TuneSpark" "${exp}TuneAkka")
+tests=("${exp}TuneAkka" "${exp}TuneSpark" "${exp}TuneAkkaTimeseriesDeforestation" "${exp}TuneSparkTimeseriesDeforestation" "${exp}TuneAkkaTimeseries" "${exp}TuneSparkTimeseries")
+
+mkdir -p log
 
 for test in "${tests[@]}"
 do
     i=1
     log_file=log/$test.csv
-    mkdir log
     touch $log_file
 
     while [ $i -le $repeats ]
