@@ -26,8 +26,8 @@ class TimeseriesTest[T: SimsRunner, E](name: String,
             val c = new SimulationConfig(agents, totalTurns, true, 1)
 
             val avgTime = meta.runtime.simulation.util.bench {
-                val x = StartSimulation.runAndEval[T, E](c)(eval)
-                println(x)
+                StartSimulation.runAndEval[T, E](c)(eval)
+                // println(x)
             } / totalTurns.toDouble
 
             pw.write(f"\n${name},${avgTime},${Util.csList(x)}")
@@ -63,8 +63,8 @@ class TimeseriesDeforestationTest[T: SimsMapReduceRecorder, K, R](name: String,
             val c = new SimulationConfig(agents, totalTurns, true, 1)
 
             val avgTime = meta.runtime.simulation.util.bench {
-                val x = StartSimulation.runAndReduce[T, K, R](c)(mapper, reducer)
-                println(x)
+                StartSimulation.runAndReduce[T, K, R](c)(mapper, reducer)
+                // println(x)
             } / totalTurns.toDouble
 
             pw.write(f"\n${name},${avgTime},${Util.csList(x)}")
