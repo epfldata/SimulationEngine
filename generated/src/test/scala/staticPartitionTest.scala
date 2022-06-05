@@ -55,11 +55,10 @@ class gameOfLifeStaticTestSpark extends StaticPartitionTest[SparkMessagingLayer.
 }
 
 class gameOfLifeStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
-    "gameOfLife", 5, Set(1), Range(0, 100, 10).toSet, 
-    List(Set(100), Set(1000), Set(1)), 
+    "gameOfLife", 100, Set(1), Set(10, 50, 100, 500, 1000), 
+    List(Set(1, 5, 10, 50, 100), Set(1000), Set(1)), 
     generated.example.gameOfLife.InitData.wrapper, 
-    generated.example.gameOfLife.InitData.writeSchema) {
-}
+    generated.example.gameOfLife.InitData.writeSchema)
 
 class watorStaticTest extends StaticPartitionTest[AkkaMessagingLayer.type](
     "wator", 100, Set(1), Range(0, 101, 10).toSet, 
@@ -79,5 +78,10 @@ class epidemicStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type
     "epidemic", 80, Set(1), Range(0, 100, 10).toSet, 
     List(Set(Range(0, 10).map(x => 1000).toList)), 
     generated.example.epidemic.evalNPI.InitData.wrapper, 
-    generated.example.epidemic.evalNPI.InitData.writeSchema) {
-}
+    generated.example.epidemic.evalNPI.InitData.writeSchema)
+
+class stockMarketStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
+    "stockMarket", 300, Set(1, 50), Set(10, 50, 100, 500, 1000), 
+    List(Set(1000, 5000, 10000, 50000, 100000)), 
+    generated.example.stockMarket.InitData.wrapper, 
+    generated.example.stockMarket.InitData.writeSchema)
