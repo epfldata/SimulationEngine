@@ -5,8 +5,8 @@ import meta.runtime.{Actor}
 import java.io._
 
 class transportationTest extends org.scalatest.FlatSpec {
-    val totalVehicles = 1
-    val agents = generated.example.transportation.InitData(totalVehicles)
+    
+    val agents = generated.example.transportation.InitData(10, 900, 100)
 
     // val total_diff = (x: List[Int], y: List[Int]) => (0 until totalVertices).filter {
     //     i => x(i) != y(i)

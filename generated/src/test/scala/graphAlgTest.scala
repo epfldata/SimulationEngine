@@ -24,7 +24,7 @@ class shortestPathTest extends org.scalatest.FlatSpec {
     "Reset vertices in shortest path" should "obtain the same results" in {
         val c = new SimulationConfig(agents, totalRounds)
 
-        val results: List[List[Int]] = StartSimulation.runAndReduce[AkkaMessagingLayer.type, MapperOut, ReducerOut](c)(mapper, reducer)
+        val results: List[List[Int]] = StartSimulation.runAndReduce[BaseMessagingLayer.type, MapperOut, ReducerOut](c)(mapper, reducer)
 
         val resultsTail = results.tail
         // val pw = new PrintWriter(new FileOutputStream(new File("shortestPath.csv"),false))
@@ -37,7 +37,7 @@ class shortestPathTest extends org.scalatest.FlatSpec {
         agents.foreach(a => a.SimReset())
         val c2 = new SimulationConfig(agents, totalRounds)
         
-        val results2: List[List[Int]] = StartSimulation.runAndReduce[AkkaMessagingLayer.type, MapperOut, ReducerOut](c2)(mapper, reducer)
+        val results2: List[List[Int]] = StartSimulation.runAndReduce[BaseMessagingLayer.type, MapperOut, ReducerOut](c2)(mapper, reducer)
 
         val resultsTail2 = results2.tail
 
@@ -67,15 +67,10 @@ class pageRankTest extends org.scalatest.FlatSpec {
     "Reset vertices in page rank example with 100 nodes" should "obtain the same result" in {
         val c = new SimulationConfig(agents, totalRounds)
         // val containerConfig = c.staticPartition(10)(BoundedLatency)
-        val results = StartSimulation.runAndReduce[AkkaMessagingLayer.type, MapperOut, ReducerOut](c)(mapper, reducer)
+        val results = StartSimulation.runAndReduce[BaseMessagingLayer.type, MapperOut, ReducerOut](c)(mapper, reducer)
         agents.foreach(_.SimReset)
         val c2 = new SimulationConfig(agents, totalRounds)
-        // val containerConfig = c.staticPartition(10)(BoundedLatency)
-        val results2 = StartSimulation.runAndReduce[AkkaMessagingLayer.type, MapperOut, ReducerOut](c2)(mapper, reducer)
-
-        println(results)
-        println(results2)
+        val results2 = StartSimulation.runAndReduce[BaseMessagingLayer.type, MapperOut, ReducerOut](c2)(mapper, reducer)
         assert(results == results2)
-        // results.foreach(println)
     }
 }

@@ -4,22 +4,43 @@ package transportation
 object Example extends App {
     
     val liftedMain = meta.classLifting.liteLift {
-        def apply(vehicles: Int): List[Actor] = {
+        def apply(totalVehicles: Int, totalPassengers: Int, totalLocations: Int): List[Actor] = {
 
-            val EPFL = new Location("EPFL")
-            val LausanneGare = new Location("Lausanne Gare")
-            val RenensGare = new Location("Renens Gare")
-            val Nyon = new Location("Nyon")
-            val Geneve = new Location("Geneve")
+            val locs = (1 to totalLocations).map(i => 
+                new Location()    
+            ).toList
+            
+            // Assume passengers make at most three stops
+            val passengers = (1 to totalPassengers).map(i => {
+                new Passenger(100, List(locs(Random.nextInt(totalLocations)), locs(Random.nextInt(totalLocations-5)+2), locs(Random.nextInt(totalLocations-10)+5)))
+            }).toList
 
-            val passenger1: Actor = new Passenger(100, List(EPFL, RenensGare, Geneve))
-            val passenger2: Actor = new Passenger(100, List(Geneve, EPFL))
-            val passenger3: Actor = new Passenger(100, List(RenensGare, EPFL))
+            // Consider full-city and regional buses
+            val vehiclesFullCity = (1 to totalVehicles/4).map(i => {
+                val vehicle = new Bus()
+                vehicle.route = locs
+                vehicle
+            }).toList
 
-            val vehicle1 = new Bus()
-            vehicle1.route = List(EPFL, RenensGare, LausanneGare, Geneve)
+            val vehiclesRegion1 = (1 to totalVehicles/4).map(i => {
+                val vehicle = new Bus()
+                vehicle.route = locs.slice(0, totalLocations/3)
+                vehicle
+            }).toList
 
-            List(EPFL, LausanneGare, RenensGare, Nyon, Geneve, vehicle1, passenger1, passenger2, passenger3)
+            val vehiclesRegion2 = (1 to totalVehicles/4).map(i => {
+                val vehicle = new Bus()
+                vehicle.route = locs.slice(totalLocations/3 - 1, 2*totalLocations/3)
+                vehicle
+            }).toList
+
+            val vehiclesRegion3 = (1 to totalVehicles/4).map(i => {
+                val vehicle = new Bus()
+                vehicle.route = locs.slice(2*totalLocations/3 - 1, totalLocations)
+                vehicle
+            }).toList
+
+            locs ::: passengers ::: vehiclesFullCity ::: vehiclesRegion1 ::: vehiclesRegion2 ::: vehiclesRegion3
         }
     }
     

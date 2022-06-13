@@ -7,7 +7,7 @@ import squid.lib.transparencyPropagating
 import scala.collection.mutable.{Map => MutMap}
 
 @lift 
-class Location(val name: String) extends Actor {
+class Location() extends Actor {
 
     var vehiclesArrived: List[Vehicle] = List()
     var waitingPassengers: List[Passenger] = List()
@@ -29,7 +29,7 @@ class Location(val name: String) extends Actor {
     def waitForVehicle(p: Passenger, dest: Location): Unit = {
         // println("Passenger " + p.id + " waits at location " + name)
         if (!waitingPassengers.contains(p)){
-            // println("Passenger " + p.id + " added to waiting queue at " + name)
+            // println("Passenger " + p.id + " added to waiting queue at " + id)
             waitingPassengers = p :: waitingPassengers
             destinations(p) = dest
         }
@@ -38,7 +38,7 @@ class Location(val name: String) extends Actor {
     // All vehicles register with the locations about their routes
     @transparencyPropagating
     def register(v: Vehicle, route: List[Location]): Unit = {
-        // println("Register vehicle " + v.id + " at loc " + name)
+        // println("Register vehicle " + v.id + " at loc " + id)
         dashboard(v) = route
     }
 
@@ -58,8 +58,8 @@ class Location(val name: String) extends Actor {
             }
             // // Remove passengers who have boarded from the waiting list
             waitingPassengers = waitingPassengers.zip(futures2).filterNot(i => i._2.popValue.get).map(j => j._1)
-            // println(name + " has " + waitingPassengers.length + " waiting passengers")
-            // println(name + " has " + vehiclesArrived.length + " waiting vehicles")
+            // println(id + " has " + waitingPassengers.length + " waiting passengers")
+            // println(id + " has " + vehiclesArrived.length + " waiting vehicles")
             // After all passengers have boarded, inform vehicles to continue
             futures3 = vehiclesArrived.map(x => {
                 asyncSend(x.continue())
