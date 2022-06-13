@@ -81,7 +81,13 @@ class epidemicStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type
     generated.example.epidemic.evalNPI.InitData.writeSchema)
 
 class stockMarketStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
-    "stockMarket", 300, Set(1, 50), Set(10, 50, 100, 500, 1000), 
-    List(Set(1000, 5000, 10000, 50000, 100000)), 
+    "stockMarket", 300, Set(1, 20, 50), Set(10, 50, 100, 500, 1000), 
+    List(Set(1000, 5000, 10000)), 
     generated.example.stockMarket.InitData.wrapper, 
     generated.example.stockMarket.InitData.writeSchema)
+
+class transportationStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
+    "transportation", 300, Set(1, 20, 50), Set(10, 50, 100, 500, 1000), 
+    List(Set(50), Set(4500), Set(450)), 
+    generated.example.transportation.InitData.wrapper, 
+    generated.example.transportation.InitData.writeSchema)
