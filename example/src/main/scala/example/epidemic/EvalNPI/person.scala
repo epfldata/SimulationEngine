@@ -8,7 +8,6 @@ import squid.lib.transparencyPropagating
 
 @lift
 class Person(val age: Int, val dayUnit: Int) extends Actor {
-    var dailyContact: Int = 5
     val symptomatic: Boolean = Random.nextBoolean()
     var health: String = "Susceptible"
     var country: Country = null
@@ -47,13 +46,10 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
 
         while (true) {
             if (health != "Deceased") {
-                dailyContact = NPI.contactNumber(health, policy)
                 // Meet with contacts 
                 val selfRisk = DiseaseParameter.infectiousness(health, symptomatic)
                 if (!connectedAgents.isEmpty) {
-                    f = Range(0, dailyContact).toList            
-                            .map(i => connectedAgents(Random.nextInt(connectedAgents.length)))
-                            .map(x => asyncSend(x.asInstanceOf[Person].makeContact(selfRisk)))
+                    f = connectedAgents.map(x => asyncSend(x.asInstanceOf[Person].makeContact(selfRisk)))
 
                     while (f.exists(x => !x.isCompleted)){
                         waitAndReply(1)
