@@ -47,9 +47,9 @@ class WealthManagement(var initWealth: Double, val interestRate: Double) {
         }
         // Find the next rule
         val nextAction: conditionActionRule = rules.map(x => (x.strength, x)).toList.sortBy(x => x._1).head._2
-        println("Next action is " + nextAction)
+        // println("Next action is " + nextAction)
         currentWealth = updatedWealth
-        println("Current wealth is " + currentWealth)
+        // println("Current wealth is " + currentWealth)
         currentAction = nextAction
         nextAction.eval(stockPrice, marketState)
     }

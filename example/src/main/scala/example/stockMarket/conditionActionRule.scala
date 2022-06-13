@@ -85,7 +85,7 @@ class rule4(wealth: WealthManagement) extends conditionActionRule {
     }
 }
 
-// Buy if 100-day average decreases and sell if 100-day average increases
+// Buy if 50-day average decreases and sell if 50-day average increases
 // If both conditions are met, prioritize sell
 class rule5(wealth: WealthManagement) extends conditionActionRule {
     label = 5
