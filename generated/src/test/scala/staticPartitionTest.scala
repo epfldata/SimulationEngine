@@ -75,8 +75,8 @@ class cyberspaceStaticTest extends StaticPartitionTest[AkkaMessagingLayer.type](
 }
 
 class epidemicStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
-    "epidemic", 80, Set(1), Range(0, 100, 10).toSet, 
-    List(Set(Range(0, 10).map(x => 1000).toList)), 
+    "epidemic", 300, Set(1, 20, 50), Set(10, 50, 100, 500, 1000), 
+    List(Set(Range(0, 10).map(x => 1000).toList), Set(0.01, 0.1, 0.5)), 
     generated.example.epidemic.evalNPI.InitData.wrapper, 
     generated.example.epidemic.evalNPI.InitData.writeSchema)
 

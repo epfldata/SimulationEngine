@@ -6,7 +6,7 @@ import scala.collection.mutable.ListBuffer
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(populationsPerCountry: List[Int]): List[Actor] = {
+        def apply(populationsPerCountry: List[Int], p: Double): List[Actor] = {
             val totalCountries: Int = populationsPerCountry.size
             val dayUnit: Int = 10
             val countries: ListBuffer[Country] = ListBuffer[Country]()
@@ -18,11 +18,8 @@ object MainInit {
                     p.country = x 
                     p
                 }).toList
-                citizens.foreach(c => {
-                    c.connections = (0 to Random.nextInt(20)).map(x => {
-                        citizens(Random.nextInt(population))
-                    }).toList
-                })
+                // Connect citizens with a random graph
+                lib.Graph.ErdosRenyiGraph(citizens, p)
                 // Random seeds of infected people
                 (0 to (Random.nextInt(10)+4)).foreach(_ => {
                     citizens(Random.nextInt(population)).health = "Infectious"

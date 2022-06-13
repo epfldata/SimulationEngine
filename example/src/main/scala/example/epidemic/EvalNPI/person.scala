@@ -4,6 +4,7 @@ package epidemic.evalNPI
 import scala.util.Random
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
+import squid.lib.transparencyPropagating
 
 @lift
 class Person(val age: Int, val dayUnit: Int) extends Actor {
@@ -15,7 +16,6 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
     var daysInfected: Int = 0
     var policy: Int = 0
     var hourCounter: Int = 0
-    var connections: List[Person] = null
 
     var f: List[Future[Boolean]] = List()
 
@@ -24,6 +24,7 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
         policy
     }
 
+    @transparencyPropagating
     def makeContact(risk: Double): Boolean = {
         if (health == "Infectious"){
             DiseaseParameter.infectiousness(health, symptomatic) > 1
@@ -49,17 +50,19 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
                 dailyContact = NPI.contactNumber(health, policy)
                 // Meet with contacts 
                 val selfRisk = DiseaseParameter.infectiousness(health, symptomatic)
-                f = Range(0, dailyContact).toList            
-                        .map(i => connections(Random.nextInt(connections.length)))
-                        .map(x => asyncMessage[Boolean](() => x.makeContact(selfRisk)))
+                if (!connectedAgents.isEmpty) {
+                    f = Range(0, dailyContact).toList            
+                            .map(i => connectedAgents(Random.nextInt(connectedAgents.length)))
+                            .map(x => asyncSend(x.asInstanceOf[Person].makeContact(selfRisk)))
 
-                while (f.exists(x => !x.isCompleted)){
-                    waitAndReply(1)
-                    hourCounter = hourCounter + 1
-                }
-                val affected = f.map(x => x.popValue.get).exists(e => e == true)
-                if (affected && health == "Susceptible") {
-                    health = HealthStatus.change(health, vulnerability)
+                    while (f.exists(x => !x.isCompleted)){
+                        waitAndReply(1)
+                        hourCounter = hourCounter + 1
+                    }
+                    val affected = f.map(x => x.popValue.get).exists(e => e == true)
+                    if (affected && health == "Susceptible") {
+                        health = HealthStatus.change(health, vulnerability)
+                    }
                 }
 
                 if ((health != "Susceptible") && (health != "Recover")) {

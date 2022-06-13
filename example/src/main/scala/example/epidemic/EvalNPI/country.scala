@@ -52,7 +52,7 @@ class Country(val hospitalCapacity: Int, val dayUnit: Int) extends Actor {
         policy = 1
         citizens.map(x => asyncMessage(() => x.learnPolicy(policy)))
       }
-      println(records)
+      // println(records)
       records.clear()
       waitLabel(Turn, dayUnit)
       handleMessages()
