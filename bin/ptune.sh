@@ -10,21 +10,23 @@ tests=("${exp}TuneAkka" "${exp}TuneSpark" "${exp}TuneAkkaTimeseriesDeforestation
 
 mkdir -p log
 
-for test in "${tests[@]}"
-do
-    i=1
-    log_file=log/$test.csv
-    touch $log_file
+sbt "project example; runAll"
 
-    while [ $i -le $repeats ]
+i=1
+while [ $i -le $repeats ]
+do
+    echo Iteration: $i
+    for test in "${tests[@]}"
     do
-        echo Iteration: $i
+        log_file=log/$test.csv
+        touch $log_file
         sbtCmd="project genExample; testOnly generated.example.test.${test}"
         sbt -mem $MEM "$sbtCmd" 
         cat ${exp}.csv >> $log_file
         rm ${exp}.csv
-        ((i++))
         sleep 1
         echo 3 > /proc/sys/vm/drop_caches
     done
+    ((i++))
 done
+    
