@@ -68,7 +68,7 @@ class pageRankTest extends org.scalatest.FlatSpec {
         val c = new SimulationConfig(agents, totalRounds)
         // val containerConfig = c.staticPartition(10)(BoundedLatency)
         val results = StartSimulation.runAndReduce[BaseMessagingLayer.type, MapperOut, ReducerOut](c)(mapper, reducer)
-        agents.foreach(_.SimReset)
+        agents.foreach(_.SimReset())
         val c2 = new SimulationConfig(agents, totalRounds)
         val results2 = StartSimulation.runAndReduce[BaseMessagingLayer.type, MapperOut, ReducerOut](c2)(mapper, reducer)
         assert(results == results2)
