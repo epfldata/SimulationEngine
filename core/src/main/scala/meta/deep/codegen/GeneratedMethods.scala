@@ -129,13 +129,13 @@ case object resetAgent extends GeneratedMethods {
                 s"val newAgent = new ${actorName}(${parameterApplication})\n" + " "*2 + 
                 compiledActorGraph.actorTypes.flatMap(actorType => {
                     actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
-                        s"${s.name} = newAgent.${s.name}"  
+                        s"""if (!preserved_names.contains("${s.name}")) ${s.name} = newAgent.${s.name}""" 
                     })
                 }).mkString("\n" + " "*2)
             } else ""
 
         s"""
-override def SimReset(): Unit = {
+override def SimReset(preserved_names: Set[String]): Unit = {
   ${systemReset}
   ${userVarsReset}
 }
