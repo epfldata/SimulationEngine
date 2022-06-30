@@ -14,15 +14,18 @@ object gameOfLifeDist {
         val machineSeq: Int = args(2).toInt
         val hostPort: Int = args(3).toInt
         var container: Int = args(4).toInt
-        
-        val agents = generated.example.gameOfLife.InitData(10, 100, 1)
+        val height: Int = args(5).toInt
+        val latency: Int = args(6).toInt
+
+        val agents = generated.example.gameOfLife.InitData(1000, height, 1)
         val output: String = "gameOfLife_dist.csv"
         val pw = new PrintWriter(new FileOutputStream(new File(output),false))
 
-        pw.write("Experiment,Containers,K,AvgTime")
+        pw.write("Experiment,ContainersPerMachine,K,AvgTime")
+        generated.example.gameOfLife.InitData.writeSchema(pw)
         pw.write("\n")
 
-        val c = (new DistSimulationConfig(agents, totalTurn = 100, totalMachines, machineSeq, latencyBound = latency, role=hostRole, port=hostPort)).getConfig()
+        val c = (new DistSimulationConfig(agents, totalTurn = 300, totalMachines, machineSeq, latencyBound=latency, role=hostRole, port=hostPort)).getConfig()
             
         val avgTime = if (container == 0){
             meta.runtime.simulation.SimExperiment.totalAgents = agents.size
@@ -33,7 +36,7 @@ object gameOfLifeDist {
             StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
         }
         println(f"Average time ${avgTime}")
-        pw.write(f"\n${name},${container*totalMachines},${latency},${avgTime}")
+        pw.write(f"\n${name},${container},${latency},${avgTime}")
         pw.close()
     }
 }
