@@ -36,6 +36,7 @@ class Dispatcher {
     private var currentTurn: Int = 0
 
     private var agentsAddMessages: Set[ActorRef[SimAgent.AddMessages]] = Set()
+    private var agentsStop: Set[ActorRef[SimAgent.Stop]] = Set()
 
     val msgBuffer: ListBuffer[Message] = ListBuffer[Message]()
 
@@ -46,11 +47,33 @@ class Dispatcher {
         msgBuffer.clear()
         msgBuffer.appendAll(messages)
 
+        var serviceKey1Complete: Boolean = false
+        var serviceKey2Complete: Boolean = false
+
         val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
             case SimAgent.AgentServiceKey1.Listing(agents) =>
                 if (agents.size == totalAgents) {
-                    ctx.log.debug("Sims are initialized!")
+                    ctx.log.debug("Recorded all agents that need to send messages!")
                     agentsAddMessages = agents
+                    serviceKey1Complete = true
+                    if (serviceKey2Complete){
+                        RoundStart
+                    } else {
+                        InitializeSims
+                    }
+                } else{ 
+                    InitializeSims
+                } 
+            case SimAgent.AgentServiceKey2.Listing(agents) =>
+                if (agents.size == totalAgents) {
+                    ctx.log.debug("Recorded all agents that need to be stopped!")
+                    agentsStop = agents
+                    serviceKey2Complete = true
+                    if (serviceKey1Complete){
+                        RoundStart
+                    } else {
+                        InitializeSims
+                    }
                     RoundStart
                 } else{ 
                     InitializeSims
@@ -58,6 +81,7 @@ class Dispatcher {
         } 
 
         ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey1, subscriptionAdapter)
+        ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey2, subscriptionAdapter)
         dispatcher()
     }
 
@@ -68,7 +92,7 @@ class Dispatcher {
                     dispatcher()
 
                 case RoundStart => {
-                    ctx.log.info(f"Round ${currentTurn}")
+                    ctx.log.warn(f"Round ${currentTurn}")
                     ctx.spawnAnonymous(
                         Aggregator[SimAgent.MessagesAdded, RoundEnd](
                             sendRequests = { replyTo =>
@@ -99,7 +123,7 @@ class Dispatcher {
                         Behaviors.stopped {() => 
                             ctx.log.debug(f"Simulation completes! Stop the dispatcher")
                             AkkaRun.lastWords = messages
-                            ctx.system.terminate()
+                            agentsStop.foreach(a => a ! SimAgent.Stop())
                         }
                     } else {
                         currentTurn += elapsedTime
@@ -116,14 +140,18 @@ class Dispatcher {
 
 object SimAgent {
     val AgentServiceKey1 = ServiceKey[AddMessages]("SimAgent")
+    val AgentServiceKey2 = ServiceKey[Stop]("StopAgent")
+
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
     Array(
         new JsonSubTypes.Type(value = classOf[AddMessages], name = "addMessages"),
-        new JsonSubTypes.Type(value = classOf[MessagesAdded], name = "messagesAdded")))
+        new JsonSubTypes.Type(value = classOf[MessagesAdded], name = "messagesAdded"),
+        new JsonSubTypes.Type(value = classOf[Stop], name = "stop")))
     sealed trait AgentEvent extends JsonSerializable
     final case class AddMessages(messages: List[Message], replyTo: ActorRef[MessagesAdded]) extends AgentEvent
     final case class MessagesAdded(messages: List[Message], elapsedTime: Int) extends AgentEvent
+    final case class Stop() extends AgentEvent
 }
 
 class SimAgent {
@@ -135,6 +163,7 @@ class SimAgent {
         Behaviors.setup { ctx =>
             ctx.log.debug("Register agent with receptionist")
             ctx.system.receptionist ! Receptionist.Register(AgentServiceKey1, ctx.self)
+            ctx.system.receptionist ! Receptionist.Register(AgentServiceKey2, ctx.self)
             this.sim = sim
             simAgent()
         }
@@ -148,6 +177,8 @@ class SimAgent {
                     val elapsedTime = agentAPI._2
                     replyTo ! MessagesAdded(sentMessages, elapsedTime)
                     Behaviors.same
+                case Stop() =>
+                    Behaviors.stopped
             }
         }.receiveSignal {
             case (ctx, PostStop) => 
@@ -158,27 +189,67 @@ class SimAgent {
 }
 
 object SimExperiment {
-    def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[NotUsed] = 
+    sealed trait Command
+    final case class SpawnDispatcher(totalAgents: Int, totalTurn: Int, messages: List[Message]) extends Command
+    final case class SpawnSim(actor: Actor) extends Command
+    final case class DispatcherStopped() extends Command
+    final case class ActorStopped() extends Command
+
+    var cluster: Cluster = null
+    var terminatedAgents: Int = 0
+    var totalAgents: Int = 0
+
+    def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[Command] = 
         Behaviors.setup { ctx => 
-            val cluster = Cluster(ctx.system)
+            cluster = Cluster(ctx.system)
+            totalAgents = actors.size
 
             if (cluster.selfMember.hasRole("Sims")) {
-                actors.foreach(a => {
-                    ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}")
-                })
+                actors.foreach(a => ctx.self ! SpawnSim(a))
             }
 
             if (cluster.selfMember.hasRole("Dispatcher")) {
-                ctx.spawn((new Dispatcher).apply(actors.size, totalTurn, messages), "dispatcher")
+                ctx.self ! SpawnDispatcher(totalAgents, totalTurn, messages)
             }
 
             if (cluster.selfMember.hasRole("Standalone")) {
-                ctx.spawn((new Dispatcher).apply(actors.size, totalTurn, messages), "dispatcher")
-                actors.foreach(a => ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
+                actors.foreach(a => ctx.self ! SpawnSim(a))
+                ctx.self ! SpawnDispatcher(totalAgents, totalTurn, messages)
+            }
+            waitTillFinish
+        }
+
+    def waitTillFinish(): Behavior[Command] = {
+        Behaviors.receive { (ctx, message) => 
+            message match {
+                case SpawnDispatcher(totalAgents, totalTurn, messages) => 
+                    val dispatcher = ctx.spawn((new Dispatcher).apply(totalAgents, totalTurn, messages), "dispatcher")
+                    ctx.watchWith(dispatcher, DispatcherStopped())
+                    Behaviors.same
+
+                case SpawnSim(a) =>
+                    val sim = ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}")
+                    ctx.watchWith(sim, ActorStopped())
+                    Behaviors.same
+                
+                case DispatcherStopped() =>
+                    Behaviors.stopped {() =>
+                        ctx.system.terminate()
+                    }
+                
+                case ActorStopped() =>
+                    terminatedAgents += 1
+                    if (terminatedAgents == totalAgents){
+                        Behaviors.stopped {() =>
+                            ctx.system.terminate()
+                        }
+                    } else {
+                        Behaviors.same
+                    }
             }
 
-            Behaviors.empty
         }
+    }
 }
 
 object AkkaRun {
