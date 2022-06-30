@@ -115,6 +115,7 @@ class Dispatcher {
                     val newAgents = SimRuntime.newActors.map(a => 
                         ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
                     totalAgents += newAgents.size
+                    SimExperiment.totalAgentsInPartition += newAgents.size
                     ctx.log.debug(f"Total agents in the system ${totalAgents}")
 
                     SimRuntime.newActors.clear()
@@ -161,7 +162,7 @@ class SimAgent {
 
     def apply(sim: Actor): Behavior[AgentEvent] = 
         Behaviors.setup { ctx =>
-            ctx.log.debug("Register agent with receptionist")
+            // ctx.log.debug("Register agent with receptionist")
             ctx.system.receptionist ! Receptionist.Register(AgentServiceKey1, ctx.self)
             ctx.system.receptionist ! Receptionist.Register(AgentServiceKey2, ctx.self)
             this.sim = sim
@@ -196,23 +197,26 @@ object SimExperiment {
     final case class ActorStopped() extends Command
 
     var cluster: Cluster = null
-    var terminatedAgents: Int = 0
     var totalAgents: Int = 0
+    var totalAgentsInPartition: Int = 0
+    var terminatedAgents: Int = 0
 
     def apply(totalTurn: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[Command] = 
         Behaviors.setup { ctx => 
             cluster = Cluster(ctx.system)
-            totalAgents = actors.size
+            totalAgentsInPartition = actors.size
 
             if (cluster.selfMember.hasRole("Sims")) {
                 actors.foreach(a => ctx.self ! SpawnSim(a))
-            }
-
+            } 
+            
             if (cluster.selfMember.hasRole("Dispatcher")) {
+                actors.foreach(a => ctx.self ! SpawnSim(a))
                 ctx.self ! SpawnDispatcher(totalAgents, totalTurn, messages)
-            }
+            } 
 
             if (cluster.selfMember.hasRole("Standalone")) {
+                totalAgents = actors.size
                 actors.foreach(a => ctx.self ! SpawnSim(a))
                 ctx.self ! SpawnDispatcher(totalAgents, totalTurn, messages)
             }
@@ -233,13 +237,13 @@ object SimExperiment {
                     Behaviors.same
                 
                 case DispatcherStopped() =>
-                    Behaviors.stopped {() =>
-                        ctx.system.terminate()
-                    }
+                    Behaviors.same
                 
                 case ActorStopped() =>
                     terminatedAgents += 1
-                    if (terminatedAgents == totalAgents){
+                    ctx.log.debug("Actor stop! Total terminated agents are " + terminatedAgents + " total agents in partition is " + totalAgentsInPartition)
+
+                    if (terminatedAgents >= totalAgentsInPartition){
                         Behaviors.stopped {() =>
                             ctx.system.terminate()
                         }
