@@ -16,7 +16,7 @@ object gameOfLifeDist {
         val height: Int = args(5).toInt
         val latency: Int = args(6).toInt
 
-        val width: Int = 10
+        val width: Int = 1000
         val agents = generated.example.gameOfLife.InitData(width, height, 1)
         val output: String = "gameOfLife_dist.csv"
         val pw = new PrintWriter(new FileOutputStream(new File(output),false))
@@ -25,7 +25,7 @@ object gameOfLifeDist {
         generated.example.gameOfLife.InitData.writeSchema(pw)
         pw.write("\n")
 
-        val c = (new DistSimulationConfig(agents, totalTurn = 50, totalMachines, machineSeq, latencyBound=latency, role=hostRole, port=hostPort)).getConfig()
+        val c = (new DistSimulationConfig(agents, totalTurn = 300, totalMachines, machineSeq, latencyBound=latency, role=hostRole, port=hostPort)).getConfig()
             
         val avgTime = if (container == 0){
             meta.runtime.simulation.SimExperiment.totalAgents = agents.size
