@@ -48,46 +48,39 @@ class StaticPartitionTest[T: SimsRunner](name: String,
 }
 
 class gameOfLifeStaticTestSpark extends StaticPartitionTest[SparkMessagingLayer.type](
-    "gameOfLife", 100, Set(1), Set(0), 
+    "gameOfLifeStaticTestSpark", 300, Set(1), Set(0), 
     List(Set(10), Set(100), Set(1)), 
     generated.example.gameOfLife.InitData.wrapper, 
     generated.example.gameOfLife.InitData.writeSchema) {
 }
 
 class gameOfLifeStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
-    "gameOfLife", 100, Set(1), Set(10, 50, 100, 500, 1000), 
+    "gameOfLifeStaticTestAkka", 300, Set(1), Set(10, 50, 100, 500, 1000), 
     List(Set(1, 5, 10, 50, 100), Set(1000), Set(1)), 
     generated.example.gameOfLife.InitData.wrapper, 
     generated.example.gameOfLife.InitData.writeSchema)
 
-class watorStaticTest extends StaticPartitionTest[AkkaMessagingLayer.type](
-    "wator", 100, Set(1), Range(0, 101, 10).toSet, 
-    List(Set(1000), Set(100), Set(1).union(Range(5, 31, 5).toSet)), 
-    generated.example.cellularAutomata.wator.InitData.wrapper, 
-    generated.example.cellularAutomata.wator.InitData.writeSchema) {
-}
-
-class cyberspaceStaticTest extends StaticPartitionTest[AkkaMessagingLayer.type](
-    "cyberspace", 600, Set(1, 100, 200), Set(50), 
-    List(Set(10000), Set(50), Set(200), Range(1, 1000, 100).toSet), 
-    generated.example.cyberspace.InitData.wrapper, 
-    generated.example.cyberspace.InitData.writeSchema) {
-}
-
-class epidemicStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
-    "epidemic", 300, Set(1, 20, 50), Set(10, 50, 100, 500, 1000), 
-    List(Set(Range(0, 10).map(x => 1000).toList), Set(0.01, 0.1, 0.5)), 
-    generated.example.epidemic.evalNPI.InitData.wrapper, 
-    generated.example.epidemic.evalNPI.InitData.writeSchema)
-
 class stockMarketStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
-    "stockMarket", 300, Set(1, 20, 50), Set(10, 50, 100, 500, 1000), 
+    "stockMarketStaticTestAkka", 300, Set(1, 20, 50), Set(10, 50, 100, 500, 1000), 
     List(Set(1000, 5000, 10000)), 
     generated.example.stockMarket.InitData.wrapper, 
     generated.example.stockMarket.InitData.writeSchema)
 
-class transportationStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
-    "transportation", 300, Set(1, 20, 50), Set(10, 50, 100, 500, 1000), 
+class transportation1kStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
+    "transportation1kStaticTestAkka", 300, Set(1, 20, 50), Set(0), 
+    List(Set(10), Set(900), Set(90)), 
+    generated.example.transportation.InitData.wrapper, 
+    generated.example.transportation.InitData.writeSchema)
+
+class transportation5kStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
+    "transportation5kStaticTestAkka", 300, Set(1, 20, 50), Set(0), 
     List(Set(50), Set(4500), Set(450)), 
+    generated.example.transportation.InitData.wrapper, 
+    generated.example.transportation.InitData.writeSchema)
+
+
+class transportation10kStaticTestAkka extends StaticPartitionTest[AkkaMessagingLayer.type](
+    "transportation10kStaticTestAkka", 300, Set(1, 20, 50), Set(0), 
+    List(Set(100), Set(9000), Set(900)), 
     generated.example.transportation.InitData.wrapper, 
     generated.example.transportation.InitData.writeSchema)

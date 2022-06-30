@@ -54,25 +54,37 @@ class StaticPartitionTestReset[T: SimsRunner](name: String,
 }
 
 class shortestPathStaticTestReset extends StaticPartitionTestReset[AkkaMessagingLayer.type](
-    "shortestPath", (x: List[Actor]) => Unit, 3, Set(1), Set(10, 50, 100, 500, 1000), 
+    "shortestPathStaticTestReset", (x: List[Actor]) => Unit, 3, Set(1), Set(10, 50, 100, 500, 1000), 
     List(Set(1000, 10000, 100000), Set(0.001)), 
     generated.example.graphAlgorithm.shortestPath.InitData.wrapper, 
     generated.example.graphAlgorithm.shortestPath.InitData.writeSchema) 
 
 class pageRankStaticTestReset extends StaticPartitionTestReset[AkkaMessagingLayer.type](
-    "pageRank", (x: List[Actor]) => Unit, 20, Set(1, 4), Set(10, 50, 100, 500, 1000), 
+    "pageRankStaticTestReset", (x: List[Actor]) => Unit, 20, Set(1, 4), Set(10, 50, 100, 500, 1000), 
     List(Set(1000, 10000), Set(0.001)), 
     generated.example.graphAlgorithm.pageRank.InitData.wrapper, 
     generated.example.graphAlgorithm.pageRank.InitData.writeSchema) 
 
-class epidemicStaticTestReset extends StaticPartitionTestReset[AkkaMessagingLayer.type](
-    "epidemic", (x: List[Actor]) => {x.foreach(a =>
+class epidemicSBM extends StaticPartitionTestReset[AkkaMessagingLayer.type](
+    "epidemicSBM", (x: List[Actor]) => {x.foreach(a =>
         a match {
             case i: generated.example.epidemic.evalNPI.Person => i.SimReset(Set("country"))
             case i: generated.example.epidemic.evalNPI.Country => i.SimReset(Set("citizens", "otherCountries"))
             case _ =>
         }
     )}, 300, Set(1, 50), Set(0, 50, 100, 500, 1000), 
-    List(Set(Range(0, 10).map(x => 1000).toList), Set(0.01, 0.05, 0.1)), 
+    List(Set(Range(0, 10).map(x => 1000).toList), Set(0.01, 0.05, 0.1), Set(true)), 
+    generated.example.epidemic.evalNPI.InitData.wrapper, 
+    generated.example.epidemic.evalNPI.InitData.writeSchema) 
+
+class epidemicERM extends StaticPartitionTestReset[AkkaMessagingLayer.type](
+    "epidemicERM", (x: List[Actor]) => {x.foreach(a =>
+        a match {
+            case i: generated.example.epidemic.evalNPI.Person => i.SimReset(Set("country"))
+            case i: generated.example.epidemic.evalNPI.Country => i.SimReset(Set("citizens", "otherCountries"))
+            case _ =>
+        }
+    )}, 300, Set(1, 50), Set(0, 50, 100, 500, 1000), 
+    List(Set(Range(0, 10).map(x => 1000).toList), Set(0.0001, 0.0003, 0.001), Set(false)), 
     generated.example.epidemic.evalNPI.InitData.wrapper, 
     generated.example.epidemic.evalNPI.InitData.writeSchema) 

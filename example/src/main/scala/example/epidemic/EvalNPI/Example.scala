@@ -6,10 +6,11 @@ import scala.collection.mutable.ListBuffer
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(populationsPerCountry: List[Int], p: Double): List[Actor] = {
+        def apply(populationsPerCountry: List[Int], p: Double, sbm: Boolean): List[Actor] = {
             val totalCountries: Int = populationsPerCountry.size
             val dayUnit: Int = 10
             val countries: ListBuffer[Country] = ListBuffer[Country]()
+            val allCitizens: ListBuffer[Person] = ListBuffer[Person]()
 
             val allAgents = populationsPerCountry.flatMap(population => {
                 val x = new Country((population * 0.01).toInt, dayUnit)
@@ -18,8 +19,16 @@ object MainInit {
                     p.country = x 
                     p
                 }).toList
-                // Connect citizens with a random graph
-                lib.Graph.ErdosRenyiGraph(citizens, p)
+
+                // Stochastic block model (50 blocks, q=0)
+                if (sbm){
+                    (0 to 4).foreach(i => {
+                        lib.Graph.ErdosRenyiGraph(citizens.slice(i*population/5, (i+1)*population/5), p)
+                    })
+                } else {
+                    allCitizens.appendAll(citizens)
+                }
+                                
                 // Random seeds of infected people
                 (0 to (Random.nextInt(10)+4)).foreach(_ => {
                     citizens(Random.nextInt(population)).health = "Infectious"
@@ -29,6 +38,11 @@ object MainInit {
                 x :: citizens
             })
 
+            // Erdos-Renyi model
+            if (!sbm) {
+                lib.Graph.ErdosRenyiGraph(allCitizens.toList, p)
+            }
+           
             Range(0, totalCountries).foreach(x => {
                 val neighborCountries = Random.nextInt(totalCountries)
                 countries(x).asInstanceOf[Country].otherCountries = Range(0, neighborCountries)
