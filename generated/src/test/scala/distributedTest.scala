@@ -15,6 +15,7 @@ object gameOfLifeDist {
         var container: Int = args(4).toInt
         val height: Int = args(5).toInt
         val latency: Int = args(6).toInt
+        val totalTurns: Int = args(7).toInt
 
         val width: Int = 1000
         val agents = generated.example.gameOfLife.InitData(width, height, 1)
@@ -25,7 +26,7 @@ object gameOfLifeDist {
         generated.example.gameOfLife.InitData.writeSchema(pw)
         pw.write("\n")
 
-        val c = (new DistSimulationConfig(agents, totalTurn = 300, totalMachines, machineSeq, latencyBound=latency, role=hostRole, port=hostPort)).getConfig()
+        val c = (new DistSimulationConfig(agents, totalTurn = totalTurns, totalMachines, machineSeq, latencyBound=latency, role=hostRole, port=hostPort)).getConfig()
             
         val avgTime = if (container == 0){
             meta.runtime.simulation.SimExperiment.totalAgents = agents.size
