@@ -25,7 +25,7 @@ object Dispatcher {
     sealed trait DispatcherEvent extends NoSerializationVerificationNeeded
     final case object InitializeSims extends DispatcherEvent
     final case object RoundStart extends DispatcherEvent
-    final case class RoundEnd(messages: ListBuffer[Message], elapsedTime: Int) extends DispatcherEvent 
+    final case class RoundEnd(elapsedTime: Int) extends DispatcherEvent 
 }
 
 class Dispatcher {
@@ -39,6 +39,7 @@ class Dispatcher {
     private var agentsStop: Set[ActorRef[SimAgent.Stop]] = Set()
 
     val msgBuffer: ListBuffer[Message] = ListBuffer[Message]()
+    // val msgMap: MutMap[AgentId, ListBuffer[Message]] = new MutMap[AgentId, ListBuffer[Message]]()
 
     def apply(maxAgents: Int, maxTurn: Int, messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
         totalAgents = maxAgents
@@ -104,21 +105,23 @@ class Dispatcher {
                             ctx.self,
                             aggregateReplies = replies => {
                                 var passedRounds: Int = 1
-                                val messages: ListBuffer[Message] = new ListBuffer[Message]()
+                                msgBuffer.clear()
+                                // val messages: ListBuffer[Message] = new ListBuffer[Message]()
                                 for (r <- replies) {
-                                    messages.appendAll(r.messages)
+                                    // messages.appendAll(r.messages)
+                                    msgBuffer.appendAll(r.messages)
                                     if (r.elapsedTime > passedRounds){
                                         passedRounds = r.elapsedTime
                                     }
                                 }
-                                RoundEnd(messages, passedRounds)
+                                RoundEnd(passedRounds)
                             },
                             timeout=5000.seconds))
                     dispatcher()
                 }
 
-                case RoundEnd(messages: ListBuffer[Message], elapsedTime: Int) =>
-                    ctx.log.warn(f"Round ${currentTurn}, Total messages ${messages.size}")
+                case RoundEnd(elapsedTime: Int) =>
+                    ctx.log.warn(f"Round ${currentTurn}, Total messages ${msgBuffer.size}")
                     // Add new agents to the system 
                     val newAgents = SimRuntime.newActors.map(a => 
                         ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
@@ -131,13 +134,11 @@ class Dispatcher {
                     if (currentTurn + elapsedTime >= totalTurn){
                         Behaviors.stopped {() => 
                             ctx.log.debug(f"Simulation completes! Stop the dispatcher")
-                            AkkaRun.lastWords = messages.toList
+                            AkkaRun.lastWords = msgBuffer.toList
                             agentsStop.foreach(a => a ! SimAgent.Stop())
                         }
                     } else {
                         currentTurn += elapsedTime
-                        msgBuffer.clear()
-                        msgBuffer.appendAll(messages)
                         if (newAgents.size == 0) {
                             ctx.self ! RoundStart
                         }

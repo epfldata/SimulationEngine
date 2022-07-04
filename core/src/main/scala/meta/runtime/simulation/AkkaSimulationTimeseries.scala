@@ -75,23 +75,22 @@ class DispatcherWithReducer[K, T] {
                                 var passedRounds: Int = 1
                                 val messages: ListBuffer[Message] = new ListBuffer[Message]()
                                 val mapperResults: ListBuffer[K] = new ListBuffer[K]()
-
+                                msgBuffer.clear()
                                 for (r <- replies) {
-                                    messages.appendAll(r.messages)
+                                    msgBuffer.appendAll(r.messages)
                                     mapperResults.append(r.mapperResult.asInstanceOf[K])
-
                                     if (r.elapsedTime > passedRounds){
                                         passedRounds = r.elapsedTime
                                     }
                                 }
                                 SimExperimentWithTimeseries.recording.append(reducer(mapperResults.toList))
-                                RoundEnd(messages, passedRounds)
+                                RoundEnd(passedRounds)
                             },
                             timeout=10.seconds))
                     dispatcher(mapper, reducer)
                 }
 
-                case RoundEnd(messages: ListBuffer[Message], elapsedTime: Int) =>
+                case RoundEnd(elapsedTime: Int) =>
                     // Add new agents to the system 
                     val newAgents = SimRuntime.newActors.map(a => 
                         ctx.spawn((new SimAgentWithMapper).apply(a, mapper), f"simAgent${a.id}"))
@@ -103,13 +102,11 @@ class DispatcherWithReducer[K, T] {
                     if (currentTurn + elapsedTime >= totalTurn){
                         Behaviors.stopped {() => 
                             ctx.log.debug(f"Simulation completes! Stop the dispatcher")
-                            AkkaRun.lastWords = messages.toList
+                            AkkaRun.lastWords = msgBuffer.toList
                             ctx.system.terminate()
                         }
                     } else {
                         currentTurn += elapsedTime
-                        msgBuffer.clear()
-                        msgBuffer.appendAll(messages)
                         if (newAgents.size == 0) {
                             ctx.self ! RoundStart
                         }
