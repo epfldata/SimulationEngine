@@ -113,7 +113,7 @@ class Dispatcher {
                                 }
                                 RoundEnd(messages, passedRounds)
                             },
-                            timeout=10.seconds))
+                            timeout=5000.seconds))
                     dispatcher()
                 }
 
