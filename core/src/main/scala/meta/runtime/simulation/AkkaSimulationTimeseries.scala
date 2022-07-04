@@ -72,15 +72,26 @@ class DispatcherWithReducer[K, T] {
                             expectedReplies = totalAgents,
                             ctx.self,
                             aggregateReplies = replies => {
-                                val ans = replies.foldLeft((List[Message](), 1, List[Any]()))((a, b) => ((a._1 ::: b.messages), if (a._2 > b.elapsedTime) a._2 else b.elapsedTime, b.mapperResult :: a._3))
-                                SimExperimentWithTimeseries.recording.append(reducer(ans._3.asInstanceOf[List[K]]))
-                                RoundEnd(ans._1, ans._2)
+                                var passedRounds: Int = 1
+                                val messages: ListBuffer[Message] = new ListBuffer[Message]()
+                                val mapperResults: ListBuffer[K] = new ListBuffer[K]()
+
+                                for (r <- replies) {
+                                    messages.appendAll(r.messages)
+                                    mapperResults.append(r.mapperResult.asInstanceOf[K])
+
+                                    if (r.elapsedTime > passedRounds){
+                                        passedRounds = r.elapsedTime
+                                    }
+                                }
+                                SimExperimentWithTimeseries.recording.append(reducer(mapperResults.toList))
+                                RoundEnd(messages, passedRounds)
                             },
                             timeout=10.seconds))
                     dispatcher(mapper, reducer)
                 }
 
-                case RoundEnd(messages: List[Message], elapsedTime: Int) =>
+                case RoundEnd(messages: ListBuffer[Message], elapsedTime: Int) =>
                     // Add new agents to the system 
                     val newAgents = SimRuntime.newActors.map(a => 
                         ctx.spawn((new SimAgentWithMapper).apply(a, mapper), f"simAgent${a.id}"))
@@ -92,7 +103,7 @@ class DispatcherWithReducer[K, T] {
                     if (currentTurn + elapsedTime >= totalTurn){
                         Behaviors.stopped {() => 
                             ctx.log.debug(f"Simulation completes! Stop the dispatcher")
-                            AkkaRun.lastWords = messages
+                            AkkaRun.lastWords = messages.toList
                             ctx.system.terminate()
                         }
                     } else {
