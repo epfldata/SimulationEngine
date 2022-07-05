@@ -9,7 +9,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.NoSerializationVerificationNeeded
 
-import scala.collection.mutable.ListBuffer
 // source: https://doc.akka.io/docs/akka/2.6.12//typed/interaction-patterns.html
 
 object Aggregator {
@@ -22,30 +21,29 @@ object Aggregator {
       sendRequests: ActorRef[Reply] => Unit,
       expectedReplies: Int,
       replyTo: ActorRef[Aggregate],
-      aggregateReplies: ListBuffer[Reply] => Aggregate,
+      aggregateReplies: IndexedSeq[Reply] => Aggregate,
       timeout: FiniteDuration): Behavior[Command] = {
     Behaviors.setup { context =>
       context.setReceiveTimeout(timeout, ReceiveTimeout)
       val replyAdapter = context.messageAdapter[Reply](WrappedReply(_))
       sendRequests(replyAdapter)
 
-      val replies: ListBuffer[Reply] = new ListBuffer[Reply]()
-
-      def collecting(): Behavior[Command] = {
+      def collecting(replies: immutable.IndexedSeq[Reply]): Behavior[Command] = {
         Behaviors.receiveMessage {
           case WrappedReply(reply: Reply) =>
-            replies.append(reply)
-            context.log.debug(f"Total replies ${replies.size}")
-            if (replies.size == expectedReplies) {
+            val newReplies = replies :+ reply
+            context.log.debug(f"Received replies ${newReplies.size}")
+            if (newReplies.size == expectedReplies) {
               context.log.warn(f"Received all replies!")
-              val result = aggregateReplies(replies)
+              val result = aggregateReplies(newReplies)
               replyTo ! result
               context.log.warn(f"Aggregate replies complete!")
               Behaviors.stopped
-            } else {
-              collecting()
-            }
+            } else
+              collecting(newReplies)
+
           case ReceiveTimeout =>
+            throw new Exception(f"Failed to collect all messages! Received ${replies.size}")
             context.log.error("Collect messages time out!")
             val aggregate = aggregateReplies(replies)
             replyTo ! aggregate
@@ -53,8 +51,9 @@ object Aggregator {
         }
       }
 
-      collecting()
+      collecting(Vector.empty)
     }
   }
 
 }
+
