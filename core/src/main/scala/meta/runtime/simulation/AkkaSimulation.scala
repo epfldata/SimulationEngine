@@ -10,6 +10,9 @@ import scala.util.Success
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.JavaConversions._
+
 import akka.NotUsed
 import akka.actor.typed.{ActorRef, ActorSystem, Terminated, PostStop, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
@@ -36,24 +39,27 @@ object Dispatcher {
 }
 
 object MessageMap {
-    private val messageMap: MutMap[AgentId, ListBuffer[Message]] = MutMap[AgentId, ListBuffer[Message]]()
+    private val messageMap: ConcurrentHashMap[AgentId, ListBuffer[Message]] = new ConcurrentHashMap[AgentId, ListBuffer[Message]]()
 
-    def add(ms: List[Message]): Unit = {
+    def add(ms: List[Message]): Unit = synchronized {
         ms.groupBy(_.receiverId).foreach(i => {
             messageMap.getOrElseUpdate(i._1, ListBuffer()).appendAll(i._2)
         })
     }
 
-    def pop(agentId: Long): List[Message] = {
-        messageMap.remove(agentId).getOrElse(List()).toList
+    def pop(agentId: Long): List[Message] = synchronized {
+        messageMap.remove(agentId) match {
+            case null => List()
+            case a: ListBuffer[Message] => a.toList
+        }
     }
 
-    def clear(): Unit = {
+    def clear(): Unit = synchronized {
         messageMap.clear()
     }
 
-    def lastWords(): List[Message] = {
-        messageMap.values.flatten.toList
+    def lastWords(): List[Message] = synchronized {
+        messageMap.values().flatten.toList
     }
 }
 
@@ -65,7 +71,6 @@ class Dispatcher {
     private var currentTurn: Int = 0
 
     private var agentsStop: Set[ActorRef[SimAgent.Stop]] = Set()
-
     val agentLookup: MutMap[AgentId, ActorRef[SimAgent.AddMessages]] = MutMap[AgentId, ActorRef[SimAgent.AddMessages]]()
 
     def apply(maxAgents: Int, maxTurn: Int, messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
@@ -79,7 +84,7 @@ class Dispatcher {
         MessageMap.add(messages)
 
         val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
-            case SimAgent.AgentServiceKey2.Listing(agents) =>
+            case SimAgent.AgentServiceKey.Listing(agents) =>
                 if (agents.size == totalAgents) {
                     ctx.log.debug("Recorded all agents that need to be stopped!")
                     agentsStop = agents
@@ -89,7 +94,7 @@ class Dispatcher {
                 } 
         } 
 
-        ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey2, subscriptionAdapter)
+        ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey, subscriptionAdapter)
         dispatcher()
     }
 
@@ -125,7 +130,7 @@ class Dispatcher {
                                 }
                                 RoundEnd(passedRounds)
                             },
-                            timeout=10.seconds))
+                            timeout=1000.seconds))
                     dispatcher()
                 }
 
@@ -158,7 +163,7 @@ class Dispatcher {
 }
 
 object SimAgent {
-    val AgentServiceKey2 = ServiceKey[Stop]("StopAgent")
+    val AgentServiceKey = ServiceKey[Stop]("StopAgent")
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
@@ -166,7 +171,7 @@ object SimAgent {
         new JsonSubTypes.Type(value = classOf[AddMessages], name = "addToMessageMap"),
         new JsonSubTypes.Type(value = classOf[MessagesAdded], name = "messagesAdded"),
         new JsonSubTypes.Type(value = classOf[Stop], name = "stop")))
-    sealed trait AgentEvent extends JsonSerializable
+    trait AgentEvent extends JsonSerializable
     final case class RegisterAgent(replyTo: Set[ActorRef[Dispatcher.InitializeMessageMap]]) extends AgentEvent with NoSerializationVerificationNeeded
     final case class AddMessages(messages: List[Message], replyTo: ActorRef[MessagesAdded]) extends AgentEvent
     final case class MessagesAdded(messages: List[Message], elapsedTime: Int) extends AgentEvent
@@ -180,7 +185,7 @@ class SimAgent {
 
     def apply(sim: Actor): Behavior[AgentEvent] = Behaviors.setup { ctx =>
         // ctx.log.debug("Register agent with receptionist")
-        ctx.system.receptionist ! Receptionist.Register(AgentServiceKey2, ctx.self)
+        ctx.system.receptionist ! Receptionist.Register(AgentServiceKey, ctx.self)
         this.sim = sim
 
         val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
