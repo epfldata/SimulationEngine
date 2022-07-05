@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Collections
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConversions._
 
@@ -32,7 +33,7 @@ object Dispatcher {
     @JsonSubTypes(
     Array(
         new JsonSubTypes.Type(value = classOf[InitializeMessageMap], name = "initializeMessageMap")))
-    final case class InitializeMessageMap(agentId: Long, replyTo: ActorRef[SimAgent.AddMessages]) extends DispatcherEvent with JsonSerializable
+    final case class InitializeMessageMap(proxyIds: scala.collection.Iterable[Long], replyTo: ActorRef[SimAgent.AddMessages]) extends DispatcherEvent with JsonSerializable
     final case object InitializeSims extends DispatcherEvent with NoSerializationVerificationNeeded
     final case object RoundStart extends DispatcherEvent with NoSerializationVerificationNeeded
     final case class RoundEnd(elapsedTime: Int) extends DispatcherEvent with NoSerializationVerificationNeeded
@@ -71,14 +72,15 @@ class Dispatcher {
     private var totalAgents: Int = 0
     private var totalTurn: Int = 0
     private var currentTurn: Int = 0
+    private var registeredAgents: AtomicInteger = new AtomicInteger(0)
 
     private var agentsStop: Set[ActorRef[SimAgent.Stop]] = Set()
-    val agentLookup: ConcurrentHashMap[AgentId, ActorRef[SimAgent.AddMessages]] = new ConcurrentHashMap[AgentId, ActorRef[SimAgent.AddMessages]]()
+    val agentLookup: ConcurrentHashMap[Long, ActorRef[SimAgent.AddMessages]] = new ConcurrentHashMap[Long, ActorRef[SimAgent.AddMessages]]()
 
-    def apply(maxAgents: Int, maxTurn: Int, messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
+    def apply(scheduledAgents: Int, maxTurn: Int, messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
         ctx.system.receptionist ! Receptionist.Register(dispatcherServiceKey, ctx.self)
 
-        totalAgents = maxAgents
+        totalAgents = scheduledAgents
         totalTurn = maxTurn
         currentTurn = 0
         MessageMap.clear()
@@ -106,10 +108,13 @@ class Dispatcher {
                 case InitializeSims =>
                     dispatcher()
 
-                case InitializeMessageMap(id, reply) =>
-                    ctx.log.debug(f"Add ${id} to initialize map, size ${agentLookup.size}")
-                    agentLookup.putIfAbsent(id, reply)
-                    if (agentLookup.size == totalAgents) {
+                case InitializeMessageMap(ids, reply) =>
+                    ctx.log.debug(f"Add to initialize map, size ${agentLookup.size}, total ${totalAgents}")
+                    ids.foreach(id => {
+                        agentLookup.putIfAbsent(id, reply)
+                    })
+                    val currentRegistered = registeredAgents.addAndGet(1)
+                    if (currentRegistered == totalAgents) {
                         ctx.self ! RoundStart
                     } 
                     dispatcher()
@@ -205,12 +210,13 @@ class SimAgent {
             message match {
                 case RegisterAgent(dispatchers) => 
                     dispatchers.foreach(d => {
-                        d ! Dispatcher.InitializeMessageMap(sim.id, ctx.self)
+                        d ! Dispatcher.InitializeMessageMap(sim.proxyIds, ctx.self)
                     })
                     ctx.system.receptionist ! Receptionist.Register(AgentServiceKey, ctx.self)
                     Behaviors.same
                 case AddMessages(messages, replyTo) => 
-                    val agentAPI = sim.run(messages.filter(m => sim.proxyIds.contains(m.receiverId)))
+                    // val agentAPI = sim.run(messages.filter(m => sim.proxyIds.contains(m.receiverId)))
+                    val agentAPI = sim.run(messages)
                     val sentMessages = agentAPI._1
                     val elapsedTime = agentAPI._2
                     replyTo ! MessagesAdded(sentMessages, elapsedTime)
