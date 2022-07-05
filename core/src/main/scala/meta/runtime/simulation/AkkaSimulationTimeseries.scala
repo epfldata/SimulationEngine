@@ -154,7 +154,7 @@ class SimAgentWithMapper[K] {
         }.receiveSignal {
             case (ctx, PostStop) => 
                 ctx.log.debug(f"Stop agent ${sim.id}")
-                AkkaRun.addStoppedAgent(sim)
+                AkkaTimeseriesRun.addStoppedAgent(sim)
                 Behaviors.stopped
         }
 }
@@ -185,13 +185,17 @@ object SimExperimentWithTimeseries {
         }
 }
 
-class AkkaTimeseriesRun[K, T] {
+object AkkaTimeseriesRun {
     private val stoppedAgents: ListBuffer[Actor] = ListBuffer[Actor]()
     var lastWords: List[Message] = List()
 
     def addStoppedAgent(agent: Actor): Unit = synchronized {
         stoppedAgents.append(agent)
     }
+}
+
+class AkkaTimeseriesRun[K, T] {
+    import AkkaTimeseriesRun._
 
     def initialize(): Unit = {
         stoppedAgents.clear()

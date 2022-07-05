@@ -11,6 +11,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.Collections
+
 import scala.collection.JavaConversions._
 
 import akka.NotUsed
@@ -127,7 +129,6 @@ class Dispatcher {
                                 var passedRounds: Int = 1
                                 for (r <- replies) {
                                     MessageMap.add(r.messages)
-
                                     if (r.elapsedTime > passedRounds){
                                         passedRounds = r.elapsedTime
                                     }
@@ -139,12 +140,11 @@ class Dispatcher {
                 }
 
                 case RoundEnd(elapsedTime: Int) =>
-                    ctx.log.warn(f"Round ${currentTurn}")
-                    // Add new agents to the system 
-                    val newAgents = SimRuntime.newActors.map(a => 
-                        ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
-                    totalAgents += newAgents.size
-                    SimExperiment.totalAgentsInPartition += newAgents.size
+                    // todo: Handle adding agents properly 
+                    val syncNewActors = Collections.synchronizedList[Actor](SimRuntime.newActors)
+                    syncNewActors.map(a => {ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}")})
+                    totalAgents += syncNewActors.size
+                    SimExperiment.totalAgentsInPartition += syncNewActors.size
                     ctx.log.debug(f"Total agents in the system ${totalAgents}")
 
                     SimRuntime.newActors.clear()
@@ -157,7 +157,7 @@ class Dispatcher {
                         }
                     } else {
                         currentTurn += elapsedTime
-                        if (newAgents.size == 0) {
+                        if (syncNewActors.size == 0) {
                             ctx.self ! RoundStart
                         }
                         dispatcher()
@@ -217,16 +217,9 @@ class SimAgent {
                     Behaviors.same
                 case Stop() =>
                     ctx.log.debug(f"Stop agent ${sim.id}")
-                    AkkaRun.addStoppedAgent(sim)
                     Behaviors.stopped
             }
         }
-        // .receiveSignal {
-        //     case (ctx, PostStop) => 
-        //         ctx.log.debug(f"Stop agent ${sim.id}")
-        //         AkkaRun.addStoppedAgent(sim)
-        //         Behaviors.stopped
-        // }
 }
 
 object SimExperiment {
@@ -234,7 +227,7 @@ object SimExperiment {
     final case class SpawnDispatcher(totalAgents: Int, totalTurn: Int, messages: List[Message]) extends Command
     final case class SpawnSim(actor: Actor) extends Command
     final case class DispatcherStopped() extends Command
-    final case class ActorStopped() extends Command
+    final case class ActorStopped(actor: Actor) extends Command
 
     var cluster: Cluster = null
     var totalAgents: Int = 0
@@ -246,27 +239,29 @@ object SimExperiment {
             cluster = Cluster(ctx.system)
             totalAgentsInPartition = actors.size
 
+            val syncActors = Collections.synchronizedList[Actor](actors)
+
             ctx.log.warn(f"Total agents in the partition ${totalAgentsInPartition}")
 
             if (cluster.selfMember.hasRole("Sims")) {
-                actors.foreach(a => ctx.self ! SpawnSim(a))
+                syncActors.foreach(a => ctx.self ! SpawnSim(a))
             } 
             
             if (cluster.selfMember.hasRole("Dispatcher")) {
-                actors.foreach(a => ctx.self ! SpawnSim(a))
+                syncActors.foreach(a => ctx.self ! SpawnSim(a))
                 ctx.self ! SpawnDispatcher(totalAgents, totalTurn, messages)
             } 
 
             if (cluster.selfMember.hasRole("Standalone")) {
                 totalAgents = actors.size
                 ctx.log.warn(f"Standalone mode. Total agents ${totalAgents}")
-                actors.foreach(a => ctx.self ! SpawnSim(a))
+                syncActors.foreach(a => ctx.self ! SpawnSim(a))
                 ctx.self ! SpawnDispatcher(totalAgents, totalTurn, messages)
             }
-            waitTillFinish
+            waitTillFinish(Vector.empty)
         }
 
-    def waitTillFinish(): Behavior[Command] = {
+    def waitTillFinish(finalAgents: IndexedSeq[Actor]): Behavior[Command] = {
         Behaviors.receive { (ctx, message) => 
             message match {
                 case SpawnDispatcher(totalAgents, totalTurn, messages) => 
@@ -276,22 +271,22 @@ object SimExperiment {
 
                 case SpawnSim(a) =>
                     val sim = ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}")
-                    ctx.watchWith(sim, ActorStopped())
+                    ctx.watchWith(sim, ActorStopped(a))
                     Behaviors.same
                 
                 case DispatcherStopped() =>
-                    Behaviors.same
-                
-                case ActorStopped() =>
-                    terminatedAgents += 1
-                    ctx.log.debug("Actor stop! Total terminated agents are " + terminatedAgents + " total agents in partition is " + totalAgentsInPartition)
+                    Behaviors.same                    
 
-                    if (terminatedAgents >= totalAgentsInPartition){
+                case ActorStopped(a) =>
+                    val terminatedAgents = finalAgents :+ a
+                    ctx.log.debug(f"Add stopped agent! Total terminated agents ${terminatedAgents}")
+                    if (terminatedAgents.size == totalAgentsInPartition){
+                        AkkaRun.addStoppedAgents(terminatedAgents)
                         Behaviors.stopped {() =>
                             ctx.system.terminate()
                         }
                     } else {
-                        Behaviors.same
+                        waitTillFinish(terminatedAgents)
                     }
             }
 
@@ -301,15 +296,16 @@ object SimExperiment {
 
 object AkkaRun {
 
-    private val stoppedAgents: ListBuffer[Actor] = ListBuffer[Actor]()
+    private var stoppedAgents = List[Actor]()
+
     var lastWords: List[Message] = List[Message]()
 
-    def addStoppedAgent(agent: Actor): Unit = synchronized {
-        stoppedAgents.append(agent)
+    def addStoppedAgents(agents: IndexedSeq[Actor]): Unit = {
+        stoppedAgents = agents.toList 
     }
 
     def initialize(): Unit = {
-        stoppedAgents.clear()
+        stoppedAgents=List()
         lastWords=List()
     }
 
@@ -328,6 +324,6 @@ object AkkaRun {
         startup(role, port)
         println("Simulation ends!")
         // Actor.reset 
-        SimulationSnapshot(stoppedAgents.toList, lastWords)
+        SimulationSnapshot(stoppedAgents, lastWords)
     }
 }
