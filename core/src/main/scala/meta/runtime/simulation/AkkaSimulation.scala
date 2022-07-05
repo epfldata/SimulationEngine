@@ -71,7 +71,7 @@ class Dispatcher {
     private var currentTurn: Int = 0
 
     private var agentsStop: Set[ActorRef[SimAgent.Stop]] = Set()
-    val agentLookup: MutMap[AgentId, ActorRef[SimAgent.AddMessages]] = MutMap[AgentId, ActorRef[SimAgent.AddMessages]]()
+    val agentLookup: ConcurrentHashMap[AgentId, ActorRef[SimAgent.AddMessages]] = new ConcurrentHashMap[AgentId, ActorRef[SimAgent.AddMessages]]()
 
     def apply(maxAgents: Int, maxTurn: Int, messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
         ctx.system.receptionist ! Receptionist.Register(dispatcherServiceKey, ctx.self)
@@ -86,12 +86,10 @@ class Dispatcher {
         val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
             case SimAgent.AgentServiceKey.Listing(agents) =>
                 if (agents.size == totalAgents) {
-                    ctx.log.debug("Recorded all agents that need to be stopped!")
+                    ctx.log.debug(f"Recorded all agents that need to be stopped! Agent Lookup table size ${agentLookup.size}")
                     agentsStop = agents
-                    RoundStart
-                } else{ 
-                    InitializeSims
                 } 
+                InitializeSims
         } 
 
         ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey, subscriptionAdapter)
@@ -102,10 +100,16 @@ class Dispatcher {
         Behaviors.receive[DispatcherEvent] { (ctx, message) => 
             message match { 
                 case InitializeSims =>
+                    ctx.log.debug(f"Initialize Sims. AgentLookup size is ${agentLookup.size}")
+                    if (agentLookup.size == totalAgents){
+                        ctx.self ! RoundStart
+                    } 
                     dispatcher()
 
                 case InitializeMessageMap(id, reply) =>
-                    agentLookup += (id -> reply)
+                    ctx.log.debug(f"Add ${id} to initialize map, size ${agentLookup.size}")
+                    agentLookup.putIfAbsent(id, reply)
+                    ctx.self ! InitializeSims
                     dispatcher()
 
                 case RoundStart => {
@@ -185,7 +189,6 @@ class SimAgent {
 
     def apply(sim: Actor): Behavior[AgentEvent] = Behaviors.setup { ctx =>
         // ctx.log.debug("Register agent with receptionist")
-        ctx.system.receptionist ! Receptionist.Register(AgentServiceKey, ctx.self)
         this.sim = sim
 
         val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
@@ -204,6 +207,7 @@ class SimAgent {
                     dispatchers.foreach(d => {
                         d ! Dispatcher.InitializeMessageMap(sim.id, ctx.self)
                     })
+                    ctx.system.receptionist ! Receptionist.Register(AgentServiceKey, ctx.self)
                     Behaviors.same
                 case AddMessages(messages, replyTo) => 
                     val agentAPI = sim.run(messages.filter(m => sim.proxyIds.contains(m.receiverId)))
