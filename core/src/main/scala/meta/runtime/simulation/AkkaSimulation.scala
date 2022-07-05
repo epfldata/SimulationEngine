@@ -85,6 +85,8 @@ class Dispatcher {
 
         val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
             case SimAgent.AgentServiceKey.Listing(agents) =>
+                ctx.log.debug(f"Subscription adapter called! Total agents ${agents.size}  Registered agents ${agentLookup.size}")
+
                 if (agents.size == totalAgents) {
                     ctx.log.debug(f"Recorded all agents that need to be stopped! Agent Lookup table size ${agentLookup.size}")
                     agentsStop = agents
@@ -100,16 +102,14 @@ class Dispatcher {
         Behaviors.receive[DispatcherEvent] { (ctx, message) => 
             message match { 
                 case InitializeSims =>
-                    ctx.log.debug(f"Initialize Sims. AgentLookup size is ${agentLookup.size}")
-                    if (agentLookup.size == totalAgents){
-                        ctx.self ! RoundStart
-                    } 
                     dispatcher()
 
                 case InitializeMessageMap(id, reply) =>
                     ctx.log.debug(f"Add ${id} to initialize map, size ${agentLookup.size}")
                     agentLookup.putIfAbsent(id, reply)
-                    ctx.self ! InitializeSims
+                    if (agentLookup.size == totalAgents) {
+                        ctx.self ! RoundStart
+                    } 
                     dispatcher()
 
                 case RoundStart => {
@@ -216,14 +216,17 @@ class SimAgent {
                     replyTo ! MessagesAdded(sentMessages, elapsedTime)
                     Behaviors.same
                 case Stop() =>
+                    ctx.log.debug(f"Stop agent ${sim.id}")
+                    AkkaRun.addStoppedAgent(sim)
                     Behaviors.stopped
             }
-        }.receiveSignal {
-            case (ctx, PostStop) => 
-                ctx.log.debug(f"Stop agent ${sim.id}")
-                AkkaRun.addStoppedAgent(sim)
-                Behaviors.stopped
         }
+        // .receiveSignal {
+        //     case (ctx, PostStop) => 
+        //         ctx.log.debug(f"Stop agent ${sim.id}")
+        //         AkkaRun.addStoppedAgent(sim)
+        //         Behaviors.stopped
+        // }
 }
 
 object SimExperiment {
@@ -242,7 +245,8 @@ object SimExperiment {
         Behaviors.setup { ctx => 
             cluster = Cluster(ctx.system)
             totalAgentsInPartition = actors.size
-            ctx.log.warn(f"Total agents in the partition ${totalAgentsInPartition} total agents ${totalAgents}")
+
+            ctx.log.warn(f"Total agents in the partition ${totalAgentsInPartition}")
 
             if (cluster.selfMember.hasRole("Sims")) {
                 actors.foreach(a => ctx.self ! SpawnSim(a))
@@ -255,6 +259,7 @@ object SimExperiment {
 
             if (cluster.selfMember.hasRole("Standalone")) {
                 totalAgents = actors.size
+                ctx.log.warn(f"Standalone mode. Total agents ${totalAgents}")
                 actors.foreach(a => ctx.self ! SpawnSim(a))
                 ctx.self ! SpawnDispatcher(totalAgents, totalTurn, messages)
             }
@@ -319,7 +324,7 @@ object AkkaRun {
             Await.ready(actorSystem.whenTerminated, 10.days)
         }
         initialize()    
-        println("Simulation starts!")
+        println(f"Simulation starts in ${role} mode!")
         startup(role, port)
         println("Simulation ends!")
         // Actor.reset 
