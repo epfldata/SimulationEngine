@@ -35,7 +35,7 @@ object Aggregator {
         Behaviors.receiveMessage {
           case WrappedReply(reply: Reply) =>
             replies.append(reply)
-            // context.log.warn(f"Total replies: ${replies.size}")
+            context.log.debug(f"Total replies ${replies.size}")
             if (replies.size == expectedReplies) {
               context.log.warn(f"Received all replies!")
               val result = aggregateReplies(replies)

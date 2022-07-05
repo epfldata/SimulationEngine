@@ -23,9 +23,38 @@ import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
 
 object Dispatcher {
     sealed trait DispatcherEvent extends NoSerializationVerificationNeeded
-    final case object InitializeSims extends DispatcherEvent
-    final case object RoundStart extends DispatcherEvent
-    final case class RoundEnd(elapsedTime: Int) extends DispatcherEvent 
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+    @JsonSubTypes(
+    Array(
+        new JsonSubTypes.Type(value = classOf[InitializeMessageMap], name = "initializeMessageMap")))
+    final case class InitializeMessageMap(agentId: Long, replyTo: ActorRef[SimAgent.AddMessages]) extends DispatcherEvent with JsonSerializable
+    final case object InitializeSims extends DispatcherEvent with NoSerializationVerificationNeeded
+    final case object RoundStart extends DispatcherEvent with NoSerializationVerificationNeeded
+    final case class RoundEnd(elapsedTime: Int) extends DispatcherEvent with NoSerializationVerificationNeeded
+
+    val dispatcherServiceKey = ServiceKey[InitializeMessageMap]("Dispatcher")
+}
+
+object MessageMap {
+    private val messageMap: MutMap[AgentId, ListBuffer[Message]] = MutMap[AgentId, ListBuffer[Message]]()
+
+    def add(ms: List[Message]): Unit = {
+        ms.groupBy(_.receiverId).foreach(i => {
+            messageMap.getOrElseUpdate(i._1, ListBuffer()).appendAll(i._2)
+        })
+    }
+
+    def pop(agentId: Long): List[Message] = {
+        messageMap.remove(agentId).getOrElse(List()).toList
+    }
+
+    def clear(): Unit = {
+        messageMap.clear()
+    }
+
+    def lastWords(): List[Message] = {
+        messageMap.values.flatten.toList
+    }
 }
 
 class Dispatcher {
@@ -35,53 +64,31 @@ class Dispatcher {
     private var totalTurn: Int = 0
     private var currentTurn: Int = 0
 
-    private var agentsAddMessages: Set[ActorRef[SimAgent.AddMessages]] = Set()
     private var agentsStop: Set[ActorRef[SimAgent.Stop]] = Set()
 
-    val msgBuffer: ListBuffer[Message] = ListBuffer[Message]()
-    // val msgMap: MutMap[AgentId, ListBuffer[Message]] = new MutMap[AgentId, ListBuffer[Message]]()
+    val agentLookup: MutMap[AgentId, ActorRef[SimAgent.AddMessages]] = MutMap[AgentId, ActorRef[SimAgent.AddMessages]]()
 
     def apply(maxAgents: Int, maxTurn: Int, messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
+        ctx.system.receptionist ! Receptionist.Register(dispatcherServiceKey, ctx.self)
+
         totalAgents = maxAgents
         totalTurn = maxTurn
         currentTurn = 0
-        msgBuffer.clear()
-        msgBuffer.appendAll(messages)
-
-        var serviceKey1Complete: Boolean = false
-        var serviceKey2Complete: Boolean = false
+        MessageMap.clear()
+        agentLookup.clear()
+        MessageMap.add(messages)
 
         val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
-            case SimAgent.AgentServiceKey1.Listing(agents) =>
-                if (agents.size == totalAgents) {
-                    ctx.log.debug("Recorded all agents that need to send messages!")
-                    agentsAddMessages = agents
-                    serviceKey1Complete = true
-                    if (serviceKey2Complete){
-                        RoundStart
-                    } else {
-                        InitializeSims
-                    }
-                } else{ 
-                    InitializeSims
-                } 
             case SimAgent.AgentServiceKey2.Listing(agents) =>
                 if (agents.size == totalAgents) {
                     ctx.log.debug("Recorded all agents that need to be stopped!")
                     agentsStop = agents
-                    serviceKey2Complete = true
-                    if (serviceKey1Complete){
-                        RoundStart
-                    } else {
-                        InitializeSims
-                    }
                     RoundStart
                 } else{ 
                     InitializeSims
                 } 
         } 
 
-        ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey1, subscriptionAdapter)
         ctx.system.receptionist ! Receptionist.Subscribe(SimAgent.AgentServiceKey2, subscriptionAdapter)
         dispatcher()
     }
@@ -92,36 +99,38 @@ class Dispatcher {
                 case InitializeSims =>
                     dispatcher()
 
+                case InitializeMessageMap(id, reply) =>
+                    agentLookup += (id -> reply)
+                    dispatcher()
+
                 case RoundStart => {
-                    ctx.log.warn(f"Round ${currentTurn} Expected replies: ${totalAgents}")
+                    ctx.log.warn(f"Round ${currentTurn} Expected replies ${totalAgents}")
                     ctx.spawnAnonymous(
                         Aggregator[SimAgent.MessagesAdded, RoundEnd](
                             sendRequests = { replyTo =>
-                                agentsAddMessages.map(a => {
-                                    a ! SimAgent.AddMessages(msgBuffer.toList, replyTo)
+                                agentLookup.map(a => {
+                                    a._2 ! SimAgent.AddMessages(MessageMap.pop(a._1), replyTo)
                                 })
                             },
                             expectedReplies = totalAgents,
                             ctx.self,
                             aggregateReplies = replies => {
                                 var passedRounds: Int = 1
-                                msgBuffer.clear()
-                                // val messages: ListBuffer[Message] = new ListBuffer[Message]()
                                 for (r <- replies) {
-                                    // messages.appendAll(r.messages)
-                                    msgBuffer.appendAll(r.messages)
+                                    MessageMap.add(r.messages)
+
                                     if (r.elapsedTime > passedRounds){
                                         passedRounds = r.elapsedTime
                                     }
                                 }
                                 RoundEnd(passedRounds)
                             },
-                            timeout=5000.seconds))
+                            timeout=10.seconds))
                     dispatcher()
                 }
 
                 case RoundEnd(elapsedTime: Int) =>
-                    ctx.log.warn(f"Round ${currentTurn}, Total messages ${msgBuffer.size}")
+                    ctx.log.warn(f"Round ${currentTurn}")
                     // Add new agents to the system 
                     val newAgents = SimRuntime.newActors.map(a => 
                         ctx.spawn((new SimAgent).apply(a), f"simAgent${a.id}"))
@@ -134,7 +143,7 @@ class Dispatcher {
                     if (currentTurn + elapsedTime >= totalTurn){
                         Behaviors.stopped {() => 
                             ctx.log.debug(f"Simulation completes! Stop the dispatcher")
-                            AkkaRun.lastWords = msgBuffer.toList
+                            AkkaRun.lastWords = MessageMap.lastWords()
                             agentsStop.foreach(a => a ! SimAgent.Stop())
                         }
                     } else {
@@ -149,16 +158,16 @@ class Dispatcher {
 }
 
 object SimAgent {
-    val AgentServiceKey1 = ServiceKey[AddMessages]("SimAgent")
     val AgentServiceKey2 = ServiceKey[Stop]("StopAgent")
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
     Array(
-        new JsonSubTypes.Type(value = classOf[AddMessages], name = "addMessages"),
+        new JsonSubTypes.Type(value = classOf[AddMessages], name = "addToMessageMap"),
         new JsonSubTypes.Type(value = classOf[MessagesAdded], name = "messagesAdded"),
         new JsonSubTypes.Type(value = classOf[Stop], name = "stop")))
     sealed trait AgentEvent extends JsonSerializable
+    final case class RegisterAgent(replyTo: Set[ActorRef[Dispatcher.InitializeMessageMap]]) extends AgentEvent with NoSerializationVerificationNeeded
     final case class AddMessages(messages: List[Message], replyTo: ActorRef[MessagesAdded]) extends AgentEvent
     final case class MessagesAdded(messages: List[Message], elapsedTime: Int) extends AgentEvent
     final case class Stop() extends AgentEvent
@@ -169,18 +178,28 @@ class SimAgent {
 
     private var sim: Actor = null
 
-    def apply(sim: Actor): Behavior[AgentEvent] = 
-        Behaviors.setup { ctx =>
-            // ctx.log.debug("Register agent with receptionist")
-            ctx.system.receptionist ! Receptionist.Register(AgentServiceKey1, ctx.self)
-            ctx.system.receptionist ! Receptionist.Register(AgentServiceKey2, ctx.self)
-            this.sim = sim
-            simAgent()
-        }
+    def apply(sim: Actor): Behavior[AgentEvent] = Behaviors.setup { ctx =>
+        // ctx.log.debug("Register agent with receptionist")
+        ctx.system.receptionist ! Receptionist.Register(AgentServiceKey2, ctx.self)
+        this.sim = sim
+
+        val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
+            case Dispatcher.dispatcherServiceKey.Listing(dispatchers) =>
+                RegisterAgent(dispatchers)
+        } 
+
+        ctx.system.receptionist ! Receptionist.Subscribe(Dispatcher.dispatcherServiceKey, subscriptionAdapter)
+        simAgent()
+    }
 
     private def simAgent(): Behavior[AgentEvent] =
         Behaviors.receive[AgentEvent] { (ctx, message) =>
             message match {
+                case RegisterAgent(dispatchers) => 
+                    dispatchers.foreach(d => {
+                        d ! Dispatcher.InitializeMessageMap(sim.id, ctx.self)
+                    })
+                    Behaviors.same
                 case AddMessages(messages, replyTo) => 
                     val agentAPI = sim.run(messages.filter(m => sim.proxyIds.contains(m.receiverId)))
                     val sentMessages = agentAPI._1
