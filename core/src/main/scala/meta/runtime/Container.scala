@@ -2,7 +2,7 @@ package meta.runtime
 
 import Actor.AgentId
 import meta.classLifting.SpecialInstructions._
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, Map => MutMap}
 
 /**
  * A container agent holds a collection of agents. 
@@ -17,7 +17,7 @@ class Container extends Actor {
     // Use a list buffer to remove agents
     val containedAgents: scala.collection.mutable.Map[AgentId, Actor] = scala.collection.mutable.Map[AgentId, Actor]()
     
-    protected var internalMessages: ListBuffer[Message] = ListBuffer[Message]()
+    protected val internalMessages: MutMap[AgentId, ListBuffer[Message]] = MutMap[AgentId, ListBuffer[Message]]()
 
     // Dynamically add agents to a container at run time
 //   def addAgents(sims: Seq[Actor]): Unit = {
@@ -33,21 +33,27 @@ class Container extends Actor {
     def setKBound(bound: Int): Unit = {
         kbound = bound
     }
-    
-    protected var mx = receivedMessages.toList.groupBy(_.receiverId)
-
-    // vanilla compiled
     override def run(msg: List[Message]): (List[Message], Int) = {
-        mx = msg.toList.groupBy(_.receiverId)
+        var localTurns: Int = 0
+        val newMsgs = msg.groupBy(_.receiverId)
 
         sendMessages.clear()
-
-        val sentMessages = containedAgents.flatMap(a => {
-                a._2.run(a._2.proxyIds.flatMap(
-                        id => mx.getOrElse(id, List())))._1
+        do {
+            val sentMessages = containedAgents.flatMap(a => {
+                a._2.run(
+                    a._2.proxyIds.flatMap(
+                        id => internalMessages.remove(id).getOrElse(List()) ++ newMsgs.getOrElse(id, List())
+                    ))._1
             })
 
-        sendMessages.appendAll(sentMessages)
-        (sendMessages.toList, 1)
+            val separated_msgs = sentMessages.partition(x => (proxyIds.contains(x.receiverId)))
+
+            sendMessages.appendAll(separated_msgs._2)
+            separated_msgs._1.foreach(m => {
+                internalMessages.getOrElseUpdate(m.receiverId, ListBuffer()).append(m)
+            })
+            localTurns += 1
+        } while (!internalMessages.isEmpty && localTurns<kbound)
+        (sendMessages.toList, localTurns)
     }
 }
