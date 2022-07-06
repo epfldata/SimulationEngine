@@ -26,15 +26,15 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.NoSerializationVerificationNeeded
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
- import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 
 object Dispatcher {
-    sealed trait DispatcherEvent
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
     Array(
         new JsonSubTypes.Type(value = classOf[InitializeMessageMap], name = "initializeMessageMap")))
-    final case class InitializeMessageMap(@JsonDeserialize(contentAs = classOf[Iterable[scala.Long]]) proxyIds: Iterable[Long], replyTo: ActorRef[SimAgent.AddMessages]) extends DispatcherEvent with JsonSerializable
+    sealed trait DispatcherEvent
+    final case class InitializeMessageMap(proxyIds: List[java.lang.Long], replyTo: ActorRef[SimAgent.AddMessages]) extends DispatcherEvent with JsonSerializable
     final case object InitializeSims extends DispatcherEvent with NoSerializationVerificationNeeded
     final case object RoundStart extends DispatcherEvent with NoSerializationVerificationNeeded
     final case class RoundEnd(elapsedTime: Int) extends DispatcherEvent with NoSerializationVerificationNeeded
@@ -90,10 +90,10 @@ class Dispatcher {
 
         val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
             case SimAgent.AgentServiceKey.Listing(agents) =>
-                ctx.log.debug(f"Subscription adapter called! Total agents in the service ${agents.size}  Registered agents ${registeredAgents}")
+                ctx.log.warn(f"Subscription adapter called! Total agents in the service ${agents.size}  Registered agents ${registeredAgents} Total agents ${totalAgents}")
 
                 if (agents.size == totalAgents) {
-                    ctx.log.debug(f"Recorded all agents that need to be stopped! Agent Lookup table size ${agentLookup.size}")
+                    ctx.log.warn(f"Recorded all agents that need to be stopped! Agent Lookup table size ${agentLookup.size}")
                     agentsStop = agents
                 } 
                 InitializeSims
@@ -110,14 +110,14 @@ class Dispatcher {
                     dispatcher()
 
                 case InitializeMessageMap(ids, reply) =>
-                    ctx.log.debug(f"Add to initialize map, size ${agentLookup.size}, total ${totalAgents}")
+                    ctx.log.warn(f"Add to initialize map, size ${agentLookup.size}, total ${totalAgents}")
                     ids.foreach(id => {
-                        agentLookup.put(id, reply)
+                        agentLookup.putIfAbsent(id, reply)
                     })
                     val currentRegistered = registeredAgents.addAndGet(1)
                     if (currentRegistered == totalAgents) {
                         ctx.self ! RoundStart
-                    } 
+                    }
                     dispatcher()
 
                 case RoundStart => {
@@ -181,11 +181,11 @@ object SimAgent {
         new JsonSubTypes.Type(value = classOf[AddMessages], name = "addToMessageMap"),
         new JsonSubTypes.Type(value = classOf[MessagesAdded], name = "messagesAdded"),
         new JsonSubTypes.Type(value = classOf[Stop], name = "stop")))
-    trait AgentEvent extends JsonSerializable
+    trait AgentEvent 
     final case class RegisterAgent(replyTo: Set[ActorRef[Dispatcher.InitializeMessageMap]]) extends AgentEvent with NoSerializationVerificationNeeded
-    final case class AddMessages(messages: List[Message], replyTo: ActorRef[MessagesAdded]) extends AgentEvent
-    final case class MessagesAdded(messages: List[Message], elapsedTime: Int) extends AgentEvent
-    final case class Stop() extends AgentEvent
+    final case class AddMessages(messages: List[Message], replyTo: ActorRef[MessagesAdded]) extends AgentEvent with JsonSerializable
+    final case class MessagesAdded(messages: List[Message], elapsedTime: Int) extends AgentEvent with JsonSerializable
+    final case class Stop() extends AgentEvent with JsonSerializable
 }
 
 class SimAgent {
@@ -211,7 +211,7 @@ class SimAgent {
             message match {
                 case RegisterAgent(dispatchers) => 
                     dispatchers.foreach(d => {
-                        d ! Dispatcher.InitializeMessageMap(sim.proxyIds, ctx.self)
+                        d ! Dispatcher.InitializeMessageMap(sim.proxyIds.map(_.asInstanceOf[java.lang.Long]).toList, ctx.self)
                     })
                     ctx.system.receptionist ! Receptionist.Register(AgentServiceKey, ctx.self)
                     Behaviors.same
