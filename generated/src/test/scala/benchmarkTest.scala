@@ -34,8 +34,6 @@ object benchmarkTest {
                         c.staticPartition(containers)(BoundedLatency)
                     case "DM" =>
                         c.staticPartition(containers)(DirectMethodCall)
-                    case "VN" =>
-                        c.staticPartition(containers)(VanillaContainer)
                     case _ =>
                         throw new Exception("Invalid container optimization!")
                 }

@@ -25,7 +25,7 @@ class generatedExamples extends org.scalatest.FlatSpec {
         val agents = generated.example.cellularAutomata.wator.InitData(10, 10, 1)
 
         val c = new SimulationConfig(agents, 10)
-        val containerConfig = c.staticPartition(10)(VanillaContainer)
+        val containerConfig = c.staticPartition(10)(BoundedLatency)
 
         val results = StartSimulation[BaseMessagingLayer.type](containerConfig)
         // val results = StartSimulation[AkkaMessagingLayer.type](containerConfig)
