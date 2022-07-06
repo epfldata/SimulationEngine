@@ -11,9 +11,9 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import java.util.concurrent.ConcurrentHashMap
+
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
-
 import scala.collection.JavaConversions._
 
 import akka.NotUsed
@@ -26,14 +26,15 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.NoSerializationVerificationNeeded
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
+ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 
 object Dispatcher {
-    sealed trait DispatcherEvent extends NoSerializationVerificationNeeded
+    sealed trait DispatcherEvent
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
     Array(
         new JsonSubTypes.Type(value = classOf[InitializeMessageMap], name = "initializeMessageMap")))
-    final case class InitializeMessageMap(proxyIds: scala.collection.Iterable[Long], replyTo: ActorRef[SimAgent.AddMessages]) extends DispatcherEvent with JsonSerializable
+    final case class InitializeMessageMap(@JsonDeserialize(contentAs = classOf[Iterable[scala.Long]]) proxyIds: Iterable[Long], replyTo: ActorRef[SimAgent.AddMessages]) extends DispatcherEvent with JsonSerializable
     final case object InitializeSims extends DispatcherEvent with NoSerializationVerificationNeeded
     final case object RoundStart extends DispatcherEvent with NoSerializationVerificationNeeded
     final case class RoundEnd(elapsedTime: Int) extends DispatcherEvent with NoSerializationVerificationNeeded
@@ -42,7 +43,7 @@ object Dispatcher {
 }
 
 object MessageMap {
-    private val messageMap: ConcurrentHashMap[AgentId, ListBuffer[Message]] = new ConcurrentHashMap[AgentId, ListBuffer[Message]]()
+    private val messageMap: ConcurrentHashMap[scala.Long, scala.collection.mutable.ListBuffer[Message]] = new ConcurrentHashMap()
 
     def add(ms: List[Message]): Unit = synchronized {
         ms.groupBy(_.receiverId).foreach(i => {
@@ -75,7 +76,7 @@ class Dispatcher {
     private var registeredAgents: AtomicInteger = new AtomicInteger(0)
 
     private var agentsStop: Set[ActorRef[SimAgent.Stop]] = Set()
-    val agentLookup: ConcurrentHashMap[Long, ActorRef[SimAgent.AddMessages]] = new ConcurrentHashMap[Long, ActorRef[SimAgent.AddMessages]]()
+    val agentLookup: ConcurrentHashMap[scala.Long , ActorRef[SimAgent.AddMessages]] = new ConcurrentHashMap()
 
     def apply(scheduledAgents: Int, maxTurn: Int, messages: List[Message]): Behavior[DispatcherEvent] = Behaviors.setup {ctx =>
         ctx.system.receptionist ! Receptionist.Register(dispatcherServiceKey, ctx.self)
@@ -89,7 +90,7 @@ class Dispatcher {
 
         val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
             case SimAgent.AgentServiceKey.Listing(agents) =>
-                ctx.log.debug(f"Subscription adapter called! Total agents ${agents.size}  Registered agents ${agentLookup.size}")
+                ctx.log.debug(f"Subscription adapter called! Total agents in the service ${agents.size}  Registered agents ${registeredAgents}")
 
                 if (agents.size == totalAgents) {
                     ctx.log.debug(f"Recorded all agents that need to be stopped! Agent Lookup table size ${agentLookup.size}")
@@ -111,7 +112,7 @@ class Dispatcher {
                 case InitializeMessageMap(ids, reply) =>
                     ctx.log.debug(f"Add to initialize map, size ${agentLookup.size}, total ${totalAgents}")
                     ids.foreach(id => {
-                        agentLookup.putIfAbsent(id, reply)
+                        agentLookup.put(id, reply)
                     })
                     val currentRegistered = registeredAgents.addAndGet(1)
                     if (currentRegistered == totalAgents) {
