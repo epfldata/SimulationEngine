@@ -211,7 +211,7 @@ class SimAgent {
             message match {
                 case RegisterAgent(dispatchers) => 
                     dispatchers.foreach(d => {
-                        d ! Dispatcher.InitializeMessageMap(sim.proxyIds.map(_.asInstanceOf[java.lang.Long]).toList, ctx.self)
+                        d ! Dispatcher.InitializeMessageMap(sim.proxyIds.map(_.asInstanceOf[java.lang.Long]), ctx.self)
                     })
                     ctx.system.receptionist ! Receptionist.Register(AgentServiceKey, ctx.self)
                     Behaviors.same

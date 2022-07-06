@@ -18,7 +18,7 @@ object ContainerFactory {
         override def createContainer(agents: List[Actor]): Container = {
                 new Container {
                     containedAgents ++= agents.map(x => (x.id, x)).toMap
-                    addProxyIds(agents.flatMap(x => x.getProxyIds))
+                    addProxyIds(agents.flatMap(x => x.proxyIds))
                     override def run(msg: List[Message]): (List[Message], Int) = {
                         var localTurns: Int = 0
                         mx = (internalMessages ++ msg).toList.groupBy(_.receiverId)
@@ -27,7 +27,7 @@ object ContainerFactory {
                             internalMessages.clear()
                             val sentMessages: List[Message] = containedAgents.flatMap(a => {
                                 a._2.run(
-                                    a._2.getProxyIds.toList.flatMap(
+                                    a._2.proxyIds.flatMap(
                                         id => mx.getOrElse(id, List())
                                     ))._1
                             }).toList
@@ -50,7 +50,7 @@ object ContainerFactory {
                 containedAgents ++= agents.map(x => (x.id, x)).toMap
                 addProxyIds(agents.flatMap(x => {
                     x._container = this
-                    x.getProxyIds
+                    x.proxyIds
                 }))
             }
         }

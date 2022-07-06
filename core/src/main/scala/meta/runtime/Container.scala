@@ -24,7 +24,7 @@ class Container extends Actor {
 //     val simsMessages = sims.flatMap(_.getSendMessages)
 //     sendMessages.appendAll(simsMessages)
 //     containedAgents ++= sims.map(_.cleanSendMessage).map(x => (x.id, x)).toMap
-//     addProxyIds(sims.flatMap(x => x.getProxyIds))
+//     addProxyIds(sims.flatMap(x => x.proxyIds))
 //     sims.foreach(s => {
 //       s._container = this
 //     })
@@ -43,7 +43,7 @@ class Container extends Actor {
         sendMessages.clear()
 
         val sentMessages = containedAgents.flatMap(a => {
-                a._2.run(a._2.getProxyIds.toList.flatMap(
+                a._2.run(a._2.proxyIds.flatMap(
                         id => mx.getOrElse(id, List())))._1
             })
 
