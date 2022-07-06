@@ -90,10 +90,10 @@ class Dispatcher {
 
         val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
             case SimAgent.AgentServiceKey.Listing(agents) =>
-                ctx.log.warn(f"Subscription adapter called! Total agents in the service ${agents.size}  Registered agents ${registeredAgents} Total agents ${totalAgents}")
+                ctx.log.debug(f"Subscription adapter called! Total agents in the service ${agents.size}  Registered agents ${registeredAgents} Total agents ${totalAgents}")
 
                 if (agents.size == totalAgents) {
-                    ctx.log.warn(f"Recorded all agents that need to be stopped! Agent Lookup table size ${agentLookup.size}")
+                    ctx.log.debug(f"Recorded all agents that need to be stopped! Agent Lookup table size ${agentLookup.size}")
                     agentsStop = agents
                 } 
                 InitializeSims
@@ -110,7 +110,7 @@ class Dispatcher {
                     dispatcher()
 
                 case InitializeMessageMap(ids, reply) =>
-                    ctx.log.warn(f"Add to initialize map, size ${agentLookup.size}, total ${totalAgents}")
+                    ctx.log.debug(f"Add to initialize map, size ${agentLookup.size}, total ${totalAgents}")
                     ids.foreach(id => {
                         agentLookup.putIfAbsent(id, reply)
                     })
