@@ -44,13 +44,43 @@ class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isC
   }
 }
 
+trait DistConfig {
+  def getConfig(): SimulationConfig
+}
+
 class DistSimulationConfig(actors: List[Actor], totalTurn: Int = 40, val totalMachines: Int=1, val machineSeq: Int = 0, isCompiled: Boolean = true, 
-  latencyBound: Int = 1, messages: List[Message]=List(), role: String="Standalone", port: Int=25251) extends SimulationConfig(actors, totalTurn, isCompiled, latencyBound, messages, role, port) {
+  latencyBound: Int = 1, messages: List[Message]=List(), role: String="Standalone", port: Int=25251) extends SimulationConfig(actors, totalTurn, isCompiled, latencyBound, messages, role, port) with DistConfig {
     def getConfig(): SimulationConfig = {     
       role match {
         case "Standalone" => new SimulationConfig(actors, totalTurn, isCompiled, latencyBound, messages, role, port)
         case _ => {
           val totalAgents = actors.size
+          var agentsPerMachine: Int = totalAgents / totalMachines
+
+          if (totalAgents % totalMachines != 0) {
+              agentsPerMachine += 1
+          }
+
+          val agents: List[Actor] = {
+            val start = machineSeq*agentsPerMachine
+            if (machineSeq == totalMachines-1) {
+              actors.slice(start, totalAgents)
+            } else {
+              actors.slice(start, start + agentsPerMachine)
+            }
+          }
+          new SimulationConfig(agents, totalTurn, isCompiled, latencyBound, messages, role, port)
+        }
+    }
+  }
+} 
+
+class DistSimulationConfigPartialEval(actors: => List[Actor], totalAgents: Int, totalTurn: Int = 40, val totalMachines: Int=1, val machineSeq: Int = 0, isCompiled: Boolean = true, 
+  latencyBound: Int = 1, messages: List[Message]=List(), role: String="Standalone", port: Int=25251) extends DistConfig {
+    def getConfig(): SimulationConfig = {     
+      role match {
+        case "Standalone" => new SimulationConfig(actors, totalTurn, isCompiled, latencyBound, messages, role, port)
+        case _ => {
           var agentsPerMachine: Int = totalAgents / totalMachines
 
           if (totalAgents % totalMachines != 0) {
