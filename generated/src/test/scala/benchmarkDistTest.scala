@@ -39,7 +39,7 @@ object benchmarkDistTest {
             StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
         }
         println(f"Average time ${avgTime}")
-        pw.write(f"\n${name},${totalMachines},${container},${latency},${avgTime}")
+        pw.write(f"${name},${totalMachines},${container},${latency},${avgTime}")
         pw.close()
     }
 }
@@ -83,7 +83,7 @@ object ResetDistTest {
               StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
           }
           println(f"Average time ${avgTime}")
-          pw.write(f"\n${name},${totalMachines},${container},${latency},${avgTime}")
+          pw.write(f"${name},${totalMachines},${container},${latency},${margs},${avgTime}\n")
         }
         pw.close()
     }
