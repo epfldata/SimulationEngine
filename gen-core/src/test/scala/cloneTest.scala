@@ -16,7 +16,7 @@ class CloneTest extends FlatSpec {
         val c = new SimulationConfig(agents, 5)
         val r = StartSimulation[BaseMessagingLayer.type](c)
         val clonee = r.sims.head.asInstanceOf[generated.core.test.simClone.MutableSim]
-        val cloner = clonee.SimClone()
+        val cloner = clonee.SimClone(Set("counter"))
         // The init state of cloner is the final state of clonee
         assert(cloner.asInstanceOf[generated.core.test.simClone.MutableSim].counter == 5)
         // Run another simulation from cloner won't change the state of clonee
@@ -30,7 +30,7 @@ class CloneTest extends FlatSpec {
         val c = new SimulationConfig(agents, 5)
         val r = StartSimulation[AkkaMessagingLayer.type](c)
         val clonee = r.sims.head.asInstanceOf[generated.core.test.simClone.MutableSim]
-        val cloner = clonee.SimClone()
+        val cloner = clonee.SimClone(Set("counter"))
         // The init state of cloner is the final state of clonee
         assert(cloner.asInstanceOf[generated.core.test.simClone.MutableSim].counter == 5)
         // Run another simulation from cloner won't change the state of clonee

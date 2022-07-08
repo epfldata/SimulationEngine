@@ -22,13 +22,19 @@ object GeneratedMethods {
     var instructionRegister: String = null
     var totalStates: Int = 0
     var memAddr: String = ""
-    
+    var parameterApplication: String = null
+
     def apply(graph: CompiledActorGraph, methodsIdMap: Map[String, Int], methodsMap: Map[String, MethodInfo[_]], createCode: CreateCode): Unit = {
         compiledActorGraph = graph
         actorName = graph.name
         this.methodsIdMap = methodsIdMap
         this.methodsMap = methodsMap
         this.createCode = createCode
+        this.parameterApplication = compiledActorGraph.actorTypes.flatMap(actorType => {
+            actorType.states.filter(x => x.parameter).map(s => {
+            s.name
+            })
+        }).mkString(", ")
     }
 }
 
@@ -83,20 +89,19 @@ case object parentString extends GeneratedMethods {
 case object cloneAgent extends GeneratedMethods {
     import GeneratedMethods._
 
+    // val mutablePublicVariableRewrite: List[String] = compiledActorGraph.actorTypes.flatMap(actorType => {
+    //     actorType.states.filter(x => x.mutable && !x.modifiers.contains("private") && !x.parameter).map(s => {
+    //         f"""if (cloned_variables.contains("${s.name}")) newAgent.${s.name} = ${s.name}""" 
+    //     })
+    // })
+    // ${mutablePublicVariableRewrite.mkString("\n  ")}
     override def run(): String = {
-        val parameterApplication: String = 
-            compiledActorGraph.actorTypes.flatMap(actorType => {
-                actorType.states.filter(x => x.parameter).map(s => {
-                s.name
-                })
-            }).mkString(", ")
-
         s"""
-override def SimClone(): ${actorName} = {
+override def SimClone(cloned_variables: Set[String]): ${actorName} = {
   val newAgent = new ${actorName}(${parameterApplication})
 ${compiledActorGraph.actorTypes.flatMap(actorType => {
-      actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
-        s"  newAgent.${s.name} = ${s.name}"  
+      actorType.states.filter(x => x.mutable && !x.parameter && !x.modifiers.contains("private")).map(s => {
+        s"""  if (cloned_variables.contains("${s.name}")) newAgent.${s.name} = ${s.name}"""
       })
     }).mkString("\n")}
   newAgent
@@ -109,29 +114,17 @@ case object resetAgent extends GeneratedMethods {
     import GeneratedMethods._
 
     override def run(): String = {
-        val parameterApplication: String = 
-            compiledActorGraph.actorTypes.flatMap(actorType => {
-                actorType.states.filter(x => x.parameter).map(s => {
-                s.name
-                })
-            }).mkString(", ")
-
-        val mutableVariableNames: List[String] = compiledActorGraph.actorTypes.flatMap(actorType => {
-            actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
-                s.name  
+        val mutablePublicVariableRewrite: List[String] = compiledActorGraph.actorTypes.flatMap(actorType => {
+            actorType.states.filter(x => x.mutable && !x.modifiers.contains("private") && !x.parameter).map(s => {
+                s"""if (!preserved_names.contains("${s.name}")) ${s.name} = newAgent.${s.name}""" 
             })
         })
 
         val systemReset: String = f"${instructionRegister} = 0"
 
         val userVarsReset: String = 
-            if (!mutableVariableNames.isEmpty){
-                s"val newAgent = new ${actorName}(${parameterApplication})\n" + " "*2 + 
-                compiledActorGraph.actorTypes.flatMap(actorType => {
-                    actorType.states.filter(x => x.mutable && !x.parameter).map(s => {
-                        s"""if (!preserved_names.contains("${s.name}")) ${s.name} = newAgent.${s.name}""" 
-                    })
-                }).mkString("\n" + " "*2)
+            if (!mutablePublicVariableRewrite.isEmpty){
+                s"val newAgent = new ${actorName}(${parameterApplication})\n" + " "*2 + mutablePublicVariableRewrite.mkString("\n" + " "*2)
             } else ""
 
         s"""

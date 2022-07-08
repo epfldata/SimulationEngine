@@ -68,8 +68,8 @@ object ResetDistTest {
         for (container <- List(0, 10, 100)) {
           agents.foreach(a => {
             a match {
-              case i: generated.example.epidemic.evalNPI.Person => i.SimReset(Set("country"))
-              case i: generated.example.epidemic.evalNPI.Country => i.SimReset(Set("citizens", "otherCountries"))
+              case i: generated.example.epidemic.evalNPI.Person => i.SimReset(Set("connectedAgents", "country"))
+              case i: generated.example.epidemic.evalNPI.Country => i.SimReset(Set("connectedAgents", "citizens", "otherCountries"))
               case _ =>
           }})
           val c = (new DistSimulationConfig(agents, totalTurn = totalTurns, totalMachines, machineSeq, latencyBound=latency, role=hostRole, port=hostPort)).getConfig()

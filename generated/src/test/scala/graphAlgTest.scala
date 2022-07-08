@@ -34,7 +34,7 @@ class shortestPathTest extends org.scalatest.FlatSpec {
             total_diff(results(i), resultsTail(i))
         })
 
-        agents.foreach(a => a.SimReset())
+        agents.foreach(a => a.SimReset(Set("connectedAgents")))
         val c2 = new SimulationConfig(agents, totalRounds)
         
         val results2: List[List[Int]] = StartSimulation.runAndReduce[BaseMessagingLayer.type, MapperOut, ReducerOut](c2)(mapper, reducer)
@@ -68,7 +68,7 @@ class pageRankTest extends org.scalatest.FlatSpec {
         val c = new SimulationConfig(agents, totalRounds)
         // val containerConfig = c.staticPartition(10)(BoundedLatency)
         val results = StartSimulation.runAndReduce[BaseMessagingLayer.type, MapperOut, ReducerOut](c)(mapper, reducer)
-        agents.foreach(_.SimReset())
+        agents.foreach(_.SimReset(Set("connectedAgents")))
         val c2 = new SimulationConfig(agents, totalRounds)
         val results2 = StartSimulation.runAndReduce[BaseMessagingLayer.type, MapperOut, ReducerOut](c2)(mapper, reducer)
         assert(results == results2)
