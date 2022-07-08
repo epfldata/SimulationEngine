@@ -17,8 +17,6 @@ object benchmarkDistTest {
         val output: String = f"${name}_dist.csv"
         val pw = new PrintWriter(new FileOutputStream(new File(output),false))
 
-        pw.write("Experiment,ContainersPerMachine,K,AvgTime\n")
-
         val start_initialization: Long = System.currentTimeMillis()
         val agents = name match {
             case "gameOfLife10k" => generated.example.gameOfLife.InitData(1000, 10*totalMachines, 1)
@@ -41,7 +39,7 @@ object benchmarkDistTest {
             StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
         }
         println(f"Average time ${avgTime}")
-        pw.write(f"\n${name},${container},${latency},${avgTime}")
+        pw.write(f"\n${name},${totalMachines},${container},${latency},${avgTime}")
         pw.close()
     }
 }
@@ -60,8 +58,6 @@ object ResetDistTest {
         val hostPort: Int = 25251        
         val output: String = f"${name}_dist.csv"
         val pw = new PrintWriter(new FileOutputStream(new File(output),false))
-
-        pw.write("Experiment,ContainersPerMachine,K,AvgTime\n")
 
         val agents = name match {
           case "epidemicSBM10k" => generated.example.epidemic.evalNPI.InitData(Range(0, 10*totalMachines).map(x => 1000).toList, margs(0).asInstanceOf[Double], true)
@@ -87,7 +83,7 @@ object ResetDistTest {
               StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
           }
           println(f"Average time ${avgTime}")
-          pw.write(f"\n${name},${container},${latency},${avgTime}")
+          pw.write(f"\n${name},${totalMachines},${container},${latency},${avgTime}")
         }
         pw.close()
     }
