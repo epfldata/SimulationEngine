@@ -65,7 +65,7 @@ object ResetDistTest {
           case _ => throw new Exception(f"Invalid example name ${name}!")
         }
         
-        for (container <- List(0, 10, 100)) {
+        for (container <- List(0, 100)) {
           agents.foreach(a => {
             a match {
               case i: generated.example.epidemic.evalNPI.Person => i.SimReset(Set("connectedAgents", "country"))
@@ -83,7 +83,7 @@ object ResetDistTest {
               StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
           }
           println(f"Average time ${avgTime}")
-          pw.write(f"${name},${totalMachines},${container},${latency},${margs},${avgTime}\n")
+          pw.write(f"${name},${totalMachines},${container},${latency},${avgTime}\n")
           pw.flush()
         }
         pw.close()
