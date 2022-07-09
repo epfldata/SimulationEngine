@@ -43,6 +43,7 @@ class Location() extends Actor {
     }
 
     def main(): Unit = {
+        markPrivate("futures", "futures2", "futures3", "destinations")
         while (true) {
             // Wait some time for passengers before departure
             waitAndReply(1)
