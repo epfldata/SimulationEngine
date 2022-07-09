@@ -40,6 +40,7 @@ object benchmarkDistTest {
         }
         println(f"Average time ${avgTime}")
         pw.write(f"${name},${totalMachines},${container},${latency},${avgTime}")
+        pw.flush()
         pw.close()
     }
 }
@@ -83,6 +84,7 @@ object ResetDistTest {
           }
           println(f"Average time ${avgTime}")
           pw.write(f"${name},${totalMachines},${container},${latency},${margs},${avgTime}\n")
+          pw.flush()
         }
         pw.close()
     }
