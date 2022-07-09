@@ -52,16 +52,15 @@ object ResetDistTest {
         var latency: Int = args(3).toInt
         val totalTurns: Int = args(4).toInt
         val name: String = args(5)
-
         val margs: Array[String] = args.drop(6)
-
+        
         val hostPort: Int = 25251        
         val output: String = f"${name}_dist.csv"
         val pw = new PrintWriter(new FileOutputStream(new File(output),false))
 
         val agents = name match {
-          case "epidemicSBM10k" => generated.example.epidemic.evalNPI.InitData(Range(0, 10*totalMachines).map(x => 1000).toList, margs(0).asInstanceOf[Double], true)
-          case "epidemicERM10k" => generated.example.epidemic.evalNPI.InitData(Range(0, 10*totalMachines).map(x => 1000).toList, margs(0).asInstanceOf[Double], false)
+          case "epidemicSBM10k" => generated.example.epidemic.evalNPI.InitData(Range(0, 10*totalMachines).map(x => 1000).toList, margs(0).toDouble, true)
+          case "epidemicERM10k" => generated.example.epidemic.evalNPI.InitData(Range(0, 10*totalMachines).map(x => 1000).toList, margs(0).toDouble, false)
           case _ => throw new Exception(f"Invalid example name ${name}!")
         }
         
