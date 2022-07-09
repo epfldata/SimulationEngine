@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 sbt clean
 sbt "project core; test"
 sbt "project genCore; test"

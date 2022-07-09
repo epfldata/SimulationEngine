@@ -17,15 +17,17 @@ object benchmarkDistTest {
         val output: String = f"${name}_dist.csv"
         val pw = new PrintWriter(new FileOutputStream(new File(output),false))
 
-        pw.write("Experiment,ContainersPerMachine,K,AvgTime\n")
-
+        val start_initialization: Long = System.currentTimeMillis()
         val agents = name match {
             case "gameOfLife10k" => generated.example.gameOfLife.InitData(1000, 10*totalMachines, 1)
             case "stockMarket10k" => generated.example.stockMarket.InitData(10000*totalMachines)
             case "transportation10k" => generated.example.transportation.InitData(100*totalMachines, 9000*totalMachines, 900*totalMachines)
             case _ => throw new Exception(f"Invalid example name ${name}!")
         }
-        
+        val end_initialization: Long = System.currentTimeMillis()
+        val time_generating_agents = end_initialization - start_initialization
+        pw.write(f"Generating agents take ${time_generating_agents} ms\n")
+
         val c = (new DistSimulationConfig(agents, totalTurn = totalTurns, totalMachines, machineSeq, latencyBound=latency, role=hostRole, port=hostPort)).getConfig()
             
         val avgTime = if (container == 0){
@@ -37,7 +39,7 @@ object benchmarkDistTest {
             StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
         }
         println(f"Average time ${avgTime}")
-        pw.write(f"\n${name},${container},${latency},${avgTime}")
+        pw.write(f"${name},${totalMachines},${container},${latency},${avgTime}")
         pw.close()
     }
 }
@@ -56,8 +58,6 @@ object ResetDistTest {
         val hostPort: Int = 25251        
         val output: String = f"${name}_dist.csv"
         val pw = new PrintWriter(new FileOutputStream(new File(output),false))
-
-        pw.write("Experiment,ContainersPerMachine,K,AvgTime\n")
 
         val agents = name match {
           case "epidemicSBM10k" => generated.example.epidemic.evalNPI.InitData(Range(0, 10*totalMachines).map(x => 1000).toList, margs(0).asInstanceOf[Double], true)
@@ -83,7 +83,7 @@ object ResetDistTest {
               StartSimulation.benchAvg[AkkaMessagingLayer.type](containerConfig)
           }
           println(f"Average time ${avgTime}")
-          pw.write(f"\n${name},${container},${latency},${avgTime}")
+          pw.write(f"${name},${totalMachines},${container},${latency},${margs},${avgTime}\n")
         }
         pw.close()
     }

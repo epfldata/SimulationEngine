@@ -51,7 +51,7 @@ class SparkRun(var actors: List[Actor], val totalTurn: Int, val messages: List[M
 
         val mx = collectedMessages.groupBy(_.receiverId)
         val res = actorRDD.map(a => {
-          val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
+          val targetMessages: List[Message] = a.proxyIds.flatMap(id => mx.getOrElse(id, List()))
           (a.run(targetMessages), a)
         })
         res.cache()
@@ -84,7 +84,7 @@ class SparkWithEval(c: SimulationConfig) extends SparkRun(c.actors, c.totalTurn,
 
           val mx = collectedMessages.groupBy(_.receiverId)
           val res = actorRDD.map(a => {
-            val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
+            val targetMessages: List[Message] = a.proxyIds.flatMap(id => mx.getOrElse(id, List()))
             (a.run(targetMessages), a)
           })
           res.cache()
@@ -116,7 +116,7 @@ class SparkWithReducer(c: SimulationConfig) extends SparkRun(c.actors, c.totalTu
 
         val mx = collectedMessages.groupBy(_.receiverId)
         val res = actorRDD.map(a => {
-          val targetMessages: List[Message] = a.getProxyIds.flatMap(id => mx.getOrElse(id, List()))
+          val targetMessages: List[Message] = a.proxyIds.flatMap(id => mx.getOrElse(id, List()))
           (a.runAndEval[K](targetMessages, mapper), a)
         })
         res.cache()

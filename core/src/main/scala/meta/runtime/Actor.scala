@@ -36,7 +36,7 @@ class Actor extends Serializable {
   
   var id: AgentId = Actor.getNextAgentId
 
-  var proxyIds: ListBuffer[AgentId] = new ListBuffer[AgentId]()
+  var proxyIds: List[AgentId] = List(id)
 
   var deleted: Boolean = false
 
@@ -68,12 +68,9 @@ class Actor extends Serializable {
     *
     * @param message Action, which should be sent to a different Agent
     */
-  proxyIds += id
 
-  final def getProxyIds: List[AgentId] = proxyIds.toList 
-
-  final def addProxyIds(ids: Seq[AgentId]): Unit = {
-    proxyIds ++= ids
+  final def addProxyIds(ids: List[AgentId]): Unit = {
+    proxyIds = proxyIds ::: ids
   }
 
   final def sendMessage(message: Message): Unit = {
