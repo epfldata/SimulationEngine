@@ -10,8 +10,8 @@ import scala.collection.mutable.{Map => MutMap}
 class Market(val traders: List[Trader]) extends Actor {
 
     val stock: Stock = new Stock(0.0001)
-    private var futures: List[Future[Option[Boolean]]] = null
-    private var marketState: List[Option[Boolean]] = null
+    private var futures: List[Future[Byte]] = null
+    private var marketState: List[Byte] = null
     // Initial price
     var stockPrice: Double = 100
     var dividendPerShare: Double = 0

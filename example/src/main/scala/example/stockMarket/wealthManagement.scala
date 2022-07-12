@@ -39,7 +39,7 @@ class WealthManagement(var initWealth: Double, val interestRate: Double) {
         cash += shares * dividendPerShare
     }
 
-    def takeAction(stockPrice: Double, marketState: List[Option[Boolean]]): Option[Boolean] = {
+    def takeAction(stockPrice: Double, marketState: List[Byte]): Byte = {
         // Evaluate the previous rule
         val updatedWealth = estimateWealth(stockPrice)
         if (currentAction != null){

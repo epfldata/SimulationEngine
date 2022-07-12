@@ -18,7 +18,7 @@ class Stock(var priceAdjustmentFactor: Double) {
         private var lastAvg: Option[Double] = None
 
         // return whether the new avg has increased comparing with the prev avg
-        def update: Option[Boolean] = {
+        def update: Byte = {
             // moving window
             val calculated_avg: Option[Double] = if (period > window) {
                 Some(prices.slice(period-window, period).sum/window)
@@ -26,44 +26,48 @@ class Stock(var priceAdjustmentFactor: Double) {
                 None
             }
 
-            var ans: Boolean = false
+            var ans: Byte = 2
             (calculated_avg, lastAvg) match {
-                case (None, _) => None
+                case (None, _) => 0
                 case (Some(x), None) => {
                     lastAvg = calculated_avg
-                    None
+                    0
                 }
                 case (Some(x), Some(y)) => {
                     if (x > y){
-                        ans = true
+                        ans = 1
                     }
                     lastAvg = calculated_avg
-                    Some(ans)
+                    ans
                 }
             }
         }
     }
 
-    def updateMarketInfo(p: Double, d: Double): List[Option[Boolean]] = {
+    def updateMarketInfo(p: Double, d: Double): List[Byte] = {
         currentPrice = p
         period += 1
         prices.append(p)
 
         // Short-term info: whether dividend has increased. 0 means no dividend
-        val dividendIncrease: Option[Boolean] = {
+        val dividendIncrease: Byte = {
             if (d == 0){
-                None
+                0
             } else {
                 val lastDividend_copy = lastDividend
                 lastDividend = d
-                Some(lastDividend_copy < d)
+                if(lastDividend_copy < d){
+                    1
+                } else {
+                    2
+                }
             }
         }
 
         // Mid-term info: whether 10-day avg has increased
-        val recent10AvgInc: Option[Boolean] = updateLastAvg10.update
+        val recent10AvgInc = updateLastAvg10.update
         // Long-term info: whether 50-day avg has increased
-        val recent50AvgInc: Option[Boolean] = updateLastAvg50.update
+        val recent50AvgInc = updateLastAvg50.update
         // println("Market state is " + List(dividendIncrease, recent10AvgInc, recent50AvgInc))
         // Market state encodes both short-term and long-term information
         List(dividendIncrease, recent10AvgInc, recent50AvgInc)

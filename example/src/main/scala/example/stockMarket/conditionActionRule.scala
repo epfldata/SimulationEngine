@@ -3,8 +3,8 @@ package stockMarket
 
 class conditionActionRule {
     var strength: Double = 0
-    var label: Int = 0
-    def eval(stockPrice: Double, marketState: List[Option[Boolean]]): Option[Boolean] = ???
+    var label: Byte = 0
+    def eval(stockPrice: Double, marketState: List[Byte]): Byte = ???
     def feedback(success: Boolean): Unit = {
         if (success){
             strength += 1
@@ -14,18 +14,19 @@ class conditionActionRule {
     }
 }
 
+// 0: None, 1: true, 2: false
 // Buy if the dividend increases and sell if the dividend decreases
 class rule1(wealth: WealthManagement) extends conditionActionRule {
     label = 1
-    override def eval(stockPrice: Double, marketState: List[Option[Boolean]]): Option[Boolean] ={
-        if (marketState(0)==Some(true) && stockPrice < wealth.cash){
+    override def eval(stockPrice: Double, marketState: List[Byte]): Byte ={
+        if (marketState(0)==1 && stockPrice < wealth.cash){
             wealth.buyStock(stockPrice)
-            Some(true)
-        } else if (marketState(0)==Some(false) && wealth.shares >= 1) {
+            1
+        } else if (marketState(0)==2 && wealth.shares >= 1) {
             wealth.sellStock(stockPrice)
-            Some(false)
+            2
         } else {
-            None
+            0
         }
     }
 }
@@ -34,15 +35,15 @@ class rule1(wealth: WealthManagement) extends conditionActionRule {
 // If both conditions are met, prioritize sell
 class rule2(wealth: WealthManagement) extends conditionActionRule {
     label = 2
-    override def eval(stockPrice: Double, marketState: List[Option[Boolean]]): Option[Boolean] ={
-        if (marketState(1) == Some(true) && wealth.shares >= 1){
+    override def eval(stockPrice: Double, marketState: List[Byte]): Byte ={
+        if (marketState(1) == 1 && wealth.shares >= 1){
             wealth.sellStock(stockPrice)
-            Some(false)
-        } else if (stockPrice < wealth.cash && marketState(2) == Some(false)){
+            2
+        } else if (stockPrice < wealth.cash && marketState(2) == 2){
             wealth.buyStock(stockPrice)
-            Some(true)
+            1
         } else {
-            None
+            0
         }
     }
 }
@@ -50,15 +51,15 @@ class rule2(wealth: WealthManagement) extends conditionActionRule {
 // Buy if 10-day average decreases and sell if 10-day average increases
 class rule3(wealth: WealthManagement) extends conditionActionRule {
     label = 3
-    override def eval(stockPrice: Double, marketState: List[Option[Boolean]]): Option[Boolean] ={
-        if (marketState(1) == Some(false) && stockPrice < wealth.cash){
+    override def eval(stockPrice: Double, marketState: List[Byte]): Byte ={
+        if (marketState(1) == 2 && stockPrice < wealth.cash){
             wealth.buyStock(stockPrice)
-            Some(true)
-        } else if (marketState(1) == Some(true) && wealth.shares >= 1){
+            1
+        } else if (marketState(1) == 1 && wealth.shares >= 1){
             wealth.sellStock(stockPrice)
-            Some(false)
+            2
         } else {
-            None
+            0
         }
     }
 }
@@ -66,20 +67,20 @@ class rule3(wealth: WealthManagement) extends conditionActionRule {
 // Random buy and sell
 class rule4(wealth: WealthManagement) extends conditionActionRule {
     label = 4
-    override def eval(stockPrice: Double, marketState: List[Option[Boolean]]): Option[Boolean] ={
+    override def eval(stockPrice: Double, marketState: List[Byte]): Byte ={
         if (Random.nextBoolean){
             if (stockPrice < wealth.cash) {
                 wealth.buyStock(stockPrice)
-                Some(true)
+                1
             } else {
-                None
+                0
             }
         } else {
             if (wealth.shares >= 1) {
                 wealth.sellStock(stockPrice)
-                Some(false)
+                2
             } else {
-                None
+                0
             }
         }
     }
@@ -89,15 +90,15 @@ class rule4(wealth: WealthManagement) extends conditionActionRule {
 // If both conditions are met, prioritize sell
 class rule5(wealth: WealthManagement) extends conditionActionRule {
     label = 5
-    override def eval(stockPrice: Double, marketState: List[Option[Boolean]]): Option[Boolean] ={
-        if (marketState(2) == Some(true) && wealth.shares >= 1){
+    override def eval(stockPrice: Double, marketState: List[Byte]): Byte ={
+        if (marketState(2) == 1 && wealth.shares >= 1){
             wealth.sellStock(stockPrice)
-            Some(false)
-        } else if (marketState(2) == Some(false) && stockPrice < wealth.cash){
+            2
+        } else if (marketState(2) == 2 && stockPrice < wealth.cash){
             wealth.buyStock(stockPrice)
-            Some(true)
+            1
         } else {
-            None
+            0
         }
     }
 }
