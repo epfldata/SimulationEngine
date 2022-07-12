@@ -10,8 +10,8 @@ import scala.collection.mutable.{Map => MutMap}
 class Market(val traders: List[Trader]) extends Actor {
 
     val stock: Stock = new Stock(0.0001)
-    private var futures: List[Future[Option[Boolean]]] = null
-    private var marketState: List[Option[Boolean]] = null
+    private var futures: List[Future[Int]] = null
+    private var marketState: List[Int] = null
     // Initial price
     var stockPrice: Double = 100
     var dividendPerShare: Double = 0
@@ -25,8 +25,8 @@ class Market(val traders: List[Trader]) extends Actor {
                 waitAndReply(1)
             }
             val x = futures.map(x => x.popValue.get)
-            val buyOrders = x.count(_ == Some(true))
-            val sellOrders = x.count(_ == Some(false))
+            val buyOrders = x.count(_ == 1)
+            val sellOrders = x.count(_ == 2)
             stockPrice = stock.priceAdjustment(buyOrders, sellOrders)
             dividendPerShare = stock.getDividend()
             // println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)

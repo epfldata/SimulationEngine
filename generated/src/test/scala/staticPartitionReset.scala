@@ -68,8 +68,8 @@ class pageRankStaticTestReset extends StaticPartitionTestReset[AkkaMessagingLaye
 class epidemicSBM extends StaticPartitionTestReset[AkkaMessagingLayer.type](
     "epidemicSBM", (x: List[Actor]) => {x.foreach(a =>
         a match {
-            case i: generated.example.epidemic.evalNPI.Person => i.SimReset(Set("country"))
-            case i: generated.example.epidemic.evalNPI.Country => i.SimReset(Set("citizens", "otherCountries"))
+            case i: generated.example.epidemic.evalNPI.Person => i.SimReset(Set("connectedAgents", "country"))
+            case i: generated.example.epidemic.evalNPI.Country => i.SimReset(Set("connectedAgents", "citizens", "otherCountries"))
             case _ =>
         }
     )}, 300, Set(1, 50), Set(0, 50, 100, 500, 1000), 
@@ -80,8 +80,8 @@ class epidemicSBM extends StaticPartitionTestReset[AkkaMessagingLayer.type](
 class epidemicERM extends StaticPartitionTestReset[AkkaMessagingLayer.type](
     "epidemicERM", (x: List[Actor]) => {x.foreach(a =>
         a match {
-            case i: generated.example.epidemic.evalNPI.Person => i.SimReset(Set("country"))
-            case i: generated.example.epidemic.evalNPI.Country => i.SimReset(Set("citizens", "otherCountries"))
+            case i: generated.example.epidemic.evalNPI.Person => i.SimReset(Set("connectedAgents", "country"))
+            case i: generated.example.epidemic.evalNPI.Country => i.SimReset(Set("connectedAgents", "citizens", "otherCountries"))
             case _ =>
         }
     )}, 300, Set(1, 50), Set(0, 50, 100, 500, 1000), 
