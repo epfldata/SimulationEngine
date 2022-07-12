@@ -25,8 +25,8 @@ class Market(val traders: List[Trader]) extends Actor {
                 waitAndReply(1)
             }
             val x = futures.map(x => x.popValue.get)
-            val buyOrders = x.count(_ == Some(true))
-            val sellOrders = x.count(_ == Some(false))
+            val buyOrders = x.count(_ == 1)
+            val sellOrders = x.count(_ == 2)
             stockPrice = stock.priceAdjustment(buyOrders, sellOrders)
             dividendPerShare = stock.getDividend()
             // println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
