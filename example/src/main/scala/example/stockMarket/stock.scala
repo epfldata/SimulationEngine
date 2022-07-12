@@ -18,7 +18,7 @@ class Stock(var priceAdjustmentFactor: Double) {
         private var lastAvg: Option[Double] = None
 
         // return whether the new avg has increased comparing with the prev avg
-        def update: Byte = {
+        def update: Int = {
             // moving window
             val calculated_avg: Option[Double] = if (period > window) {
                 Some(prices.slice(period-window, period).sum/window)
@@ -26,7 +26,7 @@ class Stock(var priceAdjustmentFactor: Double) {
                 None
             }
 
-            var ans: Byte = 2
+            var ans: Int = 2
             (calculated_avg, lastAvg) match {
                 case (None, _) => 0
                 case (Some(x), None) => {
@@ -44,13 +44,13 @@ class Stock(var priceAdjustmentFactor: Double) {
         }
     }
 
-    def updateMarketInfo(p: Double, d: Double): List[Byte] = {
+    def updateMarketInfo(p: Double, d: Double): List[Int] = {
         currentPrice = p
         period += 1
         prices.append(p)
 
         // Short-term info: whether dividend has increased. 0 means no dividend
-        val dividendIncrease: Byte = {
+        val dividendIncrease: Int = {
             if (d == 0){
                 0
             } else {
