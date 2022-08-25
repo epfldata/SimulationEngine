@@ -38,4 +38,18 @@ class CloneTest extends FlatSpec {
         assert(cloner.asInstanceOf[generated.core.test.simClone.MutableSim].counter == 10)
         assert(clonee.counter == 5)
     }
+
+    "Clone the mutable agent at round 5 and resume the cloner" should "have different states for clonee and cloner for p2p Akka simulation" in {
+        val agents = generated.core.test.simClone.InitData()
+        val c = new SimulationConfig(agents, 5)
+        val r = StartSimulation[AkkaDriverWorker.type](c)
+        val clonee = r.sims.head.asInstanceOf[generated.core.test.simClone.MutableSim]
+        val cloner = clonee.SimClone(Set("counter"))
+        // The init state of cloner is the final state of clonee
+        assert(cloner.asInstanceOf[generated.core.test.simClone.MutableSim].counter == 5)
+        // Run another simulation from cloner won't change the state of clonee
+        StartSimulation[AkkaDriverWorker.type](new SimulationConfig(List(cloner), 5))
+        assert(cloner.asInstanceOf[generated.core.test.simClone.MutableSim].counter == 10)
+        assert(clonee.counter == 5)
+    }
 }
