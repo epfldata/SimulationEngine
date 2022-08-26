@@ -10,7 +10,7 @@ import scala.util.Success
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
@@ -366,10 +366,12 @@ object DriverWorkerExp {
     final case class SpawnDriver(totalWorkers: Int, totalTurn: Int, messages: List[Message]) extends Command
     final case class SpawnWorker(workerId: Int, sims: Seq[Actor], totalWorkers: Int) extends Command
     final case class DriverStopped() extends Command
-    final case class WorkerStopped(sims: Seq[Actor]) extends Command
+    final case class WorkerStopped(workerId: Int, sims: Seq[Actor]) extends Command
 
     var cluster: Cluster = null
     var totalWorkers: Int = 0
+    val stoppedWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
+    var activeWorkers: Set[Int] = Set()
 
     def apply(totalTurn: Int, totalWorkers: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[Command] = 
         Behaviors.setup { ctx => 
@@ -394,7 +396,7 @@ object DriverWorkerExp {
             if (cluster.selfMember.hasRole("Standalone")) {
                 ctx.log.warn(f"Standalone mode")
                 ctx.self ! SpawnDriver(1, totalTurn, messages)
-                ctx.self ! SpawnWorker(1, actors, 1)
+                ctx.self ! SpawnWorker(0, actors, 1)
             }
             waitTillFinish(Vector.empty)
         }
@@ -409,18 +411,35 @@ object DriverWorkerExp {
 
                 case SpawnWorker(workerId, agents, totalWorkers) =>
                     val sim = ctx.spawn((new Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
-                    ctx.watchWith(sim, WorkerStopped(agents))
+                    activeWorkers = activeWorkers + workerId
+                    ctx.watchWith(sim, WorkerStopped(workerId, agents))
                     Behaviors.same
                 
                 case DriverStopped() =>
-                    Behaviors.stopped {() =>
-                        ctx.system.terminate()
+                    if (cluster.selfMember.hasRole("Standalone")) {
+                        Behaviors.same
+                    } else {
+                        Behaviors.stopped {() =>
+                            ctx.system.terminate()
+                        }
                     }
 
-                case WorkerStopped(agents) =>
-                    Behaviors.stopped {() =>
-                        ctx.system.terminate()
-                    }
+                case WorkerStopped(workerId, agents) =>
+                    if (cluster.selfMember.hasRole("Standalone")) {
+                        stoppedWorkers.add(workerId)
+                        if (stoppedWorkers.toSet.diff(activeWorkers).isEmpty){
+                            DriverWorkerRun.addStoppedAgents(finalAgents ++ agents)
+                            Behaviors.stopped {() =>
+                                ctx.system.terminate()
+                            }
+                        } else {
+                            waitTillFinish(finalAgents ++ agents)
+                        }
+                    } else {
+                        Behaviors.stopped {() =>
+                            ctx.system.terminate()
+                        }
+                    }                   
             }
 
         }
