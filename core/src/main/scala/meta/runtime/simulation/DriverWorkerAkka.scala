@@ -222,6 +222,8 @@ class Worker {
     private var local_agents: Seq[(Long, ActorRef[LocalAgent.AgentEvent])] = Seq[(Long, ActorRef[LocalAgent.AgentEvent])]()
     private val peer_workers: ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]] = new ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]]() 
     private val collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
+    private val receivedMessages: ConcurrentHashMap[Long, List[Message]] = new ConcurrentHashMap[Long, List[Message]]() 
+
 
     def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
         // ctx.log.debug("Register agent with receptionist")
@@ -257,15 +259,15 @@ class Worker {
         ctx.system.receptionist ! Receptionist.Subscribe(Driver.serviceKeyInitAgentMap, workerSub)
         ctx.system.receptionist ! Receptionist.Subscribe(WorkerUpdateAgentMapServiceKey, workerSub)
         nameMap.update(workerId, simIds)
-        worker(List(), Map())
+        worker(List())
     }
 
     // Consider replacing receivedWorkers with a total workers
-    private def worker(receivedWorkers: List[Int], receivedMessages: Map[Long, List[Message]]): Behavior[WorkerEvent] =
+    private def worker(receivedWorkers: List[Int]): Behavior[WorkerEvent] =
         Behaviors.receive[WorkerEvent] { (ctx, message) =>
             message match {
                 case Prepare() => 
-                    worker(receivedWorkers, receivedMessages)
+                    worker(receivedWorkers)
                 case RegisterAgentMap(driver) => 
                     driver ! Driver.InitializeAgentMap(workerId, simIds)
                     Behaviors.same
@@ -276,8 +278,11 @@ class Worker {
                     }
                     Behaviors.same
                 case ReceiveMessages(wid, messages) =>
-                    ctx.log.debug(f"Worker ${workerId} receives messages from worker ${wid}")
-                    worker(wid :: receivedWorkers, receivedMessages ++ receivedMessages.map(x => (x._1, if (messages.get(x._1).isDefined) messages(x._1) ::: x._2 else x._2)))
+                    ctx.log.debug(f"Worker ${workerId} receives messages from worker ${wid} ${messages}")
+                    for (m <- messages) {
+                        receivedMessages.update(m._1, receivedMessages.getOrElse(m._1, List()) ::: m._2)
+                    }
+                    worker(wid :: receivedWorkers)
                 case ExpectedReceives(receive_map, replyTo) => 
                     ctx.log.debug(f"Worker ${workerId} expects to receive from ${receive_map}; Received workers ${receivedWorkers}")
                     // If worker has received messages from all above workers, then resume agents
@@ -287,7 +292,11 @@ class Worker {
                             Aggregator[LocalAgent.MessagesAdded, AgentsCompleted](
                                 sendRequests = { replyTo =>
                                     local_agents.map(a => {
-                                        a._2 ! LocalAgent.AddMessages(receivedMessages.getOrElse(a._1, List()) ::: collectedMessages.remove(a._1).getOrElse(List()), replyTo)
+                                        if (receivedMessages.get(a._1) == null){
+                                            a._2 ! LocalAgent.AddMessages(collectedMessages.remove(a._1).getOrElse(List()), replyTo)  
+                                        } else {
+                                            a._2 ! LocalAgent.AddMessages(receivedMessages.remove(a._1) ::: collectedMessages.remove(a._1).getOrElse(List()), replyTo)
+                                        }                                    
                                     })
                                 },
                                 expectedReplies = local_agents.size,
@@ -310,9 +319,9 @@ class Worker {
                                     AgentsCompleted(ans)
                                 },
                                 timeout=100.seconds))
-                        worker(List(), Map())
+                        worker(List())
                     } else {
-                        worker(receivedWorkers, receivedMessages)
+                        worker(receivedWorkers)
                     }
                 case AgentsCompleted(indexedMessages) =>
                     ctx.log.debug(f"Local agents in worker ${workerId} have completed!")
@@ -359,6 +368,7 @@ class LocalAgent {
         Behaviors.receive[AgentEvent] { (ctx, message) =>
             message match {
                 case AddMessages(messages, replyTo) => 
+                    ctx.log.debug(f"Agent ${sim.id} receives ${messages.size} messages")
                     val agentAPI = sim.run(messages)
                     val sentMessages = agentAPI._1
                     val elapsedTime = agentAPI._2
