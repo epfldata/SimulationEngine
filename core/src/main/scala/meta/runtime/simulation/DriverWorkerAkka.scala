@@ -50,7 +50,8 @@ class Driver {
     private var totalTurn: Int = 0
     private var currentTurn: Int = 0
     // worker x, a list of workers which x expects messages from
-    private var workerReceiveFrom: ConcurrentHashMap[Int, List[Int]] = new ConcurrentHashMap()
+    private var workerReceiveFrom: Map[Int, List[Int]] = Map[Int, List[Int]]()
+    private var workerIdMap: ConcurrentHashMap[Int, ActorRef[Worker.ExpectedReceives]] = new ConcurrentHashMap[Int, ActorRef[Worker.ExpectedReceives]]()
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
     private var workersStop: Set[ActorRef[Worker.Stop]] = Set()
     private var workersStart: Set[ActorRef[Worker.ExpectedReceives]] = Set()
@@ -113,7 +114,7 @@ class Driver {
                         Aggregator[Worker.SendTo, RoundEnd](
                             sendRequests = { replyTo =>
                                 workersStart.map(a => {
-                                    a ! Worker.ExpectedReceives(workerReceiveFrom.remove(a), replyTo)
+                                    a ! Worker.ExpectedReceives(workerReceiveFrom, replyTo)
                                 })
                             },
                             expectedReplies = totalWorkers,
@@ -122,12 +123,13 @@ class Driver {
                                 var passedRounds: Int = 1
                                 for (r <- replies) {
                                     for (k <- r.sendTo) {
-                                        workerReceiveFrom.update(k, r.workerId :: workerReceiveFrom.getOrDefault(k, List()))
+                                        workerReceiveFrom = workerReceiveFrom.updated(k, r.workerId :: workerReceiveFrom.getOrDefault(k, List()))
                                     }
                                     if (r.elapsedTime > passedRounds){
                                         passedRounds = r.elapsedTime
                                     }
                                 }
+                                println(f"workerReceiveFrom update ${workerReceiveFrom}")
                                 RoundEnd(passedRounds)
                             },
                             timeout=100.seconds))
@@ -161,14 +163,17 @@ class AgentNameMap {
 
     // Replace with better indexing, hash-based lookup
     def getWorker(agentId: Long): Int = synchronized {
-        var ans: Int = 0
+        var ans: Int = -1
         for (i <- agentNameMap) {
             if (i._2.contains(agentId)) {
-                if (ans != 0){
+                if (ans != -1){
                     throw new Exception(f"Agent ${agentId} found in both workers ${i._1} and ${ans}!")
                 }
                 ans = i._1
-            }
+            } 
+        }
+        if (ans == -1){
+            throw new Exception(f"Agent ${agentId} not found in the name map!")
         }
         ans
     }
@@ -194,13 +199,13 @@ object Worker {
         new JsonSubTypes.Type(value = classOf[SendTo], name = "SendTo")))
     sealed trait WorkerEvent
     final case class Prepare() extends WorkerEvent with NoSerializationVerificationNeeded
-    final case class RegisterAgentMap(driver: ActorRef[Driver.InitializeAgentMap]) extends WorkerEvent with JsonSerializable
+    final case class RegisterAgentMap(driver: ActorRef[Driver.InitializeAgentMap]) extends WorkerEvent with NoSerializationVerificationNeeded
     final case class AgentsCompleted(indexedMessages: Map[Int, MutMap[Long, List[Message]]]) extends WorkerEvent with NoSerializationVerificationNeeded
     final case class Stop() extends WorkerEvent with JsonSerializable
     final case class ReceiveMessages(workerId: Int, messages: Map[Long, List[Message]]) extends WorkerEvent with JsonSerializable
-    final case class ReceiveAgentMap(workerId: Int, agentIds: Seq[Long]) extends WorkerEvent with JsonSerializable
+    final case class ReceiveAgentMap(workerId: Int, agentIds: Seq[Long], replyTo: ActorRef[ReceiveMessages]) extends WorkerEvent with JsonSerializable
     final case class SendTo(workerId: Int, sendTo: Seq[Int], elapsedTime: Int) extends WorkerEvent with JsonSerializable
-    final case class ExpectedReceives(ids: List[Int], sendTo: ActorRef[SendTo]) extends WorkerEvent with JsonSerializable
+    final case class ExpectedReceives(ids: Map[Int, List[Int]], sendTo: ActorRef[SendTo]) extends WorkerEvent with JsonSerializable
 
     val WorkerStartServiceKey = ServiceKey[ExpectedReceives]("WorkerStart")
     val WorkerStopServiceKey = ServiceKey[Stop]("WorkerStop")
@@ -215,7 +220,7 @@ class Worker {
     private var totalWorkers: Int = 0
     private val nameMap: AgentNameMap = new AgentNameMap()
     private var local_agents: Seq[(Long, ActorRef[LocalAgent.AgentEvent])] = Seq[(Long, ActorRef[LocalAgent.AgentEvent])]()
-    private var peer_workers: Seq[(Int, ActorRef[Worker.WorkerEvent])] = Seq[(Int, ActorRef[Worker.WorkerEvent])]()
+    private val peer_workers: ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]] = new ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]]() 
     private val collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
 
     def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
@@ -229,12 +234,13 @@ class Worker {
         this.simIds = sims.map(_.id)
         this.totalWorkers = totalWorkers
         workerId = id
+        ctx.log.debug(f"Worker ${workerId} has agents ${simIds}")
 
         val workerSub = ctx.messageAdapter[Receptionist.Listing] {
             case Worker.WorkerUpdateAgentMapServiceKey.Listing(workers) =>
                 if (workers.size == totalWorkers){
                     workers.filter(i => i!= ctx.self).foreach(w => {
-                        w ! ReceiveAgentMap(workerId, simIds)
+                        w ! ReceiveAgentMap(workerId, simIds, ctx.self)
                     })
                 }
                 Prepare()
@@ -263,16 +269,19 @@ class Worker {
                 case RegisterAgentMap(driver) => 
                     driver ! Driver.InitializeAgentMap(workerId, simIds)
                     Behaviors.same
-                case ReceiveAgentMap(workerId, nameIds) => 
-                    if (!nameMap.isRegistered(workerId)){
-                        nameMap.update(workerId, nameIds)
+                case ReceiveAgentMap(wid, nameIds, reply) => 
+                    if (!nameMap.isRegistered(wid)){
+                        nameMap.update(wid, nameIds)
+                        peer_workers.update(wid, reply)
                     }
                     Behaviors.same
-                case ReceiveMessages(workerId, messages) =>
-                    worker(workerId :: receivedWorkers, receivedMessages ++ receivedMessages.map(x => (x._1, if (messages.get(x._1).isDefined) messages(x._1) ::: x._2 else x._2)))
-                case ExpectedReceives(ids, replyTo) => 
+                case ReceiveMessages(wid, messages) =>
+                    ctx.log.debug(f"Worker ${workerId} receives messages from worker ${wid}")
+                    worker(wid :: receivedWorkers, receivedMessages ++ receivedMessages.map(x => (x._1, if (messages.get(x._1).isDefined) messages(x._1) ::: x._2 else x._2)))
+                case ExpectedReceives(receive_map, replyTo) => 
+                    ctx.log.debug(f"Worker ${workerId} expects to receive from ${receive_map}; Received workers ${receivedWorkers}")
                     // If worker has received messages from all above workers, then resume agents
-                    if (ids == null || receivedWorkers.diff(ids).isEmpty){
+                    if (receive_map == null || receive_map.get(workerId).isEmpty || receivedWorkers.diff(receive_map(workerId)).isEmpty){
                         ctx.log.debug(f"Worker ${workerId} starts!")
                         ctx.spawnAnonymous(
                             Aggregator[LocalAgent.MessagesAdded, AgentsCompleted](
@@ -294,21 +303,23 @@ class Worker {
                                             passedRounds = r.elapsedTime
                                         }
                                     }
-                                    val ans = collectedMessages.groupBy(i => nameMap.getWorker(i._1))
+
+                                    val ans = collectedMessages.groupBy(i => nameMap.getWorker(i._1)).filterNot(i => i._1 == workerId)
+                                    println(f"SendTo! workerId is ${workerId}, key sequence is ${ans.keys.toSeq}")
                                     replyTo ! SendTo(workerId, ans.keys.toSeq, passedRounds)
                                     AgentsCompleted(ans)
                                 },
                                 timeout=100.seconds))
-                        Behaviors.same
+                        worker(List(), Map())
                     } else {
                         worker(receivedWorkers, receivedMessages)
                     }
                 case AgentsCompleted(indexedMessages) =>
                     ctx.log.debug(f"Local agents in worker ${workerId} have completed!")
-                    peer_workers.foreach(w => {
-                        val ans: Map[Long, List[Message]] = indexedMessages.getOrElse(w._1, Map()).toMap
-                        collectedMessages --= ans.map(_._1)
-                        w._2 ! ReceiveMessages(workerId, ans)
+                    indexedMessages.foreach(i => {
+                        ctx.log.debug(f"Worker ${workerId} sends to peer worker ${i._1}")
+                        peer_workers.get(i._1) ! ReceiveMessages(workerId, i._2.toMap)
+                        collectedMessages --= i._2.map(_._1)
                     })
                     Behaviors.same
                 case Stop() =>
@@ -379,8 +390,11 @@ object DriverWorkerExp {
             this.totalWorkers = totalWorkers
             val roles = cluster.selfMember.getRoles
             val totalActors = actors.size
-            val actorsPerWorker = totalActors/totalWorkers
-            ctx.log.debug(f"Driver worker experiment starts! Member roles: ${cluster.selfMember.getRoles}")
+            var actorsPerWorker = totalActors/totalWorkers
+            if (totalActors % totalWorkers > 0){
+                actorsPerWorker += 1
+            }
+            ctx.log.debug(f"${actorsPerWorker} actors per worker")
 
             if (roles.exists(p => p.startsWith("Worker"))) {
                 ctx.log.warn(f"Creating a worker!")
@@ -395,8 +409,10 @@ object DriverWorkerExp {
 
             if (cluster.selfMember.hasRole("Standalone")) {
                 ctx.log.warn(f"Standalone mode")
-                ctx.self ! SpawnDriver(1, totalTurn, messages)
-                ctx.self ! SpawnWorker(0, actors, 1)
+                ctx.self ! SpawnDriver(totalWorkers, totalTurn, messages)
+                for (i <- Range(0, totalWorkers)){
+                    ctx.self ! SpawnWorker(i, actors.slice(i*actorsPerWorker, List((i+1)*actorsPerWorker, totalActors).min), totalWorkers)
+                }
             }
             waitTillFinish(Vector.empty)
         }
@@ -427,7 +443,7 @@ object DriverWorkerExp {
                 case WorkerStopped(workerId, agents) =>
                     if (cluster.selfMember.hasRole("Standalone")) {
                         stoppedWorkers.add(workerId)
-                        if (stoppedWorkers.toSet.diff(activeWorkers).isEmpty){
+                        if (activeWorkers.diff(stoppedWorkers.toSet).isEmpty){
                             DriverWorkerRun.addStoppedAgents(finalAgents ++ agents)
                             Behaviors.stopped {() =>
                                 ctx.system.terminate()
@@ -468,8 +484,13 @@ object DriverWorkerRun {
                 akka.remote.artery.canonical.port=$port
                 akka.cluster.roles = [$role]
                 """).withFallback(ConfigFactory.load("application"))
-            val total_workers: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.total-workers").render().toInt
+            // If there are more workers than agents, then set the worker number to the same as agents
+            var total_workers: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.total-workers").render().toInt
             println(f"Total workers are ${total_workers} Total actors ${actors.size}")
+            if (total_workers > actors.size){
+                println(f"Detect more workers than agents! Set total workers from ${total_workers} to ${actors.size}")
+                total_workers = actors.size
+            }
             val actorSystem = ActorSystem(DriverWorkerExp(totalTurn, total_workers, actors, staged, messages), "SimsCluster", config)
             Await.ready(actorSystem.whenTerminated, 10.days)
         }
