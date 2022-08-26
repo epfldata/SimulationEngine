@@ -130,7 +130,7 @@ class Driver {
                                 }
                                 RoundEnd(passedRounds)
                             },
-                            timeout=10.seconds))
+                            timeout=100.seconds))
                     driver()
                 }
 
@@ -298,7 +298,7 @@ class Worker {
                                     replyTo ! SendTo(workerId, ans.keys.toSeq, passedRounds)
                                     AgentsCompleted(ans)
                                 },
-                                timeout=10.seconds))
+                                timeout=100.seconds))
                         Behaviors.same
                     } else {
                         worker(receivedWorkers, receivedMessages)
@@ -376,11 +376,14 @@ object DriverWorkerExp {
             cluster = Cluster(ctx.system)
             this.totalWorkers = totalWorkers
             val roles = cluster.selfMember.getRoles
+            val totalActors = actors.size
+            val actorsPerWorker = totalActors/totalWorkers
+            ctx.log.debug(f"Driver worker experiment starts! Member roles: ${cluster.selfMember.getRoles}")
 
             if (roles.exists(p => p.startsWith("Worker"))) {
                 ctx.log.warn(f"Creating a worker!")
-                val worker_id = roles.head.split("-").last.toInt
-                ctx.self ! SpawnWorker(worker_id, actors, totalWorkers)
+                val worker_id = roles.head.split("-").last.toInt                    
+                ctx.self ! SpawnWorker(worker_id, actors.slice(worker_id*actorsPerWorker, List((worker_id+1)*actorsPerWorker, totalActors).min), totalWorkers)
             } 
             
             if (cluster.selfMember.hasRole("Driver")) {
@@ -393,10 +396,10 @@ object DriverWorkerExp {
                 ctx.self ! SpawnDriver(1, totalTurn, messages)
                 ctx.self ! SpawnWorker(1, actors, 1)
             }
-            waitTillFinish(Vector.empty, 0)
+            waitTillFinish(Vector.empty)
         }
 
-    def waitTillFinish(finalAgents: IndexedSeq[Actor], terminatedWorkers: Int): Behavior[Command] = {
+    def waitTillFinish(finalAgents: IndexedSeq[Actor]): Behavior[Command] = {
         Behaviors.receive { (ctx, message) => 
             message match {
                 case SpawnDriver(totalWorkers, totalTurn, messages) => 
@@ -410,17 +413,13 @@ object DriverWorkerExp {
                     Behaviors.same
                 
                 case DriverStopped() =>
-                    Behaviors.same                    
+                    Behaviors.stopped {() =>
+                        ctx.system.terminate()
+                    }
 
                 case WorkerStopped(agents) =>
-                    ctx.log.debug(f"Worker stopped! Total stopped workers ${terminatedWorkers + 1}")
-                    if (terminatedWorkers+1 == totalWorkers){
-                        DriverWorkerRun.addStoppedAgents(finalAgents ++ agents)
-                        Behaviors.stopped {() =>
-                            ctx.system.terminate()
-                        }
-                    } else {
-                        waitTillFinish(finalAgents ++ agents, terminatedWorkers + 1)
+                    Behaviors.stopped {() =>
+                        ctx.system.terminate()
                     }
             }
 
@@ -451,6 +450,7 @@ object DriverWorkerRun {
                 akka.cluster.roles = [$role]
                 """).withFallback(ConfigFactory.load("application"))
             val total_workers: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.total-workers").render().toInt
+            println(f"Total workers are ${total_workers} Total actors ${actors.size}")
             val actorSystem = ActorSystem(DriverWorkerExp(totalTurn, total_workers, actors, staged, messages), "SimsCluster", config)
             Await.ready(actorSystem.whenTerminated, 10.days)
         }
