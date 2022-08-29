@@ -27,7 +27,7 @@ import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.NoSerializationVerificationNeeded
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import org.apache.spark.deploy.worker.ui.WorkerPage
+
 
 object Driver {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -50,7 +50,7 @@ class Driver {
     private var totalTurn: Int = 0
     private var currentTurn: Int = 0
     // worker x, a list of workers which x expects messages from
-    private var workerReceiveFrom: Map[Int, List[Int]] = Map[Int, List[Int]]()
+    private var workerReceiveFrom: Map[Int, Set[Int]] = Map[Int, Set[Int]]()
     private var workerIdMap: ConcurrentHashMap[Int, ActorRef[Worker.ExpectedReceives]] = new ConcurrentHashMap[Int, ActorRef[Worker.ExpectedReceives]]()
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
     private var workersStop: Set[ActorRef[Worker.Stop]] = Set()
@@ -110,12 +110,14 @@ class Driver {
 
                 case RoundStart => {
                     ctx.log.warn(f"Round ${currentTurn}")
+                    ctx.log.debug(f"Driver sends expected receives to all workers!  ${workerReceiveFrom}")
                     ctx.spawnAnonymous(
                         Aggregator[Worker.SendTo, RoundEnd](
                             sendRequests = { replyTo =>
                                 workersStart.map(a => {
                                     a ! Worker.ExpectedReceives(workerReceiveFrom, replyTo)
                                 })
+                                workerReceiveFrom = Map()
                             },
                             expectedReplies = totalWorkers,
                             ctx.self,
@@ -123,16 +125,16 @@ class Driver {
                                 var passedRounds: Int = 1
                                 for (r <- replies) {
                                     for (k <- r.sendTo) {
-                                        workerReceiveFrom = workerReceiveFrom.updated(k, r.workerId :: workerReceiveFrom.getOrDefault(k, List()))
+                                        workerReceiveFrom = workerReceiveFrom.updated(k, workerReceiveFrom.getOrDefault(k, Set()).union(Set(r.workerId)))
                                     }
                                     if (r.elapsedTime > passedRounds){
                                         passedRounds = r.elapsedTime
                                     }
                                 }
-                                println(f"workerReceiveFrom update ${workerReceiveFrom}")
                                 RoundEnd(passedRounds)
                             },
                             timeout=100.seconds))
+                    ctx.log.debug(f"Driver receives notifications from all workers! New receive from ${workerReceiveFrom}")
                     driver()
                 }
 
@@ -204,8 +206,8 @@ object Worker {
     final case class Stop() extends WorkerEvent with JsonSerializable
     final case class ReceiveMessages(workerId: Int, messages: Map[Long, List[Message]]) extends WorkerEvent with JsonSerializable
     final case class ReceiveAgentMap(workerId: Int, agentIds: Seq[Long], replyTo: ActorRef[ReceiveMessages]) extends WorkerEvent with JsonSerializable
-    final case class SendTo(workerId: Int, sendTo: Seq[Int], elapsedTime: Int) extends WorkerEvent with JsonSerializable
-    final case class ExpectedReceives(ids: Map[Int, List[Int]], sendTo: ActorRef[SendTo]) extends WorkerEvent with JsonSerializable
+    final case class SendTo(workerId: Int, sendTo: Set[Int], elapsedTime: Int) extends WorkerEvent with JsonSerializable
+    final case class ExpectedReceives(ids: Map[Int, Set[Int]], sendTo: ActorRef[SendTo]) extends WorkerEvent with JsonSerializable
 
     val WorkerStartServiceKey = ServiceKey[ExpectedReceives]("WorkerStart")
     val WorkerStopServiceKey = ServiceKey[Stop]("WorkerStop")
@@ -222,8 +224,10 @@ class Worker {
     private var local_agents: Seq[(Long, ActorRef[LocalAgent.AgentEvent])] = Seq[(Long, ActorRef[LocalAgent.AgentEvent])]()
     private val peer_workers: ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]] = new ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]]() 
     private val collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
-    private val receivedMessages: ConcurrentHashMap[Long, List[Message]] = new ConcurrentHashMap[Long, List[Message]]() 
+    private val receivedMessages: ConcurrentHashMap[Long, List[Message]] = new ConcurrentHashMap[Long, List[Message]]()
+    private val receivedWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
 
+    // private var tscontroller: ActorRef[TimeseriesController.LogWorker] = null
 
     def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
         // ctx.log.debug("Register agent with receptionist")
@@ -236,7 +240,7 @@ class Worker {
         this.simIds = sims.map(_.id)
         this.totalWorkers = totalWorkers
         workerId = id
-        ctx.log.debug(f"Worker ${workerId} has agents ${simIds}")
+        ctx.log.warn(f"Worker ${workerId} has agents ${simIds}")
 
         val workerSub = ctx.messageAdapter[Receptionist.Listing] {
             case Worker.WorkerUpdateAgentMapServiceKey.Listing(workers) =>
@@ -252,22 +256,29 @@ class Worker {
                     RegisterAgentMap(drivers.head)
                 }
                 Prepare()
+
+            // case TimeseriesController.tsControllerServiceKey.Listing(tscontrollers) =>
+            //     if (drivers.size > 0){
+            //         tscontroller = tscontrollers.head
+            //     }
+            //     Prepare()
         } 
 
         // Creating an actor for each Sim
         local_agents = sims.map(a => (a.id, ctx.spawn((new LocalAgent).apply(a), f"simAgent${a.id}")))
         ctx.system.receptionist ! Receptionist.Subscribe(Driver.serviceKeyInitAgentMap, workerSub)
         ctx.system.receptionist ! Receptionist.Subscribe(WorkerUpdateAgentMapServiceKey, workerSub)
+        // ctx.system.receptionist ! Receptionist.Subscribe(TimeseriesController.tsControllerServiceKey, workerSub)
         nameMap.update(workerId, simIds)
-        worker(List())
+        worker()
     }
 
     // Consider replacing receivedWorkers with a total workers
-    private def worker(receivedWorkers: List[Int]): Behavior[WorkerEvent] =
+    private def worker(): Behavior[WorkerEvent] =
         Behaviors.receive[WorkerEvent] { (ctx, message) =>
             message match {
                 case Prepare() => 
-                    worker(receivedWorkers)
+                    worker()
                 case RegisterAgentMap(driver) => 
                     driver ! Driver.InitializeAgentMap(workerId, simIds)
                     Behaviors.same
@@ -278,18 +289,23 @@ class Worker {
                     }
                     Behaviors.same
                 case ReceiveMessages(wid, messages) =>
+                    if (!receivedWorkers.contains(wid)){
+                        receivedWorkers.add(wid)
+                    }
                     ctx.log.debug(f"Worker ${workerId} receives messages from worker ${wid} ${messages}")
                     for (m <- messages) {
                         receivedMessages.update(m._1, receivedMessages.getOrElse(m._1, List()) ::: m._2)
                     }
-                    worker(wid :: receivedWorkers)
+                    worker()
                 case ExpectedReceives(receive_map, replyTo) => 
-                    ctx.log.debug(f"Worker ${workerId} expects to receive from ${receive_map}; Received workers ${receivedWorkers}")
+                    ctx.log.warn(f"Worker ${workerId} expects to receive from ${receive_map}; Received workers ${receivedWorkers}")
                     // If worker has received messages from all above workers, then resume agents
-                    if (receive_map == null || receive_map.get(workerId).isEmpty || receivedWorkers.diff(receive_map(workerId)).isEmpty){
-                        ctx.log.debug(f"Worker ${workerId} starts!")
-                        ctx.spawnAnonymous(
-                            Aggregator[LocalAgent.MessagesAdded, AgentsCompleted](
+                    if (receive_map == null || receive_map.get(workerId).isEmpty || receivedWorkers.toSet.diff(receive_map(workerId)).isEmpty){
+                        ctx.log.warn(f"Worker ${workerId} starts!")
+                        receivedWorkers.clear()
+                        if (local_agents.size > 0){
+                            ctx.spawnAnonymous(
+                                Aggregator[LocalAgent.MessagesAdded, AgentsCompleted](
                                 sendRequests = { replyTo =>
                                     local_agents.map(a => {
                                         if (receivedMessages.get(a._1) == null){
@@ -314,15 +330,21 @@ class Worker {
                                     }
 
                                     val ans = collectedMessages.groupBy(i => nameMap.getWorker(i._1)).filterNot(i => i._1 == workerId)
-                                    println(f"SendTo! workerId is ${workerId}, key sequence is ${ans.keys.toSeq}")
-                                    replyTo ! SendTo(workerId, ans.keys.toSeq, passedRounds)
+                                    println("Aggregator completed!")
+                                    println(f"Worker ${workerId} sends to driver whom it contacted ${ans.keys.toSet}")
+                                    replyTo ! SendTo(workerId, ans.keys.toSet, passedRounds)
                                     AgentsCompleted(ans)
                                 },
                                 timeout=100.seconds))
-                        worker(List())
-                    } else {
-                        worker(receivedWorkers)
-                    }
+                        } else {
+                            // If the worker has no agent, then it notifies the driver that it is ready
+                            replyTo ! SendTo(workerId, Set(), 1)
+                            AgentsCompleted(Map())
+                        }
+                        ctx.log.debug(f"Worker ${workerId} completes!")
+                    } 
+                    worker()
+                    
                 case AgentsCompleted(indexedMessages) =>
                     ctx.log.debug(f"Local agents in worker ${workerId} have completed!")
                     indexedMessages.foreach(i => {
@@ -382,6 +404,45 @@ class LocalAgent {
         }
 }
 
+// object TimeseriesController {
+//     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+//     @JsonSubTypes(
+//     Array(
+//         new JsonSubTypes.Type(value = classOf[Start], name = "startTimeseriesController"),
+//         new JsonSubTypes.Type(value = classOf[AgentsAdded], name = "agentsAdded")
+//     ))
+//     trait TimeseriesControllerEvent 
+//     final case class Start() extends TimeseriesControllerEvent with JsonSerializable
+//     final case class LogWorker(agents: List[Actor], elapsedTime: Int) extends AgentEvent with JsonSerializable
+
+//     val tsControllerServiceKey = ServiceKey[Start]("Start the timeseries controller")
+// }
+
+// class TimeseriesController {
+//     import TimeseriesControllerEvent._
+
+//     private var sim: Actor = null
+
+//     def apply(sim: Actor): Behavior[TimeseriesControllerEvent] = Behaviors.setup { ctx =>
+//         ctx.system.receptionist ! Receptionist.Register(Start, ctx.self)
+//         timeseriesController()
+//     }
+
+//     private def timeseriesController(): Behavior[TimeseriesControllerEvent] =
+//         Behaviors.receive[TimeseriesControllerEvent] { (ctx, message) =>
+//             message match {
+//                 case LogWorker(data, elapsedTime) => 
+//                     ctx.log.debug(f"Agent ${sim.id} receives ${messages.size} messages")
+                    
+//                     Behaviors.same
+//             }
+//         }.receiveSignal {
+//             case (context, PostStop) =>
+//                 context.log.debug(f"Agent ${sim.id} stopped")
+//                 Behaviors.stopped
+//         }
+// }
+
 object DriverWorkerExp {
     sealed trait Command
     final case class SpawnDriver(totalWorkers: Int, totalTurn: Int, messages: List[Message]) extends Command
@@ -392,7 +453,8 @@ object DriverWorkerExp {
     var cluster: Cluster = null
     var totalWorkers: Int = 0
     val stoppedWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
-    var activeWorkers: Set[Int] = Set()
+    var activeWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
+    var finalAgents: ConcurrentLinkedQueue[Actor] = new ConcurrentLinkedQueue[Actor]()
 
     def apply(totalTurn: Int, totalWorkers: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[Command] = 
         Behaviors.setup { ctx => 
@@ -404,12 +466,19 @@ object DriverWorkerExp {
             if (totalActors % totalWorkers > 0){
                 actorsPerWorker += 1
             }
+            stoppedWorkers.clear()
+            activeWorkers.clear()
+            finalAgents.clear()
+            
             ctx.log.debug(f"${actorsPerWorker} actors per worker")
 
             if (roles.exists(p => p.startsWith("Worker"))) {
                 ctx.log.warn(f"Creating a worker!")
-                val worker_id = roles.head.split("-").last.toInt                    
-                ctx.self ! SpawnWorker(worker_id, actors.slice(worker_id*actorsPerWorker, List((worker_id+1)*actorsPerWorker, totalActors).min), totalWorkers)
+                val worker_id = roles.head.split("-").last.toInt
+                val containedAgents = actors.slice(worker_id*actorsPerWorker, List((worker_id+1)*actorsPerWorker, totalActors).min)        
+                // if (containedAgents.size > 0){
+                    ctx.self ! SpawnWorker(worker_id, containedAgents, totalWorkers)
+                // }
             } 
             
             if (cluster.selfMember.hasRole("Driver")) {
@@ -421,7 +490,10 @@ object DriverWorkerExp {
                 ctx.log.warn(f"Standalone mode")
                 ctx.self ! SpawnDriver(totalWorkers, totalTurn, messages)
                 for (i <- Range(0, totalWorkers)){
-                    ctx.self ! SpawnWorker(i, actors.slice(i*actorsPerWorker, List((i+1)*actorsPerWorker, totalActors).min), totalWorkers)
+                    val containedAgents = actors.slice(i*actorsPerWorker, List((i+1)*actorsPerWorker, totalActors).min)        
+                    // if (containedAgents.size > 0){
+                        ctx.self ! SpawnWorker(i, containedAgents, totalWorkers)
+                    // }
                 }
             }
             waitTillFinish(Vector.empty)
@@ -437,7 +509,7 @@ object DriverWorkerExp {
 
                 case SpawnWorker(workerId, agents, totalWorkers) =>
                     val sim = ctx.spawn((new Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
-                    activeWorkers = activeWorkers + workerId
+                    activeWorkers.add(workerId)
                     ctx.watchWith(sim, WorkerStopped(workerId, agents))
                     Behaviors.same
                 
@@ -452,14 +524,25 @@ object DriverWorkerExp {
 
                 case WorkerStopped(workerId, agents) =>
                     if (cluster.selfMember.hasRole("Standalone")) {
-                        stoppedWorkers.add(workerId)
-                        if (activeWorkers.diff(stoppedWorkers.toSet).isEmpty){
-                            DriverWorkerRun.addStoppedAgents(finalAgents ++ agents)
-                            Behaviors.stopped {() =>
-                                ctx.system.terminate()
+                        ctx.log.warn(f"Worker stop signal received! ${workerId} Stopped workers: ${stoppedWorkers}")
+                        if (!stoppedWorkers.contains(workerId)){
+                            stoppedWorkers.add(workerId)
+                            if (activeWorkers.toSet.diff(stoppedWorkers.toSet).isEmpty){
+                                DriverWorkerRun.addStoppedAgents(finalAgents ++ agents)
+                                Behaviors.stopped {() =>
+                                    ctx.system.terminate()
+                                }
+                            } else {
+                                waitTillFinish(finalAgents ++ agents)
                             }
                         } else {
-                            waitTillFinish(finalAgents ++ agents)
+                            if (activeWorkers.toSet.diff(stoppedWorkers.toSet).isEmpty){
+                                Behaviors.stopped {() =>
+                                    ctx.system.terminate()
+                                }
+                            } else {
+                                waitTillFinish(finalAgents)
+                            }
                         }
                     } else {
                         Behaviors.stopped {() =>
