@@ -51,6 +51,8 @@ object SpecialInstructions {
 
   def asyncSend[T](message: T): Future[T] = ???
 
+  def onesideSend[T](message: T): Unit = ???
+
   /**
     * The syntax for Sim to check its mailbox.
     */
