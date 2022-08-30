@@ -362,14 +362,24 @@ class Lifter {
               code"${Const(methodInfo.defInGeneratedCode)}",
               // ScalaCode(f"wrapper_${methodSym}($p1.argss.flatten)")
               ScalaCode(code"$actorSelfVariable.handleNonblockingMessage($p1)"),
-              IfThenElse(
-                code"$p1.oneside==${Const(true)}",
+              LetBinding(
+                Option(resultMessageCall), 
                 CallMethod[Any](methodId, argss),
-                LetBinding(
-                  Option(resultMessageCall),
-                  CallMethod[Any](methodId, argss),
-                  ScalaCode(code"""$p1.reply($actorSelfVariable, $resultMessageCall)"""))
+                IfThenElse(
+                  code"$p1.oneside==${Const(true)}",
+                  NoOp(), 
+                  ScalaCode(code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")
+                )
               )
+              // Bug: following code doesn't work. IfThenElse doesnt handle nesting well
+              // IfThenElse(
+              //   code"""$p1.oneside==${Const(true)}""",
+              //   CallMethod[Any](methodId, argss),
+              //   LetBinding(
+              //     Option(resultMessageCall),
+              //     CallMethod[Any](methodId, argss),
+              //     ScalaCode(code"""$p1.reply($actorSelfVariable, $resultMessageCall)"""))
+              // )
             ),
             rest
           )
