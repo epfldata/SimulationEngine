@@ -14,10 +14,10 @@ object MainInit {
 
             val points = (1 to totalPoints).map(x => {
                 new Cell(Random.nextBoolean(), cfreq)
-            }).toList
+            })
 
             Torus2DGraph(points, width, height, neighborRadius)
-            points
+            points.toList
         }
     }
 }
