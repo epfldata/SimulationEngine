@@ -659,7 +659,7 @@ class Lifter {
               case scalacode: ScalaCode[_] => 
               case _                       =>
                 // println(Console.RED + s"Lifter warning: possible unsupported code: $cde" + Console.RESET)
-                throw new Exception("Unsupported code inside " + cde)
+                throw new Exception(s"Unsupported code in agent ${actorVarToStr(actorSelfVariable)}: " + cde)
             }
         }
         val f = ScalaCode(cde)
