@@ -31,7 +31,7 @@ class City(val population: List[Person], var delayInResponse: Int) extends Actor
     def main(): Unit = {
         total_population = population.size
         while (true) {
-            fs = population.map(i => asyncMessage(() => i.isInfected()))
+            fs = population.map(i => async_call(() => i.isInfected()))
             while (fs.exists(p => !p.isCompleted)){
               waitLabel(Turn, 1)
             }

@@ -63,7 +63,7 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
 
                 if ((health != "Susceptible") && (health != "Recover")) {
                     // report health status
-                    asyncMessage(() => country.report(health))
+                    async_call(() => country.report(health))
                     if (daysInfected == DiseaseParameter.stateDuration(health)) {
                         health = HealthStatus.change(health, vulnerability)
                         daysInfected = 0

@@ -536,11 +536,11 @@ class Lifter {
             cache += (cde -> f)
             f
           } else {
-            throw new Exception(f"Unable to find method ${msg.symbol} in ${cde}. Did you lift the receiver?")
+            throw new Exception(f"Unable to find method ${msg.symbol} for async_call(msg) in ${cde}. Did you lift the receiver?")
           }
           
         // asynchronously call a remote method
-        case code"SpecialInstructions.asyncMessage[$mt]((() => {${m@ MethodApplication(msg)}}: mt))" =>
+        case code"SpecialInstructions.async_call[$mt]((() => {${m@ MethodApplication(msg)}}: mt))" =>
           defInGeneratedCode = false
           if (methodsIdMap.get(msg.symbol.toString).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
@@ -575,7 +575,7 @@ class Lifter {
                         argss.remove(0)
                       } else {
                         println(s"msg: $msg, argss: $argss, mtd argss: ${mtd2.args.last}")
-                        throw new Exception("asyncMessage does't support local variables. Please use asyncSend.")
+                        throw new Exception("async_call(()=>msg) does't support local variables. Please use asyncSend.")
                       }
                     }
                   } else {
@@ -587,7 +587,7 @@ class Lifter {
                   }
                   curriedMtd = mtd2.args.head.head
                 }
-                case _ => throw new Exception(s"Error in asyncMessage! Please use asyncSend. $cde $recipientActorVariable $curriedMtd")
+                case _ => throw new Exception(s"Error in async_call(()=>msg)! $cde $recipientActorVariable $curriedMtd")
               }
           }
             AsyncSend[T, mt.Typ](
@@ -746,8 +746,8 @@ class Lifter {
             liftCode(y))
           Some(f.asInstanceOf[Algo[T]])
 
-        case code"SpecialInstructions.async_call[$mt]($a): meta.runtime.Future[mt]" =>
-          throw new Exception(s"Invalid async_call in ${actorName}! Did you mark the callee method with transparencyPropagating?")
+        // case code"SpecialInstructions.async_call[$mt]($a): meta.runtime.Future[mt]" =>
+        //   throw new Exception(s"Invalid async_call in ${actorName}! Did you mark the callee method with transparencyPropagating?")
 
         case code"${MethodApplication(ma)}:Any " =>
           val recipientActorVariable = ma.args.head.head.asInstanceOf[OpenCode[Actor]]

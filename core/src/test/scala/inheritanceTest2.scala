@@ -110,7 +110,7 @@ class CommunicatingVehicle(val neighbors: List[Vehicle]) extends Vehicle {
     private var f: List[Future[Int]] = null
     override def main(): Unit = {
         while (true) {
-            f = neighbors.map(n => asyncMessage(() => n.getPrice()))
+            f = neighbors.map(n => async_call(() => n.getPrice()))
             while (f.exists(i => !i.isCompleted)){
                 waitAndReply(1)
             }

@@ -23,7 +23,7 @@ class Vertex() extends Actor {
         while (true){
             connectedAgents.foreach(x => {
                 neighbor = x.asInstanceOf[Vertex]
-                asyncMessage(() => neighbor.API(id))
+                async_call(() => neighbor.API(id))
             })        
             waitAndReply(1)
         }

@@ -83,13 +83,13 @@ class FooBar() extends FooA {
             bar.__get___Name__
             bar.___get_Name___
             println("FooBar messages Foo asynchronously!")
-            asyncMessage(() => foo.get_Name__())
-            asyncMessage(() => foo.__get___Name__())
-            asyncMessage(() => foo.___get_Name___())
+            async_call(() => foo.get_Name__())
+            async_call(() => foo.__get___Name__())
+            async_call(() => foo.___get_Name___())
             println("FooBar messages Bar asynchronously!")
-            asyncMessage(() => bar.get_Name__())
-            asyncMessage(() => bar.__get___Name__())
-            asyncMessage(() => bar.___get_Name___())
+            async_call(() => bar.get_Name__())
+            async_call(() => bar.__get___Name__())
+            async_call(() => bar.___get_Name___())
         }
     }
 }

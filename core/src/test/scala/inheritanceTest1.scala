@@ -61,7 +61,7 @@ class Student(var neighbor: Teacher) extends Person {
     def main(): Unit = {
         while (true) {
             // Ask what does the neighbor do
-            f = asyncMessage(() => neighbor.work())
+            f = async_call(() => neighbor.work())
             while (!f.isCompleted){
                 waitAndReply(1)
             }

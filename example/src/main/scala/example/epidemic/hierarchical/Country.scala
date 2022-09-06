@@ -17,7 +17,7 @@ class Country(val cities: List[City], var priority: Int, var delayInResponse: In
         concern_factor = 100 / priority
         println("Country "+ id + " has priority " + priority)
         while (true) {
-            fs = cities.map(i => asyncMessage(() => i.getLatestInfectiousRatio()))
+            fs = cities.map(i => async_call(() => i.getLatestInfectiousRatio()))
             while (fs.exists(p => !p.isCompleted)){
               waitLabel(Turn, 1)
             }

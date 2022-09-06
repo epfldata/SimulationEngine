@@ -14,7 +14,7 @@ class Sender(val r: Receiver) extends Actor {
 
     def main(): Unit = {
         while (true){
-            asyncMessage(() => r.rpc1())
+            async_call(() => r.rpc1())
             waitAndReply(1)
         }
     }

@@ -49,7 +49,7 @@ class Cell(var identity: watorCell, var cfreq: Int) extends Actor {
                 // See if there is any fish or shark around
                 // println(id + " sends messages to neighbors!")
 
-                peekNeighbors = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => asyncMessage[watorCell](() => v.getIdentity))
+                peekNeighbors = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => async_call[watorCell](() => v.getIdentity))
 
                 while (!(peekNeighbors.nonEmpty && peekNeighbors.forall(x => x.isCompleted))) {
                     waitAndReply(1)
@@ -83,7 +83,7 @@ class Cell(var identity: watorCell, var cfreq: Int) extends Actor {
                     if (emptySpot.isDefined) {
                         targetCell = emptySpot.get
 
-                        tryMoving = asyncMessage[Boolean](() => emptySpot.get.relocate(identity))
+                        tryMoving = async_call[Boolean](() => emptySpot.get.relocate(identity))
 
                         // println(id + " tries to swim to nearby water!")
                         while (!tryMoving.isCompleted) {
@@ -112,7 +112,7 @@ class Cell(var identity: watorCell, var cfreq: Int) extends Actor {
                             targetCell = emptySpot.get
                         } 
 
-                        tryMoving = asyncMessage[Boolean](() => targetCell.relocate(identity))
+                        tryMoving = async_call[Boolean](() => targetCell.relocate(identity))
 
                         while (!tryMoving.isCompleted) {
                             waitAndReply(1)

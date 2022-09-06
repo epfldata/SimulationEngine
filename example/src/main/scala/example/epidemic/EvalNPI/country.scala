@@ -36,7 +36,7 @@ class Country(val hospitalCapacity: Int, val dayUnit: Int) extends Actor {
 
   def main(): Unit = {
     while (true) {
-      neighborPolicyFutures = otherCountries.map(x => asyncMessage[Int](() => x.getPolicy()))
+      neighborPolicyFutures = otherCountries.map(x => async_call[Int](() => x.getPolicy()))
 
       if (neighborPolicyFutures.forall(p => p.isCompleted)) {
         neighborPolicies = neighborPolicyFutures.map(x => x.popValue.get)
@@ -46,11 +46,11 @@ class Country(val hospitalCapacity: Int, val dayUnit: Int) extends Actor {
       if ((hospitalCapacity > 0.8*totalHospitalized) || neighborPolicies.forall(x => x == 2)) {
         // Lock down
         policy = 2
-        citizens.map(p => asyncMessage(() => p.learnPolicy(policy)))
+        citizens.map(p => async_call(() => p.learnPolicy(policy)))
       } else if ((hospitalCapacity > 0.5*totalHospitalized) || neighborPolicies.forall(x => x==1)) {
         // Quarantine
         policy = 1
-        citizens.map(x => asyncMessage(() => x.learnPolicy(policy)))
+        citizens.map(x => async_call(() => x.learnPolicy(policy)))
       }
       // println(records)
       records.clear()

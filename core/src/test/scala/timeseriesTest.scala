@@ -22,7 +22,7 @@ class CounterSim(val n: CounterSim) extends Actor {
     def main(): Unit = {
         while (true){
             if (n != null) {
-                asyncMessage(() => n.inc()) 
+                async_call(() => n.inc()) 
                 // println(id + " sends a message to increment the neighbor!")
             }
             handleRPC()

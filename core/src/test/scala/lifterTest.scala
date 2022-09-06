@@ -36,7 +36,7 @@ class MyClass() extends Actor {
         // Trigger exception
         // neighbors.map(i => {
         //     val tmp = scala.util.Random.nextInt()
-        //     asyncMessage(() => i.asInstanceOf[MyClass].foo(tmp, 30, 43)).isCompleted
+        //     async_call(() => i.asInstanceOf[MyClass].foo(tmp, 30, 43)).isCompleted
         // })
         neighbors.map(i => {
             val tmp = scala.util.Random.nextInt()

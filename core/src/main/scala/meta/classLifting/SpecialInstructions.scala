@@ -46,9 +46,14 @@ object SpecialInstructions {
     * @tparam T the return type of the message method
     * @return a Future object that holds the return value of the async message for later retrieval
     */
-  @deprecated("this method will be removed", "TickTalk 1.4")
-  def asyncMessage[T](message: () => T): Future[T] = ???
+  def async_call[T](message: () => T): Future[T] = ???
 
+  /**
+    * Annotate the RPC with transparencyPropagation. All references to the RPC will be delayed, including local calls
+    *
+    * @param message
+    * @return
+    */
   def async_call[T](message: T): Future[T] = ???
 
   def send[T](message: T): Unit = ???
