@@ -7,6 +7,7 @@ sealed trait MessagingLayer
 final case object BaseMessagingLayer extends MessagingLayer
 // Distributed
 final case object AkkaMessagingLayer extends MessagingLayer
+final case object AkkaDriverWorker extends MessagingLayer
 final case object SparkMessagingLayer extends MessagingLayer
 
 trait SimsRunner[MessagingLayer] {
@@ -26,6 +27,14 @@ object SimsRunner {
         new SimsRunner[AkkaMessagingLayer.type] {
             def run(c: SimulationConfig): SimulationSnapshot = {
                 AkkaRun(c.actors, c.totalTurn, false, c.messages, c.role, c.port)
+            }
+        }
+    }
+
+    implicit val akkaDriverWorkerSimulation = {
+        new SimsRunner[AkkaDriverWorker.type] {
+            def run(c: SimulationConfig): SimulationSnapshot = {
+                DriverWorkerRun(c.actors, c.totalTurn, false, c.messages, c.role, c.port)
             }
         }
     }

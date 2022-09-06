@@ -19,10 +19,10 @@ object Example extends App {
                 } else {
                     new Cell(example.cellularAutomata.wator.Water(0), cfreq)
                 }
-            }).toList
+            })
 
             lib.Graph.Torus2DGraph(points, width, height, neighborRadius)
-            points
+            points.toList
         }
     }
     

@@ -3,11 +3,11 @@ package meta.deep.algo
 import meta.deep.IR.Predef._
 import meta.runtime.{Actor}
 
-case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
+case class OnesideSend[R](actorFrom: OpenCode[Actor],
                            actorRef: OpenCode[Actor],
                            methodSym: String,
                            argss: List[List[OpenCode[_]]])
-                          (implicit val R: CodeType[R], implicit val T: CodeType[T])
+                          (implicit val R: CodeType[R])
     extends Algo[R] {
 
   override def codegen(): Unit = {
@@ -25,17 +25,12 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
       code"""
         val sender = $actorFrom;
         val receiver = $actorRef;
-        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, false, ${Const(methodSym)}, $convertedArgs);
-        var future = meta.runtime.Future[$T](requestMessage.sessionId); 
+        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, true, ${Const(methodSym)}, $convertedArgs);
         sender.sendMessage(requestMessage);
-        sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.runtime.Message) => {
-          future.setValue(response.asInstanceOf[meta.runtime.ResponseMessage].arg.asInstanceOf[$T])
-        })
-        ${AlgoInfo.returnValue} := future
         ()"""
 
       AlgoInfo.stateGraph.append(
-        EdgeInfo("Async with_reply f1",
+        EdgeInfo("OnesideSend without reply f1",
           CodeNodePos(AlgoInfo.posCounter),
           CodeNodePos(AlgoInfo.posCounter + 1),
           f1,

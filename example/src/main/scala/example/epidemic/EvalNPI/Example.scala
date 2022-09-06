@@ -18,7 +18,7 @@ object MainInit {
                     val p = new Person(Random.nextInt(90) + 10, dayUnit)
                     p.country = x 
                     p
-                }).toList
+                })
 
                 // Stochastic block model (50 blocks, q=0)
                 if (sbm){
@@ -33,14 +33,14 @@ object MainInit {
                 (0 to (Random.nextInt(10)+4)).foreach(_ => {
                     citizens(Random.nextInt(population)).health = "Infectious"
                 })
-                x.citizens = citizens
+                x.citizens = citizens.toList
                 countries.append(x)
-                x :: citizens
+                x :: citizens.toList
             })
 
             // Erdos-Renyi model
             if (!sbm) {
-                lib.Graph.ErdosRenyiGraph(allCitizens.toList, p)
+                lib.Graph.ErdosRenyiGraph(allCitizens, p)
             }
            
             Range(0, totalCountries).foreach(x => {

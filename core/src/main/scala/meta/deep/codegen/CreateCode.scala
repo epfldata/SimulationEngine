@@ -177,7 +177,9 @@ class CreateCode(initCode: String,
     val response = m.methodInfo match {
       ${methodCases.split("\n").mkString("\n" + " "*4)}
     }
-    m.reply(this, response)
+    if (!m.oneside){
+      m.reply(this, response)
+    }
   }
   """
 

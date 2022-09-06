@@ -21,10 +21,10 @@ object Example extends App {
                     c.currentPlayer = Some(example.predatorPrey.Player(true))   // NPCs
                 }
                 c
-            }).toList
+            })
 
             Torus2DGraph(points, width, height, neighborRadius)
-            points
+            points.toList
         }
     }
     

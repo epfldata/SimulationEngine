@@ -45,6 +45,47 @@ object benchmarkDistTest {
     }
 }
 
+object benchmarkDistTest2 {
+    def main(args: Array[String]): Unit = {
+        val hostRole = args(0)
+        val totalWorkers: Int = args(1).toInt
+        val hostPort: Int = args(2).toInt
+        val latency: Int = args(3).toInt
+        var totalTurns: Int = args(4).toInt
+        val container: Int = args(5).toInt
+        val name: String = args(6)
+
+        val output: String = f"${name}_dist.csv"
+        val pw = new PrintWriter(new FileOutputStream(new File(output),false))
+
+        val start_initialization: Long = System.currentTimeMillis()
+        val agents = name match {
+            case "gameOfLife10k" => generated.example.gameOfLife.InitData(1000, 10*totalWorkers, 1)
+            case "stockMarket10k" => generated.example.stockMarket.InitData(10000*totalWorkers)
+            case "transportation10k" => generated.example.transportation.InitData(100*totalWorkers, 9000*totalWorkers, 900*totalWorkers)
+            case _ => throw new Exception(f"Invalid example name ${name}!")
+        }
+        val end_initialization: Long = System.currentTimeMillis()
+        val time_generating_agents = end_initialization - start_initialization
+        pw.write(f"Generating agents take ${time_generating_agents} ms\n")
+
+        val c = new SimulationConfig(agents, totalTurn = totalTurns, latencyBound=latency, role=hostRole, port=hostPort)
+            
+        val avgTime = if (container == 0){
+            meta.runtime.simulation.SimExperiment.totalAgents = agents.size
+            StartSimulation.benchAvg[AkkaDriverWorker.type](c)
+        } else {
+            meta.runtime.simulation.SimExperiment.totalAgents = container * totalWorkers
+            val containerConfig = c.staticPartition(container)(BoundedLatency)
+            StartSimulation.benchAvg[AkkaDriverWorker.type](containerConfig)
+        }
+        println(f"Average time ${avgTime}")
+        pw.write(f"${name},${totalWorkers},${container},${latency},${avgTime}")
+        pw.flush()
+        pw.close()
+    }
+}
+
 object ResetDistTest {
     def main(args: Array[String]): Unit = {
         val hostRole = args(0)

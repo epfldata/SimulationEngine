@@ -363,10 +363,23 @@ class Lifter {
               // ScalaCode(f"wrapper_${methodSym}($p1.argss.flatten)")
               ScalaCode(code"$actorSelfVariable.handleNonblockingMessage($p1)"),
               LetBinding(
-              Option(resultMessageCall),
-              CallMethod[Any](methodId, argss),
-              ScalaCode(
-                code"""$p1.reply($actorSelfVariable, $resultMessageCall)"""))
+                Option(resultMessageCall), 
+                CallMethod[Any](methodId, argss),
+                IfThenElse(
+                  code"$p1.oneside==${Const(true)}",
+                  NoOp(), 
+                  ScalaCode(code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")
+                )
+              )
+              // Bug: following code doesn't work. IfThenElse doesnt handle nesting well
+              // IfThenElse(
+              //   code"""$p1.oneside==${Const(true)}""",
+              //   CallMethod[Any](methodId, argss),
+              //   LetBinding(
+              //     Option(resultMessageCall),
+              //     CallMethod[Any](methodId, argss),
+              //     ScalaCode(code"""$p1.reply($actorSelfVariable, $resultMessageCall)"""))
+              // )
             ),
             rest
           )
@@ -489,6 +502,24 @@ class Lifter {
 
           cache += (cde -> f)
           f
+
+        case code"SpecialInstructions.onesideSend[$mt]({${m@ MethodApplication(msg)}}: mt)" =>
+          if (methodsIdMap.get(msg.symbol.toString).isDefined) {
+            defInGeneratedCode = false
+            val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
+            val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
+            val mname = msg.symbol.asTerm.name.toString
+
+            val f = OnesideSend[T](
+                      actorSelfVariable.toCode,
+                      recipientActorVariable,
+                      mname,
+                      argss)
+            cache += (cde -> f)
+            f
+          } else {
+            throw new Exception(f"Unable to find method ${msg.symbol} in ${cde}. Did you lift the receiver?")
+          }
 
         case code"SpecialInstructions.asyncSend[$mt]({${m@ MethodApplication(msg)}}: mt)" =>
           if (methodsIdMap.get(msg.symbol.toString).isDefined) {
