@@ -91,6 +91,14 @@ class Actor extends Serializable {
     }
   }
 
+  final def receiveMessage(): Option[Message] = {
+    if (receivedMessages.isDefinedAt(0)){
+      Some(receivedMessages.remove(0))
+    } else {
+      None
+    }
+  }
+
   /**
     * Adds a list of messages to the agent
     *
