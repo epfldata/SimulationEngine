@@ -28,21 +28,21 @@ class Country(val cities: List[City], var priority: Int, var delayInResponse: In
               if (infectious_ratios.exists(p => p > 0)){
                 infectious_ratios.zipWithIndex.foreach(i => if (i._1 > 0) {
                   updated_concern = List(3, (i._1 * concern_factor).toInt).max
-                  onesideSend(cities(i._2).nationalConcern(updated_concern))
+                  send(cities(i._2).nationalConcern(updated_concern))
                 })
               }
             } else if (priority == 2) {  // some what care
               if (infectious_ratios.exists(p => p > 0.1)){
                 infectious_ratios.zipWithIndex.foreach(i => if (i._1 > 0.1) {
                   updated_concern = List(3, (i._1 * concern_factor).toInt).max
-                  onesideSend(cities(i._2).nationalConcern(updated_concern))
+                  send(cities(i._2).nationalConcern(updated_concern))
                 })
               }
             } else { // only if necessary
               if (infectious_ratios.exists(p => p > 0.3)){
                 infectious_ratios.zipWithIndex.foreach(i => if (i._1 > 0.3) {
                   updated_concern = List(3, (i._1 * concern_factor).toInt).max
-                  onesideSend(cities(i._2).nationalConcern(updated_concern))
+                  send(cities(i._2).nationalConcern(updated_concern))
                 })
               }
             }

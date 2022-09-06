@@ -38,7 +38,7 @@ class City(val population: List[Person], var delayInResponse: Int) extends Actor
             total_infected = fs.map(i => i.popValue.get).filter(i => i).length
             println("Total infected people in city " + id + " is " + total_infected + " total population is " + total_population)
             if (total_infected > (1.0/national_concern) * total_population) {
-              population.foreach(i => onesideSend(i.updatedRegulation(national_concern)))
+              population.foreach(i => send(i.updatedRegulation(national_concern)))
             }
             waitAndReply(delayInResponse)
         }
