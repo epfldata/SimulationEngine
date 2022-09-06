@@ -28,7 +28,7 @@ class MyClass() extends Actor {
     def testLocalVarBindings1(): Unit = {
         neighbors.foreach(i => {
             val tmp = scala.util.Random.nextInt()
-            asyncSend(i.asInstanceOf[MyClass].foo1(tmp)).isCompleted
+            async_call(i.asInstanceOf[MyClass].foo1(tmp)).isCompleted
         })
     }
 
@@ -40,7 +40,7 @@ class MyClass() extends Actor {
         // })
         neighbors.map(i => {
             val tmp = scala.util.Random.nextInt()
-            asyncSend(i.asInstanceOf[MyClass].foo(tmp, 30, 43)).isCompleted
+            async_call(i.asInstanceOf[MyClass].foo(tmp, 30, 43)).isCompleted
         })
     }
 

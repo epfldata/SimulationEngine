@@ -29,10 +29,11 @@ object MainInit {
                 ans.append(city)
                 city
               }).toList
+              // cities.foreach(c => i.population.foreach(p =>))
               ans.append(new Country(cities, priorities(nation), 24))
             })
 
-
+            lib.Graph.ErdosRenyiGraph(ans.filter(a => a.isInstanceOf[Person]), p)
             ans.toList
       }
     }

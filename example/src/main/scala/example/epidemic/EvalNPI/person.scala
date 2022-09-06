@@ -49,7 +49,7 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
                 // Meet with contacts 
                 val selfRisk = DiseaseParameter.infectiousness(health, symptomatic)
                 if (!connectedAgents.isEmpty) {
-                    f = connectedAgents.map(x => asyncSend(x.asInstanceOf[Person].makeContact(selfRisk)))
+                    f = connectedAgents.map(x => async_call(x.asInstanceOf[Person].makeContact(selfRisk)))
 
                     while (f.exists(x => !x.isCompleted)){
                         waitAndReply(1)

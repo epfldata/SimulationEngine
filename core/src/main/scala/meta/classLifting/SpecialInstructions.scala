@@ -49,7 +49,7 @@ object SpecialInstructions {
   @deprecated("this method will be removed", "TickTalk 1.4")
   def asyncMessage[T](message: () => T): Future[T] = ???
 
-  def asyncSend[T](message: T): Future[T] = ???
+  def async_call[T](message: T): Future[T] = ???
 
   def send[T](message: T): Unit = ???
 

@@ -58,11 +58,11 @@ class Bus() extends Vehicle {
         avgTimePerLocation = 10
         // Register the bus with all relevant locations
         route.foreach(r => {
-            asyncSend(r.register(this, route))
+            async_call(r.register(this, route))
         })
 
         // Initially the bus is at source
-        asyncSend(route(0).arrive(this))
+        async_call(route(0).arrive(this))
         waitAndReply(1)
 
         while (true) {
@@ -93,10 +93,10 @@ class Bus() extends Vehicle {
             // Passengers can not get on or off bus while driving
             waitLabel(Turn, avgTimePerLocation)
             // Inform the location that the vehicle has arrived 
-            val f = asyncSend(nextStop.arrive(this))
+            val f = async_call(nextStop.arrive(this))
             // Inform passengers about the nextStop stop
             futures = passengers.map(p => {
-                asyncSend(p.nowArrive(nextStop))
+                async_call(p.nowArrive(nextStop))
             })
             // Wait until all passengers who have arrived leave
             while(!(f::futures).forall(i => i.isCompleted)){

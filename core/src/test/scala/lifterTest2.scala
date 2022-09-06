@@ -26,7 +26,7 @@ class MyClass3(var s: School) extends Actor {
     def hello(): String = c
 
     def main(): Unit = {
-        asyncSend(s.schoolName())
+        async_call(s.schoolName())
         println("Hello world!")
     }
 }
@@ -49,7 +49,7 @@ class MyClass4() extends Actor {
 class MyClass5(var s: MyClass4) extends Actor {
     
     def main(): Unit = {
-        asyncSend[String](s.hello())
+        async_call[String](s.hello())
     }
 }
 

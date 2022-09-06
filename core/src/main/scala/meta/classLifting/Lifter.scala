@@ -521,7 +521,7 @@ class Lifter {
             throw new Exception(f"Unable to find method ${msg.symbol} in ${cde}. Did you lift the receiver?")
           }
 
-        case code"SpecialInstructions.asyncSend[$mt]({${m@ MethodApplication(msg)}}: mt)" =>
+        case code"SpecialInstructions.async_call[$mt]({${m@ MethodApplication(msg)}}: mt)" =>
           if (methodsIdMap.get(msg.symbol.toString).isDefined) {
             defInGeneratedCode = false
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
@@ -746,8 +746,8 @@ class Lifter {
             liftCode(y))
           Some(f.asInstanceOf[Algo[T]])
 
-        case code"SpecialInstructions.asyncSend[$mt]($a): meta.runtime.Future[mt]" =>
-          throw new Exception(s"Invalid asyncSend in ${actorName}! Did you mark the callee method with transparencyPropagating?")
+        case code"SpecialInstructions.async_call[$mt]($a): meta.runtime.Future[mt]" =>
+          throw new Exception(s"Invalid async_call in ${actorName}! Did you mark the callee method with transparencyPropagating?")
 
         case code"${MethodApplication(ma)}:Any " =>
           val recipientActorVariable = ma.args.head.head.asInstanceOf[OpenCode[Actor]]

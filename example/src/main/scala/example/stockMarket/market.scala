@@ -20,7 +20,7 @@ class Market(val traders: List[Trader]) extends Actor {
         stock.priceAdjustmentFactor = 0.1 / traders.size
         while (true) {
             marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
-            futures = traders.map(x => asyncSend(x.action(stockPrice, dividendPerShare, marketState)))
+            futures = traders.map(x => async_call(x.action(stockPrice, dividendPerShare, marketState)))
             while (!futures.forall(x => x.isCompleted)){
                 waitAndReply(1)
             }
