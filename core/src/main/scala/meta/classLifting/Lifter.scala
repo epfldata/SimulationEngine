@@ -65,7 +65,7 @@ object Lifter {
     cde analyse {
       case code"SpecialInstructions.waitAndReply($y: Double): Unit" =>
         return false
-      case code"SpecialInstructions.handleMessages(): Unit" =>
+      case code"SpecialInstructions.handleRPC(): Unit" =>
         return false
     }
     true
@@ -447,7 +447,7 @@ class Lifter {
                             liftCode(elseBody))
           f.asInstanceOf[Algo[T]]
 
-        case code"SpecialInstructions.handleMessages()" =>
+        case code"SpecialInstructions.handleRPC()" =>
           defInGeneratedCode = false
           val handleMessage = CallMethod[Unit](handleMessageId, List(List()))
           cache += (cde -> handleMessage)

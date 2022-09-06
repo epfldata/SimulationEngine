@@ -40,7 +40,7 @@ class MyClass4() extends Actor {
 
     def main(): Unit = {
         println("Hello world!")
-        handleMessages
+        handleRPC()
     }
 }
 

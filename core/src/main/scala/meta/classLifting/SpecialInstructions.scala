@@ -56,7 +56,7 @@ object SpecialInstructions {
   /**
     * The syntax for Sim to check its mailbox.
     */
-  def handleMessages(): Unit = ???
+  def handleRPC(): Unit = ???
 
   /**
     * Helper methods to inform lifter which variables or methods require private or override modifier

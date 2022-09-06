@@ -55,7 +55,7 @@ class Country(val hospitalCapacity: Int, val dayUnit: Int) extends Actor {
       // println(records)
       records.clear()
       waitLabel(Turn, dayUnit)
-      handleMessages()
+      handleRPC()
     }
   }
 }

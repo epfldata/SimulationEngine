@@ -25,7 +25,7 @@ class CounterSim(val n: CounterSim) extends Actor {
                 asyncMessage(() => n.inc()) 
                 // println(id + " sends a message to increment the neighbor!")
             }
-            handleMessages()
+            handleRPC()
             // println(id + " counter value is " + state)
             waitAndReply(1)
         }

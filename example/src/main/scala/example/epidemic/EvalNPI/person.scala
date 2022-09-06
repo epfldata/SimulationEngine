@@ -72,7 +72,7 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
                     }
                 }
                 waitLabel(Turn, dayUnit - hourCounter)
-                handleMessages()
+                handleRPC()
                 hourCounter = 0
             } else {
                 waitLabel(Turn, dayUnit)
