@@ -13,7 +13,7 @@ val paradiseVersion = "2.1.0"
 val breezeVersion = "0.13.2"
 val scalaTestVersion = "3.1.2"
 val squidVersion = "0.4.1-SNAPSHOT"
-val sparkVersion = "3.0.1"
+val sparkVersion = "3.3.0"
 val graphVizVersion = "0.10.0"
 val akkaVersion = "2.6.14"
 val scalapbVersion = "1.0.6"
@@ -44,8 +44,8 @@ lazy val akkaSettings = Seq(
 )
 
 lazy val sparkSettings = Seq(
-  libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion,
-  libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion,
+  libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
+  libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
 )
 
 // Enable graph drawing when debugging
@@ -53,14 +53,14 @@ lazy val graphSettings = Seq(
   libraryDependencies += "guru.nidi" % "graphviz-java" % graphVizVersion,
 )
 
-lazy val protobufSettings = Seq(
-  libraryDependencies ++= Seq(
-    "com.trueaccord.scalapb" %% "scalapb-runtime" % "0.6.7" % "protobuf"
-  ),
-  Compile / PB.targets := Seq(
-    scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
-  )
-)
+// lazy val protobufSettings = Seq(
+//   libraryDependencies ++= Seq(
+//     "com.trueaccord.scalapb" %% "scalapb-runtime" % "0.6.7" % "protobuf"
+//   ),
+//   Compile / PB.targets := Seq(
+//     scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
+//   )
+// )
 
 lazy val noMessaging = (project in file("ecosim"))
   .settings(
@@ -70,7 +70,7 @@ lazy val noMessaging = (project in file("ecosim"))
 lazy val core = (project in file("core"))
   .settings(
     name := f"${project_name}-core",
-    commonSettings, squidSettings, graphSettings, akkaSettings, sparkSettings, protobufSettings,
+    commonSettings, squidSettings, graphSettings, akkaSettings, sparkSettings,
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
     Test / parallelExecution := false,
   )
@@ -122,7 +122,31 @@ lazy val genExample = (project in file("generated"))
     Test / parallelExecution := false,
     libraryDependencies += "org.plotly-scala" %%% "plotly-render" % "0.8.2",
     commonSettings, akkaSettings, sparkSettings,
-  )
-  // .settings(multiJvmSettings: _*)
-  // .configs(MultiJvm)
-  .dependsOn(core, library, example, gui)
+  ).dependsOn(core, library, example, gui)
+
+// Separate out Spark 
+lazy val genExampleSpark = (project in file("generated-spark"))
+  .settings(
+    name := f"${project_name}-genExampleSpark",
+    Test / parallelExecution := false,
+    commonSettings, sparkSettings,
+    excludeDependencies += "commons-logging" % "commons-logging",
+    assemblyMergeStrategy in assembly := {
+      case PathList("io", "netty", xs @ _*)               => MergeStrategy.first
+      case PathList("google", "protobuf", xs @ _*)        => MergeStrategy.first
+      case PathList("com", "google", "protobuf", xs @ _*) => MergeStrategy.first
+      case PathList("scalapb", xs @ _*)                   => MergeStrategy.first
+      case "application.conf"                             => MergeStrategy.concat
+      case "reference.conf"                               => MergeStrategy.concat
+      case "module-info.class"                            => MergeStrategy.concat
+      case "META-INF/io.netty.versions.properties"        => MergeStrategy.first
+      case "META-INF/native/libnetty-transport-native-epoll.so" =>
+        MergeStrategy.first
+      case n if n.endsWith(".txt")   => MergeStrategy.concat
+      case n if n.endsWith("NOTICE") => MergeStrategy.concat
+      case "logback.xml" => MergeStrategy.first 
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    }
+  ).dependsOn(core, library, example)
