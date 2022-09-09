@@ -81,7 +81,7 @@ class Cell(val stepUnit: Int) extends Actor {
         while (true) {
             // At each game time unit
             if (currentPlayer.isDefined){
-                lookAround = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => async_call[Int](() => v.getIdentity()))
+                lookAround = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => async_call[Int](() => v.getIdentity(), 1))
 
                 while (!lookAround.forall(x => x.isCompleted)) {
                     waitAndReply(1)
@@ -99,7 +99,7 @@ class Cell(val stepUnit: Int) extends Actor {
                         if (sortedCells.last._1 == predatorPrey.playerEncoding && sortedCells.head._1==predatorPrey.emptyEncoding) {
                             player = currentPlayer.get
                             emptyCell = connectedAgents(sortedCells.head._2).asInstanceOf[Cell]
-                            async_call(() => emptyCell.playerMove(player))
+                            async_call(() => emptyCell.playerMove(player), 1)
                             currentPlayer = None
                         }
                     } else {
@@ -107,7 +107,7 @@ class Cell(val stepUnit: Int) extends Actor {
                         if (sortedCells.head._1<predatorPrey.playerEncoding) {
                             player = currentPlayer.get
                             emptyCell = connectedAgents(sortedCells.head._2).asInstanceOf[Cell]
-                            async_call(() => emptyCell.playerMove(player))
+                            async_call(() => emptyCell.playerMove(player), 1)
                             currentPlayer = None
                         }
                     }

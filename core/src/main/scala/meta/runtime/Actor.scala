@@ -38,6 +38,8 @@ class Actor extends Serializable {
 
   var proxyIds: List[AgentId] = List(id)
 
+  var time: Int = 0
+  
   var deleted: Boolean = false
 
   // a variable denoting whether we can relax the consistency constraint and allow concurrent copies 
@@ -111,13 +113,13 @@ class Actor extends Serializable {
           .get(x.sessionId)
           .isEmpty))
     // Only invoke handler callback If the agent is not a container agent
-
+    // Invoke handler only if the latency bound matches
     if (proxyIds.size == 1) {
       messages
       .filter(
         x =>
           responseListeners.get(x.sessionId).isDefined && x
-            .isInstanceOf[ResponseMessage])
+            .isInstanceOf[ResponseMessage] && (time == x.send_time + x.latency))
       .foreach(x => {
         val handler = responseListeners(x.sessionId)
         responseListeners.remove(x.sessionId)
@@ -148,7 +150,9 @@ class Actor extends Serializable {
   }
 
   /**
-    * This function removes all receivedMessages of type RequestMessage from the receivedMessages list. Process nonblocking messages first to ensure the causal relationship between the nonblocking messages and blocking messages (if a blocking message follows some non-blocking messages and arbitrary actions in between)
+    * This function removes all receivedMessages of type RequestMessage from the receivedMessages list that should be processed. 
+    * Process nonblocking messages first to ensure the causal relationship between the nonblocking messages and blocking messages 
+    * (if a blocking message follows some non-blocking messages and arbitrary actions in between)
     * and returns them to the method caller
     * @return a list of receivedMessages of type RequestMessage
     */
@@ -157,13 +161,13 @@ class Actor extends Serializable {
       .filter(_.isInstanceOf[RequestMessage])
       .map(_.asInstanceOf[RequestMessage])
       .sortBy(x => x.blocking)  // non-blocking messages are processed first
-    this.receivedMessages --=
-      this.receivedMessages.filter(_.isInstanceOf[RequestMessage])
+      .filter(m => (m.send_time + m.latency)==time)
+    this.receivedMessages --= rM
     rM.toList
   }
 
   /**
-    * This function removes all receivedMessages of type ResponseMessage from the receivedMessages list
+    * This function removes all receivedMessages of type ResponseMessage from the receivedMessages list that should be processed
     * and returns them to the method caller
     * @return a list of receivedMessages of type ResponseMessage
     */
@@ -171,8 +175,8 @@ class Actor extends Serializable {
     val rM = this.receivedMessages
       .filter(_.isInstanceOf[ResponseMessage])
       .map(_.asInstanceOf[ResponseMessage])
-    this.receivedMessages --=
-      this.receivedMessages.filter(_.isInstanceOf[ResponseMessage])
+      .filter(m => (m.send_time + m.latency)==time)
+    this.receivedMessages --= rM
     rM.toList
   }
 

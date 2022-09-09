@@ -7,6 +7,7 @@ import meta.deep.IR
 import meta.runtime.{Actor}
 import meta.API._
 import org.scalatest.FlatSpec
+import squid.lib.transparencyPropagating
 
 @lift
 class Vertex() extends Actor {
@@ -15,7 +16,9 @@ class Vertex() extends Actor {
 
     private var neighbor: Vertex = null
     
+    @transparencyPropagating
     def API(rid: Long): Unit = {
+        // println(id + " receives message from " + rid)
         counter = counter + 1
     }
 
@@ -23,8 +26,8 @@ class Vertex() extends Actor {
         while (true){
             connectedAgents.foreach(x => {
                 neighbor = x.asInstanceOf[Vertex]
-                async_call(() => neighbor.API(id))
-            })        
+                send(neighbor.API(id), 1)
+            })
             waitAndReply(1)
         }
     }

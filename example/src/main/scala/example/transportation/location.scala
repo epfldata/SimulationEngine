@@ -25,7 +25,7 @@ class Location() extends Actor {
     }
 
     // Passengers join the waiting list
-    // @transparencyPropagating
+    @transparencyPropagating
     def waitForVehicle(p: Passenger, dest: Location): Unit = {
         // println("Passenger " + p.id + " waits at location " + name)
         if (!waitingPassengers.contains(p)){
@@ -51,7 +51,7 @@ class Location() extends Actor {
             // For each passenger, inform her about possible vehicles
             futures2 = waitingPassengers.map(p => {
                 val possibleVehicles = vehiclesArrived.filter(v => dashboard(v).contains(destinations(p)))
-                async_call(p.boardVehicle(possibleVehicles))
+                async_call(p.boardVehicle(possibleVehicles), 1)
             })
             // Wait until all passengers have either boarded or learned not to board
             while (!futures2.forall(x => x.isCompleted)){
@@ -63,7 +63,7 @@ class Location() extends Actor {
             // println(id + " has " + vehiclesArrived.length + " waiting vehicles")
             // After all passengers have boarded, inform vehicles to continue
             futures3 = vehiclesArrived.map(x => {
-                async_call(x.continue())
+                async_call(x.continue(), 1)
             })
             // Wait until all waiting vehicles have left
             while (!futures3.forall(x => x.isCompleted)){

@@ -46,7 +46,7 @@ object SpecialInstructions {
     * @tparam T the return type of the message method
     * @return a Future object that holds the return value of the async message for later retrieval
     */
-  def async_call[T](message: () => T): Future[T] = ???
+  def async_call[T](message: () => T, latency: Int): Future[T] = ???
 
   /**
     * Annotate the RPC with transparencyPropagation. All references to the RPC will be delayed, including local calls
@@ -54,9 +54,9 @@ object SpecialInstructions {
     * @param message
     * @return
     */
-  def async_call[T](message: T): Future[T] = ???
+  def async_call[T](message: T, latency: Int): Future[T] = ???
 
-  def send[T](message: T): Unit = ???
+  def send[T](message: T, latency: Int): Unit = ???
 
   /**
     * The syntax for Sim to check its mailbox.

@@ -3,9 +3,10 @@ package meta.deep.algo
 import meta.deep.IR.Predef._
 import meta.runtime.{Actor}
 
-case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
+case class AsyncCall[R, T](actorFrom: OpenCode[Actor],
                            actorRef: OpenCode[Actor],
                            methodSym: String,
+                           latency: OpenCode[Int],
                            argss: List[List[OpenCode[_]]])
                           (implicit val R: CodeType[R], implicit val T: CodeType[T])
     extends Algo[R] {
@@ -25,7 +26,7 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
       code"""
         val sender = $actorFrom;
         val receiver = $actorRef;
-        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, false, ${Const(methodSym)}, $convertedArgs);
+        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, false, ${Const(methodSym)}, sender.time,  $latency,  $convertedArgs);
         var future = meta.runtime.Future[$T](requestMessage.sessionId); 
         sender.sendMessage(requestMessage);
         sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.runtime.Message) => {
@@ -39,7 +40,7 @@ case class AsyncSend[R, T](actorFrom: OpenCode[Actor],
           CodeNodePos(AlgoInfo.posCounter),
           CodeNodePos(AlgoInfo.posCounter + 1),
           f1,
-          sendInfo = (Send[R](actorFrom, actorRef, methodSym, argss, false), true)
+          sendInfo = (Send[R](actorFrom, actorRef, methodSym, latency, argss, false), true)
         ))
 
       AlgoInfo.nextPos()

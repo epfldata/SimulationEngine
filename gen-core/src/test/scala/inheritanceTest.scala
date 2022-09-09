@@ -26,7 +26,8 @@ class RootNonlifted extends FunSuite{
     val f = fixture
     val teacher = f.finalAgents(0).asInstanceOf[generated.core.test.inheritance.Teacher]
     // Does not support reflection if the overriden mtd contains special inst.
-    assert(teacher.work=="Self-Employed")
+    // assert(teacher.work=="Self-Employed")
+    assert(teacher.work=="School")
   }
 
   test("Overriding a method inherited from a non-lifted class without special instructions executes the definition in child"){
@@ -112,5 +113,6 @@ class RootLifted extends FunSuite{
       )
   }
 }
+
 
 class InheritanceTest extends Suites (new RootNonlifted, new RootLifted)

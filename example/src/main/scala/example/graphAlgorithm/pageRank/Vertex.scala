@@ -30,7 +30,7 @@ class Vertex() extends Actor {
         while (true) {
             rank = pageRank()
             futures = connectedAgents.map(x => {
-                async_call(() => x.asInstanceOf[Vertex].updateValue(rank))
+                async_call(() => x.asInstanceOf[Vertex].updateValue(rank), 1)
             })
             while (futures.exists(x => !x.isCompleted)){
                 waitAndReply(1)

@@ -34,14 +34,17 @@ class Person(var infected: Boolean) extends Actor {
         while (true) {
             if (infected){
               if (isolation_level == 1){
-                connectedAgents.foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact()))
-                other_city_contacts.filter(i => Random.nextInt(100)<20).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact()))
-                other_country_contacts.filter(i => Random.nextInt(100)<5).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact()))
+                connectedAgents.foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact(), 1))
+                other_city_contacts.filter(i => Random.nextInt(100)<20).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact(), 7))
+                other_country_contacts.filter(i => Random.nextInt(100)<5).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact(), 30))
               } else if (isolation_level == 2) { // Lock down countries and reduced comm. in general
-                connectedAgents.filter(i => Random.nextInt(100)<10).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact()))
-                other_city_contacts.filter(i => Random.nextInt(100)<5).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact()))
+                connectedAgents.filter(i => Random.nextInt(100)<10).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact(), 1))
+                other_city_contacts.filter(i => Random.nextInt(100)<5).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact(), 21))
+                other_country_contacts.filter(i => Random.nextInt(100)<5).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact(), 60))
               } else { // Lock down cities and countries
-                connectedAgents.filter(i => Random.nextInt(100)<5).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact()))
+                connectedAgents.filter(i => Random.nextInt(100)<5).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact(), 1))
+                other_city_contacts.filter(i => Random.nextInt(100)<5).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact(), 28))
+                other_country_contacts.filter(i => Random.nextInt(100)<5).foreach(i => send(i.asInstanceOf[example.epidemic.hierarchical.Person].contact(), 90))
               }
             }
             waitAndReply(1)

@@ -73,4 +73,7 @@ class LocalBlockingMtdTest extends FunSuite{
   }
 }
 
+// Set blocking method suite to do not discover, 
+// since the new inst. with latency does not support blocking RPC
+@DoNotDiscover
 class BlockingMethodSuite extends Suites (new RemoteBlockingMtdTest, new LocalBlockingMtdTest)

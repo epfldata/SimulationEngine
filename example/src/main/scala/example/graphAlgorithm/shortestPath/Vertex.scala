@@ -3,6 +3,7 @@ package graphAlgorithm.shortestPath
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
+import squid.lib.transparencyPropagating
 
 // Single-source shortest path
 @lift
@@ -12,6 +13,7 @@ class Vertex(val isSource: Boolean, val uniformEdgeWeight: Int) extends Actor {
     private var futures: List[Future[Boolean]] = null
     private var broadcastDist: Int = scala.Int.MaxValue
 
+    @transparencyPropagating
     def updateValue(propose: Int): Boolean = {
         if (propose < dist){
             dist = propose
@@ -32,7 +34,7 @@ class Vertex(val isSource: Boolean, val uniformEdgeWeight: Int) extends Actor {
             if (propagateUpdate){
                 futures = connectedAgents.map(x => {
                     broadcastDist = dist + uniformEdgeWeight
-                    async_call(() => x.asInstanceOf[Vertex].updateValue(broadcastDist))
+                    async_call(x.asInstanceOf[Vertex].updateValue(broadcastDist), 1)
                 })
                 while (futures.exists(x => !x.isCompleted)){
                     waitAndReply(1)
