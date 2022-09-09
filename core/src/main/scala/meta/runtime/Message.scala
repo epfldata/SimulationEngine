@@ -29,12 +29,12 @@ abstract class Message extends JsonSerializable {
     */
   var sessionId: String = UUID.randomUUID().toString
 
-  val blocking: Boolean
-
   val send_time: Int
 
   val latency: Int
   
+  val rpc: Boolean
+
   override def toString: String = {
     "Message: " + senderId + " -> " + receiverId + "(" + sessionId + ")"
   }
@@ -51,7 +51,7 @@ abstract class Message extends JsonSerializable {
   */
 case class RequestMessage(override val senderId: AgentId,
                           override val receiverId: AgentId,
-                          blocking: Boolean,
+                          rpc: Boolean,
                           oneside: Boolean,
                           methodInfo: String,
                           send_time: Int, 
@@ -65,7 +65,7 @@ case class RequestMessage(override val senderId: AgentId,
     * @param returnValue the return value/answer for the request message
     */
   def reply(owner: Actor, returnValue: Any): Unit = {
-    val msg = ResponseMessage(receiverId, senderId, returnValue, blocking, owner.time, latency)
+    val msg = ResponseMessage(receiverId, senderId, returnValue, rpc, owner.time, latency)
     msg.sessionId = this.sessionId
     owner.sendMessage(msg)
   }
@@ -81,7 +81,7 @@ case class RequestMessage(override val senderId: AgentId,
 case class ResponseMessage(override val senderId: AgentId,
                            override val receiverId: AgentId,
                            arg: Any, 
-                           blocking: Boolean, 
+                           rpc: Boolean, 
                            send_time: Int, 
                            latency: Int)
     extends Message

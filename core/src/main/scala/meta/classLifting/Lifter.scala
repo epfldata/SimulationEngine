@@ -388,7 +388,7 @@ class Lifter {
         //for each received message, use callCode
         val handleMessage =
             Foreach(
-              code"$actorSelfVariable.popRequestMessages",
+              code"$actorSelfVariable.popRPCRequests",
               p1,
               callRequest)
         
@@ -632,7 +632,7 @@ class Lifter {
                   recipientActorVariable,
                   funcName,
                   code"1",
-                  argss, true))
+                  argss))
               )
             } else {
               // Calling an overloaded method locally

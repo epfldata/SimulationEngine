@@ -119,7 +119,7 @@ class Actor extends Serializable {
       .filter(
         x =>
           responseListeners.get(x.sessionId).isDefined && x
-            .isInstanceOf[ResponseMessage] && (time == x.send_time + x.latency))
+            .isInstanceOf[ResponseMessage] && (time >= x.send_time + x.latency))
       .foreach(x => {
         val handler = responseListeners(x.sessionId)
         responseListeners.remove(x.sessionId)
@@ -151,31 +151,15 @@ class Actor extends Serializable {
 
   /**
     * This function removes all receivedMessages of type RequestMessage from the receivedMessages list that should be processed. 
-    * Process nonblocking messages first to ensure the causal relationship between the nonblocking messages and blocking messages 
-    * (if a blocking message follows some non-blocking messages and arbitrary actions in between)
+    * Remove the blocking attribute, which is not necessary since rpcs are non-blocking
+    * agents can process messages that arrived earlier, but not later
     * and returns them to the method caller
     * @return a list of receivedMessages of type RequestMessage
     */
-  def popRequestMessages: List[RequestMessage] = {
+  def popRPCRequests: List[RequestMessage] = {
     val rM = this.receivedMessages
-      .filter(_.isInstanceOf[RequestMessage])
+      .filter(m => (m.isInstanceOf[RequestMessage] && m.rpc && (time >=m.latency + m.send_time)))
       .map(_.asInstanceOf[RequestMessage])
-      .sortBy(x => x.blocking)  // non-blocking messages are processed first
-      .filter(m => (m.send_time + m.latency)==time)
-    this.receivedMessages --= rM
-    rM.toList
-  }
-
-  /**
-    * This function removes all receivedMessages of type ResponseMessage from the receivedMessages list that should be processed
-    * and returns them to the method caller
-    * @return a list of receivedMessages of type ResponseMessage
-    */
-  def popResponseMessages: List[ResponseMessage] = {
-    val rM = this.receivedMessages
-      .filter(_.isInstanceOf[ResponseMessage])
-      .map(_.asInstanceOf[ResponseMessage])
-      .filter(m => (m.send_time + m.latency)==time)
     this.receivedMessages --= rM
     rM.toList
   }
