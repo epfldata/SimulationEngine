@@ -18,6 +18,7 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
 
     var f: List[Future[Boolean]] = List()
 
+    @transparencyPropagating
     def learnPolicy(newPolicy: Int): Int = {
         policy = newPolicy
         policy
@@ -49,7 +50,7 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
                 // Meet with contacts 
                 val selfRisk = DiseaseParameter.infectiousness(health, symptomatic)
                 if (!connectedAgents.isEmpty) {
-                    f = connectedAgents.map(x => asyncSend(x.asInstanceOf[Person].makeContact(selfRisk)))
+                    f = connectedAgents.map(x => async_call(x.asInstanceOf[Person].makeContact(selfRisk), 1))
 
                     while (f.exists(x => !x.isCompleted)){
                         waitAndReply(1)
@@ -63,7 +64,7 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
 
                 if ((health != "Susceptible") && (health != "Recover")) {
                     // report health status
-                    asyncMessage(() => country.report(health))
+                    send(country.report(health), 2)
                     if (daysInfected == DiseaseParameter.stateDuration(health)) {
                         health = HealthStatus.change(health, vulnerability)
                         daysInfected = 0
@@ -72,7 +73,7 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
                     }
                 }
                 waitLabel(Turn, dayUnit - hourCounter)
-                handleMessages()
+                handleRPC()
                 hourCounter = 0
             } else {
                 waitLabel(Turn, dayUnit)

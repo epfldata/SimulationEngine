@@ -6,6 +6,7 @@ import meta.runtime.{Actor}
 case class OnesideSend[R](actorFrom: OpenCode[Actor],
                            actorRef: OpenCode[Actor],
                            methodSym: String,
+                           latency: OpenCode[Int],
                            argss: List[List[OpenCode[_]]])
                           (implicit val R: CodeType[R])
     extends Algo[R] {
@@ -25,7 +26,7 @@ case class OnesideSend[R](actorFrom: OpenCode[Actor],
       code"""
         val sender = $actorFrom;
         val receiver = $actorRef;
-        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, true, ${Const(methodSym)}, $convertedArgs);
+        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, true, ${Const(methodSym)}, sender.time, $latency, $convertedArgs);
         sender.sendMessage(requestMessage);
         ()"""
 
@@ -34,7 +35,7 @@ case class OnesideSend[R](actorFrom: OpenCode[Actor],
           CodeNodePos(AlgoInfo.posCounter),
           CodeNodePos(AlgoInfo.posCounter + 1),
           f1,
-          sendInfo = (Send[R](actorFrom, actorRef, methodSym, argss, false), true)
+          sendInfo = (Send[R](actorFrom, actorRef, methodSym, latency, argss, false), true)
         ))
 
       AlgoInfo.nextPos()

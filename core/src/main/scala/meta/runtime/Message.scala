@@ -30,6 +30,10 @@ abstract class Message extends JsonSerializable {
   var sessionId: String = UUID.randomUUID().toString
 
   val blocking: Boolean
+
+  val send_time: Int
+
+  val latency: Int
   
   override def toString: String = {
     "Message: " + senderId + " -> " + receiverId + "(" + sessionId + ")"
@@ -41,7 +45,7 @@ abstract class Message extends JsonSerializable {
   * This represents a message, which is used for sending something to another actor
   * @param senderId the id of the sender
   * @param receiverId the id of the receiver
-  * @param blocking indicates how the message is sent (whether sender waits for the reply): through A.B() or asyncMessage(() => A.B())
+  * @param blocking indicates how the message is sent (whether sender waits for the reply) through A.B() or async_call()
   * @param methodInfo the name of the method which should be called
   * @param argss the arguments of the method
   */
@@ -50,6 +54,8 @@ case class RequestMessage(override val senderId: AgentId,
                           blocking: Boolean,
                           oneside: Boolean,
                           methodInfo: String,
+                          send_time: Int, 
+                          latency: Int,
                           argss: List[List[Any]])
     extends Message {
 
@@ -59,7 +65,7 @@ case class RequestMessage(override val senderId: AgentId,
     * @param returnValue the return value/answer for the request message
     */
   def reply(owner: Actor, returnValue: Any): Unit = {
-    val msg = ResponseMessage(receiverId, senderId, returnValue, blocking)
+    val msg = ResponseMessage(receiverId, senderId, returnValue, blocking, owner.time, latency)
     msg.sessionId = this.sessionId
     owner.sendMessage(msg)
   }
@@ -75,5 +81,7 @@ case class RequestMessage(override val senderId: AgentId,
 case class ResponseMessage(override val senderId: AgentId,
                            override val receiverId: AgentId,
                            arg: Any, 
-                           blocking: Boolean)
+                           blocking: Boolean, 
+                           send_time: Int, 
+                           latency: Int)
     extends Message

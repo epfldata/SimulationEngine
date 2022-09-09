@@ -511,6 +511,10 @@ $run_until
   def changeTypes(code: String, isMain: Boolean = false): String = {
     var result: String = code
 
+    if (code.contains("meta.classLifting.SpecialInstructions")){
+      throw new Exception(f"Keyword SpecialInstructions found in generated code! Compilation failed. ${code}")
+    }
+
     for (k <- this.typesReplaceWith) {
       result = result.replaceAll(k._1, k._2)
     }

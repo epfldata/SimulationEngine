@@ -57,6 +57,9 @@ class Driver {
     private var workersStart: Set[ActorRef[Worker.ExpectedReceives]] = Set()
     private val agentNameMap: AgentNameMap = new AgentNameMap()
 
+    // var start: Long = 0
+    // var end: Long = 0
+
     def apply(workers: Int, maxTurn: Int, messages: List[Message]): Behavior[DriverEvent] = Behaviors.setup {ctx =>
         ctx.system.receptionist ! Receptionist.Register(serviceKeyInitAgentMap, ctx.self)
 
@@ -109,7 +112,8 @@ class Driver {
                     driver()
 
                 case RoundStart => {
-                    ctx.log.warn(f"Round ${currentTurn}")
+                    ctx.log.info(f"Round ${currentTurn}")
+                    // start = System.currentTimeMillis()
                     ctx.log.debug(f"Driver sends expected receives to all workers!  ${workerReceiveFrom}")
                     ctx.spawnAnonymous(
                         Aggregator[Worker.SendTo, RoundEnd](
@@ -139,6 +143,8 @@ class Driver {
                 }
 
                 case RoundEnd(elapsedTime: Int) =>
+                    // end = System.currentTimeMillis()
+                    // println(f"Rount takes ${end-start} time")
                     if (currentTurn + elapsedTime >= totalTurn){
                         Behaviors.stopped {() => 
                             ctx.log.debug(f"Simulation completes! Stop the driver")
@@ -204,6 +210,7 @@ object Worker {
     final case class RegisterAgentMap(driver: ActorRef[Driver.InitializeAgentMap]) extends WorkerEvent with NoSerializationVerificationNeeded
     final case class AgentsCompleted(indexedMessages: Map[Int, MutMap[Long, List[Message]]]) extends WorkerEvent with NoSerializationVerificationNeeded
     final case class Stop() extends WorkerEvent with JsonSerializable
+    final case class Start() extends WorkerEvent with NoSerializationVerificationNeeded
     final case class ReceiveMessages(workerId: Int, messages: Map[Long, List[Message]]) extends WorkerEvent with JsonSerializable
     final case class ReceiveAgentMap(workerId: Int, agentIds: Seq[Long], replyTo: ActorRef[ReceiveMessages]) extends WorkerEvent with JsonSerializable
     final case class SendTo(workerId: Int, sendTo: Set[Int], elapsedTime: Int) extends WorkerEvent with JsonSerializable
@@ -226,6 +233,8 @@ class Worker {
     private val collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
     private val receivedMessages: ConcurrentHashMap[Long, List[Message]] = new ConcurrentHashMap[Long, List[Message]]()
     private val receivedWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
+    private var expectedWorkerSet: Set[Int] = Set[Int]()
+    private var sendToRef: ActorRef[SendTo] = null
 
     // private var tscontroller: ActorRef[TimeseriesController.LogWorker] = null
 
@@ -240,7 +249,7 @@ class Worker {
         this.simIds = sims.map(_.id)
         this.totalWorkers = totalWorkers
         workerId = id
-        ctx.log.warn(f"Worker ${workerId} has agents ${simIds}")
+        ctx.log.info(f"Worker ${workerId} has agents ${simIds}")
 
         val workerSub = ctx.messageAdapter[Receptionist.Listing] {
             case Worker.WorkerUpdateAgentMapServiceKey.Listing(workers) =>
@@ -289,66 +298,77 @@ class Worker {
                     }
                     Behaviors.same
                 case ReceiveMessages(wid, messages) =>
-                    if (!receivedWorkers.contains(wid)){
-                        receivedWorkers.add(wid)
-                    }
                     ctx.log.debug(f"Worker ${workerId} receives messages from worker ${wid} ${messages}")
-                    for (m <- messages) {
-                        receivedMessages.update(m._1, receivedMessages.getOrElse(m._1, List()) ::: m._2)
+                    if (!receivedWorkers.contains(wid)){
+                        println(f"Worker ${workerId} receives ${messages.size} messages from worker ${wid}")
+                        for (m <- messages) {
+                            receivedMessages.update(m._1, receivedMessages.getOrElse(m._1, List()) ::: m._2)
+                        }
+                        receivedWorkers.add(wid)
+                        if (receivedWorkers.toSet == expectedWorkerSet){
+                            ctx.self ! Start()
+                        }
                     }
                     worker()
-                case ExpectedReceives(receive_map, replyTo) => 
-                    ctx.log.warn(f"Worker ${workerId} expects to receive from ${receive_map}; Received workers ${receivedWorkers}")
-                    // If worker has received messages from all above workers, then resume agents
-                    if (receive_map == null || receive_map.get(workerId).isEmpty || receivedWorkers.toSet.diff(receive_map(workerId)).isEmpty){
-                        ctx.log.warn(f"Worker ${workerId} starts!")
-                        receivedWorkers.clear()
-                        if (local_agents.size > 0){
-                            ctx.spawnAnonymous(
-                                Aggregator[LocalAgent.MessagesAdded, AgentsCompleted](
-                                sendRequests = { replyTo =>
-                                    local_agents.map(a => {
-                                        if (receivedMessages.get(a._1) == null){
-                                            a._2 ! LocalAgent.AddMessages(collectedMessages.remove(a._1).getOrElse(List()), replyTo)  
-                                        } else {
-                                            a._2 ! LocalAgent.AddMessages(receivedMessages.remove(a._1) ::: collectedMessages.remove(a._1).getOrElse(List()), replyTo)
-                                        }                                    
+                case Start() =>
+                    ctx.log.debug(f"Worker ${workerId} starts! Received from ${receivedWorkers}")
+                    receivedWorkers.clear()
+                    expectedWorkerSet = Set[Int]()
+                    if (local_agents.size > 0){
+                        ctx.spawnAnonymous(
+                            Aggregator[LocalAgent.MessagesAdded, AgentsCompleted](
+                            sendRequests = { replyTo =>
+                                local_agents.map(a => {
+                                    if (receivedMessages.get(a._1) == null){
+                                        a._2 ! LocalAgent.AddMessages(collectedMessages.remove(a._1).getOrElse(List()), replyTo)  
+                                    } else {
+                                        a._2 ! LocalAgent.AddMessages(receivedMessages.remove(a._1) ::: collectedMessages.remove(a._1).getOrElse(List()), replyTo)
+                                    }                                    
+                                })
+                            },
+                            expectedReplies = local_agents.size,
+                            ctx.self,
+                            aggregateReplies = replies => {
+                                var passedRounds: Int = 1
+                                for (r <- replies) {
+                                    r.messages.groupBy(m => m.receiverId).foreach(i => {
+                                        collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List()) ::: i._2) 
                                     })
-                                },
-                                expectedReplies = local_agents.size,
-                                ctx.self,
-                                aggregateReplies = replies => {
-                                    var passedRounds: Int = 1
-                                    for (r <- replies) {
-                                        r.messages.groupBy(m => m.receiverId).foreach(i => {
-                                            collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List()) ::: i._2) 
-                                        })
-                                        
-                                        if (r.elapsedTime > passedRounds){
-                                            passedRounds = r.elapsedTime
-                                        }
+                                    
+                                    if (r.elapsedTime > passedRounds){
+                                        passedRounds = r.elapsedTime
                                     }
+                                }
 
-                                    val ans = collectedMessages.groupBy(i => nameMap.getWorker(i._1)).filterNot(i => i._1 == workerId)
-                                    println("Aggregator completed!")
-                                    println(f"Worker ${workerId} sends to driver whom it contacted ${ans.keys.toSet}")
-                                    replyTo ! SendTo(workerId, ans.keys.toSet, passedRounds)
-                                    AgentsCompleted(ans)
-                                },
-                                timeout=100.seconds))
-                        } else {
-                            // If the worker has no agent, then it notifies the driver that it is ready
-                            replyTo ! SendTo(workerId, Set(), 1)
-                            AgentsCompleted(Map())
+                                val ans = collectedMessages.groupBy(i => nameMap.getWorker(i._1)).filterNot(i => i._1 == workerId)
+                                sendToRef ! SendTo(workerId, ans.keys.toSet, passedRounds)
+                                AgentsCompleted(ans)
+                            },
+                            timeout=100.seconds))
+                    } else {
+                        // If the worker has no agent, then it notifies the driver that it is ready
+                        sendToRef ! SendTo(workerId, Set(), 1)
+                        AgentsCompleted(Map())
+                    }
+                    worker()
+
+                case ExpectedReceives(receive_map, replyTo) => 
+                    sendToRef = replyTo
+                    expectedWorkerSet = Set[Int]()
+                    if (receive_map == null || receive_map.get(workerId).isEmpty) {
+                        ctx.self ! Start()
+                    } else {
+                        expectedWorkerSet = receive_map(workerId)
+                        if (receivedWorkers.toSet == expectedWorkerSet){
+                            ctx.self ! Start()
                         }
-                        ctx.log.debug(f"Worker ${workerId} completes!")
-                    } 
+                    }
                     worker()
                     
                 case AgentsCompleted(indexedMessages) =>
                     ctx.log.debug(f"Local agents in worker ${workerId} have completed!")
                     indexedMessages.foreach(i => {
-                        ctx.log.debug(f"Worker ${workerId} sends to peer worker ${i._1}")
+                        ctx.log.debug(f"Worker ${workerId} sends to peer worker ${i._1} ${i._2}")
                         peer_workers.get(i._1) ! ReceiveMessages(workerId, i._2.toMap)
                         collectedMessages --= i._2.map(_._1)
                     })

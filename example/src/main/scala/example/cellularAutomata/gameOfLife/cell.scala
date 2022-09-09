@@ -31,7 +31,7 @@ class Cell(var alive: Boolean, var cfreq: Int) extends Actor {
 
     def main(): Unit = {
         while(true) {
-            futures = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => asyncMessage(() => v.getValue))
+            futures = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => async_call(() => v.getValue, 1))
 
             while (!(futures.nonEmpty && futures.forall(x => x.isCompleted))) {
                 waitAndReply(1)

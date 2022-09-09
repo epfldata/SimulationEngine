@@ -34,7 +34,6 @@ class ResetSimTest extends FlatSpec {
         agents.foreach(x => x.SimReset(Set("connectedAgents")))
         agents.foreach(a => assert(a.asInstanceOf[generated.core.test.resetSim.Vertex].counter == 0))
         
-        // Run another simulation from cloner won't change the state of clonee
         val r3 = StartSimulation[AkkaMessagingLayer.type](new SimulationConfig(agents, 5))
         agents.foreach(a => assert(a.asInstanceOf[generated.core.test.resetSim.Vertex].counter == 28))
     }
@@ -45,10 +44,10 @@ class ResetSimTest extends FlatSpec {
         val r = StartSimulation[AkkaDriverWorker.type](c)
         agents.foreach(a => assert(a.asInstanceOf[generated.core.test.resetSim.Vertex].counter == 28))
         // Reset the Sim except for connectedAgents
+        // Both time and instruction counter are reset to 0
         agents.foreach(x => x.SimReset(Set("connectedAgents")))
         agents.foreach(a => assert(a.asInstanceOf[generated.core.test.resetSim.Vertex].counter == 0))
         
-        // Run another simulation from cloner won't change the state of clonee
         val r3 = StartSimulation[AkkaDriverWorker.type](new SimulationConfig(agents, 5))
         agents.foreach(a => assert(a.asInstanceOf[generated.core.test.resetSim.Vertex].counter == 28))
     }

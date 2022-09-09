@@ -24,42 +24,42 @@ class AgentWithSpecialInst(val n: AgentWithSpecialInst) extends Actor {
     }
 
     def testForallOperation(): Boolean = {
-        List(1, 2, 3, 4).forall(_ => asyncSend(n.blockingMtd()).isCompleted)
-        ListBuffer(1, 2, 3, 4).forall(_ => asyncSend(n.blockingMtd()).isCompleted)
-        Set(1, 2, 3, 4).forall(_ => asyncSend(n.blockingMtd()).isCompleted)
-        Vector(1, 2, 3, 4).forall(_ => asyncSend(n.blockingMtd()).isCompleted)
+        List(1, 2, 3, 4).forall(_ => async_call(n.blockingMtd(), 1).isCompleted)
+        ListBuffer(1, 2, 3, 4).forall(_ => async_call(n.blockingMtd(), 1).isCompleted)
+        Set(1, 2, 3, 4).forall(_ => async_call(n.blockingMtd(), 1).isCompleted)
+        Vector(1, 2, 3, 4).forall(_ => async_call(n.blockingMtd(), 1).isCompleted)
     }
 
     def testExistsOperation(): Boolean = {
-        List(1, 2, 3, 4).exists(_ => asyncSend(n.blockingMtd()).isCompleted)
-        ListBuffer(1, 2, 3, 4).exists(_ => asyncSend(n.blockingMtd()).isCompleted)
-        Set(1, 2, 3, 4).exists(_ => asyncSend(n.blockingMtd()).isCompleted)
-        Vector(1, 2, 3, 4).exists(_ => asyncSend(n.blockingMtd()).isCompleted)
+        List(1, 2, 3, 4).exists(_ => async_call(n.blockingMtd(), 1).isCompleted)
+        ListBuffer(1, 2, 3, 4).exists(_ => async_call(n.blockingMtd(), 1).isCompleted)
+        Set(1, 2, 3, 4).exists(_ => async_call(n.blockingMtd(), 1).isCompleted)
+        Vector(1, 2, 3, 4).exists(_ => async_call(n.blockingMtd(), 1).isCompleted)
     }
 
     // .map and .flatMap only work for List
     def testMapOperation(): Boolean = {
-        List(1, 2, 3, 4).map(_ => asyncSend(n.blockingMtd()))
-        List(1, 2, 3, 4).flatMap(_ => List(asyncSend(n.blockingMtd())))
+        List(1, 2, 3, 4).map(_ => async_call(n.blockingMtd(), 1))
+        List(1, 2, 3, 4).flatMap(_ => List(async_call(n.blockingMtd(), 1)))
         
         // Fail
-        // ListBuffer(1, 2, 3, 4).map[Future[Boolean], ListBuffer[Future[Boolean]]](_ => asyncSend(n.blockingMtd()))
-        // Set(1, 2, 3, 4).map(_ => asyncSend(n.blockingMtd()))
-        // (1 to 10).map(_ => asyncSend(n.blockingMtd()))
+        // ListBuffer(1, 2, 3, 4).map[Future[Boolean], ListBuffer[Future[Boolean]]](_ => async_call(n.blockingMtd(), 1))
+        // Set(1, 2, 3, 4).map(_ => async_call(n.blockingMtd(), 1))
+        // (1 to 10).map(_ => async_call(n.blockingMtd(), 1))
         true
     }
 
     def testForeachOperation(): Boolean = {
-        List(1, 2, 3, 4).foreach(_ => asyncSend(n.blockingMtd()))
-        ListBuffer(1, 2, 3, 4).foreach(_ => asyncSend(n.blockingMtd()))
-        Set(1, 2, 3, 4).foreach(_ => asyncSend(n.blockingMtd()))
-        Vector(1, 2, 3, 4).foreach(_ => asyncSend(n.blockingMtd()))
-        1.to(10).foreach(_ => asyncSend(n.blockingMtd()))
+        List(1, 2, 3, 4).foreach(_ => async_call(n.blockingMtd(), 1))
+        ListBuffer(1, 2, 3, 4).foreach(_ => async_call(n.blockingMtd(), 1))
+        Set(1, 2, 3, 4).foreach(_ => async_call(n.blockingMtd(), 1))
+        Vector(1, 2, 3, 4).foreach(_ => async_call(n.blockingMtd(), 1))
+        1.to(10).foreach(_ => async_call(n.blockingMtd(), 1))
         // Array does not work
-        // Array(1, 2, 3, 4).foreach(_ => asyncSend(n.blockingMtd()))
-        List(n).foreach(i => asyncSend(i.blockingMtd()))
-        Set(n).foreach(i => asyncSend(i.blockingMtd()))
-        Map(1 -> n).map(i => i._2).foreach(i => asyncSend(i.blockingMtd()))
+        // Array(1, 2, 3, 4).foreach(_ => async_call(n.blockingMtd(), 1))
+        List(n).foreach(i => async_call(i.blockingMtd(), 1))
+        Set(n).foreach(i => async_call(i.blockingMtd(), 1))
+        Map(1 -> n).map(i => i._2).foreach(i => async_call(i.blockingMtd(), 1))
         true
     }
 

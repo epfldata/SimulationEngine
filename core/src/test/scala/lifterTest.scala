@@ -28,7 +28,7 @@ class MyClass() extends Actor {
     def testLocalVarBindings1(): Unit = {
         neighbors.foreach(i => {
             val tmp = scala.util.Random.nextInt()
-            asyncSend(i.asInstanceOf[MyClass].foo1(tmp)).isCompleted
+            async_call(i.asInstanceOf[MyClass].foo1(tmp), 1).isCompleted
         })
     }
 
@@ -36,11 +36,11 @@ class MyClass() extends Actor {
         // Trigger exception
         // neighbors.map(i => {
         //     val tmp = scala.util.Random.nextInt()
-        //     asyncMessage(() => i.asInstanceOf[MyClass].foo(tmp, 30, 43)).isCompleted
+        //     async_call(() => i.asInstanceOf[MyClass].foo(tmp, 30, 43)).isCompleted
         // })
         neighbors.map(i => {
             val tmp = scala.util.Random.nextInt()
-            asyncSend(i.asInstanceOf[MyClass].foo(tmp, 30, 43)).isCompleted
+            async_call(i.asInstanceOf[MyClass].foo(tmp, 30, 43), 1).isCompleted
         })
     }
 
@@ -71,8 +71,7 @@ class lifterTest extends FlatSpec {
         assert(x.map(_.symbol.toString).toSet == Set("MyClass.main", "MyClass.foo", "MyClass.z", "MyClass.foo1", "MyClass.testLocalVarBindings1", "MyClass.testLocalVarBindings2"))
     }
 
-    "Variable binding in async message" should ""
-    "lifting variables with private" should "trigger the private keyword" in {
+    "The body of lifted methods" should "not contain keyword SpecialInstructions" in {
         val liftedRes = new Lifter().apply(List(liftMyClass)) 
         liftedRes._1.head.methods.foreach(x => {
             assert(!x.body.toString.contains("SpecialInstructions"))

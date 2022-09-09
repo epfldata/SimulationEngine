@@ -26,7 +26,7 @@ class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
     def main(): Unit = {
         while (true){
             if (n != null){
-                future = asyncMessage(() => n.blockingMtd())
+                future = async_call(() => n.blockingMtd(), 1)
                 while (!future.isCompleted){
                     waitAndReply(1)
                 }
