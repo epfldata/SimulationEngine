@@ -4,7 +4,7 @@ package simulation
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
 import SimRuntime._
 import meta.runtime.Actor.AgentId
-import meta.API.SimulationSnapshot
+import meta.API.{SimulationSnapshot, BoundedLatency, newContainer}
 import scala.util.Failure
 import scala.util.Success
 import scala.concurrent.Await
@@ -27,7 +27,6 @@ import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.NoSerializationVerificationNeeded
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-
 
 object Driver {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -57,8 +56,8 @@ class Driver {
     private var workersStart: Set[ActorRef[Worker.ExpectedReceives]] = Set()
     private val agentNameMap: AgentNameMap = new AgentNameMap()
 
-    // var start: Long = 0
-    // var end: Long = 0
+    var start: Long = 0
+    var end: Long = 0
 
     def apply(workers: Int, maxTurn: Int, messages: List[Message]): Behavior[DriverEvent] = Behaviors.setup {ctx =>
         ctx.system.receptionist ! Receptionist.Register(serviceKeyInitAgentMap, ctx.self)
@@ -113,7 +112,7 @@ class Driver {
 
                 case RoundStart => {
                     ctx.log.info(f"Round ${currentTurn}")
-                    // start = System.currentTimeMillis()
+                    start = System.currentTimeMillis()
                     ctx.log.debug(f"Driver sends expected receives to all workers!  ${workerReceiveFrom}")
                     ctx.spawnAnonymous(
                         Aggregator[Worker.SendTo, RoundEnd](
@@ -143,8 +142,8 @@ class Driver {
                 }
 
                 case RoundEnd(elapsedTime: Int) =>
-                    // end = System.currentTimeMillis()
-                    // println(f"Rount takes ${end-start} time")
+                    end = System.currentTimeMillis()
+                    ctx.log.info(f"Round takes ${end-start} time")
                     if (currentTurn + elapsedTime >= totalTurn){
                         Behaviors.stopped {() => 
                             ctx.log.debug(f"Simulation completes! Stop the driver")
@@ -164,7 +163,7 @@ class AgentNameMap {
     private val agentNameMap: ConcurrentHashMap[Int, ListBuffer[Long]] = new ConcurrentHashMap()
 
     def update(workerId: Int, agentIds: Seq[Long]): Unit = synchronized {
-        val x: ListBuffer[Long] = new ListBuffer[Long]()
+        val x: ListBuffer[Long] = ListBuffer[Long]()
         x.addAll(agentIds)
         agentNameMap.update(workerId, x)
     }
@@ -237,6 +236,8 @@ class Worker {
     private var sendToRef: ActorRef[SendTo] = null
 
     // private var tscontroller: ActorRef[TimeseriesController.LogWorker] = null
+    var start: Long = 0
+    var end: Long = 0
 
     def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
         // ctx.log.debug("Register agent with receptionist")
@@ -244,9 +245,23 @@ class Worker {
         ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
         ctx.system.receptionist ! Receptionist.Register(WorkerUpdateAgentMapServiceKey, ctx.self)
 
-        // obtain the rest of worker references to support direct messaging
-        this.sims = sims
+        val containers: ListBuffer[Actor] = ListBuffer[Actor]()
         this.simIds = sims.map(_.id)
+
+        if (ConfigFactory.load("driver-worker").hasPath("driver-worker.containers-per-worker")){
+            val totalSims = sims.size
+            val totalGroups: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.containers-per-worker").render().toInt
+            val simsPerGroup = totalSims / totalGroups
+            for (i <- Range(0, totalGroups-1)) {
+                containers.append(newContainer(sims.toList.slice(i*simsPerGroup, (i+1)*simsPerGroup))(true, BoundedLatency))
+            }
+            containers.append(newContainer(sims.slice((totalGroups-2), totalSims).toList)(true, BoundedLatency))
+            this.sims = containers.toSeq
+        } else {
+            this.sims = sims
+        }
+
+        // obtain the rest of worker references to support direct messaging
         this.totalWorkers = totalWorkers
         workerId = id
         ctx.log.info(f"Worker ${workerId} has agents ${simIds}")
@@ -300,7 +315,7 @@ class Worker {
                 case ReceiveMessages(wid, messages) =>
                     ctx.log.debug(f"Worker ${workerId} receives messages from worker ${wid} ${messages}")
                     if (!receivedWorkers.contains(wid)){
-                        println(f"Worker ${workerId} receives ${messages.size} messages from worker ${wid}")
+                        // println(f"Worker ${workerId} receives messages from worker ${wid} ${messages}")
                         for (m <- messages) {
                             receivedMessages.update(m._1, receivedMessages.getOrElse(m._1, List()) ::: m._2)
                         }
@@ -312,6 +327,7 @@ class Worker {
                     worker()
                 case Start() =>
                     ctx.log.debug(f"Worker ${workerId} starts! Received from ${receivedWorkers}")
+                    start = System.currentTimeMillis()
                     receivedWorkers.clear()
                     expectedWorkerSet = Set[Int]()
                     if (local_agents.size > 0){
@@ -367,6 +383,8 @@ class Worker {
                     
                 case AgentsCompleted(indexedMessages) =>
                     ctx.log.debug(f"Local agents in worker ${workerId} have completed!")
+                    end = System.currentTimeMillis()
+                    ctx.log.info(f"Worker ${workerId} runs for ${end-start} ms")
                     indexedMessages.foreach(i => {
                         ctx.log.debug(f"Worker ${workerId} sends to peer worker ${i._1} ${i._2}")
                         peer_workers.get(i._1) ! ReceiveMessages(workerId, i._2.toMap)
@@ -410,6 +428,7 @@ class LocalAgent {
         Behaviors.receive[AgentEvent] { (ctx, message) =>
             message match {
                 case AddMessages(messages, replyTo) => 
+                    // println(f"Agent ${sim.id} receives ${messages.size} messages")
                     ctx.log.debug(f"Agent ${sim.id} receives ${messages.size} messages")
                     val agentAPI = sim.run(messages)
                     val sentMessages = agentAPI._1
