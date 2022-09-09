@@ -121,8 +121,6 @@ case object resetAgent extends GeneratedMethods {
             })
         })
 
-        val systemReset: String = f"${instructionRegister} = 0"
-
         val userVarsReset: String = 
             if (!mutablePublicVariableRewrite.isEmpty){
                 s"val newAgent = new ${actorName}(${parameterApplication})\n" + " "*2 + mutablePublicVariableRewrite.mkString("\n" + " "*2)
@@ -130,7 +128,8 @@ case object resetAgent extends GeneratedMethods {
 
         s"""
 override def SimReset(preserved_names: Set[String]): Unit = {
-  ${systemReset}
+  ${instructionRegister} = 0
+  time = 0
   ${userVarsReset}
 }
 """ 
