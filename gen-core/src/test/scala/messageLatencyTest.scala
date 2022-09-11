@@ -37,4 +37,22 @@ class MessageLatencyTest extends FlatSpec {
         assert(receivers.size > 0)
         receivers.foreach(a => assert(a.asInstanceOf[generated.core.test.messageLatency.ReceiverForBound].counter == 15))
     }
+
+    "Message with latency 5" should "arrive at time units after 5 in Spark" in {
+        val agents = generated.core.test.messageLatency.InitData()
+        val sim = new meta.runtime.simulation.SparkRun(agents, 10, List())
+        val r = sim.run()
+        val receivers = r.sims.filter(a => a.isInstanceOf[generated.core.test.messageLatency.ReceiverForBound])
+        assert(receivers.size > 0)
+        receivers.foreach(a => assert(a.asInstanceOf[generated.core.test.messageLatency.ReceiverForBound].counter == 15))
+    }
+
+    "Message with latency 5" should "arrive at time units after 5 in Spark2" in {
+        val agents = generated.core.test.messageLatency.InitData()
+        val sim = new meta.runtime.simulation.SparkRun2(agents, 10, List())
+        val r = sim.run()
+        val receivers = r.sims.filter(a => a.isInstanceOf[generated.core.test.messageLatency.ReceiverForBound])
+        assert(receivers.size > 0)
+        receivers.foreach(a => assert(a.asInstanceOf[generated.core.test.messageLatency.ReceiverForBound].counter == 15))
+    }
 }

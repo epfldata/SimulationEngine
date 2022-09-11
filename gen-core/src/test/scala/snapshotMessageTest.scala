@@ -63,4 +63,24 @@ class SnapshotMessageTest extends FlatSpec {
         assert(snapshot3.messages.length == 14)
         assert(snapshot3.sims.length == 8)
     }
+
+    "The snapshot" should "capture messages not processed in Spark Range messaging layer" in {
+        val agents = generated.core.test.snapshot.InitData()
+        val sim = new meta.runtime.simulation.SparkRun2(agents, 1, List())
+        val snapshot1 = sim.run()
+        assert(snapshot1.messages.length == 7)
+        assert(snapshot1.sims.length == 8)
+
+        // // After 2 epochs, we have 14 messages. 7 replies from receiver and 7 from the sender.   
+        val sim2 = new meta.runtime.simulation.SparkRun2(snapshot1.sims, 1, messages = snapshot1.messages)      
+        val snapshot2 = sim2.run()
+        assert(snapshot2.messages.length == 14)
+        assert(snapshot2.sims.length == 8)
+
+        // In the later epochs, the message load of the system remains at 14 messages, as previously
+        val sim3 = new meta.runtime.simulation.SparkRun2(snapshot2.sims, 10, messages = snapshot2.messages)      
+        val snapshot3 = sim3.run()
+        assert(snapshot3.messages.length == 14)
+        assert(snapshot3.sims.length == 8)
+    }
 }
