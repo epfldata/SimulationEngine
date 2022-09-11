@@ -22,8 +22,11 @@ class Sender(val r: Receiver) extends Actor {
 
 @lift
 class Receiver() extends Actor {
+    var counter: Int = 0
+
     def rpc1(): Int = {
         // println("Received a message for rpc1 at time " + time)
+        counter = counter + 1
         2
     }
 

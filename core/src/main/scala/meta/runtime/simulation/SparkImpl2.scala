@@ -16,8 +16,8 @@ class SparkRun2(var actors: List[Actor], val totalTurn: Int, val messages: List[
   @transient protected lazy val conf: SparkConf =
     new SparkConf().setMaster("local")
       .setAppName("TickTalk")
-      .set("spark.driver.memory", "70g")
-      .set("spark.executor.memory", "70g")
+      .set("spark.driver.memory", "30g")
+      .set("spark.executor.memory", "5g")
       .set("spark.executor.cores", "48")
       // .set("spark.default.parallelism", "96")
       .set("spark.hadoop.dfs.replication", "1")
@@ -29,10 +29,10 @@ class SparkRun2(var actors: List[Actor], val totalTurn: Int, val messages: List[
   sc.setCheckpointDir("checkpoint/")
   
   val pair_actors: RDD[(Long, Actor)] = sc.parallelize(actors).map(a => (a.id, a))
-  val partitioner = new HashPartitioner(20)
-  @transient protected var actorRDD: RDD[(Long, Actor)] = pair_actors.partitionBy(partitioner).persist()
-  // val partitioner = new RangePartitioner(70, pair_actors)
+  // val partitioner = new HashPartitioner(70)
   // @transient protected var actorRDD: RDD[(Long, Actor)] = pair_actors.partitionBy(partitioner).persist()
+  val partitioner = new RangePartitioner(5, pair_actors)
+  @transient protected var actorRDD: RDD[(Long, Actor)] = pair_actors.partitionBy(partitioner).persist()
 
   // print(actorRDD.glom().collect().map(i => i.map(j => j._1).toList).toList)
 
@@ -43,6 +43,7 @@ class SparkRun2(var actors: List[Actor], val totalTurn: Int, val messages: List[
   var t2: Long = 0
   var t3: Long = 0
   var t4: Long = 0
+  var t5: Long = 0
 
   var totalTime: Long = 0
   var time_seq: List[Long] = List()
@@ -68,17 +69,20 @@ class SparkRun2(var actors: List[Actor], val totalTurn: Int, val messages: List[
         })
         res.cache()
         t2 = System.currentTimeMillis()
-        val materializeRes = res.collect().toList
-        t3 = System.currentTimeMillis()
-      
+        // val materializeRes = res.collect().toList
+        // t3 = System.currentTimeMillis()
         actorRDD = res.map(i => (i._1, i._2._2))
         // collect()
         // actorRDD.cache()
-        collectedMessages = materializeRes.flatMap(_._2._1._1)
-        proceed(materializeRes.map(_._2._1._2.asInstanceOf[Int]).max)
+        // collectedMessages = materializeRes.flatMap(_._2._1._1)
+        // proceed(materializeRes.map(_._2._1._2.asInstanceOf[Int]).max)
+        t3 = System.currentTimeMillis()
+        collectedMessages = res.flatMap(i => i._2._1._1).collect().toList
         t4 = System.currentTimeMillis()
-        time_seq = time_seq ::: List(t4-t1)
-        println(f"transform ${t2-t1}, materialize ${t3-t2}, shuffle ${t4-t3}, total ${t4-t1}")
+        proceed(res.map(_._2._1._2.asInstanceOf[Int]).max)
+        t5 = System.currentTimeMillis()
+        time_seq = time_seq ::: List(t5-t1)
+        println(f"transform1 ${t2-t1}, transform2 ${t3-t2},  materialize messages ${t4-t3}, total ${t5-t1}")
     }
 
     val updatedActors: List[Actor] = actorRDD.collect.toList.map(_._2)
