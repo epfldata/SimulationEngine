@@ -34,10 +34,10 @@ object Aggregator {
             val newReplies = replies :+ reply
             context.log.debug(f"Received replies ${newReplies.size}")
             if (newReplies.size == expectedReplies) {
-              context.log.warn(f"Received all replies!")
+              context.log.debug(f"Received all replies!")
               val result = aggregateReplies(newReplies)
               replyTo ! result
-              context.log.warn(f"Aggregate replies complete!")
+              context.log.debug(f"Aggregate replies complete!")
               Behaviors.stopped
             } else
               collecting(newReplies)
