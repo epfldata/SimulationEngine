@@ -42,9 +42,6 @@ class Actor extends Serializable {
   
   var deleted: Boolean = false
 
-  // a variable denoting whether we can relax the consistency constraint and allow concurrent copies 
-  var relaxConsistency: Boolean = false 
-
   /**
     * Contains the received messages from the previous step
     */
@@ -107,26 +104,19 @@ class Actor extends Serializable {
     * @param messages Actions with receiver matching the agent from the previous step
     */
   def addReceiveMessages(messages: List[Message]): Actor = {
-    this.receivedMessages.appendAll( messages.filter(
-      x =>
-        x.isInstanceOf[RequestMessage] || responseListeners
-          .get(x.sessionId)
-          .isEmpty))
-    // Only invoke handler callback If the agent is not a container agent
-    // Invoke handler only if the latency bound matches
-    if (proxyIds.size == 1) {
-      messages
-      .filter(
-        x =>
-          responseListeners.get(x.sessionId).isDefined && x
-            .isInstanceOf[ResponseMessage] && (time >= x.send_time + x.latency))
-      .foreach(x => {
-        val handler = responseListeners(x.sessionId)
-        responseListeners.remove(x.sessionId)
-        handler(x)
-      })
+    for (m <- messages) {
+      m match {
+        case m: RequestMessage => this.receivedMessages.append(m)
+        case m: ResponseMessage => if (time < m.send_time + m.latency) {
+          this.receivedMessages.append(m)
+        } else if (responseListeners.get(m.sessionId).isDefined) {
+          val handler = responseListeners.remove(m.sessionId).get
+          handler(m)
+        } else {
+          this.receivedMessages.append(m)
+        }
+      }
     }
-
     this
   }
 
