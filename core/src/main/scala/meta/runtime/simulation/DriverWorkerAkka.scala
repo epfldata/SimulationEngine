@@ -34,7 +34,7 @@ object Driver {
     Array(
         new JsonSubTypes.Type(value = classOf[InitializeAgentMap], name = "initializeAgentMap")))
     sealed trait DriverEvent
-    final case class InitializeAgentMap(workerId: Int, agentIds: Seq[Long]) extends DriverEvent with JsonSerializable
+    final case class InitializeAgentMap(workerId: Long, agentIds: Seq[Long]) extends DriverEvent with JsonSerializable
     final case class InitializeWorkers() extends DriverEvent with NoSerializationVerificationNeeded
     final case object RoundStart extends DriverEvent with NoSerializationVerificationNeeded
     final case class RoundEnd(elapsedTime: Int) extends DriverEvent with NoSerializationVerificationNeeded
@@ -45,12 +45,12 @@ object Driver {
 class Driver {
     import Driver._
 
-    private var totalWorkers: Int = 0
+    private var totalWorkers: Long = 0
     private var totalTurn: Int = 0
     private var currentTurn: Int = 0
     // worker x, a list of workers which x expects messages from
-    private var workerReceiveFrom: Map[Int, Set[Int]] = Map[Int, Set[Int]]()
-    private var workerIdMap: ConcurrentHashMap[Int, ActorRef[Worker.ExpectedReceives]] = new ConcurrentHashMap[Int, ActorRef[Worker.ExpectedReceives]]()
+    private var workerReceiveFrom: Map[Long, Set[Long]] = Map[Long, Set[Long]]()
+    private var workerIdMap: ConcurrentHashMap[Long, ActorRef[Worker.ExpectedReceives]] = new ConcurrentHashMap[Long, ActorRef[Worker.ExpectedReceives]]()
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
     private var workersStop: Set[ActorRef[Worker.Stop]] = Set()
     private var workersStart: Set[ActorRef[Worker.ExpectedReceives]] = Set()
@@ -59,7 +59,7 @@ class Driver {
     var start: Long = 0
     var end: Long = 0
 
-    def apply(workers: Int, maxTurn: Int, messages: List[Message]): Behavior[DriverEvent] = Behaviors.setup {ctx =>
+    def apply(workers: Long, maxTurn: Int, messages: List[Message]): Behavior[DriverEvent] = Behaviors.setup {ctx =>
         ctx.system.receptionist ! Receptionist.Register(serviceKeyInitAgentMap, ctx.self)
 
         totalWorkers = workers
@@ -122,7 +122,7 @@ class Driver {
                                 })
                                 workerReceiveFrom = Map()
                             },
-                            expectedReplies = totalWorkers,
+                            expectedReplies = totalWorkers.toInt,
                             ctx.self,
                             aggregateReplies = replies => {
                                 var passedRounds: Int = 1
@@ -160,38 +160,27 @@ class Driver {
 
 // Each worker and driver maintains a copy of the agent name map
 class AgentNameMap {
-    private val agentNameMap: ConcurrentHashMap[Int, ListBuffer[Long]] = new ConcurrentHashMap()
+    // private val agentNameMap: ConcurrentHashMap[Int, ListBuffer[Long]] = new ConcurrentHashMap()
+    // agent Id, containerId or workerId
+    private val agentNameMap: ConcurrentHashMap[Long, Long] = new ConcurrentHashMap[Long, Long]()
 
-    def update(workerId: Int, agentIds: Seq[Long]): Unit = synchronized {
-        val x: ListBuffer[Long] = ListBuffer[Long]()
-        x.addAll(agentIds)
-        agentNameMap.update(workerId, x)
+    def update(workerId: Long, agentIds: Seq[Long]): Unit = synchronized {
+        agentIds.foreach(i => {
+            agentNameMap.putIfAbsent(i, workerId)
+        })
     }
 
     // Replace with better indexing, hash-based lookup
-    def getWorker(agentId: Long): Int = synchronized {
-        var ans: Int = -1
-        for (i <- agentNameMap) {
-            if (i._2.contains(agentId)) {
-                if (ans != -1){
-                    throw new Exception(f"Agent ${agentId} found in both workers ${i._1} and ${ans}!")
-                }
-                ans = i._1
-            } 
-        }
-        if (ans == -1){
-            throw new Exception(f"Agent ${agentId} not found in the name map!")
-        }
-        ans
+    def getWorker(agentId: Long): Long = synchronized {
+        agentNameMap.get(agentId)
     }
 
-    def isRegistered(workerId: Int): Boolean = {
-        agentNameMap.contains(workerId)
+    def isRegistered(workerId: Long): Boolean = synchronized {
+        agentNameMap.containsValue(workerId)
     }
 
-    def migrate(oldWorker: Int, newWorker: Int, agentId: Long): Unit = synchronized {
-        agentNameMap(oldWorker) -= agentId
-        agentNameMap(newWorker) += agentId
+    def migrate(newWorker: Long, agentId: Long): Unit = synchronized {
+        agentNameMap.put(agentId) = newWorker
     }
 
     def clear(): Unit = synchronized {
@@ -207,13 +196,13 @@ object Worker {
     sealed trait WorkerEvent
     final case class Prepare() extends WorkerEvent with NoSerializationVerificationNeeded
     final case class RegisterAgentMap(driver: ActorRef[Driver.InitializeAgentMap]) extends WorkerEvent with NoSerializationVerificationNeeded
-    final case class AgentsCompleted(indexedMessages: Map[Int, MutMap[Long, List[Message]]]) extends WorkerEvent with NoSerializationVerificationNeeded
+    final case class AgentsCompleted(indexedMessages: Map[Long, MutMap[Long, List[Message]]]) extends WorkerEvent with NoSerializationVerificationNeeded
     final case class Stop() extends WorkerEvent with JsonSerializable
     final case class Start() extends WorkerEvent with NoSerializationVerificationNeeded
-    final case class ReceiveMessages(workerId: Int, messages: Map[Long, List[Message]]) extends WorkerEvent with JsonSerializable
-    final case class ReceiveAgentMap(workerId: Int, agentIds: Seq[Long], replyTo: ActorRef[ReceiveMessages]) extends WorkerEvent with JsonSerializable
-    final case class SendTo(workerId: Int, sendTo: Set[Int], elapsedTime: Int) extends WorkerEvent with JsonSerializable
-    final case class ExpectedReceives(ids: Map[Int, Set[Int]], sendTo: ActorRef[SendTo]) extends WorkerEvent with JsonSerializable
+    final case class ReceiveMessages(workerId: Long, messages: Map[Long, List[Message]]) extends WorkerEvent with JsonSerializable
+    final case class ReceiveAgentMap(workerId: Long, agentIds: Seq[Long], replyTo: ActorRef[ReceiveMessages]) extends WorkerEvent with JsonSerializable
+    final case class SendTo(workerId: Long, sendTo: Set[Long], elapsedTime: Int) extends WorkerEvent with JsonSerializable
+    final case class ExpectedReceives(ids: Map[Long, Set[Long]], sendTo: ActorRef[SendTo]) extends WorkerEvent with JsonSerializable
 
     val WorkerStartServiceKey = ServiceKey[ExpectedReceives]("WorkerStart")
     val WorkerStopServiceKey = ServiceKey[Stop]("WorkerStop")
@@ -224,22 +213,22 @@ class Worker {
     import Worker._
     private var sims: Seq[Actor] = Seq[Actor]()
     private var simIds: Seq[Long] = Seq[Long]()
-    private var workerId: Int = 0
-    private var totalWorkers: Int = 0
+    private var workerId: Long = 0
+    private var totalWorkers: Long = 0
     private val nameMap: AgentNameMap = new AgentNameMap()
     private var local_agents: Seq[(Long, ActorRef[LocalAgent.AgentEvent])] = Seq[(Long, ActorRef[LocalAgent.AgentEvent])]()
-    private val peer_workers: ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]] = new ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]]() 
+    private val peer_workers: ConcurrentHashMap[Long, ActorRef[Worker.ReceiveMessages]] = new ConcurrentHashMap[Long, ActorRef[Worker.ReceiveMessages]]() 
     private val collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
     private val receivedMessages: ConcurrentHashMap[Long, List[Message]] = new ConcurrentHashMap[Long, List[Message]]()
-    private val receivedWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
-    private var expectedWorkerSet: Set[Int] = Set[Int]()
+    private val receivedWorkers: ConcurrentLinkedQueue[Long] = new ConcurrentLinkedQueue[Long]()
+    private var expectedWorkerSet: Set[Long] = Set[Long]()
     private var sendToRef: ActorRef[SendTo] = null
 
     // private var tscontroller: ActorRef[TimeseriesController.LogWorker] = null
     var start: Long = 0
     var end: Long = 0
 
-    def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
+    def apply(id: Long, sims: Seq[Actor], totalWorkers: Long): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
         // ctx.log.debug("Register agent with receptionist")
         ctx.system.receptionist ! Receptionist.Register(WorkerStartServiceKey, ctx.self)
         ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
@@ -264,7 +253,7 @@ class Worker {
         // obtain the rest of worker references to support direct messaging
         this.totalWorkers = totalWorkers
         workerId = id
-        ctx.log.info(f"Worker ${workerId} has agents ${simIds}")
+        // ctx.log.info(f"Worker ${workerId} has agents ${simIds}")
 
         val workerSub = ctx.messageAdapter[Receptionist.Listing] {
             case Worker.WorkerUpdateAgentMapServiceKey.Listing(workers) =>
@@ -329,7 +318,7 @@ class Worker {
                     ctx.log.debug(f"Worker ${workerId} starts! Received from ${receivedWorkers}")
                     start = System.currentTimeMillis()
                     receivedWorkers.clear()
-                    expectedWorkerSet = Set[Int]()
+                    expectedWorkerSet = Set[Long]()
                     if (local_agents.size > 0){
                         ctx.spawnAnonymous(
                             Aggregator[LocalAgent.MessagesAdded, AgentsCompleted](
@@ -370,7 +359,7 @@ class Worker {
 
                 case ExpectedReceives(receive_map, replyTo) => 
                     sendToRef = replyTo
-                    expectedWorkerSet = Set[Int]()
+                    expectedWorkerSet = Set[Long]()
                     if (receive_map == null || receive_map.get(workerId).isEmpty) {
                         ctx.self ! Start()
                     } else {
@@ -384,7 +373,7 @@ class Worker {
                 case AgentsCompleted(indexedMessages) =>
                     ctx.log.debug(f"Local agents in worker ${workerId} have completed!")
                     end = System.currentTimeMillis()
-                    ctx.log.info(f"Worker ${workerId} runs for ${end-start} ms")
+                    ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms")
                     indexedMessages.foreach(i => {
                         ctx.log.debug(f"Worker ${workerId} sends to peer worker ${i._1} ${i._2}")
                         peer_workers.get(i._1) ! ReceiveMessages(workerId, i._2.toMap)
@@ -484,15 +473,15 @@ class LocalAgent {
 
 object DriverWorkerExp {
     sealed trait Command
-    final case class SpawnDriver(totalWorkers: Int, totalTurn: Int, messages: List[Message]) extends Command
-    final case class SpawnWorker(workerId: Int, sims: Seq[Actor], totalWorkers: Int) extends Command
+    final case class SpawnDriver(totalWorkers: Long, totalTurn: Int, messages: List[Message]) extends Command
+    final case class SpawnWorker(workerId: Long, sims: Seq[Actor], totalWorkers: Long) extends Command
     final case class DriverStopped() extends Command
-    final case class WorkerStopped(workerId: Int, sims: Seq[Actor]) extends Command
+    final case class WorkerStopped(workerId: Long, sims: Seq[Actor]) extends Command
 
     var cluster: Cluster = null
     var totalWorkers: Int = 0
-    val stoppedWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
-    var activeWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
+    val stoppedWorkers: ConcurrentLinkedQueue[Long] = new ConcurrentLinkedQueue[Long]()
+    var activeWorkers: ConcurrentLinkedQueue[Long] = new ConcurrentLinkedQueue[Long]()
     var finalAgents: ConcurrentLinkedQueue[Actor] = new ConcurrentLinkedQueue[Actor]()
 
     def apply(totalTurn: Int, totalWorkers: Int, actors: List[Actor], staged: Boolean=false, messages: List[Message]): Behavior[Command] = 
@@ -512,21 +501,21 @@ object DriverWorkerExp {
             ctx.log.debug(f"${actorsPerWorker} actors per worker")
 
             if (roles.exists(p => p.startsWith("Worker"))) {
-                ctx.log.warn(f"Creating a worker!")
+                ctx.log.debug(f"Creating a worker!")
                 val worker_id = roles.head.split("-").last.toInt
                 val containedAgents = actors.slice(worker_id*actorsPerWorker, List((worker_id+1)*actorsPerWorker, totalActors).min)        
                 // if (containedAgents.size > 0){
-                    ctx.self ! SpawnWorker(worker_id, containedAgents, totalWorkers)
+                    ctx.self ! SpawnWorker(worker_id.toLong, containedAgents, totalWorkers.toLong)
                 // }
             } 
             
             if (cluster.selfMember.hasRole("Driver")) {
-                ctx.log.warn(f"Creating a driver!")
+                ctx.log.debug(f"Creating a driver!")
                 ctx.self ! SpawnDriver(totalWorkers, totalTurn, messages)
             } 
 
             if (cluster.selfMember.hasRole("Standalone")) {
-                ctx.log.warn(f"Standalone mode")
+                ctx.log.debug(f"Standalone mode")
                 ctx.self ! SpawnDriver(totalWorkers, totalTurn, messages)
                 for (i <- Range(0, totalWorkers)){
                     val containedAgents = actors.slice(i*actorsPerWorker, List((i+1)*actorsPerWorker, totalActors).min)        
@@ -563,7 +552,7 @@ object DriverWorkerExp {
 
                 case WorkerStopped(workerId, agents) =>
                     if (cluster.selfMember.hasRole("Standalone")) {
-                        ctx.log.warn(f"Worker stop signal received! ${workerId} Stopped workers: ${stoppedWorkers}")
+                        ctx.log.debug(f"Worker stop signal received! ${workerId} Stopped workers: ${stoppedWorkers}")
                         if (!stoppedWorkers.contains(workerId)){
                             stoppedWorkers.add(workerId)
                             if (activeWorkers.toSet.diff(stoppedWorkers.toSet).isEmpty){
