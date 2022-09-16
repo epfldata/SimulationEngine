@@ -56,4 +56,4 @@ jobs:
     
     - name: examples compile and run
       if: ${{ steps.filter.outputs.generatedExample == 'true' || steps.filter.outputs.example == 'true' || steps.filter.outputs.library == 'true' || steps.filter.outputs.compiler == 'true'}}
-      run: sbt "project example; runAll; project genExample; testOnly generated.example.test.generatedExamples"
+      run: sbt "project example; runAll"
