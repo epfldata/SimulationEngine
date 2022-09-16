@@ -1,4 +1,4 @@
-package meta.runtime.simulation
+package simulation.akka
 
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration

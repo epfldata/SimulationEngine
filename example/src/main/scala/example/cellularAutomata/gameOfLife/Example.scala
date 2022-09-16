@@ -7,13 +7,17 @@ import lib.Graph.Torus2DGraph
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(width: Int, height: Int, cfreq: Int): List[Actor] = {
+        def apply(width: Int, height: Int): List[Actor] = {
             val totalPoints: Int = width * height
             // 2D space
             val neighborRadius: Int = 1
 
             val points = (1 to totalPoints).map(x => {
-                new Cell(Random.nextBoolean(), cfreq)
+                if (Random.nextBoolean()){
+                    new Cell(1)
+                } else {
+                    new Cell(0)
+                }
             })
 
             Torus2DGraph(points, width, height, neighborRadius)

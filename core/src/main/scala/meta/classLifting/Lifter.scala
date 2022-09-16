@@ -65,8 +65,8 @@ object Lifter {
     cde analyse {
       case code"SpecialInstructions.waitAndReply($y: Double): Unit" =>
         return false
-      case code"SpecialInstructions.handleRPC(): Unit" =>
-        return false
+      // case code"SpecialInstructions.handleRPC(): Unit" =>
+      //   return false
     }
     true
   }
@@ -338,59 +338,58 @@ class Lifter {
         val p1 = Variable[RequestMessage]
 
         //Default, add back, if message is not for my message handler, it is for a merged actor
-        val reqAlgo: Algo[Any] = ScalaCode(
-          code"$actorSelfVariable.addReceiveMessages(List($p1))")
+        // val reqAlgo: Algo[Any] = ScalaCode(
+        //   code"$actorSelfVariable.receivedMessages.add($p1)")
+        
+        // Default, (assume no blocking RPC) remove all processed RPC requests
+        // zt Only non-blocking RPCs allowed.
+        // val reqAlgo: Algo[Any] = ScalaCode(code"$actorSelfVariable.receivedRPCRequests.clear()")
 
-        // main is not callable 
-        val callRequest = MMap(actorName).filterNot(x => x.endsWith(".main") || methodsMap.get(x).isEmpty).foldRight(reqAlgo)((actorMtd, rest) => {
-          val methodId: Int = methodsIdMap(actorMtd)
-          val methodSymStr: String = actorMtd.split("\\.").last
-          val methodInfo: MethodInfo[_] = methodsMap(actorMtd)
+        // // main is not callable 
+        // val callRequest = MMap(actorName).filterNot(x => x.endsWith(".main") || methodsMap.get(x).isEmpty)
+        //   .foldRight(reqAlgo)((actorMtd, rest) => {
+        //   val methodId: Int = methodsIdMap(actorMtd)
+        //   val methodSymStr: String = actorMtd.split("\\.").last
+        //   val methodInfo: MethodInfo[_] = methodsMap(actorMtd)
 
-          val argss: List[List[OpenCode[_]]] =
-            methodInfo.vparams.zipWithIndex.map(x => {
-              x._1.zipWithIndex.map(y => {
-                code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
-              })
-            })
+        //   val argss: List[List[OpenCode[_]]] =
+        //     methodInfo.vparams.zipWithIndex.map(x => {
+        //       x._1.zipWithIndex.map(y => {
+        //         code"$p1.argss(${Const(x._2)})(${Const(y._2)})"
+        //       })
+        //     })
           
-          // println(f"Method ${methodSymStr} defInGeneratedCode is ${methodInfo.defInGeneratedCode}")
-
-          IfThenElse(
-            code"""$p1.methodInfo==${Const(methodSymStr)}""",
-            IfThenElse(
-              code"${Const(methodInfo.defInGeneratedCode)}",
-              // ScalaCode(f"wrapper_${methodSym}($p1.argss.flatten)")
-              ScalaCode(code"$actorSelfVariable.handleNonblockingMessage($p1)"),
-              LetBinding(
-                Option(resultMessageCall), 
-                CallMethod[Any](methodId, argss),
-                IfThenElse(
-                  code"$p1.oneside==${Const(true)}",
-                  NoOp(), 
-                  ScalaCode(code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")
-                )
-              )
-              // Bug: following code doesn't work. IfThenElse doesnt handle nesting well
-              // IfThenElse(
-              //   code"""$p1.oneside==${Const(true)}""",
-              //   CallMethod[Any](methodId, argss),
-              //   LetBinding(
-              //     Option(resultMessageCall),
-              //     CallMethod[Any](methodId, argss),
-              //     ScalaCode(code"""$p1.reply($actorSelfVariable, $resultMessageCall)"""))
-              // )
-            ),
-            rest
-          )
-        })
+        //   IfThenElse(
+        //     code"""$p1.methodInfo==${Const(methodSymStr)}""",
+        //     IfThenElse(
+        //       code"${Const(methodInfo.defInGeneratedCode)}",
+        //       // ScalaCode(f"wrapper_${methodSym}($p1.argss.flatten)")
+        //       ScalaCode(code"$actorSelfVariable.handleNonblockingMessage($p1)"),
+        //       LetBinding(
+        //         Option(resultMessageCall), 
+        //         CallMethod[Any](methodId, argss),
+        //         IfThenElse(
+        //           code"$p1.oneside==${Const(true)}",
+        //           NoOp(), 
+        //           ScalaCode(code"""$p1.reply($actorSelfVariable, $resultMessageCall)""")
+        //         )
+        //       )
+        //       // Bug: following code doesn't work. IfThenElse doesnt handle nesting well
+        //       // IfThenElse(
+        //       //   code"""$p1.oneside==${Const(true)}""",
+        //       //   CallMethod[Any](methodId, argss),
+        //       //   LetBinding(
+        //       //     Option(resultMessageCall),
+        //       //     CallMethod[Any](methodId, argss),
+        //       //     ScalaCode(code"""$p1.reply($actorSelfVariable, $resultMessageCall)"""))
+        //       // )
+        //     ),
+        //     rest
+        //   )
+        // })
 
         //for each received message, use callCode
-        val handleMessage =
-            Foreach(
-              code"$actorSelfVariable.popRPCRequests",
-              p1,
-              callRequest)
+        val handleMessage = ScalaCode(code"$actorSelfVariable.handleRPC()")
         
         new LiftedMethod[Unit](localHandleMessage, handleMessage, List(), List(List()), handleMessageId, true)
     }
@@ -447,11 +446,11 @@ class Lifter {
                             liftCode(elseBody))
           f.asInstanceOf[Algo[T]]
 
-        case code"SpecialInstructions.handleRPC()" =>
-          defInGeneratedCode = false
-          val handleMessage = CallMethod[Unit](handleMessageId, List(List()))
-          cache += (cde -> handleMessage)
-          handleMessage.asInstanceOf[Algo[T]]
+        // case code"SpecialInstructions.handleRPC()" =>
+        //   defInGeneratedCode = false
+        //   val handleMessage = CallMethod[Unit](handleMessageId, List(List()))
+        //   cache += (cde -> handleMessage)
+        //   handleMessage.asInstanceOf[Algo[T]]
 
         case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
           defInGeneratedCode = false

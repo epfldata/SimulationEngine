@@ -59,11 +59,6 @@ object SpecialInstructions {
   def send[T](message: T, latency: Int): Unit = ???
 
   /**
-    * The syntax for Sim to check its mailbox.
-    */
-  def handleRPC(): Unit = ???
-
-  /**
     * Helper methods to inform lifter which variables or methods require private or override modifier
     *
     * @param fieldName

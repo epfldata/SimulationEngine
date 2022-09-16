@@ -2,7 +2,7 @@ ThisBuild / organization := "ch.epfl.data"
 ThisBuild / scalaVersion := "2.12.8"
 ThisBuild / version := "1.3-SNAPSHOT"
 
-import com.trueaccord.scalapb.compiler.Version.scalapbVersion
+// import com.trueaccord.scalapb.compiler.Version.scalapbVersion
 // import com.typesafe.sbt.SbtMultiJvm.multiJvmSettings
 // import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 
@@ -16,7 +16,7 @@ val squidVersion = "0.4.1-SNAPSHOT"
 val sparkVersion = "3.3.0"
 val graphVizVersion = "0.10.0"
 val akkaVersion = "2.6.14"
-val scalapbVersion = "1.0.6"
+// val scalapbVersion = "1.0.6"
 
 run / fork := true
 
@@ -40,7 +40,6 @@ lazy val akkaSettings = Seq(
   libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3",
   libraryDependencies += "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
   libraryDependencies += "com.typesafe.akka" %% "akka-cluster-typed"         % akkaVersion,
-  libraryDependencies += "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion,
 )
 
 lazy val sparkSettings = Seq(
@@ -70,8 +69,9 @@ lazy val noMessaging = (project in file("ecosim"))
 lazy val core = (project in file("core"))
   .settings(
     name := f"${project_name}-core",
-    commonSettings, squidSettings, graphSettings, akkaSettings, sparkSettings,
+    commonSettings, squidSettings, graphSettings,
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
+    libraryDependencies += "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion,
     Test / parallelExecution := false,
   )
 
@@ -79,9 +79,29 @@ lazy val genCore = (project in file("gen-core"))
   .settings(
     name := f"${project_name}-genCore",
     Test / parallelExecution := false,
-    commonSettings, akkaSettings, sparkSettings,
+  ).dependsOn(core % "compile->compile;compile->test")
+
+lazy val spark = (project in file("Spark"))
+  .settings(
+    name := f"${project_name}-spark",
+    commonSettings, sparkSettings,
+    Test / parallelExecution := false,
   )
-  .dependsOn(core % "compile->compile;compile->test", library)
+
+lazy val akka = (project in file("Akka"))
+  .settings(
+    name := f"${project_name}-akka",
+    commonSettings, akkaSettings,
+    Test / parallelExecution := false,
+  ).dependsOn(core % "compile->compile;compile->test", genCore, genExample)
+
+lazy val base = (project in file("Base"))
+  .settings(
+    name := f"${project_name}-base",
+    commonSettings,
+    Test / parallelExecution := false,
+  ).dependsOn(core % "compile->compile;compile->test", genCore, genExample)
+
 
 lazy val library = (project in file("library"))
   .settings(

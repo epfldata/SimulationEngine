@@ -3,6 +3,7 @@ package meta.runtime
 import Actor.AgentId
 import meta.classLifting.SpecialInstructions._
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
+import collection.JavaConverters._
 
 /**
  * A container agent holds a collection of agents. 
@@ -33,27 +34,35 @@ class Container extends Actor {
     def setKBound(bound: Int): Unit = {
         kbound = bound
     }
-    override def run(msg: List[Message]): (List[Message], Int) = {
+
+    // Before invoking run, the system has already delivered messages
+    override def run(): Int = {
+        messageListener()
         var localTurns: Int = 0
-        val newMsgs = msg.groupBy(_.receiverId)
-
         sendMessages.clear()
-        do {
-            val sentMessages = containedAgents.flatMap(a => {
-                a._2.run(
-                    a._2.proxyIds.flatMap(
-                        id => internalMessages.remove(id).getOrElse(List()) ++ newMsgs.getOrElse(id, List())
-                    ))._1
+
+        while (localTurns<kbound) {
+            var passed: Int = 1
+            val sentMessages = containedAgents.map(a => {
+                var local_passed: Int = a._2.run() 
+                if (local_passed > passed){
+                    passed = local_passed
+                }                
+                a._2.sendMessages
             })
 
-            val separated_msgs = sentMessages.partition(x => (proxyIds.contains(x.receiverId)))
-
-            sendMessages.appendAll(separated_msgs._2)
-            separated_msgs._1.foreach(m => {
-                internalMessages.getOrElseUpdate(m.receiverId, ListBuffer()).append(m)
+            sentMessages.foreach(cmap => {
+                cmap.foreach(r => {
+                    if (containedAgents.get(r._1).isDefined){
+                        containedAgents.get(r._1).get.receivedMessages.addAll(r._2.asJava)
+                    } else {
+                        sendMessages.getOrElseUpdate(r._1, new ListBuffer[Message]()).appendAll(r._2)
+                    }
+                })
             })
-            localTurns += 1
-        } while (!internalMessages.isEmpty && localTurns<kbound)
-        (sendMessages.toList, localTurns)
+            localTurns += passed
+        } 
+        time += localTurns        
+        time
     }
 }

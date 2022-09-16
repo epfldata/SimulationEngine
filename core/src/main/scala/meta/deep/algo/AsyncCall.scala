@@ -26,9 +26,9 @@ case class AsyncCall[R, T](actorFrom: OpenCode[Actor],
       code"""
         val sender = $actorFrom;
         val receiver = $actorRef;
-        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, true, false, ${Const(methodSym)}, sender.time,  $latency,  $convertedArgs);
+        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, ${Const(methodSym)}, sender.time,  $latency,  $convertedArgs);
         var future = meta.runtime.Future[$T](requestMessage.sessionId); 
-        sender.sendMessage(requestMessage);
+        sender.sendMessage(receiver.id, requestMessage);
         sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.runtime.Message) => {
           future.setValue(response.asInstanceOf[meta.runtime.ResponseMessage].arg.asInstanceOf[$T])
         })

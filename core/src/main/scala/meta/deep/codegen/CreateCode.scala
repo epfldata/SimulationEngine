@@ -172,49 +172,46 @@ class CreateCode(initCode: String,
 
     val handleMsg: String = if (methodCases.isEmpty()) ""  else 
     s"""
-  override def handleNonblockingMessage(m: meta.runtime.RequestMessage): Unit = {
-    val args = m.argss.flatten
-    val response = m.methodInfo match {
-      ${methodCases.split("\n").mkString("\n" + " "*4)}
+  override def handleRPC(): Unit = {
+    for (m <- receivedRPCRequests){
+      val args = m.argss.flatten
+      val response = m.methodInfo match {
+        ${methodCases.split("\n").mkString("\n" + " "*4)}
+      }
+      if (!m.oneside){
+        val msg = meta.runtime.ResponseMessage(response, time, m.latency)
+        msg.sessionId = m.sessionId
+        sendMessage(m.senderId, msg)
+      }
     }
-    if (!m.oneside){
-      m.reply(this, response)
-    }
+    receivedRPCRequests.clear()
   }
   """
 
-  //   override def handleNonblockingMessages(): meta.runtime.Actor = {
-  //   val requests = popRequestMessages
-  //   for (r <- requests) {
-  //     handleNonblockingMessage(r)
-  //   }
-  //   this
-  // }
-
     // default to the entry point of handle message
     // allow for re-entry from previous location, to handle waits in methods
-    val gotoHandleMsg: String = s"""
-    override def gotoHandleMessages(new_ir: Int = ${handlerEntryMap(actorName)}): meta.runtime.Actor = {
-      // first entry, save the current IR to reflectionIR
-      ${unblockRegMap(actorName)} = true
+    // val gotoHandleMsg: String = s"""
+    // override def gotoHandleMessages(new_ir: Int = ${handlerEntryMap(actorName)}): meta.runtime.Actor = {
+    //   // first entry, save the current IR to reflectionIR
+    //   ${unblockRegMap(actorName)} = true
 
-      if (${reflectionIR} == -1){
-        ${reflectionIR} = ${instructionRegister}
-        ${instructionRegister} = new_ir
-      }
+    //   if (${reflectionIR} == -1){
+    //     ${reflectionIR} = ${instructionRegister}
+    //     ${instructionRegister} = new_ir
+    //   }
 
-      while (${instructionRegister} <= ${handlerEndMap(actorName)} && ${unblockRegMap(actorName)}) {
-        ${memAddr}(${instructionRegister})()
-      }
+    //   while (${instructionRegister} <= ${handlerEndMap(actorName)} && ${unblockRegMap(actorName)}) {
+    //     ${memAddr}(${instructionRegister})()
+    //   }
 
-      // reset instruction register when finishes processing
-      if (${instructionRegister} > ${handlerEndMap(actorName)}) {
-        ${instructionRegister} = ${reflectionIR}
-        ${reflectionIR} = -1
-      }
-      this
-    }
-    """
+    //   // reset instruction register when finishes processing
+    //   if (${instructionRegister} > ${handlerEndMap(actorName)}) {
+    //     ${instructionRegister} = ${reflectionIR}
+    //     ${reflectionIR} = -1
+    //   }
+    //   this
+    // }
+    // """
 
     val run_until: String = runUntil.run()
     val parameters: String = parametersString.run()
@@ -222,7 +219,7 @@ class CreateCode(initCode: String,
     val resetAgentString: String = resetAgent.run()
     def parents: String = parentString.run()
 
-    val methods: String = s"${methodss}${run_until}${handleMsg}${gotoHandleMsg}${cloneString}${resetAgentString}"
+    val methods: String = s"${methodss}${run_until}${handleMsg}${cloneString}${resetAgentString}"
 
     createClass(compiledActorGraph.name, parameters, initParams, initVars + stepFunctions, methods, parents)
   }

@@ -119,7 +119,7 @@ class CommunicatingVehicle(val neighbors: List[Vehicle]) extends Vehicle {
     }
 }
 
-class InheritanceTest2 extends FlatSpec {
+class InheritanceTestRootLifted extends FlatSpec {
     import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 

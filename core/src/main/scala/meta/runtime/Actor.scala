@@ -1,7 +1,9 @@
 package meta.runtime
 
 import java.util.UUID
-import scala.collection.mutable.{ListBuffer, Map => MutMap}
+import scala.collection.mutable.{Buffer, ListBuffer, Map => MutMap}
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.ArrayList
 
 /**
   * This object handles the unique id generation of an actor
@@ -45,13 +47,12 @@ class Actor extends Serializable {
   /**
     * Contains the received messages from the previous step
     */
-//  protected var receivedMessages: List[Message] = List()
-  val receivedMessages: ListBuffer[Message] = new ListBuffer[Message]()
+  val receivedMessages: ConcurrentLinkedQueue[Message] = new ConcurrentLinkedQueue[Message]()
 
   /**
     * Contains the messages, which should be sent to other actors in the next step
     */
-  val sendMessages: ListBuffer[Message] = new ListBuffer()
+  val sendMessages: MutMap[Long, ListBuffer[Message]] = MutMap[Long, ListBuffer[Message]]()
 
   /**
     * A map of listeners, which is required to register a listener for a response of a request message
@@ -82,50 +83,40 @@ class Actor extends Serializable {
     proxyIds = proxyIds ::: ids
   }
 
-  final def sendMessage(message: Message): Unit = {
-    if (message.receiverId == this.id) {
-      addReceiveMessages(List(message))
-    } else {
-      sendMessages.append(message)
-    }
+  final def sendMessage(receiver: Long, message: Message): Unit = {
+    sendMessages.getOrElseUpdate(receiver, new ListBuffer[Message]()).append(message)
   }
 
   final def receiveMessage(): Option[Message] = {
-    if (receivedMessages.isDefinedAt(0)){
-      Some(receivedMessages.remove(0))
+    val ans = receivedMessages.poll()
+    if (ans == null){
+      return None
     } else {
-      None
+      Some(ans)
     }
   }
 
-  /**
-    * Adds a list of messages to the agent
-    *
-    * @param messages Actions with receiver matching the agent from the previous step
-    */
-  def addReceiveMessages(messages: List[Message]): Actor = {
-    for (m <- messages) {
-      m match {
-        case m: RequestMessage => this.receivedMessages.append(m)
-        case m: ResponseMessage => if (time < m.send_time + m.latency) {
-          this.receivedMessages.append(m)
-        } else if (responseListeners.get(m.sessionId).isDefined) {
-          val handler = responseListeners.remove(m.sessionId).get
-          handler(m)
-        } else {
-          this.receivedMessages.append(m)
-        }
+  val receivedRPCRequests: ListBuffer[RequestMessage] = ListBuffer()
+
+  def messageListener(): Unit = {
+    val processedMessages = new ArrayList[Message]()
+    receivedMessages.forEach(msg => {
+      msg match {
+        case m: ResponseMessage => 
+          if (responseListeners.get(m.sessionId).isDefined){
+            responseListeners.remove(m.sessionId).get(m)
+            processedMessages.add(m)
+          }
+        case m: RequestMessage =>
+          // send_time is 0-based
+          if (m.latency + m.send_time <= time){
+            receivedRPCRequests.append(m)
+            processedMessages.add(m) 
+          } 
+        case _ =>
       }
-    }
-    this
-  }
-
-  /**
-    * This returns all messages, which are sent via sendMessage
-    * @return the actor itself
-    */
-  def getSendMessages: ListBuffer[Message] = {
-    sendMessages
+    }) 
+    receivedMessages.removeAll(processedMessages)
   }
 
   /**
@@ -140,26 +131,11 @@ class Actor extends Serializable {
   }
 
   /**
-    * This function removes all receivedMessages of type RequestMessage from the receivedMessages list that should be processed. 
-    * Remove the blocking attribute, which is not necessary since rpcs are non-blocking
-    * agents can process messages that arrived earlier, but not later
-    * and returns them to the method caller
-    * @return a list of receivedMessages of type RequestMessage
-    */
-  def popRPCRequests: List[RequestMessage] = {
-    val rM = this.receivedMessages
-      .filter(m => (m.isInstanceOf[RequestMessage] && m.rpc && (time >=m.latency + m.send_time)))
-      .map(_.asInstanceOf[RequestMessage])
-    this.receivedMessages --= rM
-    rM.toList
-  }
-
-  /**
     * Stub, gets overriden by generated code
     * messages: a list of input messages
     * return: (a list of output messages, passed rounds)
     */
-  def run(messages: List[Message]): (List[Message], Int) = {
+  def run(): Int = {
     ???
   }
 
@@ -169,14 +145,11 @@ class Actor extends Serializable {
 
   // In-place reset the user-defined attributes of a Sim. Runtime attributes, such as id and connectedAgents, are unaffected.
   def SimReset(args: Set[String] = Set()): Unit = {}
-
-  // Get the code position of the handleMessage and go to that location. Process the code related to handle message, reset the instruction pointer, and return the agent
-  // def handleNonblockingMessages(): Actor = ??? 
-  def gotoHandleMessages(new_ir: Int = -1): Actor = ??? 
   
-  def handleNonblockingMessage(m: RequestMessage): Unit = ??? 
+  def handleRPC(): Unit = {}
 
-  def runAndEval[K](messages: List[Message], mapper: Actor=>K): ((List[Message], Int), K) = {
-    (run(messages), mapper(this))
+  def runAndEval[K](mapper: Actor=>K): K = {
+    run() 
+    mapper(this)
   }
 }

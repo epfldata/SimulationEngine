@@ -35,7 +35,7 @@ class ReceiverForBound() extends Actor {
     @transparencyPropagating
     def rpc2(): Unit = {
       counter = counter + 1
-      // println("Received a message for rpc2 at time " + time)
+    //   println("Received a message for rpc2 at time " + time)
     }
 
     def main(): Unit = {

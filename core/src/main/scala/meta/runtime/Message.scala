@@ -4,42 +4,14 @@ import java.util.UUID
 import Actor.AgentId
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
 
-/**
-  * This class is the supertype of the messages
-  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
   Array(
-    new JsonSubTypes.Type(value = classOf[RequestMessage], name = "responseMessage"),
-    new JsonSubTypes.Type(value = classOf[ResponseMessage], name = "requestMessage")))
-abstract class Message extends JsonSerializable {
-
-  /**
-    * The sender of the message
-    */
-  val senderId: AgentId
-
-  /**
-    * The receiver of the message
-    */
-  val receiverId: AgentId
-
-  /**
-    * A unique id for the message-communication (request/response)
-    */
-  var sessionId: String = UUID.randomUUID().toString
-
-  val send_time: Int
-
-  val latency: Int
-  
-  val rpc: Boolean
-
-  override def toString: String = {
-    "Message: " + senderId + " -> " + receiverId + "(" + sessionId + ")"
-  }
+    new JsonSubTypes.Type(value = classOf[RequestMessage], name = "requestMessage"),
+    new JsonSubTypes.Type(value = classOf[ResponseMessage], name = "responseMessage")))
+class Message extends JsonSerializable {
+  var value: Int = 0
 }
-
 
 /**
   * This represents a message, which is used for sending something to another actor
@@ -49,9 +21,8 @@ abstract class Message extends JsonSerializable {
   * @param methodInfo the name of the method which should be called
   * @param argss the arguments of the method
   */
-case class RequestMessage(override val senderId: AgentId,
-                          override val receiverId: AgentId,
-                          rpc: Boolean,
+case class RequestMessage(senderId: AgentId,
+                          receiverId: AgentId,
                           oneside: Boolean,
                           methodInfo: String,
                           send_time: Int, 
@@ -64,24 +35,18 @@ case class RequestMessage(override val senderId: AgentId,
     * @param owner the sender of the reply message
     * @param returnValue the return value/answer for the request message
     */
-  def reply(owner: Actor, returnValue: Any): Unit = {
-    val msg = ResponseMessage(receiverId, senderId, returnValue, rpc, owner.time, latency)
-    msg.sessionId = this.sessionId
-    owner.sendMessage(msg)
-  }
+  var sessionId: String = UUID.randomUUID().toString
 }
 
 /**
   * This class is used to answer to a received message.
-  * @param senderId the id of the sender
   * @param receiverId the id of the receiver
   * @param arg the return value of the method/answer of the request message
   * @param blocking indicates whether the sender waits for the reply
   */
-case class ResponseMessage(override val senderId: AgentId,
-                           override val receiverId: AgentId,
-                           arg: Any, 
-                           rpc: Boolean, 
+case class ResponseMessage(arg: Any, 
                            send_time: Int, 
                            latency: Int)
-    extends Message
+    extends Message {
+      var sessionId: String = UUID.randomUUID().toString
+    }

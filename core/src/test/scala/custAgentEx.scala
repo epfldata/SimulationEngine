@@ -10,30 +10,8 @@ import org.scalatest.FlatSpec
 
 // A test that shows how users can override methods in Actor for debugging or other purposes
 trait custActor extends Actor {
-    override def addReceiveMessages(messages: List[Message]): Actor = {
-        println(s"Add receive messages for ${id}: ${messages} $responseListeners")
-
-        this.receivedMessages.appendAll( messages.filter(
-        x =>
-            x.isInstanceOf[RequestMessage] || responseListeners
-            .get(x.sessionId)
-            .isEmpty))
-        // Only invoke handler callback If the agent is not a container agent
-
-        if (proxyIds.size == 1) {
-        messages
-        .filter(
-            x =>
-            responseListeners.get(x.sessionId).isDefined && x
-                .isInstanceOf[ResponseMessage])
-        .foreach(x => {
-            val handler = responseListeners(x.sessionId)
-            responseListeners.remove(x.sessionId)
-            handler(x)
-        })
-        }
-
-        this
+    override def messageListener(): Unit = {
+        println(s"Current received messages for ${id} are ${receivedMessages}")
     }
 }
 

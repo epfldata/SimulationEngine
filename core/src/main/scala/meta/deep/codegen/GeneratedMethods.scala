@@ -46,15 +46,15 @@ case object runUntil extends GeneratedMethods {
     import GeneratedMethods._
     override def run(): String = {
 s"""
-  override def run(msgs: List[meta.runtime.Message]): (List[meta.runtime.Message], Int) = {
-    addReceiveMessages(msgs)
+  override def run(): Int = {
+    messageListener()
     sendMessages.clear()
     ${createCode.unblockRegMap(actorName)} = true
     while (${createCode.unblockRegMap(actorName)} && (${instructionRegister} < ${totalStates})) {
       ${memAddr}(${instructionRegister})()
     }
     time += 1
-    (sendMessages.toList, 1)
+    time
   }
 """
     }

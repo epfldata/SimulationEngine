@@ -6,9 +6,7 @@ import meta.deep.IR.TopLevel.ClassWithObject
 import meta.deep.IR
 import meta.runtime.{Actor, Future, Message}
 import meta.API._
-import org.scalatest.FlatSpec
-import meta.runtime.simulation.Base
-
+import org.scalatest.{FlatSpec, DoNotDiscover}
 
 @lift
 class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
@@ -62,6 +60,7 @@ class AgentWithBlockingCallLocal() extends Actor {
     }
 }
 
+@DoNotDiscover
 class blockingMethodCallTest extends FlatSpec {
     import meta.classLifting.Lifter
     import meta.deep.IR.TopLevel._

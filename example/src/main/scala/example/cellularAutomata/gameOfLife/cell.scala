@@ -3,6 +3,8 @@ package gameOfLife
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
+import meta.runtime.{RequestMessage, ResponseMessage, Message}
+import meta.runtime.ResponseMessage
 
 /**
   * Conway's game of life
@@ -11,35 +13,31 @@ import squid.quasi.lift
   * @param alive
   */
 @lift
-class Cell(var alive: Boolean, var cfreq: Int) extends Actor {
-
-    var futures: List[Future[Boolean]] = List()
-
-    def getValue: Boolean = alive
-
-    private def rule(neighborsAlive: List[Boolean]): Unit = {
-        val aliveNeighbors = neighborsAlive.filter(x => x==true).size
-
-        if (alive && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
-            alive = false
-        }
-        
-        if (!alive && (aliveNeighbors==3)) {
-            alive = true
-        }
-    }
+class Cell(var alive: Int) extends Actor {
 
     def main(): Unit = {
         while(true) {
-            futures = connectedAgents.map(x => x.asInstanceOf[Cell]).map(v => async_call(() => v.getValue, 1))
-
-            while (!(futures.nonEmpty && futures.forall(x => x.isCompleted))) {
-                waitAndReply(1)
+            var m: Option[Message] = receiveMessage()
+            var aliveNeighbors: Int = 0
+            
+            while (m.isDefined){
+              aliveNeighbors = aliveNeighbors + m.get.value
+              m = receiveMessage()
             }
 
-            val ans: List[Boolean] = futures.map(o => o.popValue.get).asInstanceOf[List[Boolean]]
-            rule(ans)
-            waitAndReply(cfreq)
+            if (alive==1 && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
+              alive = 0
+            } else if (alive==0 && aliveNeighbors==3) {
+                alive = 1
+            }
+
+            connectedAgents.foreach(i => {
+              val msg = new Message()
+              msg.value = 0
+              sendMessage(i.id, msg)
+            })
+            println("Agent " + id + " received total messages " + alive)
+            waitLabel(Turn, 1)
         }
     }
 }

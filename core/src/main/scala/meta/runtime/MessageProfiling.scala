@@ -34,7 +34,7 @@ class MessageProfiling() {
     }
   }
 
-  def recordMessage(messages: Seq[Message]): Unit = {
+  def recordMessage(messages: Seq[RequestMessage]): Unit = {
     messages.foreach(m => {
       if (m.senderId > m.receiverId){
         recordMessage(m.receiverId, m.senderId)

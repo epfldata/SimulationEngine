@@ -9,12 +9,11 @@ import meta.runtime.{Actor, Container, Message}
   * @param totalTurn defines for how many turns the simulation continues
   * @param isCompiled defines whether to compile or stage the agents
   * @param latencyBound defines a bounded message latency for the model, default to 1
-  * @param messages defines a list of initial messages, especially when resuming from a snapshot
   * @param role defines the role of the host machine in a distributed environment in Akka, default to local host
   * @param port defines the port number for the role, default to 0, i.e. randomly assign a port value
   */
 class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isCompiled: Boolean = true, 
-  val latencyBound: Int = 1, val messages: List[Message]=List(), val role: String="Standalone", val port: Int=25251) {
+  val latencyBound: Int = 1, val role: String="Standalone", val port: Int=25251) {
   // Group agents statically into containers according to the number of partitions                 
   def staticPartition(partitions: Int)(containerOpt: SimContainerOptimization): SimulationConfig = {
 
@@ -31,12 +30,12 @@ class SimulationConfig(val actors: List[Actor], val totalTurn: Int = 40, val isC
 
         containers.foreach(c => c.setKBound(latencyBound))
         
-        new SimulationConfig(containers, totalTurn, isCompiled, latencyBound, messages, role, port)
+        new SimulationConfig(containers, totalTurn, isCompiled, latencyBound, role, port)
   }
 
   def copy(actors: List[Actor] = actors, totalTurn: Int = totalTurn, isCompiled: Boolean = isCompiled, 
-  latencyBound: Int = latencyBound, messages: List[Message]=messages, role: String=role, port: Int=port): SimulationConfig = {
-    new SimulationConfig(actors, totalTurn, isCompiled, latencyBound, messages, role, port)
+  latencyBound: Int = latencyBound, role: String=role, port: Int=port): SimulationConfig = {
+    new SimulationConfig(actors, totalTurn, isCompiled, latencyBound, role, port)
   }
 
   override def toString(): String = {
@@ -49,10 +48,10 @@ trait DistConfig {
 }
 
 class DistSimulationConfig(actors: List[Actor], totalTurn: Int = 40, val totalMachines: Int=1, val machineSeq: Int = 0, isCompiled: Boolean = true, 
-  latencyBound: Int = 1, messages: List[Message]=List(), role: String="Standalone", port: Int=25251) extends SimulationConfig(actors, totalTurn, isCompiled, latencyBound, messages, role, port) with DistConfig {
+  latencyBound: Int = 1, role: String="Standalone", port: Int=25251) extends SimulationConfig(actors, totalTurn, isCompiled, latencyBound, role, port) with DistConfig {
     def getConfig(): SimulationConfig = {     
       role match {
-        case "Standalone" => new SimulationConfig(actors, totalTurn, isCompiled, latencyBound, messages, role, port)
+        case "Standalone" => new SimulationConfig(actors, totalTurn, isCompiled, latencyBound, role, port)
         case _ => {
           val totalAgents = actors.size
           var agentsPerMachine: Int = totalAgents / totalMachines
@@ -69,17 +68,17 @@ class DistSimulationConfig(actors: List[Actor], totalTurn: Int = 40, val totalMa
               actors.slice(start, start + agentsPerMachine)
             }
           }
-          new SimulationConfig(agents, totalTurn, isCompiled, latencyBound, messages, role, port)
+          new SimulationConfig(agents, totalTurn, isCompiled, latencyBound, role, port)
         }
     }
   }
 } 
 
 class DistSimulationConfigPartialEval(actors: => List[Actor], totalAgents: Int, totalTurn: Int = 40, val totalMachines: Int=1, val machineSeq: Int = 0, isCompiled: Boolean = true, 
-  latencyBound: Int = 1, messages: List[Message]=List(), role: String="Standalone", port: Int=25251) extends DistConfig {
+  latencyBound: Int = 1, role: String="Standalone", port: Int=25251) extends DistConfig {
     def getConfig(): SimulationConfig = {     
       role match {
-        case "Standalone" => new SimulationConfig(actors, totalTurn, isCompiled, latencyBound, messages, role, port)
+        case "Standalone" => new SimulationConfig(actors, totalTurn, isCompiled, latencyBound, role, port)
         case _ => {
           var agentsPerMachine: Int = totalAgents / totalMachines
 
@@ -95,7 +94,7 @@ class DistSimulationConfigPartialEval(actors: => List[Actor], totalAgents: Int, 
               actors.slice(start, start + agentsPerMachine)
             }
           }
-          new SimulationConfig(agents, totalTurn, isCompiled, latencyBound, messages, role, port)
+          new SimulationConfig(agents, totalTurn, isCompiled, latencyBound, role, port)
         }
     }
   }

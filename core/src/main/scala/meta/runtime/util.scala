@@ -1,5 +1,4 @@
 package meta.runtime
-package simulation
 
 object util {
   def displayTime(turn: Int): String = {
