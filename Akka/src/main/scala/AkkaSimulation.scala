@@ -14,7 +14,8 @@ import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
-import collection.JavaConverters._
+import scala.collection.JavaConversions._
+
 
 import akka.NotUsed
 import akka.actor.typed.{ActorRef, ActorSystem, Terminated, PostStop, Behavior}
@@ -101,7 +102,6 @@ class Driver {
                     Behaviors.same
 
                 case RoundStart => {
-                    ctx.log.info(f"Round ${currentTurn}")
                     start = System.currentTimeMillis()
                     ctx.log.debug(f"Driver sends expected receives to all workers!  ${workerReceiveFrom}")
                     ctx.spawnAnonymous(
@@ -132,7 +132,7 @@ class Driver {
 
                 case RoundEnd() =>
                     end = System.currentTimeMillis()
-                    ctx.log.info(f"Round takes ${end-start} time")
+                    ctx.log.info(f"Round ${currentTurn} takes ${end-start} time")
                     if (currentTurn >= totalTurn){
                         Behaviors.stopped {() => 
                             ctx.log.debug(f"Simulation completes! Stop the driver")
@@ -160,7 +160,6 @@ object Worker {
     final case class ReceiveAgentMap(workerId: Int, agentIds: Seq[Long], replyTo: ActorRef[ReceiveMessages]) extends WorkerEvent with JsonSerializable
     final case class SendTo(workerId: Int, sendTo: Set[Int], agentTime: Int) extends WorkerEvent with JsonSerializable
     final case class ExpectedReceives(ids: Map[Int, Set[Int]], sendTo: ActorRef[SendTo]) extends WorkerEvent with JsonSerializable
-    final case class MessagesAdded(agentTime: Int, indexedSentMessages: Map[Long, ListBuffer[Message]]) extends WorkerEvent with NoSerializationVerificationNeeded
 
     val WorkerStartServiceKey = ServiceKey[ExpectedReceives]("WorkerStart")
     val WorkerStopServiceKey = ServiceKey[Stop]("WorkerStop")
@@ -176,8 +175,9 @@ class Worker {
 
     private var local_compute_threads: ConcurrentHashMap[Long, ActorRef[LocalAgent.AgentEvent]] = new ConcurrentHashMap[Long, ActorRef[LocalAgent.AgentEvent]]()
     private val peer_workers: ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]] = new ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]]() 
-    private var message_map: ConcurrentHashMap[Int, MutMap[Long, ConcurrentLinkedQueue[Message]]] = new ConcurrentHashMap[Int, MutMap[Long, ConcurrentLinkedQueue[Message]]]()
-    private val receivedMessages: ConcurrentHashMap[Long, ConcurrentLinkedQueue[Message]] = new ConcurrentHashMap[Long, ConcurrentLinkedQueue[Message]]()
+    private var message_map: Map[Int, Map[Long, List[Message]]] = Map[Int, Map[Long, List[Message]]]()
+    // private val receivedMessages: ConcurrentHashMap[Long, ConcurrentLinkedQueue[Message]] = new ConcurrentHashMap[Long, ConcurrentLinkedQueue[Message]]()
+    private val receivedMessages: ConcurrentHashMap[Long, List[Message]] = new ConcurrentHashMap[Long, List[Message]]()
     private val receivedWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
     private var expectedWorkerSet: Set[Int] = Set[Int]()
     private var sendToRef: ActorRef[SendTo] = null
@@ -214,7 +214,7 @@ class Worker {
             case Worker.WorkerUpdateAgentMapServiceKey.Listing(workers) =>
                 if (workers.size == totalWorkers){
                     workers.filter(i => i!= ctx.self).foreach(w => {
-                        w ! ReceiveAgentMap(workerId, local_sims.keys().asScala.toSeq, ctx.self)
+                        w ! ReceiveAgentMap(workerId, local_sims.keys().toSeq, ctx.self)
                     })
                 }
                 Prepare()
@@ -243,23 +243,19 @@ class Worker {
                     Behaviors.same
 
                 case ReceiveMessages(wid, messages) =>
+                    val start = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} receives messages from worker ${wid} ${messages}")
                     if (!receivedWorkers.contains(wid)){
-                        // buffer collected messages and send out only after agents finish
-                        messages.foreach(i => {
-                            if (receivedMessages.containsKey(i._1)){
-                                receivedMessages.get(i._1).addAll(i._2.asJava)
-                            } else {
-                                val bar = new ConcurrentLinkedQueue[Message]()
-                                bar.addAll(i._2.asJava)
-                                receivedMessages.put(i._1, bar)
-                            }
-                        })
+                        for (m <- messages) {
+                            receivedMessages.update(m._1, receivedMessages.getOrElse(m._1, List()) ::: m._2)
+                        }
                         receivedWorkers.add(wid)
                     }
-                    if (receivedWorkers.asScala.toSet == expectedWorkerSet){
+                    if (receivedWorkers.toSet == expectedWorkerSet){
                         ctx.self ! Start()
                     }
+                    val end = System.currentTimeMillis()
+                    // ctx.log.info(f"Worker ${workerId} processes message takes ${end-start} ms")
                     worker()
                     
                 case Start() =>
@@ -267,43 +263,39 @@ class Worker {
                     start = System.currentTimeMillis()
                     receivedWorkers.clear()
                     expectedWorkerSet = Set[Int]()
-                    receivedMessages.keys.asScala.foreach(i => {
-                        local_sims.get(i).receivedMessages.addAll(receivedMessages.remove(i))
-                    })
 
-                    if (totalAgents > 0){
-                        local_compute_threads.forEach((k, v) => {
-                            v ! LocalAgent.AddMessages(ctx.self)   
-                        })
-                    } else {
-                        ctx.self ! AgentsCompleted()
-                    }
-                    worker()
-
-                // When one agent completes
-                // Note that messages cannot be sent immediately bc receivers can still be active
-                case MessagesAdded(agentTime, indexedSentMessages) => 
-                    if (logical_clock < agentTime) {
-                        logical_clock = agentTime
-                    }
-                    ctx.log.debug(f"${workerId} Message map before adding ${indexedSentMessages} are " + message_map)
-
-                    indexedSentMessages.foreach(x => {
-                        val wid = nameMap.getOrDefault(x._1, workerId)
-                        if (message_map.containsKey(wid)){
-                            message_map.get(wid).getOrElseUpdate(x._1, new ConcurrentLinkedQueue[Message]()).addAll(x._2.asJava)
-                        } else {
-                            val foo = MutMap[Long, ConcurrentLinkedQueue[Message]]()
-                            val bar = new ConcurrentLinkedQueue[Message]()
-                            bar.addAll(x._2.asJava)
-                            foo.put(x._1, bar)
-                            message_map.put(wid, foo)
+                    local_sims.foreach(a => {
+                        val x = receivedMessages.remove(a._1)
+                        if (x != null) {
+                            a._2.receivedMessages.addAll(x)
                         }
                     })
 
-                    ctx.log.debug(f"${workerId} Message map after is " + message_map)
-                    completedAgents += 1
-                    if (completedAgents == totalAgents){
+                    if (totalAgents > 0){
+                        ctx.spawnAnonymous(
+                            Aggregator[LocalAgent.MessagesAdded, AgentsCompleted](
+                            sendRequests = { replyTo =>
+                                local_compute_threads.forEach((k, v) => {
+                                    v ! LocalAgent.AddMessages(replyTo)                                   
+                                })
+                            },
+                            expectedReplies = local_compute_threads.size,
+                            ctx.self,
+                            aggregateReplies = replies => {
+                                var collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
+                                for (r <- replies) {
+                                    r.indexedSentMessages.foreach(i => {
+                                        collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2) 
+                                    })
+                                    if (r.agentTime > logical_clock){
+                                        logical_clock = r.agentTime
+                                    }
+                                }
+                                message_map = collectedMessages.toMap.groupBy(i => nameMap.getOrElse(i._1, workerId))
+                                AgentsCompleted()
+                            },
+                            timeout=100.seconds))
+                    } else {
                         ctx.self ! AgentsCompleted()
                     }
                     worker()
@@ -311,28 +303,25 @@ class Worker {
                 case ExpectedReceives(receive_map, replyTo) => 
                     sendToRef = replyTo                    
                     expectedWorkerSet = receive_map.getOrElse(workerId, Set[Int]())
-                    if (receivedWorkers.asScala.toSet == expectedWorkerSet){
+                    if (receivedWorkers.toSet == expectedWorkerSet){
                         ctx.self ! Start()
                     } 
                     worker()
                     
                 case AgentsCompleted() =>
                     end = System.currentTimeMillis()
-                    sendToRef ! SendTo(workerId, message_map.keys.asScala.filter(i => i!=workerId).toSet, logical_clock)
-                    // Dispatch local messages asap
-                    val local_msgs: MutMap[Long, ConcurrentLinkedQueue[Message]] = message_map.remove(workerId)
-                    // send out messages to receivers asap
-                    message_map.keys.asScala.foreach(i => {
-                        peer_workers.get(i) ! ReceiveMessages(workerId, message_map.remove(i).map(i => (i._1, i._2.asScala.toList)).toMap)
-                    })
-                    if (local_msgs != null) {
-                        local_msgs.foreach(m => {
-                            local_sims.get(m._1).receivedMessages.addAll(m._2)
-                        })
-                    }
-                    
-                    completedAgents = 0
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms")
+                    val remoteWorkers = message_map.keys.filter(i => i!=workerId).toSet
+                    sendToRef ! SendTo(workerId, remoteWorkers, logical_clock)
+                    // send out messages to other workers asap
+                    remoteWorkers.foreach(i => {
+                        peer_workers.get(i) ! ReceiveMessages(workerId, message_map(i))
+                    })
+                    // Deliver local messages to agents' mailboxes
+                    message_map.getOrElse(workerId, List()).foreach(i => {
+                        local_sims.get(i._1).receivedMessages.addAll(i._2)
+                    })
+                    completedAgents = 0
                     Behaviors.same
 
                 case Stop() =>
@@ -353,13 +342,16 @@ object LocalAgent {
         new JsonSubTypes.Type(value = classOf[AddMessages], name = "addToMessageMap"),
     ))
     trait AgentEvent 
-    final case class AddMessages(replyTo: ActorRef[Worker.MessagesAdded]) extends AgentEvent with JsonSerializable
+    final case class AddMessages(replyTo: ActorRef[MessagesAdded]) extends AgentEvent with JsonSerializable
+    final case class MessagesAdded(agentTime: Int, indexedSentMessages: Map[Long, List[Message]]) extends AgentEvent with JsonSerializable
 }
 
 class LocalAgent {
     import LocalAgent._
 
     private var sim: Actor = null
+    private var start: Long = 0
+    private var end: Long = 0
 
     def apply(sim: Actor): Behavior[AgentEvent] = Behaviors.setup { ctx =>
         this.sim = sim
@@ -370,10 +362,13 @@ class LocalAgent {
         Behaviors.receive[AgentEvent] { (ctx, message) =>
             message match {
                 case AddMessages(replyTo) => 
+                    start = System.currentTimeMillis()
                     // println(f"Agent ${sim.id} receives ${messages.size} messages")
                     ctx.log.debug(f"Agent ${sim.id} receives ${sim.receivedMessages.size} messages")
                     val time = sim.run()
-                    replyTo ! Worker.MessagesAdded(time, sim.sendMessages.toMap)
+                    replyTo ! MessagesAdded(time, sim.sendMessages.map(i => (i._1, i._2.toList)).toMap)
+                    end = System.currentTimeMillis()
+                    // println(f"Agent ${sim.id} runs ${end-start} ms")
                     Behaviors.same
             }
         }.receiveSignal {
@@ -400,7 +395,7 @@ object AkkaExp {
         Behaviors.setup { ctx => 
             cluster = Cluster(ctx.system)
             this.totalWorkers = totalWorkers
-            val roles: Set[String] = cluster.selfMember.getRoles.asScala.toSet
+            val roles: Set[String] = cluster.selfMember.getRoles.toSet
             val totalActors = actors.size
             var actorsPerWorker = totalActors/totalWorkers
             if (totalActors % totalWorkers > 0){
@@ -467,7 +462,7 @@ object AkkaExp {
                         ctx.log.debug(f"Worker stop signal received! ${workerId} Stopped workers: ${stoppedWorkers}")
                         if (!stoppedWorkers.contains(workerId)){
                             stoppedWorkers.add(workerId)
-                            if (activeWorkers.asScala.toSet.diff(stoppedWorkers.asScala.toSet).isEmpty){
+                            if (activeWorkers.toSet.diff(stoppedWorkers.toSet).isEmpty){
                                 AkkaRun.addStoppedAgents(finalAgents ++ agents)
                                 Behaviors.stopped {() =>
                                     ctx.system.terminate()
@@ -476,7 +471,7 @@ object AkkaExp {
                                 waitTillFinish(finalAgents ++ agents)
                             }
                         } else {
-                            if (activeWorkers.asScala.toSet.diff(stoppedWorkers.asScala.toSet).isEmpty){
+                            if (activeWorkers.toSet.diff(stoppedWorkers.toSet).isEmpty){
                                 Behaviors.stopped {() =>
                                     ctx.system.terminate()
                                 }
