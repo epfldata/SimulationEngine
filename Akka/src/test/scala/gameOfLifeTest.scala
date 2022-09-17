@@ -2,9 +2,8 @@ package simulation.akka
 package test
 
 import meta.API._
-import org.scalatest.{FlatSpec, DoNotDiscover}
+import org.scalatest.{FlatSpec}
 
-@DoNotDiscover
 class gameOfLife extends FlatSpec {
     import meta.deep.IR.Predef._
 
