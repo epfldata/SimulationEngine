@@ -282,11 +282,12 @@ class Worker {
                     if (logical_clock < agentTime) {
                         logical_clock = agentTime
                     }
+                    ctx.log.debug(f"${workerId} Message map before adding ${indexedSentMessages} are " + message_map)
 
                     indexedSentMessages.foreach(x => {
                         val wid = nameMap.getOrDefault(x._1, workerId)
-                        if (message_map.contains(wid)){
-                            message_map.get(wid).getOrElse(x._1, new ConcurrentLinkedQueue[Message]()).addAll(x._2.asJava)
+                        if (message_map.containsKey(wid)){
+                            message_map.get(wid).getOrElseUpdate(x._1, new ConcurrentLinkedQueue[Message]()).addAll(x._2.asJava)
                         } else {
                             val foo = MutMap[Long, ConcurrentLinkedQueue[Message]]()
                             val bar = new ConcurrentLinkedQueue[Message]()
@@ -296,6 +297,7 @@ class Worker {
                         }
                     })
 
+                    ctx.log.debug(f"${workerId} Message map after is " + message_map)
                     completedAgents += 1
                     if (completedAgents == totalAgents){
                         ctx.self ! AgentsCompleted()
