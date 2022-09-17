@@ -42,18 +42,11 @@ jobs:
       if: ${{ steps.filter.outputs.compiler == 'true' }}
       run: sbt "project core; test;"
   
-    - name: base test 
-      if: ${{ steps.filter.outputs.base == 'true' }}
-      run: sbt "project base; test"
-
-    - name: akka test 
-      if: ${{ steps.filter.outputs.akka == 'true' }}
-      run: sbt "project akka; test"
+    - name: examples compile and run
+      if: ${{ steps.filter.outputs.generatedExample == 'true' || steps.filter.outputs.example == 'true' || steps.filter.outputs.library == 'true' || steps.filter.outputs.compiler == 'true'}}
+      run: sbt "project example; runAll"
 
     - name: library test 
       if: ${{ steps.filter.outputs.library == 'true' }}
       run: sbt "project library; test"
-    
-    - name: examples compile and run
-      if: ${{ steps.filter.outputs.generatedExample == 'true' || steps.filter.outputs.example == 'true' || steps.filter.outputs.library == 'true' || steps.filter.outputs.compiler == 'true'}}
-      run: sbt "project example; runAll"
+  
