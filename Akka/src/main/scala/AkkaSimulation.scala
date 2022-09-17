@@ -316,7 +316,7 @@ class Worker {
                     
                 case AgentsCompleted() =>
                     end = System.currentTimeMillis()
-                    sendToRef ! SendTo(workerId, message_map.keys.asScala.toSet, logical_clock)
+                    sendToRef ! SendTo(workerId, message_map.keys.asScala.filter(i => i!=workerId).toSet, logical_clock)
                     // Dispatch local messages asap
                     val local_msgs: MutMap[Long, ConcurrentLinkedQueue[Message]] = message_map.remove(workerId)
                     if (local_msgs != null) {
