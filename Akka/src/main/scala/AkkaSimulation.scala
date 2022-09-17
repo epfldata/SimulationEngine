@@ -177,7 +177,7 @@ class Worker {
     private var local_compute_threads: ConcurrentHashMap[Long, ActorRef[LocalAgent.AgentEvent]] = new ConcurrentHashMap[Long, ActorRef[LocalAgent.AgentEvent]]()
     private val peer_workers: ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]] = new ConcurrentHashMap[Int, ActorRef[Worker.ReceiveMessages]]() 
     private var message_map: ConcurrentHashMap[Int, MutMap[Long, ConcurrentLinkedQueue[Message]]] = new ConcurrentHashMap[Int, MutMap[Long, ConcurrentLinkedQueue[Message]]]()
-    private val receivedMessages: ConcurrentHashMap[Long, List[Message]] = new ConcurrentHashMap[Long, List[Message]]()
+    private val receivedMessages: ConcurrentHashMap[Long, ConcurrentLinkedQueue[Message]] = new ConcurrentHashMap[Long, ConcurrentLinkedQueue[Message]]()
     private val receivedWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
     private var expectedWorkerSet: Set[Int] = Set[Int]()
     private var sendToRef: ActorRef[SendTo] = null
@@ -218,12 +218,6 @@ class Worker {
                     })
                 }
                 Prepare()
-
-            // case TimeseriesController.tsControllerServiceKey.Listing(tscontrollers) =>
-            //     if (drivers.size > 0){
-            //         tscontroller = tscontrollers.head
-            //     }
-            //     Prepare()
         } 
 
         // Creating an actor for each Sim
@@ -251,9 +245,15 @@ class Worker {
                 case ReceiveMessages(wid, messages) =>
                     ctx.log.debug(f"Worker ${workerId} receives messages from worker ${wid} ${messages}")
                     if (!receivedWorkers.contains(wid)){
-                        // println(f"Worker ${workerId} receives messages from worker ${wid} ${messages}")
-                        messages.foreach(m => {
-                            local_sims.get(m._1).receivedMessages.addAll(m._2.asJava)
+                        // buffer collected messages and send out only after agents finish
+                        messages.foreach(i => {
+                            if (receivedMessages.containsKey(i._1)){
+                                receivedMessages.get(i._1).addAll(i._2.asJava)
+                            } else {
+                                val bar = new ConcurrentLinkedQueue[Message]()
+                                bar.addAll(i._2.asJava)
+                                receivedMessages.put(i._1, bar)
+                            }
                         })
                         receivedWorkers.add(wid)
                     }
@@ -267,6 +267,10 @@ class Worker {
                     start = System.currentTimeMillis()
                     receivedWorkers.clear()
                     expectedWorkerSet = Set[Int]()
+                    receivedMessages.keys.asScala.foreach(i => {
+                        local_sims.get(i).receivedMessages.addAll(receivedMessages.remove(i))
+                    })
+
                     if (totalAgents > 0){
                         local_compute_threads.forEach((k, v) => {
                             v ! LocalAgent.AddMessages(ctx.self)   
@@ -305,12 +309,8 @@ class Worker {
                     worker()
 
                 case ExpectedReceives(receive_map, replyTo) => 
-                    message_map.keys.asScala.foreach(i => {
-                        peer_workers.get(i) ! ReceiveMessages(workerId, message_map.remove(i).map(i => (i._1, i._2.asScala.toList)).toMap)
-                    })
-                    sendToRef = replyTo
+                    sendToRef = replyTo                    
                     expectedWorkerSet = receive_map.getOrElse(workerId, Set[Int]())
-                    // Send out messages only after knowing receivers have completed
                     if (receivedWorkers.asScala.toSet == expectedWorkerSet){
                         ctx.self ! Start()
                     } 
@@ -321,23 +321,20 @@ class Worker {
                     sendToRef ! SendTo(workerId, message_map.keys.asScala.filter(i => i!=workerId).toSet, logical_clock)
                     // Dispatch local messages asap
                     val local_msgs: MutMap[Long, ConcurrentLinkedQueue[Message]] = message_map.remove(workerId)
+                    // send out messages to receivers asap
+                    message_map.keys.asScala.foreach(i => {
+                        peer_workers.get(i) ! ReceiveMessages(workerId, message_map.remove(i).map(i => (i._1, i._2.asScala.toList)).toMap)
+                    })
                     if (local_msgs != null) {
                         local_msgs.foreach(m => {
                             local_sims.get(m._1).receivedMessages.addAll(m._2)
                         })
                     }
+                    
                     completedAgents = 0
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms")
                     Behaviors.same
-                    // ctx.log.debug(f"Local agents in worker ${workerId} have completed!")
-                    // end = System.currentTimeMillis()
-                    // ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms")
-                    // indexedMessages.foreach(i => {
-                    //     ctx.log.debug(f"Worker ${workerId} sends to peer worker ${i._1} ${i._2}")
-                    //     peer_workers.get(i._1) ! ReceiveMessages(workerId, i._2.toMap)
-                    //     collectedMessages --= i._2.map(_._1)
-                    // })
-                    // Behaviors.same
+
                 case Stop() =>
                     ctx.log.debug(f"Stop worker ${workerId}")
                     local_compute_threads.forEach((k, v) => ctx.stop(v))
