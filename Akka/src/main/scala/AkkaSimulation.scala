@@ -208,7 +208,10 @@ class Worker {
                 containers.append(newContainer(sims.toList.slice(i*simsPerGroup, (i+1)*simsPerGroup))(true, BoundedLatency))
             }
             containers.append(newContainer(sims.slice((totalGroups-2), totalSims).toList)(true, BoundedLatency))
-        } 
+            local_compute_threads = new ConcurrentHashMap(mapAsJavaMap(containers.map(a => (a.id, ctx.spawn((new LocalAgent).apply(a), f"simAgent${a.id}"))).toMap))
+        } else {
+            local_compute_threads = new ConcurrentHashMap(mapAsJavaMap(sims.map(a => (a.id, ctx.spawn((new LocalAgent).apply(a), f"simAgent${a.id}"))).toMap))
+        }
         
         val workerSub = ctx.messageAdapter[Receptionist.Listing] {
             case Worker.WorkerUpdateAgentMapServiceKey.Listing(workers) =>
@@ -218,11 +221,8 @@ class Worker {
                     })
                 }
                 Prepare()
-        } 
-
-        // Creating an actor for each Sim
-        local_compute_threads = 
-            new ConcurrentHashMap(mapAsJavaMap(sims.map(a => (a.id, ctx.spawn((new LocalAgent).apply(a), f"simAgent${a.id}"))).toMap))
+        }       
+        
         ctx.system.receptionist ! Receptionist.Subscribe(WorkerUpdateAgentMapServiceKey, workerSub)
         // ctx.system.receptionist ! Receptionist.Subscribe(TimeseriesController.tsControllerServiceKey, workerSub)
         worker()
