@@ -66,7 +66,7 @@ class Passenger(var budget: Int, var plan: List[Location]) extends Actor {
                 // println("Passenger " + id + " has arrived at destination!")
             } else {
                 if (currentVehicle==null) {
-                    send(current.waitForVehicle(this, destination()), 1)
+                    call_and_forget(current.waitForVehicle(this, destination()), 1)
                 }
             }
             waitAndReply(1)

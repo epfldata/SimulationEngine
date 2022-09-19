@@ -502,7 +502,7 @@ class Lifter {
           cache += (cde -> f)
           f
 
-        case code"SpecialInstructions.send[$mt]({${m@ MethodApplication(msg)}}: mt, $t: Int)" =>
+        case code"SpecialInstructions.call_and_forget[$mt]({${m@ MethodApplication(msg)}}: mt, $t: Int)" =>
           if (methodsIdMap.get(msg.symbol.toString).isDefined) {
             defInGeneratedCode = false
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]

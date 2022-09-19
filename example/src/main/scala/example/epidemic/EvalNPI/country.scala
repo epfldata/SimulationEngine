@@ -50,11 +50,11 @@ class Country(val hospitalCapacity: Int, val dayUnit: Int) extends Actor {
       if ((hospitalCapacity > 0.8*totalHospitalized) || neighborPolicies.forall(x => x == 2)) {
         // Lock down
         policy = 2
-        citizens.foreach(p => send(p.learnPolicy(policy), 5))
+        citizens.foreach(p => call_and_forget(p.learnPolicy(policy), 5))
       } else if ((hospitalCapacity > 0.5*totalHospitalized) || neighborPolicies.forall(x => x==1)) {
         // Quarantine
         policy = 1
-        citizens.foreach(x => send(x.learnPolicy(policy), 5))
+        citizens.foreach(x => call_and_forget(x.learnPolicy(policy), 5))
       }
       // println(records)
       records.clear()

@@ -26,7 +26,7 @@ class Vertex() extends Actor {
         while (true){
             connectedAgents.foreach(x => {
                 neighbor = x.asInstanceOf[Vertex]
-                send(neighbor.API(id), 1)
+                call_and_forget(neighbor.API(id), 1)
             })
             waitAndReply(1)
         }

@@ -56,7 +56,7 @@ object SpecialInstructions {
     */
   def async_call[T](message: T, latency: Int): Future[T] = ???
 
-  def send[T](message: T, latency: Int): Unit = ???
+  def call_and_forget[T](message: T, latency: Int): Unit = ???
 
   /**
     * Helper methods to inform lifter which variables or methods require private or override modifier
