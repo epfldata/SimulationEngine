@@ -30,9 +30,9 @@ case class Send[R](actorFrom: OpenCode[Actor],
       code"""
         val sender = $actorFrom;
         val receiver = $actorRef;
-        val requestMessage = meta.runtime.RequestMessage(sender.id, receiver.id, false, ${Const(methodSym)}, sender.time, $latency, $convertedArgs);
+        val requestMessage = meta.runtime.RequestMessage(sender.id, Some(java.util.UUID.randomUUID().toString), ${Const(methodSym)}, sender.time, $latency, $convertedArgs);
         sender.sendMessage(receiver.id, requestMessage);
-        sender.setMessageResponseHandler(requestMessage.sessionId, (response: meta.runtime.Message) => {
+        sender.setMessageResponseHandler(requestMessage.sessionId.get, (response: meta.runtime.Message) => {
           ${AlgoInfo.responseMessage} := response.asInstanceOf[meta.runtime.ResponseMessage]
         })
         ${AlgoInfo.returnValue} := null
