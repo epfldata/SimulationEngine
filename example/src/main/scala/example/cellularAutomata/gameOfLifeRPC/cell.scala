@@ -1,10 +1,8 @@
 package example
-package gameOfLife
+package gameOfLifeRPC
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-import meta.runtime.{RequestMessage, ResponseMessage, Message}
-import meta.runtime.ResponseMessage
 
 /**
   * Conway's game of life
@@ -15,28 +13,25 @@ import meta.runtime.ResponseMessage
 @lift
 class Cell(var alive: Int) extends Actor {
 
-  var aliveNeighbors: Int = 0
+    var aliveNeighbors: Int = 0
+
+    def tell(state: Int): Unit = {
+      aliveNeighbors = aliveNeighbors + state
+    }
+
     def main(): Unit = {
         while(true) {
-            var m: Option[Message] = receiveMessage()
             aliveNeighbors = 0
-            
-            while (m.isDefined){
-              aliveNeighbors = aliveNeighbors + m.get.value
-              m = receiveMessage()
-            }
-
+            handleRPC()
             if (alive==1 && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
               alive = 0
             } else if (alive==0 && aliveNeighbors==3) {
                 alive = 1
             }
 
-            connectedAgents.foreach(i => {
-              val msg = new Message()
-              msg.value = 0
-              sendMessage(i.id, msg)
-            })
+            connectedAgents.map(x => 
+              x.asInstanceOf[Cell]).foreach(v => async_call(() => v.tell(alive), 1)
+            )
             waitLabel(Turn, 1)
         }
     }
