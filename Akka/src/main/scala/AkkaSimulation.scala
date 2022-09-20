@@ -4,7 +4,7 @@ import meta.runtime._
 import scala.collection.mutable.{ListBuffer, Map => MutMap}
 import SimRuntime._
 import meta.runtime.Actor.AgentId
-import meta.API.{SimulationSnapshot, BoundedLatency, newContainer}
+import meta.API.{SimulationSnapshot, DirectMethodCall, newContainer}
 import scala.util.Failure
 import scala.util.Success
 import scala.concurrent.Await
@@ -15,7 +15,6 @@ import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConversions._
-
 
 import akka.NotUsed
 import akka.actor.typed.{ActorRef, ActorSystem, Terminated, PostStop, Behavior}
@@ -33,11 +32,14 @@ object Driver {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
     Array(
-        new JsonSubTypes.Type(value = classOf[InitializeAgentMap], name = "initializeAgentMap")))
+        new JsonSubTypes.Type(value = classOf[InitializeAgentMap], name = "initializeAgentMap"), 
+        new JsonSubTypes.Type(value = classOf[InitializeWorkers], name = "InitializeWorkers"),
+        new JsonSubTypes.Type(value = classOf[RoundStart], name = "RoundStart"),
+        new JsonSubTypes.Type(value = classOf[RoundEnd], name = "RoundEnd")))
     sealed trait DriverEvent
     final case class InitializeAgentMap(workerId: Int, agentIds: Seq[Long]) extends DriverEvent with JsonSerializable
     final case class InitializeWorkers() extends DriverEvent with NoSerializationVerificationNeeded
-    final case object RoundStart extends DriverEvent with NoSerializationVerificationNeeded
+    final case class RoundStart() extends DriverEvent with NoSerializationVerificationNeeded
     final case class RoundEnd() extends DriverEvent with NoSerializationVerificationNeeded
 
     // val serviceKeyInitAgentMap = ServiceKey[InitializeAgentMap]("InitializeAgentMap")
@@ -97,11 +99,11 @@ class Driver {
                 case InitializeWorkers() =>
                     if (!workersStart.isEmpty && !workersStop.isEmpty){
                         ctx.log.debug("All workers are initialized! Start round.")
-                        ctx.self ! RoundStart
+                        ctx.self ! RoundStart()
                     } 
                     Behaviors.same
 
-                case RoundStart => {
+                case RoundStart() => {
                     start = System.currentTimeMillis()
                     ctx.log.debug(f"Driver sends expected receives to all workers!  ${workerReceiveFrom}")
                     ctx.spawnAnonymous(
@@ -139,7 +141,7 @@ class Driver {
                             workersStop.foreach(a => a ! Worker.Stop())
                         }
                     } else {
-                        ctx.self ! RoundStart
+                        ctx.self ! RoundStart()
                         driver()
                     }
             }
@@ -150,14 +152,21 @@ object Worker {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
     Array(
-        new JsonSubTypes.Type(value = classOf[SendTo], name = "SendTo")))
+        new JsonSubTypes.Type(value= classOf[Prepare], name = "Prepare"),
+        new JsonSubTypes.Type(value= classOf[AgentsCompleted], name = "AgentsCompleted"),
+        new JsonSubTypes.Type(value= classOf[Stop], name = "Stop"),
+        new JsonSubTypes.Type(value= classOf[Start], name = "Start"),
+        new JsonSubTypes.Type(value= classOf[ReceiveMessages], name = "ReceiveMessages"),
+        new JsonSubTypes.Type(value= classOf[ReceiveAgentMap], name = "ReceiveAgentMap"),
+        new JsonSubTypes.Type(value = classOf[SendTo], name = "SendTo"), 
+        new JsonSubTypes.Type(value = classOf[ExpectedReceives], name = "ExpectedReceives")))
     sealed trait WorkerEvent
     final case class Prepare() extends WorkerEvent with NoSerializationVerificationNeeded
     final case class AgentsCompleted() extends WorkerEvent with NoSerializationVerificationNeeded
     final case class Stop() extends WorkerEvent with JsonSerializable
     final case class Start() extends WorkerEvent with NoSerializationVerificationNeeded
     final case class ReceiveMessages(workerId: Int, messages: Map[Long, List[Message]]) extends WorkerEvent with JsonSerializable
-    final case class ReceiveAgentMap(workerId: Int, agentIds: Seq[Long], replyTo: ActorRef[ReceiveMessages]) extends WorkerEvent with JsonSerializable
+    final case class ReceiveAgentMap(workerId: Int, agentIds: Iterable[Long], replyTo: ActorRef[ReceiveMessages]) extends WorkerEvent with JsonSerializable
     final case class SendTo(workerId: Int, sendTo: Set[Int], agentTime: Int) extends WorkerEvent with JsonSerializable
     final case class ExpectedReceives(ids: Map[Int, Set[Int]], sendTo: ActorRef[SendTo]) extends WorkerEvent with JsonSerializable
 
@@ -195,23 +204,23 @@ class Worker {
         ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
         ctx.system.receptionist ! Receptionist.Register(WorkerUpdateAgentMapServiceKey, ctx.self)
 
-        val containers: ListBuffer[Actor] = ListBuffer[Actor]()
+        // val containers: ListBuffer[Actor] = ListBuffer[Actor]()
         local_sims = new ConcurrentHashMap(mapAsJavaMap(sims.map(x => (x.id, x)).toMap))
         totalAgents = sims.size
         workerId = id
 
-        if (ConfigFactory.load("driver-worker").hasPath("driver-worker.containers-per-worker")){
-            val totalSims = sims.size
-            val totalGroups: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.containers-per-worker").render().toInt
-            val simsPerGroup = totalSims / totalGroups
-            for (i <- Range(0, totalGroups-1)) {
-                containers.append(newContainer(sims.toList.slice(i*simsPerGroup, (i+1)*simsPerGroup))(true, BoundedLatency))
-            }
-            containers.append(newContainer(sims.slice((totalGroups-2), totalSims).toList)(true, BoundedLatency))
-            local_compute_threads = new ConcurrentHashMap(mapAsJavaMap(containers.map(a => (a.id, ctx.spawn((new LocalAgent).apply(a), f"simAgent${a.id}"))).toMap))
-        } else {
-            local_compute_threads = new ConcurrentHashMap(mapAsJavaMap(sims.map(a => (a.id, ctx.spawn((new LocalAgent).apply(a), f"simAgent${a.id}"))).toMap))
-        }
+        // if (ConfigFactory.load("driver-worker").hasPath("driver-worker.containers-per-worker")){
+        //     val totalSims = sims.size
+        //     val totalGroups: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.containers-per-worker").render().toInt
+        //     val simsPerGroup = totalSims / totalGroups
+        //     for (i <- Range(0, totalGroups-1)) {
+        //         containers.append(newContainer(sims.toList.slice(i*simsPerGroup, (i+1)*simsPerGroup))(true, BoundedLatency))
+        //     }
+        //     containers.append(newContainer(sims.slice((totalGroups-2), totalSims).toList)(true, BoundedLatency))
+        //     local_compute_threads = new ConcurrentHashMap(mapAsJavaMap(containers.map(a => (a.id, ctx.spawn((new LocalAgent).apply(a), f"simAgent${a.id}"))).toMap))
+        // } else {
+        local_compute_threads = new ConcurrentHashMap(mapAsJavaMap(sims.map(a => (a.id, ctx.spawn((new LocalAgent).apply(a), f"simAgent${a.id}"))).toMap))
+        // }
         
         val workerSub = ctx.messageAdapter[Receptionist.Listing] {
             case Worker.WorkerUpdateAgentMapServiceKey.Listing(workers) =>
@@ -261,17 +270,18 @@ class Worker {
                 case Start() =>
                     ctx.log.debug(f"Worker ${workerId} starts! Received from ${receivedWorkers}")
                     start = System.currentTimeMillis()
-                    receivedWorkers.clear()
-                    expectedWorkerSet = Set[Int]()
-
-                    local_sims.foreach(a => {
-                        val x = receivedMessages.remove(a._1)
-                        if (x != null) {
-                            a._2.receivedMessages.addAll(x)
-                        }
-                    })
 
                     if (totalAgents > 0){
+                        receivedWorkers.clear()
+                        expectedWorkerSet = Set[Int]()
+
+                        local_sims.foreach(a => {
+                            val x = receivedMessages.remove(a._1)
+                            if (x != null) {
+                                a._2.receivedMessages.addAll(x)
+                            }
+                        })
+
                         ctx.spawnAnonymous(
                             Aggregator[LocalAgent.MessagesAdded, AgentsCompleted](
                             sendRequests = { replyTo =>
@@ -339,7 +349,8 @@ object LocalAgent {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
     Array(
-        new JsonSubTypes.Type(value = classOf[AddMessages], name = "addToMessageMap"),
+        new JsonSubTypes.Type(value = classOf[AddMessages], name = "AddMessages"),
+        new JsonSubTypes.Type(value = classOf[MessagesAdded], name = "MessagesAdded")
     ))
     trait AgentEvent 
     final case class AddMessages(replyTo: ActorRef[MessagesAdded]) extends AgentEvent with JsonSerializable
