@@ -60,7 +60,7 @@ class Actor extends Serializable {
   val responseListeners
     : MutMap[String, Message => Unit] = MutMap()
 
-  var _container: Container = null
+  var reachableAgents: Set[AgentId] = Set()
 
   var connectedAgents: List[Actor] = List()
 
@@ -148,6 +148,8 @@ class Actor extends Serializable {
   
   def handleRPC(): Unit = {}
 
+  def merge(): Unit = {}
+  
   def runAndEval[K](mapper: Actor=>K): K = {
     run() 
     mapper(this)
