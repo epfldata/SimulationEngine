@@ -8,7 +8,7 @@ trait ContainerFactory[SimContainerOptimization, SimRunnerMode] {
 
 sealed trait SimContainerOptimization
 final case object BoundedLatency extends SimContainerOptimization
-final case object DirectMethodCall extends SimContainerOptimization
+// final case object DirectMethodCall extends SimContainerOptimization
 
 sealed trait SimRunnerMode
 final case object CompiledSims extends SimRunnerMode
@@ -23,17 +23,17 @@ object ContainerFactory {
         }
     }
 
-    implicit val directMethodCallCompiled = new ContainerFactory[DirectMethodCall.type, CompiledSims.type] {
-        override def createContainer(agents: List[Actor]): Container = {
-            new Container {
-                containedAgents ++= agents.map(x => (x.id, x)).toMap
-                addProxyIds(agents.flatMap(x => {
-                    x._container = this
-                    x.proxyIds
-                }))
-            }
-        }
-    }
+    // implicit val directMethodCallCompiled = new ContainerFactory[DirectMethodCall.type, CompiledSims.type] {
+    //     override def createContainer(agents: List[Actor]): Container = {
+    //         new Container {
+    //             containedAgents ++= agents.map(x => (x.id, x)).toMap
+    //             addProxyIds(agents.flatMap(x => {
+    //                 x._container = this
+    //                 x.proxyIds
+    //             }))
+    //         }
+    //     }
+    // }
 }
 
 object newContainer {
@@ -44,8 +44,8 @@ object newContainer {
         (containerOpt, isCompiled) match {
             case (BoundedLatency, true) => 
                 boundedLatencyCompiled.createContainer(agents)
-            case (DirectMethodCall, true) => 
-                directMethodCallCompiled.createContainer(agents)
+            // case (DirectMethodCall, true) => 
+            //     directMethodCallCompiled.createContainer(agents)
             }
     }
 }
