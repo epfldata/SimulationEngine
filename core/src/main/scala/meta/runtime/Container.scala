@@ -61,6 +61,7 @@ class Container extends Actor {
                 })
             })
             localTurns += passed
+            // containedAgents.foreach(i => i._2.merge())
         } 
         time += localTurns        
         time

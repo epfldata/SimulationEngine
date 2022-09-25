@@ -3,7 +3,6 @@
 
 // import scala.collection.mutable.{ListBuffer, Map => MutMap}
 // import SimRuntime._
-// import meta.runtime.Actor.AgentId
 // import meta.API.SimulationSnapshot
 // import scala.util.Failure
 // import scala.util.Success

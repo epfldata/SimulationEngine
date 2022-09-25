@@ -1,4 +1,4 @@
-package simulation.akka
+package simulation.akka.core
 
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration

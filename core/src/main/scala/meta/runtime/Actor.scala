@@ -147,8 +147,6 @@ class Actor extends Serializable {
   def SimReset(args: Set[String] = Set()): Unit = {}
   
   def handleRPC(): Unit = {}
-
-  def merge(): Unit = {}
   
   def runAndEval[K](mapper: Actor=>K): K = {
     run() 

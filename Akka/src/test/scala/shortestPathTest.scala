@@ -14,7 +14,7 @@ class shortestPathTest extends FlatSpec {
 
     "The single source shortest path algorithm over a linked list with 10 vertices" should "update the distance of all vertices in 10 rounds" in {
         val agents = generated.core.test.shortestPath.InitData()
-        val snapshot1 = AkkaRun(agents, 10)
+        val snapshot1 = API.Simulate(agents, 10, false)
         assert(snapshot1.sims.map(i => i.asInstanceOf[generated.core.test.shortestPath.Vertex].dist).toSet == Range(0, 10).toSet)
     }
 }
