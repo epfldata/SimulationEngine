@@ -509,12 +509,14 @@ class Lifter {
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
             val mname = msg.symbol.asTerm.name.toString
 
-            val f = OnesideSend[T](
+            val f = IfThenElse(code"$actorSelfVariable.reachableAgents.contains($recipientActorVariable.id)",
+                ScalaCode(m.asOpenCode).asInstanceOf[Algo[T]], // If convert local, then call directly
+                OnesideSend[T](
                       actorSelfVariable.toCode,
                       recipientActorVariable,
                       mname,
                       t,
-                      argss)
+                      argss).asInstanceOf[Algo[T]])
             cache += (cde -> f)
             f
           } else {
@@ -618,20 +620,13 @@ class Lifter {
             val funcName = ma.symbol.asTerm.name.toString
             val f = if (actorSelfVariable.toCode != recipientActorVariable) {
               defInGeneratedCode = false
-              LetBinding(Some(convertLocal), 
-                ScalaCode(code"""
-                if ($actorSelfVariable._container!= null) {
-                  $actorSelfVariable._container.proxyIds.contains($recipientActorVariable.id)
-                } else {
-                  false
-                }"""),
-                IfThenElse(code"$convertLocal",
-                  ScalaCode(cde), // If convert local, then call directly
-                  Send[T](actorSelfVariable.toCode,
-                  recipientActorVariable,
-                  funcName,
-                  code"1",
-                  argss))
+              IfThenElse(code"$actorSelfVariable.reachableAgents.contains($recipientActorVariable.id)",
+                ScalaCode(cde), // If convert local, then call directly
+                Send[T](actorSelfVariable.toCode,
+                recipientActorVariable,
+                funcName,
+                code"1",
+                argss)
               )
             } else {
               // Calling an overloaded method locally
