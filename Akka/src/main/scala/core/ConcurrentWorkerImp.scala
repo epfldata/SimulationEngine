@@ -12,6 +12,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import java.util.concurrent.atomic.AtomicInteger
 
 class Worker {
     import WorkerSpec._
@@ -19,6 +20,7 @@ class Worker {
     private var local_sims: ConcurrentHashMap[Long, Actor] = new ConcurrentHashMap[Long, Actor]()
     private var workerId: Int = 0
     private var totalAgents: Int = 0
+    private var totalWorkers: Int = 0
     private val nameMap: ConcurrentHashMap[Long, Int] = new ConcurrentHashMap[Long, Int]()
 
     private var local_compute_threads: ConcurrentHashMap[Long, ActorRef[LocalAgentSpec.AgentEvent]] = new ConcurrentHashMap[Long, ActorRef[LocalAgentSpec.AgentEvent]]()
@@ -36,16 +38,16 @@ class Worker {
 
     private var logical_clock: Int = 0
     private var completedAgents: Int = 0
+    private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
 
     def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
         // ctx.log.debug("Register agent with receptionist")
-        ctx.system.receptionist ! Receptionist.Register(WorkerStartServiceKey, ctx.self)
-        ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
         ctx.system.receptionist ! Receptionist.Register(WorkerUpdateAgentMapServiceKey, ctx.self)
 
         // val containers: ListBuffer[Actor] = ListBuffer[Actor]()
         local_sims = new ConcurrentHashMap(mapAsJavaMap(sims.map(x => (x.id, x)).toMap))
         totalAgents = sims.size
+        this.totalWorkers = totalWorkers
         workerId = id
 
         // if (ConfigFactory.load("driver-worker").hasPath("driver-containers-per-worker")){
@@ -84,10 +86,17 @@ class Worker {
                     worker()
 
                 case ReceiveAgentMap(wid, nameIds, reply) => 
-                    nameIds.foreach(n => {
-                        nameMap.putIfAbsent(n, wid)
-                    })
-                    peer_workers.putIfAbsent(wid, reply)
+                    if (!peer_workers.containsKey(wid)){
+                        val total = registeredWorkers.addAndGet(1)
+                        nameIds.foreach(n => {
+                            nameMap.putIfAbsent(n, wid)
+                        })
+                        peer_workers.putIfAbsent(wid, reply)
+                        if (total == totalWorkers - 1){
+                            ctx.system.receptionist ! Receptionist.Register(WorkerStartServiceKey, ctx.self)
+                            ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
+                        }
+                    }
                     Behaviors.same
 
                 case ReceiveMessages(wid, messages) =>
