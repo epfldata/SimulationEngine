@@ -4,26 +4,9 @@ import meta.runtime.{Actor, Message, JsonSerializable}
 import akka.actor.typed.{ActorRef, PostStop, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 
-import akka.actor.NoSerializationVerificationNeeded
-import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
-
-/**
-  * Local agents communicate only with the workers.
-  */
-object LocalAgent {
-    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-    @JsonSubTypes(
-    Array(
-        new JsonSubTypes.Type(value = classOf[AddMessages], name = "AddMessages"),
-        new JsonSubTypes.Type(value = classOf[MessagesAdded], name = "MessagesAdded")
-    ))
-    trait AgentEvent 
-    final case class AddMessages(replyTo: ActorRef[MessagesAdded]) extends AgentEvent with JsonSerializable
-    final case class MessagesAdded(agentTime: Int, indexedSentMessages: Map[Long, List[Message]]) extends AgentEvent with JsonSerializable
-}
 
 class LocalAgent {
-    import LocalAgent._
+    import LocalAgentSpec._
 
     private var sim: Actor = null
     private var start: Long = 0

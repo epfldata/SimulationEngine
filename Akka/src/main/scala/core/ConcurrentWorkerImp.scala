@@ -21,7 +21,7 @@ class Worker {
     private var totalAgents: Int = 0
     private val nameMap: ConcurrentHashMap[Long, Int] = new ConcurrentHashMap[Long, Int]()
 
-    private var local_compute_threads: ConcurrentHashMap[Long, ActorRef[LocalAgent.AgentEvent]] = new ConcurrentHashMap[Long, ActorRef[LocalAgent.AgentEvent]]()
+    private var local_compute_threads: ConcurrentHashMap[Long, ActorRef[LocalAgentSpec.AgentEvent]] = new ConcurrentHashMap[Long, ActorRef[LocalAgentSpec.AgentEvent]]()
     private val peer_workers: ConcurrentHashMap[Int, ActorRef[ReceiveMessages]] = new ConcurrentHashMap[Int, ActorRef[ReceiveMessages]]() 
     private var message_map: Map[Int, Map[Long, List[Message]]] = Map[Int, Map[Long, List[Message]]]()
     // private val receivedMessages: ConcurrentHashMap[Long, ConcurrentLinkedQueue[Message]] = new ConcurrentHashMap[Long, ConcurrentLinkedQueue[Message]]()
@@ -122,10 +122,10 @@ class Worker {
                         })
 
                         ctx.spawnAnonymous(
-                            Aggregator[LocalAgent.MessagesAdded, AgentsCompleted](
+                            Aggregator[LocalAgentSpec.MessagesAdded, AgentsCompleted](
                             sendRequests = { replyTo =>
                                 local_compute_threads.forEach((k, v) => {
-                                    v ! LocalAgent.AddMessages(replyTo)                                   
+                                    v ! LocalAgentSpec.AddMessages(replyTo)                                   
                                 })
                             },
                             expectedReplies = local_compute_threads.size,

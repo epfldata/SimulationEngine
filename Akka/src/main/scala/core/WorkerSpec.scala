@@ -24,6 +24,8 @@ object WorkerSpec {
     final case class AgentsCompleted() extends WorkerEvent with NoSerializationVerificationNeeded
     final case class Stop() extends WorkerEvent with JsonSerializable
     final case class Start() extends WorkerEvent with NoSerializationVerificationNeeded
+    // After receiving messages from other workers, do not immediately add to the mailbox of the agents, 
+    // since current worker may have not finished and the agent can accidentally see and process (if not timed) future messages
     final case class ReceiveMessages(workerId: Int, messages: Map[Long, List[Message]]) extends WorkerEvent with JsonSerializable
     final case class ReceiveAgentMap(workerId: Int, agentIds: Iterable[Long], replyTo: ActorRef[ReceiveMessages]) extends WorkerEvent with JsonSerializable
     final case class SendTo(workerId: Int, sendTo: Set[Int], agentTime: Int) extends WorkerEvent with JsonSerializable
