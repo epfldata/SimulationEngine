@@ -73,10 +73,10 @@ object AkkaExp {
                     Behaviors.same
 
                 case SpawnWorker(workerId, agents, totalWorkers) =>
-                    val sim = if (OptimizationConfig.conf == MergedWorker) {
-                      ctx.spawn((new simulation.akka.core.sequential.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
+                    val sim = if (OptimizationConfig.conf == ConcurrentWorker) {
+                        ctx.spawn((new simulation.akka.core.concurrent.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
                     } else {
-                      ctx.spawn((new simulation.akka.core.concurrent.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
+                        ctx.spawn((new simulation.akka.core.sequential.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
                     }
                      
                     activeWorkers.add(workerId)
