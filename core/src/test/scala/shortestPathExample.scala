@@ -47,16 +47,17 @@ class shortestPathExample extends FlatSpec {
         val liftMyClass: ClassWithObject[Vertex] = Vertex.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
             def apply(): List[Actor] = {
-
+                val totalVertices: Int = 50
                 // Fully connected 10 vertices
-                val vertices = (1 to 10).map(i => {
+                val vertices = (1 to totalVertices).map(i => {
                     new Vertex()
                 }).toList
 
-                (1 to 10).foreach(i => {
-                    vertices(i-1).connectedAgents = List(vertices(i % 10))
+                (1 to totalVertices).foreach(i => {
+                    vertices(i-1).connectedAgents = List(vertices(i % totalVertices))
                 })
 
+                assert(totalVertices > 5)
                 vertices(5).isSource = true
                 vertices
             }

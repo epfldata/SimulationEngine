@@ -20,13 +20,11 @@ object AkkaExp {
     val stoppedWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
     var activeWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
     var finalAgents: ConcurrentLinkedQueue[Actor] = new ConcurrentLinkedQueue[Actor]()
-    private var merged: Boolean = false
 
-    def apply(totalTurn: Int, totalWorkers: Int, actors: List[Actor], merged: Boolean): Behavior[Command] = 
+    def apply(totalTurn: Int, totalWorkers: Int, actors: List[Actor]): Behavior[Command] = 
         Behaviors.setup { ctx => 
             cluster = Cluster(ctx.system)
             this.totalWorkers = totalWorkers
-            this.merged = merged
             val roles: Set[String] = cluster.selfMember.getRoles.toSet
             val totalActors = actors.size
             var actorsPerWorker = totalActors/totalWorkers
@@ -75,7 +73,7 @@ object AkkaExp {
                     Behaviors.same
 
                 case SpawnWorker(workerId, agents, totalWorkers) =>
-                    val sim = if (merged) {
+                    val sim = if (OptimizationConfig.conf == MergedWorker) {
                       ctx.spawn((new simulation.akka.core.sequential.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
                     } else {
                       ctx.spawn((new simulation.akka.core.concurrent.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")

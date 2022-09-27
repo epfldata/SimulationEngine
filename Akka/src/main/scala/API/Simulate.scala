@@ -22,7 +22,7 @@ object Simulate {
         lastWords=List()
     }
 
-    def apply(actors: List[Actor], totalTurn: Int, merged: Boolean,
+    def apply(actors: List[Actor], totalTurn: Int, 
               role: String= "Standalone", port: Int = 25251): SimulationSnapshot = {
         def startup(role: String, port: Int): Unit ={
             val config = ConfigFactory.parseString(s"""
@@ -36,7 +36,7 @@ object Simulate {
                 println(f"Detect more workers than agents! Set total workers from ${totalWorkers} to ${actors.size}")
                 totalWorkers = actors.size
             }
-            val actorSystem = ActorSystem(AkkaExp(totalTurn, totalWorkers, actors, merged), "SimsCluster", config)
+            val actorSystem = ActorSystem(AkkaExp(totalTurn, totalWorkers, actors), "SimsCluster", config)
             Await.ready(actorSystem.whenTerminated, 10.days)
         }
         initialize()    

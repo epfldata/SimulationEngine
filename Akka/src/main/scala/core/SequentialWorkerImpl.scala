@@ -47,7 +47,10 @@ class Worker {
         workerId = id
 
         val simIds = sims.map(i => i.id).toSet
-        sims.foreach(i => { i.reachableAgents = simIds })
+
+        if (simulation.akka.API.OptimizationConfig.conf == simulation.akka.API.DirectMethodCall){
+            sims.foreach(i => { i.reachableAgents = simIds })
+        }
         
         val workerSub = ctx.messageAdapter[Receptionist.Listing] {
             case WorkerUpdateAgentMapServiceKey.Listing(workers) =>

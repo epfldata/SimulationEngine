@@ -9,12 +9,30 @@ import meta.runtime.{Actor}
 import meta.API._
 import org.scalatest.FlatSpec
 
-class shortestPathTest extends FlatSpec {
+class shortestPath extends FlatSpec {
     import meta.deep.IR.Predef._
 
-    "The single source shortest path algorithm over a linked list with 10 vertices" should "update the distance of all vertices in 10 rounds" in {
+    val totalVertices: Int = 50
+
+    f"The single source shortest path algorithm over a linked list with ${totalVertices} vertices, concurrent workers" should f"update the distance of all vertices in ${totalVertices} rounds" in {
         val agents = generated.core.test.shortestPath.InitData()
-        val snapshot1 = API.Simulate(agents, 10, false)
-        assert(snapshot1.sims.map(i => i.asInstanceOf[generated.core.test.shortestPath.Vertex].dist).toSet == Range(0, 10).toSet)
+        API.OptimizationConfig.concurrentWorker()
+        val snapshot1 = API.Simulate(agents, totalVertices)
+        assert(snapshot1.sims.map(i => i.asInstanceOf[generated.core.test.shortestPath.Vertex].dist).toSet == Range(0, totalVertices).toSet)
+    }
+
+    f"The single source shortest path algorithm over a linked list with ${totalVertices} vertices, sequential workers" should f"update the distance of all vertices in ${totalVertices} rounds" in {
+        val agents = generated.core.test.shortestPath.InitData()
+        API.OptimizationConfig.mergedWorker()
+        val snapshot1 = API.Simulate(agents, totalVertices)
+        assert(snapshot1.sims.map(i => i.asInstanceOf[generated.core.test.shortestPath.Vertex].dist).toSet == Range(0, totalVertices).toSet)
+    }
+
+    f"The single source shortest path algorithm over a linked list with ${totalVertices} vertices, direct method calls" should f"update the distance of all vertices in ${totalVertices} rounds" in {
+        val agents = generated.core.test.shortestPath.InitData()
+        API.OptimizationConfig.directMethodCall()
+        val snapshot1 = API.Simulate(agents, totalVertices)
+        // println(snapshot1.sims.map(i => i.asInstanceOf[generated.core.test.shortestPath.Vertex].dist))
+        assert(snapshot1.sims.map(i => i.asInstanceOf[generated.core.test.shortestPath.Vertex].dist).toSet == Range(0, totalVertices).toSet)
     }
 }
