@@ -2,31 +2,26 @@
 # Bash script for performance tuning (Spark, Akka)
 set -e
 
-MEM=220000
-exp=gameOfLife
-repeats=3
+MEM=100000
 
-tests=("${exp}TuneAkka" "${exp}TuneSpark" "${exp}TuneAkkaTimeseriesDeforestation" "${exp}TuneSparkTimeseriesDeforestation" "${exp}TuneAkkaTimeseries" "${exp}TuneSparkTimeseries")
+modes=("1" "2" "3")
+widths=("100" "1000")
+height="1000"
+totalRounds="50"
 
 mkdir -p log
 
-sbt "project example; runAll"
-
-i=1
-while [ $i -le $repeats ]
+for width in "${widths[@]}"
 do
-    echo Iteration: $i
-    for test in "${tests[@]}"
+    for mode in "${modes[@]}"
     do
-        log_file=log/$test.csv
+        log_file=log/"gol_w${width}_h${height}_m$mode"
         touch $log_file
-        sbtCmd="project genExample; testOnly generated.example.test.${test}"
-        sbt -mem $MEM "$sbtCmd" 
-        cat ${exp}.csv >> $log_file
-        rm ${exp}.csv
+        sbtCmd="project akka; test:runMain simulation.akka.test.gameOfLifeBench $width $height $totalRounds $mode"
+        echo $sbtCmd
+        sbt -mem $MEM "$sbtCmd" > $log_file
         sleep 1
-        echo 3 > /proc/sys/vm/drop_caches
+        sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
     done
-    ((i++))
 done
     

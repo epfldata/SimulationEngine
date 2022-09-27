@@ -1,30 +1,37 @@
 package simulation.akka
 package test
 
-import org.scalatest.{FlatSpec}
+// sbt -mem 100000 "project akka; test:runMain simulation.akka.test.gameOfLifeBench 100 100 50 1"
 
-class gameOfLife extends FlatSpec {
-    import meta.deep.IR.Predef._
-
-    val width: Int = 100
-    val height: Int = 100
-    val totalTurns: Int = 50
-
-    "Game of life RPC-oneside example concurrent" should "run" in {
-        val agents = generated.example.gameOfLifeRPCOneSide.InitData(width, height)
-        API.OptimizationConfig.concurrentWorker()
-        val snapshot1 = API.Simulate(agents, totalTurns)
+object gameOfLifeBench {
+    def main(args: Array[String]): Unit = {
+        val width = args(0).toInt
+        val height: Int = args(1).toInt
+        val totalTurns: Int = args(2).toInt
+        val mode: Int = args(3).toInt
+        apply(width, height, totalTurns, mode)
     }
 
-    "Game of life RPC-oneside example direct method calls" should "run" in {
-        val agents = generated.example.gameOfLifeRPCOneSideMultiversion.InitData(width, height)
-        API.OptimizationConfig.directMethodCall()
-        val snapshot1 = API.Simulate(agents, totalTurns)
-    }
-
-    "Game of life example messaging" should "run" in {
-        val agents = generated.example.gameOfLife.InitData(width, height)
-        API.OptimizationConfig.mergedWorker()
-        val snapshot1 = API.Simulate(agents, totalTurns)
+    def apply(width: Int, height: Int, totalTurns: Int, mode: Int): Unit = {
+        mode match {
+            case 1 => {
+                // Messaging
+                val agents = generated.example.gameOfLife.InitData(width, height)
+                API.OptimizationConfig.mergedWorker()
+                val snapshot1 = API.Simulate(agents, totalTurns)
+            }
+            case 2 => {
+                // One-side RPC
+                val agents = generated.example.gameOfLifeRPCOneSide.InitData(width, height)
+                API.OptimizationConfig.mergedWorker()
+                val snapshot1 = API.Simulate(agents, totalTurns)
+            }
+            case 3 => {
+                // Direct method call
+                val agents = generated.example.gameOfLifeRPCOneSideMultiversion.InitData(width, height)
+                API.OptimizationConfig.directMethodCall()
+                val snapshot1 = API.Simulate(agents, totalTurns)
+            }
+        }
     }
 }
