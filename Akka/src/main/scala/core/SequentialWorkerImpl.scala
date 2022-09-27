@@ -87,7 +87,7 @@ class Worker {
 
                 case ReceiveMessages(wid, messages) =>
                     val start = System.currentTimeMillis()
-                    ctx.log.debug(f"Worker ${workerId} receives messages from worker ${wid} ${messages}")
+                    ctx.log.debug(f"Worker ${workerId} receives ${messages.size} messages from worker ${wid}")
                     if (!receivedWorkers.contains(wid)){
                         for (m <- messages) {
                             receivedMessages.update(m._1, receivedMessages.getOrElse(m._1, List()) ::: m._2)

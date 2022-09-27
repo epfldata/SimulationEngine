@@ -97,7 +97,7 @@ class Driver {
 
                 case RoundEnd() =>
                     end = System.currentTimeMillis()
-                    ctx.log.info(f"Round ${currentTurn} takes ${end-start} time")
+                    ctx.log.info(f"Round ${currentTurn} takes ${end-start} ms")
                     if (currentTurn >= totalTurn){
                         Behaviors.stopped {() => 
                             ctx.log.debug(f"Simulation completes! Stop the driver")
