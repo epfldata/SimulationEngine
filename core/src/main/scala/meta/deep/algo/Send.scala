@@ -30,7 +30,9 @@ case class Send[R](actorFrom: OpenCode[Actor],
       code"""
         val sender = $actorFrom;
         val receiver = $actorRef;
-        val requestMessage = meta.runtime.RequestMessage(sender.id, Some(java.util.UUID.randomUUID().toString), ${Const(methodSym)}, sender.time, $latency, $convertedArgs);
+        val requestMessage = meta.runtime.RequestMessage(sender.id, Some(java.util.UUID.randomUUID().toString), ${Const(methodSym)}, $convertedArgs);
+        requestMessage.send_time = sender.time;
+        requestMessage.latency = $latency;
         sender.sendMessage(receiver.id, requestMessage);
         sender.setMessageResponseHandler(requestMessage.sessionId.get, (response: meta.runtime.Message) => {
           ${AlgoInfo.responseMessage} := response.asInstanceOf[meta.runtime.ResponseMessage]
@@ -53,7 +55,7 @@ case class Send[R](actorFrom: OpenCode[Actor],
 
     val f5: OpenCode[Unit] =
       code"""
-        ${AlgoInfo.returnValue} := (${AlgoInfo.responseMessage}!).arg;
+        ${AlgoInfo.returnValue} := (${AlgoInfo.responseMessage}!).value;
         ${AlgoInfo.responseMessage} := null;
         ()"""
 

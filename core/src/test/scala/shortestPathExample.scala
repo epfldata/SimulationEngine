@@ -57,7 +57,8 @@ class shortestPathExample extends FlatSpec {
                     vertices(i-1).connectedAgents = List(vertices(i % totalVertices))
                 })
 
-                assert(totalVertices > 5)
+                // Assertions not supported in litelift
+                // assert(totalVertices > 5)
                 vertices(5).isSource = true
                 vertices
             }

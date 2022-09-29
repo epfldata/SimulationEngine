@@ -3,8 +3,8 @@ package gameOfLife
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-import meta.runtime.{RequestMessage, ResponseMessage, Message}
-import meta.runtime.ResponseMessage
+import meta.runtime.Message
+// import meta.io._
 
 /**
   * Conway's game of life
@@ -34,7 +34,7 @@ class Cell(var alive: Int) extends Actor {
 
             connectedAgents.foreach(i => {
               val msg = new Message()
-              msg.value = 0
+              msg.value = alive
               sendMessage(i.id, msg)
             })
             waitLabel(Turn, 1)

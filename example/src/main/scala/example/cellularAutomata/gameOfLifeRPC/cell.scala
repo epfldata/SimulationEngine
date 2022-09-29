@@ -3,6 +3,7 @@ package gameOfLifeRPC
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
+import squid.lib.transparencyPropagating
 
 /**
   * Conway's game of life
@@ -15,6 +16,7 @@ class Cell(var alive: Int) extends Actor {
 
     var aliveNeighbors: Int = 0
 
+    @transparencyPropagating
     def tell(state: Int): Unit = {
       aliveNeighbors = aliveNeighbors + state
     }
@@ -30,8 +32,7 @@ class Cell(var alive: Int) extends Actor {
             }
 
             connectedAgents.map(x => 
-              x.asInstanceOf[Cell]).foreach(v => async_call(() => v.tell(alive), 1)
-            )
+              x.asInstanceOf[Cell]).foreach(v => async_call(v.tell(alive), 1))
             waitLabel(Turn, 1)
         }
     }

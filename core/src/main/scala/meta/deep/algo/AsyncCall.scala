@@ -26,11 +26,13 @@ case class AsyncCall[R, T](actorFrom: OpenCode[Actor],
       code"""
         val sender = $actorFrom;
         val receiver = $actorRef;
-        val requestMessage = meta.runtime.RequestMessage(sender.id, Some(java.util.UUID.randomUUID().toString), ${Const(methodSym)}, sender.time,  $latency,  $convertedArgs);
+        val requestMessage = meta.runtime.RequestMessage(sender.id, Some(java.util.UUID.randomUUID().toString), ${Const(methodSym)}, $convertedArgs);
+        requestMessage.send_time = sender.time;
+        requestMessage.latency = $latency;
         var future = meta.runtime.Future[$T](requestMessage.sessionId.get); 
         sender.sendMessage(receiver.id, requestMessage);
         sender.setMessageResponseHandler(requestMessage.sessionId.get, (response: meta.runtime.Message) => {
-          future.setValue(response.asInstanceOf[meta.runtime.ResponseMessage].arg.asInstanceOf[$T])
+          future.setValue(response.asInstanceOf[meta.runtime.ResponseMessage].value.asInstanceOf[$T])
         })
         ${AlgoInfo.returnValue} := future
         ()"""

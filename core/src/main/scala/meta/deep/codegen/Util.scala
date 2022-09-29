@@ -5,7 +5,6 @@ import meta.deep.member.{CodeNodeMtd, CodeNodePos, EdgeInfo}
 import meta.deep.algo.{AlgoInfo, CallMethod, Send}
 import meta.deep.codegen.CreateActorGraphs._
 import meta.deep.member._
-import meta.runtime.ResponseMessage
 import squid.lib.MutVar
 import meta.runtime.Actor
 import meta.deep.member.Method

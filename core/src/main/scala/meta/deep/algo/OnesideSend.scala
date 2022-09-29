@@ -26,7 +26,9 @@ case class OnesideSend[R](actorFrom: OpenCode[Actor],
       code"""
         val sender = $actorFrom;
         val receiver = $actorRef;
-        val requestMessage = meta.runtime.RequestMessage(sender.id, None, ${Const(methodSym)}, sender.time, $latency, $convertedArgs);
+        val requestMessage = meta.runtime.RequestMessage(sender.id, None, ${Const(methodSym)}, $convertedArgs);
+        requestMessage.send_time = sender.time;
+        requestMessage.latency = $latency; 
         sender.sendMessage(receiver.id, requestMessage);
         ()"""
 

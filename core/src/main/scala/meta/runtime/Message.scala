@@ -3,14 +3,24 @@ package meta.runtime
 import java.util.UUID
 import Actor.AgentId
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
+// import meta.io._
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSubTypes(
+  Array(
+    new JsonSubTypes.Type(value = classOf[TimedMessage], name = "timedMessage")))
+class Message extends JsonSerializable {
+  var value: Int = 0
+}
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
   Array(
     new JsonSubTypes.Type(value = classOf[RequestMessage], name = "requestMessage"),
     new JsonSubTypes.Type(value = classOf[ResponseMessage], name = "responseMessage")))
-class Message extends JsonSerializable {
-  var value: Int = 0
+class TimedMessage extends Message {
+  var send_time: Int = 0
+  var latency: Int = 1
 }
 
 /**
@@ -25,10 +35,8 @@ class Message extends JsonSerializable {
 case class RequestMessage(senderId: AgentId,
                           sessionId: Option[String],
                           methodInfo: String,
-                          send_time: Int, 
-                          latency: Int,
                           argss: List[List[Any]])
-    extends Message
+    extends TimedMessage
 
 /**
   * This class is used to answer to a received message.
@@ -36,9 +44,5 @@ case class RequestMessage(senderId: AgentId,
   * @param send_time the timestamp of the send message
   * @param latency the expected latency of the message
   */
-case class ResponseMessage(arg: Any, 
-                           send_time: Int, 
-                           latency: Int)
-    extends Message {
-      var sessionId: String = UUID.randomUUID().toString
-    }
+case class ResponseMessage(arg: Any, sessionId: String)
+    extends TimedMessage

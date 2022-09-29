@@ -179,8 +179,9 @@ class CreateCode(initCode: String,
         ${methodCases.split("\n").mkString("\n" + " "*4)}
       }
       if (m.sessionId.isDefined){
-        val msg = meta.runtime.ResponseMessage(response, time, m.latency)
-        msg.sessionId = m.sessionId.get
+        val msg = meta.runtime.ResponseMessage(response, m.sessionId.get)
+        msg.send_time = time
+        msg.latency = m.latency
         sendMessage(m.senderId, msg)
       }
     }
