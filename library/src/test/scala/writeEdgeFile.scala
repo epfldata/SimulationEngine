@@ -27,7 +27,7 @@ object writeEdgeFileWithClock {
       val radius: Int = 1
 
       val pw = new PrintWriter(new FileOutputStream(new File(f"2DTorus_${width*height}_clock.txt"),false))
-      pw.write("[0,0,[]]\n")
+      pw.write(f"[0,0,[${Range(0, width*height).map(i => f"[${i+1},0]").mkString(",")}]]\n")
       for (i <- Range(0, width*height)){
          val neighbors = Grid.Torus2D.getNeighborCells(width, height)(i, radius)
          val neighbor_string = neighbors.map(i => f"[${i+1},0]").mkString(",")

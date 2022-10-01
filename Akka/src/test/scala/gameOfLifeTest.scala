@@ -21,7 +21,7 @@ object gameOfLifeBench {
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
             case 2 => {
-                // One-side RPC
+                // callAndForget
                 val agents = generated.example.gameOfLifeRPCOneSide.InitData(width, height)
                 API.OptimizationConfig.mergedWorker()
                 val snapshot1 = API.Simulate(agents, totalTurns)
@@ -30,6 +30,13 @@ object gameOfLifeBench {
                 // Direct method call
                 val agents = generated.example.gameOfLifeRPCOneSideMultiversion.InitData(width, height)
                 API.OptimizationConfig.directMethodCall()
+                val snapshot1 = API.Simulate(agents, totalTurns)
+            }
+
+            case 4 => {
+                // asyncCall
+                val agents = generated.example.gameOfLifeRPC.InitData(width, height)
+                API.OptimizationConfig.mergedWorker()
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
         }
