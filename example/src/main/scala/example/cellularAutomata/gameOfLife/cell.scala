@@ -37,7 +37,7 @@ class Cell(var alive: Int) extends Actor {
               msg.value = alive
               sendMessage(i.id, msg)
             })
-            waitLabel(Turn, 1)
+            waitRounds(1)
         }
     }
 }

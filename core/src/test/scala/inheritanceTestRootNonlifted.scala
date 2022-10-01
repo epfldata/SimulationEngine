@@ -42,7 +42,7 @@ class Teacher() extends Person {
     override def work(): String = {
         // With the special instruction wait, workplace is set to Self-employed 
         // invoking the inherited method instead
-        // waitLabel(Turn, 1)
+        // barrierSync()
         "School"
     }
 
@@ -63,7 +63,7 @@ class Student(var neighbor: Teacher) extends Person {
     def main(): Unit = {
         while (true) {
             // Ask what does the neighbor do
-            f = async_call(() => neighbor.work(), 1)
+            f = asyncCall(() => neighbor.work(), 1)
             while (!f.isCompleted){
                 waitAndReply(1)
             }

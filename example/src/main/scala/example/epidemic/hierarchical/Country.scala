@@ -17,9 +17,9 @@ class Country(val cities: List[City], var priority: Int, var delayInResponse: In
         concern_factor = 100 / priority
         println("Country "+ id + " has priority " + priority)
         while (true) {
-            fs = cities.map(i => async_call(() => i.getLatestInfectiousRatio(), 15))
+            fs = cities.map(i => asyncCall(() => i.getLatestInfectiousRatio(), 15))
             while (fs.exists(p => !p.isCompleted)){
-              waitLabel(Turn, 1)
+              barrierSync()
             }
             infectious_ratios = fs.map(i => i.popValue.get)
             
@@ -28,21 +28,21 @@ class Country(val cities: List[City], var priority: Int, var delayInResponse: In
               if (infectious_ratios.exists(p => p > 0)){
                 infectious_ratios.zipWithIndex.foreach(i => if (i._1 > 0) {
                   updated_concern = List(3, (i._1 * concern_factor).toInt).max
-                  call_and_forget(cities(i._2).nationalConcern(updated_concern), 5)
+                  callAndForget(cities(i._2).nationalConcern(updated_concern), 5)
                 })
               }
             } else if (priority == 2) {  // some what care
               if (infectious_ratios.exists(p => p > 0.1)){
                 infectious_ratios.zipWithIndex.foreach(i => if (i._1 > 0.1) {
                   updated_concern = List(3, (i._1 * concern_factor).toInt).max
-                  call_and_forget(cities(i._2).nationalConcern(updated_concern), 10)
+                  callAndForget(cities(i._2).nationalConcern(updated_concern), 10)
                 })
               }
             } else { // only if have to
               if (infectious_ratios.exists(p => p > 0.3)){
                 infectious_ratios.zipWithIndex.foreach(i => if (i._1 > 0.3) {
                   updated_concern = List(3, (i._1 * concern_factor).toInt).max
-                  call_and_forget(cities(i._2).nationalConcern(updated_concern), 15)
+                  callAndForget(cities(i._2).nationalConcern(updated_concern), 15)
                 })
               }
             }

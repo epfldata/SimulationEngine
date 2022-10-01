@@ -31,14 +31,14 @@ class City(val population: List[Person], var delayInResponse: Int) extends Actor
     def main(): Unit = {
         total_population = population.size
         while (true) {
-            fs = population.map(i => async_call(() => i.isInfected(), 5))
+            fs = population.map(i => asyncCall(() => i.isInfected(), 5))
             while (fs.exists(p => !p.isCompleted)){
-              waitLabel(Turn, 1)
+              barrierSync()
             }
             total_infected = fs.map(i => i.popValue.get).filter(i => i).length
             println("Total infected people in city " + id + " is " + total_infected + " total population is " + total_population)
             if (total_infected > (1.0/national_concern) * total_population) {
-              population.foreach(i => call_and_forget(i.updatedRegulation(national_concern), 5))
+              population.foreach(i => callAndForget(i.updatedRegulation(national_concern), 5))
             }
             waitAndReply(delayInResponse)
         }

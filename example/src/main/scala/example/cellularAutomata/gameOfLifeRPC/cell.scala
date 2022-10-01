@@ -32,8 +32,8 @@ class Cell(var alive: Int) extends Actor {
             }
 
             connectedAgents.map(x => 
-              x.asInstanceOf[Cell]).foreach(v => async_call(v.tell(alive), 1))
-            waitLabel(Turn, 1)
+              x.asInstanceOf[Cell]).foreach(v => asyncCall(v.tell(alive), 1))
+            barrierSync()
         }
     }
 }

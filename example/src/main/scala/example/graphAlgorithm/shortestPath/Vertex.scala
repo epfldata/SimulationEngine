@@ -34,7 +34,7 @@ class Vertex(val isSource: Boolean, val uniformEdgeWeight: Int) extends Actor {
             if (propagateUpdate){
                 futures = connectedAgents.map(x => {
                     broadcastDist = dist + uniformEdgeWeight
-                    async_call(x.asInstanceOf[Vertex].updateValue(broadcastDist), 1)
+                    asyncCall(x.asInstanceOf[Vertex].updateValue(broadcastDist), 1)
                 })
                 while (futures.exists(x => !x.isCompleted)){
                     waitAndReply(1)

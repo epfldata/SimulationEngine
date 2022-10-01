@@ -15,9 +15,9 @@ class SenderWithBound(val r: ReceiverForBound) extends Actor {
 
     def main(): Unit = {
         while (true){
-            async_call(() => r.rpc1(), 5)
-            async_call(r.rpc2, 5)
-            call_and_forget(r.rpc2, 5)
+            asyncCall(() => r.rpc1(), 5)
+            asyncCall(r.rpc2, 5)
+            callAndForget(r.rpc2, 5)
             waitAndReply(1)
         }
     }

@@ -1,13 +1,13 @@
 package meta.test
 package shortestPath
 
-import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import meta.deep.IR.TopLevel.ClassWithObject
 import meta.deep.IR
 import meta.runtime.{Actor, Message}
 import meta.API._
 import org.scalatest.FlatSpec
+import meta.classLifting.SpecialInstructions
 
 @lift
 class Vertex() extends Actor {
@@ -35,7 +35,7 @@ class Vertex() extends Actor {
                 sendMessage(a.id, msg)
             })
             // println(id + " distance to source is " + dist + " at round " + time)
-            waitLabel(Turn, 1)
+            SpecialInstructions.barrierSync()
         }
     }
 }

@@ -50,7 +50,7 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
                 // Meet with contacts 
                 val selfRisk = DiseaseParameter.infectiousness(health, symptomatic)
                 if (!connectedAgents.isEmpty) {
-                    f = connectedAgents.map(x => async_call(x.asInstanceOf[Person].makeContact(selfRisk), 1))
+                    f = connectedAgents.map(x => asyncCall(x.asInstanceOf[Person].makeContact(selfRisk), 1))
 
                     while (f.exists(x => !x.isCompleted)){
                         waitAndReply(1)
@@ -64,7 +64,7 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
 
                 if ((health != "Susceptible") && (health != "Recover")) {
                     // report health status
-                    call_and_forget(country.report(health), 2)
+                    callAndForget(country.report(health), 2)
                     if (daysInfected == DiseaseParameter.stateDuration(health)) {
                         health = HealthStatus.change(health, vulnerability)
                         daysInfected = 0
@@ -72,11 +72,11 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
                         daysInfected = daysInfected + 1
                     }
                 }
-                waitLabel(Turn, dayUnit - hourCounter)
+                waitRounds(dayUnit - hourCounter)
                 handleRPC()
                 hourCounter = 0
             } else {
-                waitLabel(Turn, dayUnit)
+                waitRounds(dayUnit)
             }
         }
     }

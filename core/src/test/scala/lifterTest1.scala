@@ -18,48 +18,48 @@ class AgentWithSpecialInst(val n: AgentWithSpecialInst) extends Actor {
     @transparencyPropagating
     def blockingMtd(): Boolean = {
         println(id + " processes blocking mtd!")
-        waitLabel(Turn, 1)
+        barrierSync()
         println(id + " finishes processing!")
         true
     }
 
     def testForallOperation(): Boolean = {
-        List(1, 2, 3, 4).forall(_ => async_call(n.blockingMtd(), 1).isCompleted)
-        ListBuffer(1, 2, 3, 4).forall(_ => async_call(n.blockingMtd(), 1).isCompleted)
-        Set(1, 2, 3, 4).forall(_ => async_call(n.blockingMtd(), 1).isCompleted)
-        Vector(1, 2, 3, 4).forall(_ => async_call(n.blockingMtd(), 1).isCompleted)
+        List(1, 2, 3, 4).forall(_ => asyncCall(n.blockingMtd(), 1).isCompleted)
+        ListBuffer(1, 2, 3, 4).forall(_ => asyncCall(n.blockingMtd(), 1).isCompleted)
+        Set(1, 2, 3, 4).forall(_ => asyncCall(n.blockingMtd(), 1).isCompleted)
+        Vector(1, 2, 3, 4).forall(_ => asyncCall(n.blockingMtd(), 1).isCompleted)
     }
 
     def testExistsOperation(): Boolean = {
-        List(1, 2, 3, 4).exists(_ => async_call(n.blockingMtd(), 1).isCompleted)
-        ListBuffer(1, 2, 3, 4).exists(_ => async_call(n.blockingMtd(), 1).isCompleted)
-        Set(1, 2, 3, 4).exists(_ => async_call(n.blockingMtd(), 1).isCompleted)
-        Vector(1, 2, 3, 4).exists(_ => async_call(n.blockingMtd(), 1).isCompleted)
+        List(1, 2, 3, 4).exists(_ => asyncCall(n.blockingMtd(), 1).isCompleted)
+        ListBuffer(1, 2, 3, 4).exists(_ => asyncCall(n.blockingMtd(), 1).isCompleted)
+        Set(1, 2, 3, 4).exists(_ => asyncCall(n.blockingMtd(), 1).isCompleted)
+        Vector(1, 2, 3, 4).exists(_ => asyncCall(n.blockingMtd(), 1).isCompleted)
     }
 
     // .map and .flatMap only work for List
     def testMapOperation(): Boolean = {
-        List(1, 2, 3, 4).map(_ => async_call(n.blockingMtd(), 1))
-        List(1, 2, 3, 4).flatMap(_ => List(async_call(n.blockingMtd(), 1)))
+        List(1, 2, 3, 4).map(_ => asyncCall(n.blockingMtd(), 1))
+        List(1, 2, 3, 4).flatMap(_ => List(asyncCall(n.blockingMtd(), 1)))
         
         // Fail
-        // ListBuffer(1, 2, 3, 4).map[Future[Boolean], ListBuffer[Future[Boolean]]](_ => async_call(n.blockingMtd(), 1))
-        // Set(1, 2, 3, 4).map(_ => async_call(n.blockingMtd(), 1))
-        // (1 to 10).map(_ => async_call(n.blockingMtd(), 1))
+        // ListBuffer(1, 2, 3, 4).map[Future[Boolean], ListBuffer[Future[Boolean]]](_ => asyncCall(n.blockingMtd(), 1))
+        // Set(1, 2, 3, 4).map(_ => asyncCall(n.blockingMtd(), 1))
+        // (1 to 10).map(_ => asyncCall(n.blockingMtd(), 1))
         true
     }
 
     def testForeachOperation(): Boolean = {
-        List(1, 2, 3, 4).foreach(_ => async_call(n.blockingMtd(), 1))
-        ListBuffer(1, 2, 3, 4).foreach(_ => async_call(n.blockingMtd(), 1))
-        Set(1, 2, 3, 4).foreach(_ => async_call(n.blockingMtd(), 1))
-        Vector(1, 2, 3, 4).foreach(_ => async_call(n.blockingMtd(), 1))
-        1.to(10).foreach(_ => async_call(n.blockingMtd(), 1))
+        List(1, 2, 3, 4).foreach(_ => asyncCall(n.blockingMtd(), 1))
+        ListBuffer(1, 2, 3, 4).foreach(_ => asyncCall(n.blockingMtd(), 1))
+        Set(1, 2, 3, 4).foreach(_ => asyncCall(n.blockingMtd(), 1))
+        Vector(1, 2, 3, 4).foreach(_ => asyncCall(n.blockingMtd(), 1))
+        1.to(10).foreach(_ => asyncCall(n.blockingMtd(), 1))
         // Array does not work
-        // Array(1, 2, 3, 4).foreach(_ => async_call(n.blockingMtd(), 1))
-        List(n).foreach(i => async_call(i.blockingMtd(), 1))
-        Set(n).foreach(i => async_call(i.blockingMtd(), 1))
-        Map(1 -> n).map(i => i._2).foreach(i => async_call(i.blockingMtd(), 1))
+        // Array(1, 2, 3, 4).foreach(_ => asyncCall(n.blockingMtd(), 1))
+        List(n).foreach(i => asyncCall(i.blockingMtd(), 1))
+        Set(n).foreach(i => asyncCall(i.blockingMtd(), 1))
+        Map(1 -> n).map(i => i._2).foreach(i => asyncCall(i.blockingMtd(), 1))
         true
     }
 

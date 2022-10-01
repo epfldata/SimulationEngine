@@ -17,14 +17,14 @@ class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
 
     def blockingMtd(): Int = {
         totalBlockingMtdCalls = totalBlockingMtdCalls + 1
-        waitLabel(Turn, 1)
+        barrierSync()
         totalBlockingMtdCalls
     }
 
     def main(): Unit = {
         while (true){
             if (n != null){
-                future = async_call(() => n.blockingMtd(), 1)
+                future = asyncCall(() => n.blockingMtd(), 1)
                 while (!future.isCompleted){
                     waitAndReply(1)
                 }
@@ -44,7 +44,7 @@ class AgentWithBlockingCallLocal() extends Actor {
 
     def blockingMtd(): Unit = {
         totalBlockingMtdCalls = totalBlockingMtdCalls + 1
-        waitLabel(Turn, 1)
+        barrierSync()
     }
 
     def nonBlockingMtd(): Unit = {
