@@ -140,6 +140,13 @@ class Actor extends Serializable {
     ???
   }
 
+  /**
+    * Since agents are mutable, clone creates a copy of the agent with current states, 
+    * except for state variables defined in args
+    *
+    * @param args a list of variable names which have initial values in cloned agent
+    * @return
+    */
   def SimClone(args: Set[String] = Set()): Actor = {
     this
   }

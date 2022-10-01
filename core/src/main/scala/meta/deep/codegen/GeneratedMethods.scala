@@ -97,11 +97,11 @@ case object cloneAgent extends GeneratedMethods {
     // ${mutablePublicVariableRewrite.mkString("\n  ")}
     override def run(): String = {
         s"""
-override def SimClone(cloned_variables: Set[String]): ${actorName} = {
+override def SimClone(except_variables: Set[String]): ${actorName} = {
   val newAgent = new ${actorName}(${parameterApplication})
 ${compiledActorGraph.actorTypes.flatMap(actorType => {
       actorType.states.filter(x => x.mutable && !x.parameter && !x.modifiers.contains("private")).map(s => {
-        s"""  if (cloned_variables.contains("${s.name}")) newAgent.${s.name} = ${s.name}"""
+        s"""  if (!except_variables.contains("${s.name}")) newAgent.${s.name} = ${s.name}"""
       })
     }).mkString("\n")}
   newAgent
