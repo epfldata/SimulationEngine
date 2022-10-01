@@ -53,8 +53,7 @@ s"""
     while (${createCode.unblockRegMap(actorName)} && (${instructionRegister} < ${totalStates})) {
       ${memAddr}(${instructionRegister})()
     }
-    time += 1
-    time
+    proposeInterval
   }
 """
     }
