@@ -63,7 +63,7 @@ object Lifter {
    */
   private def validLocalMethodDef(cde: OpenCode[_]): Boolean = {
     cde analyse {
-      case code"SpecialInstructions.waitAndReply($y: Double): Unit" =>
+      case code"SpecialInstructions.waitAndReply($y: Int): Unit" =>
         return false
       // case code"SpecialInstructions.handleRPC(): Unit" =>
       //   return false
@@ -452,37 +452,55 @@ class Lifter {
         //   cache += (cde -> handleMessage)
         //   handleMessage.asInstanceOf[Algo[T]]
 
-        case code"SpecialInstructions.waitLabel($x: SpecialInstructions.waitMode, $y: Double)" =>
+        case code"SpecialInstructions.barrierSync()" =>
           defInGeneratedCode = false
-          val waitCounter = Variable[Double]
+          val f = 
+            LetBinding(None, 
+              ScalaCode(code"${actorSelfVariable.toCode}.proposeInterval = 1"),
+              Wait()
+            )
+          f.asInstanceOf[Algo[T]]
+
+        case code"SpecialInstructions.waitRounds($y: Int)" =>
+          defInGeneratedCode = false
+          val waitCounter = Variable[Int]
           y match {
-            case code"${Const(n)}: Double" =>
+            case code"${Const(n)}: Int" =>
               if (n <= 0) {
-                throw new Exception("The waitLabel takes a positive value!")
+                throw new Exception("Instruction wait takes a positive value!")
               }
             case _ =>   //  If variable turn number, skip the check
           }
 
           val f =
-                LetBinding(
-                  Some(waitCounter),
-                  ScalaCode(code"0.0"),
-                  DoWhile(code"$waitCounter < $y",
-                    LetBinding(Some(waitCounter),
-                              ScalaCode(code"${waitCounter} + 1"),
-                              Wait()
-                              ))).asInstanceOf[Algo[T]]
+              LetBinding(
+                Some(waitCounter),
+                ScalaCode(code"${actorSelfVariable.toCode}.time + $y"),
+                DoWhile(code"${actorSelfVariable.toCode}.time < $waitCounter",
+                  LetBinding(None,
+                            ScalaCode(code"${actorSelfVariable.toCode}.proposeInterval = $waitCounter - ${actorSelfVariable.toCode}.time"),
+                            Wait()
+                            ))).asInstanceOf[Algo[T]]
+          // val f =
+          //       LetBinding(
+          //         Some(waitCounter),
+          //         ScalaCode(code"0.0"),
+          //         DoWhile(code"$waitCounter < $y",
+          //           LetBinding(Some(waitCounter),
+          //                     ScalaCode(code"${waitCounter} + 1"),
+          //                     Wait()
+          //                     ))).asInstanceOf[Algo[T]]
 
           cache += (cde -> f)
           f
 
-        case code"SpecialInstructions.waitAndReply($y: Double)" =>
+        case code"SpecialInstructions.waitAndReply($y: Int)" =>
           defInGeneratedCode = false
-          val waitCounter = Variable[Double]
+          val waitCounter = Variable[Int]
           y match {
-            case code"${Const(n)}: Double" =>
+            case code"${Const(n)}: Int" =>
               if (n <= 0) {
-                throw new Exception("The waitLabel takes a positive value!")
+                throw new Exception("Instruction waitAndReply takes a positive value!")
               }
             case _ =>   //  If variable turn number, skip the check
           }
@@ -490,7 +508,7 @@ class Lifter {
           val f =
                 LetBinding(
                   Some(waitCounter),
-                  ScalaCode(code"0.0"),
+                  ScalaCode(code"0"),
                   DoWhile(code"$waitCounter < $y",
                     LetBinding(Some(waitCounter),
                               ScalaCode(code"${waitCounter} + 1"),
@@ -502,7 +520,7 @@ class Lifter {
           cache += (cde -> f)
           f
 
-        case code"SpecialInstructions.call_and_forget[$mt]({${m@ MethodApplication(msg)}}: mt, $t: Int)" =>
+        case code"SpecialInstructions.callAndForget[$mt]({${m@ MethodApplication(msg)}}: mt, $t: Int)" =>
           if (methodsIdMap.get(msg.symbol.toString).isDefined) {
             defInGeneratedCode = false
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
@@ -523,7 +541,7 @@ class Lifter {
             throw new Exception(f"Unable to find method ${msg.symbol} in ${cde}. Did you lift the receiver?")
           }
 
-        case code"SpecialInstructions.async_call[$mt]({${m@ MethodApplication(msg)}}: mt, $t: Int)" =>
+        case code"SpecialInstructions.asyncCall[$mt]({${m@ MethodApplication(msg)}}: mt, $t: Int)" =>
           if (methodsIdMap.get(msg.symbol.toString).isDefined) {
             defInGeneratedCode = false
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
@@ -539,11 +557,11 @@ class Lifter {
             cache += (cde -> f)
             f
           } else {
-            throw new Exception(f"Unable to find method ${msg.symbol} for async_call(msg) in ${cde}. Did you lift the receiver?")
+            throw new Exception(f"Unable to find method ${msg.symbol} for asyncCall(msg) in ${cde}. Did you lift the receiver?")
           }
           
         // asynchronously call a remote method
-        case code"SpecialInstructions.async_call[$mt]((() => {${m@ MethodApplication(msg)}}: mt), $t: Int)" =>
+        case code"SpecialInstructions.asyncCall[$mt]((() => {${m@ MethodApplication(msg)}}: mt), $t: Int)" =>
           defInGeneratedCode = false
           if (methodsIdMap.get(msg.symbol.toString).isDefined){
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
@@ -579,7 +597,7 @@ class Lifter {
                         argss.remove(0)
                       } else {
                         println(s"msg: $msg, argss: $argss, mtd argss: ${mtd2.args.last}")
-                        throw new Exception("async_call(()=>msg) does't support local variables. Please use asyncSend.")
+                        throw new Exception("asyncCall(()=>msg) does't support local variables. Please use asyncSend.")
                       }
                     }
                   } else {
@@ -591,7 +609,7 @@ class Lifter {
                   }
                   curriedMtd = mtd2.args.head.head
                 }
-                case _ => throw new Exception(s"Error in async_call(()=>msg)! $cde $recipientActorVariable $curriedMtd")
+                case _ => throw new Exception(s"Error in asyncCall(()=>msg)! $cde $recipientActorVariable $curriedMtd")
               }
           }
             AsyncCall[T, mt.Typ](
@@ -747,8 +765,8 @@ class Lifter {
             liftCode(y))
           Some(f.asInstanceOf[Algo[T]])
 
-        // case code"SpecialInstructions.async_call[$mt]($a): meta.runtime.Future[mt]" =>
-        //   throw new Exception(s"Invalid async_call in ${actorName}! Did you mark the callee method with transparencyPropagating?")
+        // case code"SpecialInstructions.asyncCall[$mt]($a): meta.runtime.Future[mt]" =>
+        //   throw new Exception(s"Invalid asyncCall in ${actorName}! Did you mark the callee method with transparencyPropagating?")
 
         case code"${MethodApplication(ma)}:Any " =>
           val recipientActorVariable = ma.args.head.head.asInstanceOf[OpenCode[Actor]]
