@@ -9,7 +9,6 @@ import scala.collection.JavaConversions._
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
-import akka.util.Timeout
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -32,8 +31,10 @@ class Worker {
     // private var tscontroller: ActorRef[TimeseriesController.LogWorker] = null
     var start: Long = 0
     var end: Long = 0
+    
+    private var acceptedInterval: Int = 0
+    private var proposeInterval: Int = Int.MaxValue
 
-    private var logical_clock: Int = 0
     private var completedAgents: Int = 0
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
 
@@ -117,13 +118,14 @@ class Worker {
                         var collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
 
                         local_sims.foreach(a => {
+                            a._2.time += acceptedInterval
                             val x = receivedMessages.remove(a._1)
                             if (x != null) {
                                 a._2.receivedMessages.addAll(x)
                             }
-                            val time = a._2.run()
-                            if (logical_clock < time){
-                              logical_clock = time
+                            val tmpProposeInterval = a._2.run()
+                            if (tmpProposeInterval < proposeInterval){
+                              proposeInterval = tmpProposeInterval
                             }
                             a._2.sendMessages.foreach(i => {
                               collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2.toList) 
@@ -134,8 +136,9 @@ class Worker {
                     ctx.self ! AgentsCompleted()
                     worker()
 
-                case ExpectedReceives(receive_map, replyTo) => 
-                    sendToRef = replyTo                    
+                case ExpectedReceives(receive_map, replyTo, acceptedInterval) => 
+                    sendToRef = replyTo        
+                    this.acceptedInterval = acceptedInterval            
                     expectedWorkerSet = receive_map.getOrElse(workerId, Set[Int]())
                     if (receivedWorkers.toSet == expectedWorkerSet){
                         ctx.self ! Start()
@@ -144,9 +147,9 @@ class Worker {
                     
                 case AgentsCompleted() =>
                     end = System.currentTimeMillis()
-                    ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms")
+                    ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms, propose ${proposeInterval}")
                     val sendToWorkers = message_map.keys.filter(i => i!=workerId).toSet
-                    sendToRef ! SendTo(workerId, sendToWorkers, logical_clock)
+                    sendToRef ! SendTo(workerId, sendToWorkers, proposeInterval)
                     // send out messages to other workers asap
                     sendToWorkers.foreach(i => {
                         // val msgs = message_map.remove(i)

@@ -23,6 +23,8 @@ class Driver {
     private var workersStop: Set[ActorRef[WorkerSpec.Stop]] = Set()
     private var workersStart: Set[ActorRef[WorkerSpec.ExpectedReceives]] = Set()
 
+    private var acceptedInterval: Int = 0
+
     var start: Long = 0
     var end: Long = 0
 
@@ -73,25 +75,28 @@ class Driver {
                         Aggregator[WorkerSpec.SendTo, RoundEnd](
                             sendRequests = { replyTo =>
                                 workersStart.map(a => {
-                                    a ! WorkerSpec.ExpectedReceives(workerReceiveFrom, replyTo)
+                                    a ! WorkerSpec.ExpectedReceives(workerReceiveFrom, replyTo, acceptedInterval)
                                 })
                                 workerReceiveFrom = Map()
                             },
                             expectedReplies = totalWorkers,
                             ctx.self,
                             aggregateReplies = replies => {
+                                var tmpProposeInterval: Int = Int.MaxValue
                                 for (r <- replies) {
                                     for (k <- r.sendTo) {
                                         workerReceiveFrom = workerReceiveFrom.updated(k, workerReceiveFrom.getOrElse(k, Set()).union(Set(r.workerId)))
                                     }
-                                    if (r.agentTime > currentTurn){
-                                        currentTurn = r.agentTime
+                                    if (r.proposeInterval < tmpProposeInterval){
+                                        tmpProposeInterval = r.proposeInterval
                                     }
                                 }
+                                acceptedInterval = tmpProposeInterval
+                                currentTurn += acceptedInterval
                                 RoundEnd()
                             },
-                            timeout=100.seconds))
-                    ctx.log.debug(f"Driver receives notifications from all workers! New receive from ${workerReceiveFrom}")
+                            timeout=1000.seconds))
+                    ctx.log.debug(f"Driver receives notifications from all workers! ${workerReceiveFrom} Accepted interval ${acceptedInterval}")
                     driver()
                 }
 

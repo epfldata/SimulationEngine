@@ -17,5 +17,5 @@ object LocalAgentSpec {
     ))
     trait AgentEvent 
     final case class AddMessages(replyTo: ActorRef[MessagesAdded]) extends AgentEvent with JsonSerializable
-    final case class MessagesAdded(agentTime: Int, indexedSentMessages: Map[Long, List[Message]]) extends AgentEvent with JsonSerializable
+    final case class MessagesAdded(proposeInterval: Int, indexedSentMessages: Map[Long, List[Message]]) extends AgentEvent with JsonSerializable
 }

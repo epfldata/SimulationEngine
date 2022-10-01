@@ -32,11 +32,13 @@ class Worker {
     private var expectedWorkerSet: Set[Int] = Set[Int]()
     private var sendToRef: ActorRef[SendTo] = null
 
+    private var acceptedInterval: Int = 0
+    private var proposeInterval: Int = Int.MaxValue
+
     // private var tscontroller: ActorRef[TimeseriesController.LogWorker] = null
     var start: Long = 0
     var end: Long = 0
 
-    private var logical_clock: Int = 0
     private var completedAgents: Int = 0
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
 
@@ -124,12 +126,14 @@ class Worker {
                         expectedWorkerSet = Set[Int]()
 
                         local_sims.foreach(a => {
+                            a._2.time += acceptedInterval
                             val x = receivedMessages.remove(a._1)
                             if (x != null) {
                                 a._2.receivedMessages.addAll(x)
                             }
                         })
 
+                        proposeInterval = Int.MaxValue
                         ctx.spawnAnonymous(
                             Aggregator[LocalAgentSpec.MessagesAdded, AgentsCompleted](
                             sendRequests = { replyTo =>
@@ -145,21 +149,22 @@ class Worker {
                                     r.indexedSentMessages.foreach(i => {
                                         collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2) 
                                     })
-                                    if (r.agentTime > logical_clock){
-                                        logical_clock = r.agentTime
+                                    if (r.proposeInterval < proposeInterval){
+                                        proposeInterval = r.proposeInterval
                                     }
                                 }
                                 message_map = collectedMessages.toMap.groupBy(i => nameMap.getOrElse(i._1, workerId))
                                 AgentsCompleted()
                             },
-                            timeout=100.seconds))
+                            timeout=1000.seconds))
                     } else {
                         ctx.self ! AgentsCompleted()
                     }
                     worker()
 
-                case ExpectedReceives(receive_map, replyTo) => 
+                case ExpectedReceives(receive_map, replyTo, acceptedInterval) => 
                     sendToRef = replyTo                    
+                    this.acceptedInterval = acceptedInterval
                     expectedWorkerSet = receive_map.getOrElse(workerId, Set[Int]())
                     if (receivedWorkers.toSet == expectedWorkerSet){
                         ctx.self ! Start()
@@ -170,7 +175,7 @@ class Worker {
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms")
                     val remoteWorkers = message_map.keys.filter(i => i!=workerId).toSet
-                    sendToRef ! SendTo(workerId, remoteWorkers, logical_clock)
+                    sendToRef ! SendTo(workerId, remoteWorkers, proposeInterval)
                     // send out messages to other workers asap
                     remoteWorkers.foreach(i => {
                         peer_workers.get(i) ! ReceiveMessages(workerId, message_map(i))

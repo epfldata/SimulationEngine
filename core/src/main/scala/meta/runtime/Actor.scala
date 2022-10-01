@@ -44,6 +44,7 @@ class Actor extends Serializable {
   
   var deleted: Boolean = false
 
+  var proposeInterval: Int = 1
   /**
     * Contains the received messages from the previous step
     */
