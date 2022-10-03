@@ -15,7 +15,7 @@ class shortestPathTest extends FlatSpec {
     val totalVertices: Int = 50
     val totalRounds: Int = 50
 
-    "The single source shortest path algorithm over a linked list with 10 vertices" should "update the distance of all vertices in 10 rounds" in {
+    f"The single source shortest path algorithm over a linked list with ${totalVertices} vertices" should f"update the distance of all vertices in ${totalRounds} rounds" in {
         val agents = generated.core.test.shortestPath.InitData()
         val snapshot1 = new Base(agents, 50).run()
         assert(snapshot1.sims.map(i => i.asInstanceOf[generated.core.test.shortestPath.Vertex].dist).toSet == Range(0, totalVertices).toSet)
