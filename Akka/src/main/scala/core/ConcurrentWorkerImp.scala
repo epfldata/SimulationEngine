@@ -33,6 +33,7 @@ class Worker {
     private var sendToRef: ActorRef[SendTo] = null
 
     private var acceptedInterval: Int = 0
+    private var logicalClock: Int = 0
     private var proposeInterval: Int = Int.MaxValue
 
     // private var tscontroller: ActorRef[TimeseriesController.LogWorker] = null
@@ -135,7 +136,7 @@ class Worker {
 
                         proposeInterval = Int.MaxValue
                         ctx.spawnAnonymous(
-                            Aggregator[LocalAgentSpec.MessagesAdded, AgentsCompleted](
+                            new Aggregator[LocalAgentSpec.MessagesAdded, AgentsCompleted](
                             sendRequests = { replyTo =>
                                 local_compute_threads.forEach((k, v) => {
                                     v ! LocalAgentSpec.AddMessages(replyTo)                                   
@@ -156,7 +157,7 @@ class Worker {
                                 message_map = collectedMessages.toMap.groupBy(i => nameMap.getOrElse(i._1, workerId))
                                 AgentsCompleted()
                             },
-                            timeout=1000.seconds))
+                            timeout=1000.seconds).apply())
                     } else {
                         ctx.self ! AgentsCompleted()
                     }
@@ -165,6 +166,7 @@ class Worker {
                 case ExpectedReceives(receive_map, replyTo, acceptedInterval) => 
                     sendToRef = replyTo                    
                     this.acceptedInterval = acceptedInterval
+                    logicalClock += acceptedInterval
                     expectedWorkerSet = receive_map.getOrElse(workerId, Set[Int]())
                     if (receivedWorkers.toSet == expectedWorkerSet){
                         ctx.self ! Start()
@@ -176,6 +178,10 @@ class Worker {
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms")
                     val remoteWorkers = message_map.keys.filter(i => i!=workerId).toSet
                     sendToRef ! SendTo(workerId, remoteWorkers, proposeInterval)
+                    // todo: replace later with materialization strategy, rather than checking for null
+                    if (simulation.akka.API.Simulate.log != null){
+                        simulation.akka.API.Simulate.log.add(logicalClock, local_sims.map(_._2.SimClone()))
+                    }
                     // send out messages to other workers asap
                     remoteWorkers.foreach(i => {
                         peer_workers.get(i) ! ReceiveMessages(workerId, message_map(i))

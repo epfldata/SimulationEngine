@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 import akka.actor.typed.ActorSystem
 
 object Simulate {
+    var log: Log[_, _] = new Log[Actor, Iterable[Actor]]((a: Actor) => a, (b: Iterable[Actor]) => b)
 
     private var stoppedAgents = List[Actor]()
 

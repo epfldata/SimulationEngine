@@ -32,6 +32,7 @@ class Worker {
     var start: Long = 0
     var end: Long = 0
     
+    private var logicalClock: Int = 0
     private var acceptedInterval: Int = 0
     private var proposeInterval: Int = Int.MaxValue
 
@@ -138,7 +139,8 @@ class Worker {
 
                 case ExpectedReceives(receive_map, replyTo, acceptedInterval) => 
                     sendToRef = replyTo        
-                    this.acceptedInterval = acceptedInterval            
+                    this.acceptedInterval = acceptedInterval    
+                    logicalClock += acceptedInterval        
                     expectedWorkerSet = receive_map.getOrElse(workerId, Set[Int]())
                     if (receivedWorkers.toSet == expectedWorkerSet){
                         ctx.self ! Start()
@@ -150,6 +152,10 @@ class Worker {
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms, propose ${proposeInterval}")
                     val sendToWorkers = message_map.keys.filter(i => i!=workerId).toSet
                     sendToRef ! SendTo(workerId, sendToWorkers, proposeInterval)
+                    if (simulation.akka.API.Simulate.log != null){
+                        simulation.akka.API.Simulate.log.add[Actor](logicalClock, local_sims.map(_._2.SimClone()))
+                    }
+
                     // send out messages to other workers asap
                     sendToWorkers.foreach(i => {
                         // val msgs = message_map.remove(i)

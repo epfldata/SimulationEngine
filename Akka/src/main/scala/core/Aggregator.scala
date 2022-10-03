@@ -12,17 +12,20 @@ import akka.actor.NoSerializationVerificationNeeded
 // source: https://doc.akka.io/docs/akka/2.6.12//typed/interaction-patterns.html
 
 object Aggregator {
-
   sealed trait Command extends NoSerializationVerificationNeeded
   private case object ReceiveTimeout extends Command
   private case class WrappedReply[R](reply: R) extends Command 
+}
 
-  def apply[Reply: ClassTag, Aggregate](
+class Aggregator[Reply: ClassTag, Aggregate](
       sendRequests: ActorRef[Reply] => Unit,
       expectedReplies: Int,
       replyTo: ActorRef[Aggregate],
       aggregateReplies: IndexedSeq[Reply] => Aggregate,
-      timeout: FiniteDuration): Behavior[Command] = {
+      timeout: FiniteDuration){
+  import Aggregator._
+
+  def apply(): Behavior[Command] = {
     Behaviors.setup { context =>
       context.setReceiveTimeout(timeout, ReceiveTimeout)
       val replyAdapter = context.messageAdapter[Reply](WrappedReply(_))
@@ -54,6 +57,5 @@ object Aggregator {
       collecting(Vector.empty)
     }
   }
-
 }
 

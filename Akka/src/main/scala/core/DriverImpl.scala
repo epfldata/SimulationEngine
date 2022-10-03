@@ -18,7 +18,6 @@ class Driver {
     private var currentTurn: Int = 0
     // worker x, a list of workers which x expects messages from
     private var workerReceiveFrom: Map[Int, Set[Int]] = Map[Int, Set[Int]]()
-    private var workerIdMap: ConcurrentHashMap[Int, ActorRef[WorkerSpec.ExpectedReceives]] = new ConcurrentHashMap[Int, ActorRef[WorkerSpec.ExpectedReceives]]()
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
     private var workersStop: Set[ActorRef[WorkerSpec.Stop]] = Set()
     private var workersStart: Set[ActorRef[WorkerSpec.ExpectedReceives]] = Set()
@@ -72,7 +71,7 @@ class Driver {
                     start = System.currentTimeMillis()
                     ctx.log.debug(f"Driver sends expected receives to all workers!  ${workerReceiveFrom}")
                     ctx.spawnAnonymous(
-                        Aggregator[WorkerSpec.SendTo, RoundEnd](
+                        new Aggregator[WorkerSpec.SendTo, RoundEnd](
                             sendRequests = { replyTo =>
                                 workersStart.map(a => {
                                     a ! WorkerSpec.ExpectedReceives(workerReceiveFrom, replyTo, acceptedInterval)
@@ -95,7 +94,7 @@ class Driver {
                                 currentTurn += acceptedInterval
                                 RoundEnd()
                             },
-                            timeout=1000.seconds))
+                            timeout=1000.seconds).apply())
                     ctx.log.debug(f"Driver receives notifications from all workers! ${workerReceiveFrom} Accepted interval ${acceptedInterval}")
                     driver()
                 }
