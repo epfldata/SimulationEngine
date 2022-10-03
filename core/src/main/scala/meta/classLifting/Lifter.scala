@@ -481,16 +481,6 @@ class Lifter {
                             ScalaCode(code"${actorSelfVariable.toCode}.proposeInterval = $waitCounter - ${actorSelfVariable.toCode}.time"),
                             Wait()
                             ))).asInstanceOf[Algo[T]]
-          // val f =
-          //       LetBinding(
-          //         Some(waitCounter),
-          //         ScalaCode(code"0.0"),
-          //         DoWhile(code"$waitCounter < $y",
-          //           LetBinding(Some(waitCounter),
-          //                     ScalaCode(code"${waitCounter} + 1"),
-          //                     Wait()
-          //                     ))).asInstanceOf[Algo[T]]
-
           cache += (cde -> f)
           f
 
@@ -506,16 +496,16 @@ class Lifter {
           }
 
           val f =
-                LetBinding(
-                  Some(waitCounter),
-                  ScalaCode(code"0"),
-                  DoWhile(code"$waitCounter < $y",
-                    LetBinding(Some(waitCounter),
-                              ScalaCode(code"${waitCounter} + 1"),
-                              LetBinding(None, 
-                                Wait(), 
-                                CallMethod[Unit](handleMessageId, List(List()))
-                                )))).asInstanceOf[Algo[T]]
+            LetBinding(
+                Some(waitCounter),
+                ScalaCode(code"${actorSelfVariable.toCode}.time + $y"),
+                DoWhile(code"${actorSelfVariable.toCode}.time < $waitCounter",
+                  LetBinding(None,
+                    ScalaCode(code"${actorSelfVariable.toCode}.proposeInterval = $waitCounter - ${actorSelfVariable.toCode}.time"),
+                    LetBinding(None, 
+                      Wait(),
+                      CallMethod[Unit](handleMessageId, List(List()))
+                    )))).asInstanceOf[Algo[T]]
 
           cache += (cde -> f)
           f
