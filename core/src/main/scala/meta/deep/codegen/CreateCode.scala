@@ -173,19 +173,21 @@ class CreateCode(initCode: String,
     val handleMsg: String = if (methodCases.isEmpty()) ""  else 
     s"""
   override def handleRPC(): Unit = {
-    for (m <- receivedRPCRequests){
-      val args = m.argss.flatten
-      val response = m.methodInfo match {
-        ${methodCases.split("\n").mkString("\n" + " "*4)}
-      }
-      if (m.sessionId.isDefined){
-        val msg = meta.runtime.ResponseMessage(response, m.sessionId.get)
-        msg.send_time = time
-        msg.latency = m.latency
-        sendMessage(m.senderId, msg)
+    val messages = scheduledRPCRequests.remove(time)
+    if (messages.isDefined){
+      for (m <- messages.get){
+        val args = m.argss.flatten
+        val response = m.methodInfo match {
+          ${methodCases.split("\n").mkString("\n" + " "*4)}
+        }
+        if (m.sessionId.isDefined){
+          val msg = meta.runtime.ResponseMessage(response, m.sessionId.get)
+          msg.send_time = time
+          msg.latency = m.latency
+          sendMessage(m.senderId, msg)
+        }
       }
     }
-    receivedRPCRequests.clear()
   }
   """
 

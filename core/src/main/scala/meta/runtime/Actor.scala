@@ -97,27 +97,25 @@ class Actor extends Serializable {
     }
   }
 
-  val receivedRPCRequests: ListBuffer[RequestMessage] = ListBuffer()
+  val scheduledRPCRequests: MutMap[Int, Buffer[RequestMessage]] = MutMap[Int, Buffer[RequestMessage]]()
 
   def messageListener(): Unit = {
-    val processedMessages = new ArrayList[Message]()
-    receivedMessages.forEach(msg => {
+    val totalMessages = receivedMessages.size()
+
+    Range(0, totalMessages).foreach(i => {
+      val msg = receivedMessages.poll()
       msg match {
         case m: ResponseMessage => 
           if (responseListeners.get(m.sessionId).isDefined){
             responseListeners.remove(m.sessionId).get(m)
-            processedMessages.add(m)
           }
         case m: RequestMessage =>
           // send_time is 0-based
-          if (m.latency + m.send_time <= time){
-            receivedRPCRequests.append(m)
-            processedMessages.add(m) 
-          } 
-        case _ =>
+          scheduledRPCRequests.getOrElseUpdate(m.send_time+m.latency, Buffer()).append(m)
+        case m: Message =>
+          receivedMessages.add(m)
       }
-    }) 
-    receivedMessages.removeAll(processedMessages)
+    })
   }
 
   /**
