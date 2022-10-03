@@ -17,8 +17,8 @@ class SenderWithBound(val r: ReceiverForBound) extends Actor {
         while (true){
             asyncCall(() => r.rpc1(), 5)
             asyncCall(r.rpc2, 5)
-            callAndForget(r.rpc2, 5)
-            waitAndReply(1)
+            callAndForget(r.rpc3, 5)
+            waitRounds(1)
         }
     }
 }
@@ -29,18 +29,26 @@ class ReceiverForBound() extends Actor {
 
     def rpc1(): Unit = {
         counter = counter + 1
-        // println("Received a message for rpc1 at time " + time)
+        println("Received a message for rpc1 at time " + time)
     }
 
     @transparencyPropagating
     def rpc2(): Unit = {
       counter = counter + 1
-    //   println("Received a message for rpc2 at time " + time)
+      println("Received a message for rpc2 at time " + time)
     }
+
+    @transparencyPropagating
+    def rpc3(): Unit = {
+      counter = counter + 1
+      println("Received a message for rpc3 at time " + time)
+    }
+
 
     def main(): Unit = {
         while (true){
-            waitAndReply(1)
+            handleRPC()
+            waitRounds(1)
         }
     }
 }

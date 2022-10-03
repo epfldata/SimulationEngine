@@ -12,9 +12,12 @@ import org.scalatest.FlatSpec
 class shortestPathTest extends FlatSpec {
     import meta.deep.IR.Predef._
 
+    val totalVertices: Int = 50
+    val totalRounds: Int = 50
+
     "The single source shortest path algorithm over a linked list with 10 vertices" should "update the distance of all vertices in 10 rounds" in {
         val agents = generated.core.test.shortestPath.InitData()
-        val snapshot1 = new Base(agents, 10).run()
-        assert(snapshot1.sims.map(i => i.asInstanceOf[generated.core.test.shortestPath.Vertex].dist) == List(5, 6, 7, 8, 9, 0, 1, 2, 3, 4))
+        val snapshot1 = new Base(agents, 50).run()
+        assert(snapshot1.sims.map(i => i.asInstanceOf[generated.core.test.shortestPath.Vertex].dist).toSet == Range(0, totalVertices).toSet)
     }
 }

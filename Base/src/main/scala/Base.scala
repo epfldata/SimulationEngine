@@ -6,9 +6,10 @@ import meta.runtime._
 import meta.API._
 import collection.JavaConverters._
 
-class Base(var actors: List[Actor], val totalTurn: Int) {
+class Base(var actors: List[Actor], val totalRound: Int) {
 
-    var currentTurn: Int = 0
+    var currentRound: Int = 0
+    var elapsedRound: Int = 0
     var collectedMessages: MutMap[Long, Buffer[Message]] = MutMap[Long, Buffer[Message]]()
 
     // Upon resuming
@@ -24,20 +25,22 @@ class Base(var actors: List[Actor], val totalTurn: Int) {
     }
 
     def run(): SimulationSnapshot = {
-      while (currentTurn < totalTurn) {
-        util.displayTime(currentTurn)
-        actors.filterNot(_.deleted).foreach(a => {
-          if (a.run() > currentTurn){
-            currentTurn = a.time
-          }
+      while (currentRound < totalRound) {
+        util.displayTime(currentRound)
+
+        elapsedRound = actors.filterNot(_.deleted).map(a => {
+          a.time += elapsedRound
+          var proposed = a.run()
           a.sendMessages.foreach(i => {
             collectedMessages.getOrElseUpdate(i._1, Buffer[Message]())++=i._2
           })
-        })
+          proposed
+        }).min
         collect()
         actors.filterNot(_.deleted).foreach(a => {
           a.receivedMessages.addAll(a.proxyIds.flatMap(id => collectedMessages.getOrElse(id, Buffer())).asJava)
         })
+        currentRound += elapsedRound
         collectedMessages.clear()
       }
       SimulationSnapshot(actors, collectedMessages.flatMap(i => i._2).toList)

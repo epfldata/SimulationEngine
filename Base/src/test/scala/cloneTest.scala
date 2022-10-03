@@ -16,7 +16,7 @@ class CloneTest extends FlatSpec {
         val agents = generated.core.test.simClone.InitData()
         val snapshot1 = new Base(agents, 5).run()
         val clonee = snapshot1.sims.head.asInstanceOf[generated.core.test.simClone.MutableSim]
-        val cloner = clonee.SimClone(Set("counter"))
+        val cloner = clonee.SimClone()
         // The init state of cloner is the final state of clonee
         assert(cloner.asInstanceOf[generated.core.test.simClone.MutableSim].counter == 5)
         // Run another simulation from cloner won't change the state of clonee
