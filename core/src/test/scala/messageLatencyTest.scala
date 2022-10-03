@@ -47,8 +47,7 @@ class ReceiverForBound() extends Actor {
 
     def main(): Unit = {
         while (true){
-            handleRPC()
-            waitRounds(1)
+            waitAndReply(1)
         }
     }
 }
