@@ -157,6 +157,10 @@ class Worker {
                                         proposeInterval = r.proposeInterval
                                     }
                                 }
+                                // Deliver local messages to agents' mailboxes
+                                collectedMessages.filterKeys(x => local_sims.get(x)!=null).foreach(i => {
+                                    local_sims.get(i._1).receivedMessages.addAll(collectedMessages.remove(i._1).get)
+                                })
                                 message_map = collectedMessages.toMap.groupBy(i => nameMap.getOrElse(i._1, workerId))
                                 AgentsCompleted()
                             },
@@ -191,10 +195,6 @@ class Worker {
                     //     simulation.akka.API.Simulate.log.add(logicalClock, local_sims.map(_._2.SimClone()))
                     // }
                     // Cannot send messages to other workers immediately, race condition
-                    // Deliver local messages to agents' mailboxes
-                    message_map.getOrElse(workerId, List()).foreach(i => {
-                        local_sims.get(i._1).receivedMessages.addAll(i._2)
-                    })
                     completedAgents = 0
                     Behaviors.same
 

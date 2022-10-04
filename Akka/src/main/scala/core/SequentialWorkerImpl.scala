@@ -133,12 +133,17 @@ class Worker {
                               collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2.toList) 
                             })
                         })
+                        // Deliver local messages to agents' mailboxes
+                        collectedMessages.filterKeys(x => local_sims.get(x).isDefined).foreach(i => {
+                            local_sims(i._1).receivedMessages.addAll(collectedMessages.remove(i._1).get)
+                        })
                         message_map = collectedMessages.toMap.groupBy(i => nameMap.getOrElse(i._1, workerId))
                     } 
                     ctx.self ! AgentsCompleted()
                     worker()
 
                 case ExpectedReceives(receive_map, replyTo, acceptedInterval) => 
+                    // send out messages to other workers only at the beginning of a round to avoid race condition
                     val sendToWorkers = message_map.keys.filter(i => i!=workerId).toSet
                     sendToWorkers.foreach(i => {
                         peer_workers.get(i) ! ReceiveMessages(workerId, message_map(i))
@@ -160,12 +165,6 @@ class Worker {
                     // if (simulation.akka.API.Simulate.log != null){
                     //     simulation.akka.API.Simulate.log.add[Actor](logicalClock, local_sims.map(_._2.SimClone()))
                     // }
-
-                    // send out messages to other workers only at the beginning of a round to avoid race condition
-                    // Deliver local messages to agents' mailboxes
-                    message_map.getOrElse(workerId, List()).foreach(i => {
-                        local_sims(i._1).receivedMessages.addAll(i._2)
-                    })
                     completedAgents = 0
                     Behaviors.same
 
