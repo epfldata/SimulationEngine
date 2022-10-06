@@ -70,7 +70,7 @@ class Driver {
 
                 case RoundStart() => {
                     start = System.currentTimeMillis()
-                    ctx.log.debug(f"Driver sends expected receives to all workers!  ${workerReceiveFrom}")
+                    ctx.log.debug(f"Driver sends expected receives to all workers!")
                     ctx.spawnAnonymous(
                         new Aggregator[WorkerSpec.SendTo, RoundEnd](
                             sendRequests = { replyTo =>
@@ -96,12 +96,12 @@ class Driver {
                                 RoundEnd()
                             },
                             timeout=1000.seconds).apply())
-                    ctx.log.debug(f"Driver receives notifications from all workers! ${workerReceiveFrom} Accepted interval ${acceptedInterval}")
                     driver()
                 }
 
                 case RoundEnd() =>
                     end = System.currentTimeMillis()
+                    ctx.log.debug(f"Driver receives notifications from all workers! ${workerReceiveFrom} Accepted interval ${acceptedInterval}")
                     ctx.log.info(f"Round ${currentTurn} takes ${end-start} ms")
                     if (currentTurn >= totalTurn){
                         Behaviors.stopped {() => 
