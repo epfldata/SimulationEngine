@@ -31,7 +31,9 @@ object Simulate {
                 akka.cluster.roles = [$role]
                 """).withFallback(ConfigFactory.load("application"))
             // If there are more workers than agents, then set the worker number to the same as agents
-            var totalWorkers: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.total-workers").render().toInt
+            val workersPerMachine: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.workers-per-machine").render().toInt
+            val totalMachines: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.total-machines").render().toInt
+            var totalWorkers = workersPerMachine * totalMachines
             println(f"Total workers are ${totalWorkers} Total actors ${actors.size}")
             if (totalWorkers > actors.size){
                 println(f"Detect more workers than agents! Set total workers from ${totalWorkers} to ${actors.size}")

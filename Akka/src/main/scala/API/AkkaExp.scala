@@ -28,22 +28,39 @@ object AkkaExp {
             val roles: Set[String] = cluster.selfMember.getRoles.toSet
             val totalActors = actors.size
             var actorsPerWorker = totalActors/totalWorkers
-            if (totalActors % totalWorkers > 0){
-                actorsPerWorker += 1
-            }
+
             stoppedWorkers.clear()
             activeWorkers.clear()
             finalAgents.clear()
             
             ctx.log.debug(f"${actorsPerWorker} actors per worker")
 
+            // Worker id is 0-indexed
             if (roles.exists(p => p.startsWith("Worker"))) {
                 ctx.log.debug(f"Creating a worker!")
                 val wid = roles.head.split("-").last.toInt
-                val containedAgents = actors.slice(wid*actorsPerWorker, List((wid+1)*actorsPerWorker, totalActors).min)        
-                // if (containedAgents.size > 0){
-                    ctx.self ! SpawnWorker(wid, containedAgents, totalWorkers)
-                // }
+                val containedAgents = if (wid == totalWorkers-1){
+                    actors.slice(wid*actorsPerWorker, totalActors)    
+                } else {
+                    actors.slice(wid*actorsPerWorker, (wid+1)*actorsPerWorker)  
+                }
+                ctx.self ! SpawnWorker(wid, containedAgents, totalWorkers)
+            } 
+
+            // Machine id is 0-indexed
+            if (roles.exists(p => p.startsWith("Machine"))) {
+                val mid = roles.head.split("-").last.toInt
+                ctx.log.debug(f"Creating machine ${mid}!")
+                val workersPerMachine: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.workers-per-machine").render().toInt
+                for (i <- Range(0, workersPerMachine)) {
+                    val wid = mid * workersPerMachine + i
+                    val containedAgents = if (wid == totalWorkers-1){
+                        actors.slice(wid*actorsPerWorker, totalActors)    
+                    } else {
+                        actors.slice(wid*actorsPerWorker, (wid+1)*actorsPerWorker)  
+                    }
+                    ctx.self ! SpawnWorker(i, containedAgents, totalWorkers)
+                }        
             } 
             
             if (cluster.selfMember.hasRole("Driver")) {
