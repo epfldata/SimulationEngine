@@ -15,6 +15,9 @@ case object ConcurrentWorker extends Optimization
 object OptimizationConfig {
     var conf: Optimization = ConcurrentWorker
 
+    // todo: tmp, fix with proper availability input
+    var availability: Int = 1
+
     def directMethodCall(): Unit = {
       conf = DirectMethodCall
     }

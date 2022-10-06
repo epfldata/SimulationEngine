@@ -34,6 +34,7 @@ class Worker {
     private var sendToRef: ActorRef[SendTo] = null
 
     private var acceptedInterval: Int = 0
+    private var availability: Int = 1
     private var logicalClock: Int = 0
     private var proposeInterval: Int = Int.MaxValue
 
@@ -71,7 +72,7 @@ class Worker {
             case WorkerUpdateAgentMapServiceKey.Listing(workers) =>
                 if (workers.size == totalWorkers){
                     workers.filter(i => i!= ctx.self).foreach(w => {
-                        w ! ReceiveAgentMap(workerId, local_sims.keys().toSeq, ctx.self)
+                        w ! ReceiveAgentMap(workerId, local_sims.keys().toSeq.asInstanceOf[Iterable[java.lang.Long]], ctx.self)
                     })
                 }
                 Prepare()
@@ -170,14 +171,15 @@ class Worker {
                     }
                     worker()
 
-                case ExpectedReceives(receive_map, replyTo, acceptedInterval) => 
+                case ExpectedReceives(receive_map, replyTo, acceptedInterval, availability) => 
                     ctx.log.debug(f"Worker ${workerId} receives expected-from list")
                     val remoteWorkers = message_map.keys.filter(i => i!=workerId).toSet
                     remoteWorkers.foreach(i => {
-                        peer_workers.get(i) ! ReceiveMessages(workerId, message_map(i))
+                        peer_workers.get(i) ! ReceiveMessages(workerId, message_map(i).asInstanceOf[Map[java.lang.Long, List[Message]]])
                     })         
                     sendToRef = replyTo       
                     this.acceptedInterval = acceptedInterval
+                    this.availability = availability
                     logicalClock += acceptedInterval
                     expectedWorkerSet = receive_map.getOrElse(workerId, Set[Int]())
                     if (receivedWorkers.keys().toSet == expectedWorkerSet){

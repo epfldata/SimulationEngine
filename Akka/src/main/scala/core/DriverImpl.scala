@@ -23,6 +23,7 @@ class Driver {
     private var workersStart: Set[ActorRef[WorkerSpec.ExpectedReceives]] = Set()
 
     private var acceptedInterval: Int = 0
+    private var availability: Int = simulation.akka.API.OptimizationConfig.availability
 
     var start: Long = 0
     var end: Long = 0
@@ -74,7 +75,7 @@ class Driver {
                         new Aggregator[WorkerSpec.SendTo, RoundEnd](
                             sendRequests = { replyTo =>
                                 workersStart.map(a => {
-                                    a ! WorkerSpec.ExpectedReceives(workerReceiveFrom, replyTo, acceptedInterval)
+                                    a ! WorkerSpec.ExpectedReceives(workerReceiveFrom, replyTo, acceptedInterval, availability)
                                 })
                                 workerReceiveFrom = Map()
                             },
@@ -90,8 +91,8 @@ class Driver {
                                         tmpProposeInterval = r.proposeInterval
                                     }
                                 }
-                                acceptedInterval = tmpProposeInterval
-                                currentTurn += acceptedInterval
+                                acceptedInterval = tmpProposeInterval 
+                                currentTurn += acceptedInterval + availability -1
                                 RoundEnd()
                             },
                             timeout=1000.seconds).apply())

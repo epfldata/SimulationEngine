@@ -32,9 +32,10 @@ class Worker {
     var start: Long = 0
     var end: Long = 0
     
-    private var logicalClock: Int = 0
+    // private var logicalClock: Int = 0
     private var acceptedInterval: Int = 0
     private var proposeInterval: Int = Int.MaxValue
+    private var availability: Int = 1
 
     private var completedAgents: Int = 0
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
@@ -60,7 +61,7 @@ class Worker {
             case WorkerUpdateAgentMapServiceKey.Listing(workers) =>
                 if (workers.size == totalWorkers){
                     workers.filter(i => i!= ctx.self).foreach(w => {
-                        w ! ReceiveAgentMap(workerId, simIds, ctx.self)
+                        w ! ReceiveAgentMap(workerId, simIds.asInstanceOf[Set[java.lang.Long]], ctx.self)
                     })
                 }
                 Prepare()
@@ -116,41 +117,48 @@ class Worker {
                     if (totalAgents > 0){
                         receivedWorkers.clear()
                         expectedWorkerSet = Set[Int]()
-
                         var collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
 
-                        local_sims.foreach(a => {
-                            a._2.time += acceptedInterval
-                            val x = receivedMessages.remove(a._1)
-                            if (x != null) {
-                                a._2.receivedMessages.addAll(x)
-                            }
-                            val tmpProposeInterval = a._2.run()
-                            if (tmpProposeInterval < proposeInterval){
-                              proposeInterval = tmpProposeInterval
-                            }
-                            a._2.sendMessages.foreach(i => {
-                              collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2.toList) 
+                        var localRounds: Int = 0
+                        while (localRounds < this.availability) {
+                            // collectedMessages.clear()
+                            local_sims.foreach(a => {
+                                a._2.time += acceptedInterval
+                                val x = receivedMessages.remove(a._1)
+                                if (x != null) {
+                                    a._2.receivedMessages.addAll(x)
+                                }
+                                val tmpProposeInterval = a._2.run()
+                                if (tmpProposeInterval < proposeInterval){
+                                    proposeInterval = tmpProposeInterval
+                                }
+                                a._2.sendMessages.foreach(i => {
+                                    collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2.toList) 
+                                })
                             })
-                        })
-                        // Deliver local messages to agents' mailboxes
-                        collectedMessages.filterKeys(x => local_sims.get(x).isDefined).foreach(i => {
-                            local_sims(i._1).receivedMessages.addAll(collectedMessages.remove(i._1).get)
-                        })
+                            // Deliver local messages to agents' mailboxes
+                            collectedMessages.filterKeys(x => local_sims.get(x).isDefined).foreach(i => {
+                                local_sims(i._1).receivedMessages.addAll(collectedMessages.remove(i._1).get)
+                            })
+                            acceptedInterval = proposeInterval
+                            localRounds += proposeInterval
+                        }
+                        // message_map =  Map()
                         message_map = collectedMessages.toMap.groupBy(i => nameMap.getOrElse(i._1, workerId))
                     } 
                     ctx.self ! AgentsCompleted()
                     worker()
 
-                case ExpectedReceives(receive_map, replyTo, acceptedInterval) => 
+                case ExpectedReceives(receive_map, replyTo, acceptedInterval, availability) => 
                     // send out messages to other workers only at the beginning of a round to avoid race condition
                     val sendToWorkers = message_map.keys.filter(i => i!=workerId).toSet
                     sendToWorkers.foreach(i => {
-                        peer_workers.get(i) ! ReceiveMessages(workerId, message_map(i))
+                        peer_workers.get(i) ! ReceiveMessages(workerId, message_map(i).asInstanceOf[Map[java.lang.Long, List[Message]]])
                     })  
                     sendToRef = replyTo      
                     this.acceptedInterval = acceptedInterval    
-                    logicalClock += acceptedInterval        
+                    this.availability = availability
+                    // logicalClock += acceptedInterval        
                     expectedWorkerSet = receive_map.getOrElse(workerId, Set[Int]())
                     if (receivedWorkers.keys().toSet == expectedWorkerSet){
                         ctx.self ! Start()
