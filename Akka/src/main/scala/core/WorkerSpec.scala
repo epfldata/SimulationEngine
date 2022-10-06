@@ -28,8 +28,8 @@ object WorkerSpec {
     // since current worker may have not finished and the agent can accidentally see and process (if not timed) future messages
     final case class ReceiveMessages(workerId: Int, messages: Map[java.lang.Long, List[Message]]) extends WorkerEvent with JsonSerializable
     final case class ReceiveAgentMap(workerId: Int, agentIds: Iterable[java.lang.Long], replyTo: ActorRef[ReceiveMessages]) extends WorkerEvent with JsonSerializable
-    final case class SendTo(workerId: Int, sendTo: Set[Int], proposeInterval: Int) extends WorkerEvent with JsonSerializable
-    final case class ExpectedReceives(ids: Map[Int, Set[Int]], sendTo: ActorRef[SendTo], acceptedInterval: Int, availability: Int) extends WorkerEvent with JsonSerializable
+    final case class SendTo(workerId: Int, proposeInterval: Int) extends WorkerEvent with JsonSerializable
+    final case class ExpectedReceives(sendTo: ActorRef[SendTo], acceptedInterval: Int, availability: Int) extends WorkerEvent with JsonSerializable
 
     val WorkerStartServiceKey = ServiceKey[ExpectedReceives]("WorkerStart")
     val WorkerStopServiceKey = ServiceKey[Stop]("WorkerStop")
