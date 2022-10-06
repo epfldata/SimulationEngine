@@ -59,7 +59,7 @@ object AkkaExp {
                     } else {
                         actors.slice(wid*actorsPerWorker, (wid+1)*actorsPerWorker)  
                     }
-                    ctx.self ! SpawnWorker(i, containedAgents, totalWorkers)
+                    ctx.self ! SpawnWorker(wid, containedAgents, totalWorkers)
                 }        
             } 
             
