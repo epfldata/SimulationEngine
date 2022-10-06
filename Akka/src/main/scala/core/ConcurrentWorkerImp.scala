@@ -47,8 +47,6 @@ class Worker {
 
     def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
         // ctx.log.debug("Register agent with receptionist")
-        ctx.system.receptionist ! Receptionist.Register(WorkerUpdateAgentMapServiceKey, ctx.self)
-
         // val containers: ListBuffer[Actor] = ListBuffer[Actor]()
         local_sims = new ConcurrentHashMap(mapAsJavaMap(sims.map(x => (x.id, x)).toMap))
         totalAgents = sims.size
@@ -67,18 +65,26 @@ class Worker {
         // } else {
         local_compute_threads = new ConcurrentHashMap(mapAsJavaMap(sims.map(a => (a.id, ctx.spawn((new LocalAgent).apply(a), f"simAgent${a.id}"))).toMap))
         // }
-        
-        val workerSub = ctx.messageAdapter[Receptionist.Listing] {
-            case WorkerUpdateAgentMapServiceKey.Listing(workers) =>
-                if (workers.size == totalWorkers){
-                    workers.filter(i => i!= ctx.self).foreach(w => {
-                        w ! ReceiveAgentMap(workerId, local_sims.keys().toSeq.asInstanceOf[Iterable[java.lang.Long]], ctx.self)
-                    })
-                }
-                Prepare()
-        }       
-        
-        ctx.system.receptionist ! Receptionist.Subscribe(WorkerUpdateAgentMapServiceKey, workerSub)
+
+        if (totalWorkers > 1){
+            ctx.system.receptionist ! Receptionist.Register(WorkerUpdateAgentMapServiceKey, ctx.self)
+
+            val workerSub = ctx.messageAdapter[Receptionist.Listing] {
+                case WorkerUpdateAgentMapServiceKey.Listing(workers) =>
+                    if (workers.size == totalWorkers){
+                        workers.filter(i => i!= ctx.self).foreach(w => {
+                            w ! ReceiveAgentMap(workerId, local_sims.keys().toSeq.asInstanceOf[Iterable[java.lang.Long]], ctx.self)
+                        })
+                    }
+                    Prepare()
+            }       
+            
+            ctx.system.receptionist ! Receptionist.Subscribe(WorkerUpdateAgentMapServiceKey, workerSub)
+        } else {
+            ctx.system.receptionist ! Receptionist.Register(WorkerStartServiceKey, ctx.self)
+            ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
+        }  
+
         // ctx.system.receptionist ! Receptionist.Subscribe(TimeseriesController.tsControllerServiceKey, workerSub)
         worker()
     }

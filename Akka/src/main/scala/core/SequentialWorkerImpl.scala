@@ -41,9 +41,6 @@ class Worker {
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
 
     def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
-        // ctx.log.debug("Register agent with receptionist")
-        ctx.system.receptionist ! Receptionist.Register(WorkerUpdateAgentMapServiceKey, ctx.self)
-
         local_sims = sims.map(x => (x.id, x)).toMap
         totalAgents = sims.size
         this.totalWorkers = totalWorkers
@@ -57,17 +54,24 @@ class Worker {
             })
         }
         
-        val workerSub = ctx.messageAdapter[Receptionist.Listing] {
-            case WorkerUpdateAgentMapServiceKey.Listing(workers) =>
-                if (workers.size == totalWorkers){
-                    workers.filter(i => i!= ctx.self).foreach(w => {
-                        w ! ReceiveAgentMap(workerId, simIds.asInstanceOf[Set[java.lang.Long]], ctx.self)
-                    })
-                }
-                Prepare()
-        }       
-        
-        ctx.system.receptionist ! Receptionist.Subscribe(WorkerUpdateAgentMapServiceKey, workerSub)
+        if (totalWorkers>1){
+            ctx.system.receptionist ! Receptionist.Register(WorkerUpdateAgentMapServiceKey, ctx.self)
+
+            val workerSub = ctx.messageAdapter[Receptionist.Listing] {
+                case WorkerUpdateAgentMapServiceKey.Listing(workers) =>
+                    if (workers.size == totalWorkers){
+                        workers.filter(i => i!= ctx.self).foreach(w => {
+                            w ! ReceiveAgentMap(workerId, simIds.asInstanceOf[Set[java.lang.Long]], ctx.self)
+                        })
+                    }
+                    Prepare()
+            }       
+            
+            ctx.system.receptionist ! Receptionist.Subscribe(WorkerUpdateAgentMapServiceKey, workerSub)
+        } else {
+            ctx.system.receptionist ! Receptionist.Register(WorkerStartServiceKey, ctx.self)
+            ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
+        }
         // ctx.system.receptionist ! Receptionist.Subscribe(TimeseriesController.tsControllerServiceKey, workerSub)
         worker()
     }
