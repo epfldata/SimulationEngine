@@ -28,21 +28,30 @@ object gameOfLifeBench {
                 API.OptimizationConfig.mergedWorker()
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
             }
+
             case 3 => {
+                // Direct method call
+                val agents = generated.example.gameOfLifeRPCOneSideDoubleBuffer.InitData(width, height)
+                API.OptimizationConfig.directMethodCall()
+                val snapshot1 = API.Simulate(agents, 2*totalTurns, role, port)
+            }
+
+            case 4 => {
                 // Direct method call
                 val agents = generated.example.gameOfLifeRPCOneSideMultiversion.InitData(width, height)
                 API.OptimizationConfig.directMethodCall()
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
             }
 
-            case 4 => {
+
+            case 5 => {
                 // asyncCall
                 val agents = generated.example.gameOfLifeRPC.InitData(width, height)
                 API.OptimizationConfig.mergedWorker()
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
             }
 
-            case 5 => {
+            case 6 => {
                 // Messaging, concurrent
                 val agents = generated.example.gameOfLife.InitData(width, height)
                 API.OptimizationConfig.concurrentWorker()
