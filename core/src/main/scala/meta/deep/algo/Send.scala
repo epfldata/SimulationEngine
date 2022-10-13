@@ -55,7 +55,7 @@ case class Send[R](actorFrom: OpenCode[Actor],
 
     val f5: OpenCode[Unit] =
       code"""
-        ${AlgoInfo.returnValue} := (${AlgoInfo.responseMessage}!).value;
+        ${AlgoInfo.returnValue} := (${AlgoInfo.responseMessage}!).arg;
         ${AlgoInfo.responseMessage} := null;
         ()"""
 
