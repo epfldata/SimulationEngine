@@ -72,10 +72,12 @@ object AkkaExp {
                 ctx.log.debug(f"Standalone mode")
                 ctx.self ! SpawnDriver(totalWorkers, totalTurn)
                 for (i <- Range(0, totalWorkers)){
-                    val containedAgents = actors.slice(i*actorsPerWorker, List((i+1)*actorsPerWorker, totalActors).min)        
-                    // if (containedAgents.size > 0){
-                        ctx.self ! SpawnWorker(i, containedAgents, totalWorkers)
-                    // }
+                    val containedAgents = if (i == totalWorkers-1){
+                        actors.slice(i*actorsPerWorker, totalActors)    
+                    } else {
+                        actors.slice(i*actorsPerWorker, (i+1)*actorsPerWorker)  
+                    }
+                    ctx.self ! SpawnWorker(i, containedAgents, totalWorkers)
                 }
             }
             waitTillFinish(Vector.empty)
