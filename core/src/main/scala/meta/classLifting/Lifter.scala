@@ -486,27 +486,10 @@ class Lifter {
 
         case code"SpecialInstructions.waitAndReply($y: Int)" =>
           defInGeneratedCode = false
-          val waitCounter = Variable[Int]
-          y match {
-            case code"${Const(n)}: Int" =>
-              if (n <= 0) {
-                throw new Exception("Instruction waitAndReply takes a positive value!")
-              }
-            case _ =>   //  If variable turn number, skip the check
-          }
-
-          val f =
-            LetBinding(
-                Some(waitCounter),
-                ScalaCode(code"${actorSelfVariable.toCode}.time + $y"),
-                DoWhile(code"${actorSelfVariable.toCode}.time < $waitCounter",
-                  LetBinding(None,
-                    ScalaCode(code"${actorSelfVariable.toCode}.proposeInterval = $waitCounter - ${actorSelfVariable.toCode}.time"),
-                    LetBinding(None, 
-                      Wait(),
-                      CallMethod[Unit](handleMessageId, List(List()))
-                    )))).asInstanceOf[Algo[T]]
-
+          val f = LetBinding(
+            None,
+            liftCode(code"SpecialInstructions.waitRounds($y)".asOpenCode),
+            ScalaCode(code"$actorSelfVariable.handleRPC()")).asInstanceOf[Algo[T]]
           cache += (cde -> f)
           f
 
