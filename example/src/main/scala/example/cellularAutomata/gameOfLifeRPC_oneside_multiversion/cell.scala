@@ -14,9 +14,10 @@ class Cell(var alive: Int) extends Actor {
     var currentAliveNeighbors: Int = 0
 
     @transparencyPropagating
-    def tell(key: Int, state: Int): Unit = {
+    def tell(key: Int, state: Int): Int = {
       // aliveNeighbors = aliveNeighbors + (key, state)
       aliveNeighbors.update(key, aliveNeighbors.getOrElse(key, 0) + state)
+      aliveNeighbors(key)
     }
     
     def main(): Unit = {

@@ -30,7 +30,6 @@ class Worker {
     private val receivedMessages = new ConcurrentHashMap[Long, List[Message]]()
     // private val receivedWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
     private val receivedWorkers = new ConcurrentHashMap[Int, Int]()
-    private var expectedWorkerSet: Set[Int] = Set[Int]()
     private var sendToRef: ActorRef[SendTo] = null
 
     private var acceptedInterval: Int = 0
@@ -122,7 +121,7 @@ class Worker {
                         0
                     })
                     receivedWorkers.putIfAbsent(wid, 0)
-                    if (receivedWorkers.keys().toSet == expectedWorkerSet){
+                    if (receivedWorkers.keys().size == totalWorkers-1){
                         ctx.self ! Start()
                     }
                     val end = System.currentTimeMillis()
@@ -133,7 +132,6 @@ class Worker {
                     ctx.log.debug(f"Worker ${workerId} starts! Received from ${receivedWorkers.keys().toSet}")
                     start = System.currentTimeMillis()
                     receivedWorkers.clear()
-                    expectedWorkerSet = Set[Int]()
 
                     if (totalAgents > 0){
                         local_sims.foreach(a => {
@@ -177,18 +175,20 @@ class Worker {
                     }
                     worker()
 
-                case ExpectedReceives(receive_map, replyTo, acceptedInterval, availability) => 
+                case ExpectedReceives(replyTo, acceptedInterval, availability) => 
                     ctx.log.debug(f"Worker ${workerId} receives expected-from list")
-                    val remoteWorkers = message_map.keys.filter(i => i!=workerId).toSet
-                    remoteWorkers.foreach(i => {
-                        peer_workers.get(i) ! ReceiveMessages(workerId, message_map(i).asInstanceOf[Map[java.lang.Long, List[Message]]])
-                    })         
+                    peer_workers.forEach((id, ref) => {
+                        if (message_map.get(id) != None){
+                            ref ! ReceiveMessages(workerId, message_map(id).asInstanceOf[Map[java.lang.Long, List[Message]]])
+                        } else {
+                            ref ! ReceiveMessages(workerId, Map())
+                        }
+                    })
                     sendToRef = replyTo       
                     this.acceptedInterval = acceptedInterval
                     this.availability = availability
                     logicalClock += acceptedInterval
-                    expectedWorkerSet = receive_map.getOrElse(workerId, Set[Int]())
-                    if (receivedWorkers.keys().toSet == expectedWorkerSet){
+                    if (receivedWorkers.keys().toSet.size == totalWorkers-1){
                         ctx.self ! Start()
                     } 
                     worker()
@@ -196,8 +196,7 @@ class Worker {
                 case AgentsCompleted() =>
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms")
-                    val remoteWorkers = message_map.keys.filter(i => i!=workerId).toSet
-                    sendToRef ! SendTo(workerId, remoteWorkers, proposeInterval)
+                    sendToRef ! SendTo(workerId, proposeInterval)
                     // todo: replace later with materialization strategy, rather than checking for null
                     // if (simulation.akka.API.Simulate.log != null){
                     //     simulation.akka.API.Simulate.log.add(logicalClock, local_sims.map(_._2.SimClone()))

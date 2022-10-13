@@ -17,7 +17,6 @@ class Driver {
     private var totalTurn: Int = 0
     private var currentTurn: Int = 0
     // worker x, a list of workers which x expects messages from
-    private var workerReceiveFrom: Map[Int, Set[Int]] = Map[Int, Set[Int]]()
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
     private var workersStop: Set[ActorRef[WorkerSpec.Stop]] = Set()
     private var workersStart: Set[ActorRef[WorkerSpec.ExpectedReceives]] = Set()
@@ -75,18 +74,14 @@ class Driver {
                         new Aggregator[WorkerSpec.SendTo, RoundEnd](
                             sendRequests = { replyTo =>
                                 workersStart.map(a => {
-                                    a ! WorkerSpec.ExpectedReceives(workerReceiveFrom, replyTo, acceptedInterval, availability)
+                                    a ! WorkerSpec.ExpectedReceives(replyTo, acceptedInterval, availability)
                                 })
-                                workerReceiveFrom = Map()
                             },
                             expectedReplies = totalWorkers,
                             ctx.self,
                             aggregateReplies = replies => {
                                 var tmpProposeInterval: Int = Int.MaxValue
                                 for (r <- replies) {
-                                    for (k <- r.sendTo) {
-                                        workerReceiveFrom = workerReceiveFrom.updated(k, workerReceiveFrom.getOrElse(k, Set()).union(Set(r.workerId)))
-                                    }
                                     if (r.proposeInterval < tmpProposeInterval){
                                         tmpProposeInterval = r.proposeInterval
                                     }
@@ -101,7 +96,7 @@ class Driver {
 
                 case RoundEnd() =>
                     end = System.currentTimeMillis()
-                    ctx.log.debug(f"Driver receives notifications from all workers! ${workerReceiveFrom} Accepted interval ${acceptedInterval}")
+                    ctx.log.debug(f"Driver receives notifications from all workers! Accepted interval ${acceptedInterval}")
                     ctx.log.info(f"Round ${currentTurn} takes ${end-start} ms")
                     if (currentTurn >= totalTurn){
                         Behaviors.stopped {() => 
