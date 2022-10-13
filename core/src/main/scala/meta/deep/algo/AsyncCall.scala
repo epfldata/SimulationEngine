@@ -32,7 +32,7 @@ case class AsyncCall[R, T](actorFrom: OpenCode[Actor],
         var future = meta.runtime.Future[$T](requestMessage.sessionId.get); 
         sender.sendMessage(receiver.id, requestMessage);
         sender.setMessageResponseHandler(requestMessage.sessionId.get, (response: meta.runtime.Message) => {
-          future.setValue(response.asInstanceOf[meta.runtime.ResponseMessage].value.asInstanceOf[$T])
+          future.setValue(response.asInstanceOf[meta.runtime.ResponseMessage].arg.asInstanceOf[$T])
         })
         ${AlgoInfo.returnValue} := future
         ()"""
