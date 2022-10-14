@@ -38,9 +38,9 @@ object DiseaseParameter {
     // unit: days
     def stateDuration(health: String): Int = {
         health match {
-            case "Infectious" => 14
-            case "Hospitalized" => 8
-            case _ => 0
+            case "Infectious" => List(Random.nextGaussian() + 10, 2, 15).sorted.tail.head.toInt
+            case "Hospitalized" => List(Random.nextGaussian() + 7, 2, 20).sorted.tail.head.toInt
+            case "Exposed" => List(Random.nextGaussian() + 5, 3, 10).sorted.tail.head.toInt
         }
     }
 
