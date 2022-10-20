@@ -24,9 +24,9 @@ given that `tellMeThis()` and `doThat()` are public methods in Sim2's class. The
 
 Besides blocking calls, Sims can also send asynchronous messages, with a different syntax `asyncSend(receiver.API(args))`. You need to mark the callee method with annotation `@transparencyPropagating`, see example in `core/src/test/scala/lifterTest1`. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. The non-block message return a Future object, which user can query about the status of the message. `core/src/main/scala/meta/runtime/Future.scala`.
 
-Instruction `waitRounds(someTicks)` signals that messages in the Sim's mailbox are ready and agents will wait for the specified ticks. The agent will *not* do anything besides waiting. `barrierSync` synchronizes all agents; it is a syntactic sugar for waitRounds(1). To process incoming messages at each round while waiting, please use instruction `waitAndReply(n)`. Another instruction is `handleRPC()`, which is a syntactic sugar for `waitRounds(n); handleRPC()`. You can find the syntax of the DSLs here ```core/src/main/scala/meta/classLifting/SpecialInstructions.scala```
+Instruction `waitRounds(someTicks)` signals that messages in the Sim's mailbox are ready and agents will wait for the specified ticks. The agent will *not* do anything besides waiting. To process received RPC requests, the receiver agent calls `handleRPC()`. Agents can also send or receive messages directly using the message-passing protocol. Other DSL instructions in ```core/src/main/scala/meta/classLifting/SpecialInstructions.scala``` are experimental and subject to future changes.
 
-An agent is sequential and processes one message at a time. Therefore, you can not use instructions `handleRPC()` or `waitAndReply(n)` in the method definitions of an agent; doing so will trigger a compile-time error.
+An agent is sequential and processes one message at a time. Therefore, you can not use instructions `handleRPC()`; doing so will trigger a compile-time error.
 
 ### <a name="Meta-Programs"></a> Sims as Meta-Programs
 The embedded DSL is in a staged meta-programming environment. Staging is the operation that generates **object programs** from **meta-programs**. In our framework, users define the behaviour of each agent in **meta-programs** written in a subset of Scala enriched with DSL. We offer two flavors of DSL, one with compilation and one without. For the compiled version, our transpiler compiles the source programs to **object programs** (valid Scala source programs) in `generated\` folder with the help of Squid. For the non-compiled version, we use ScalaMeta and coroutines, see branch `staged`.
@@ -82,18 +82,12 @@ For the compiled version, you can start simulation after generating object progr
 
 
 ### <a name="bin"></a> Local test
-You can test locally by calling scripts in `bin`.
+After cloning this repo, please initialize the repo with `init.sh`, which generates files for the tests in akka and base projects.
 
 On linux or Mac:
 ```
-bash bin/test.sh 
+bash bin/init.sh 
 ```
-
-On windows (Powershell)
-```
-./bin/test.ps1
-```
-
 
 ### <a name="Folder"></a> Folder Structure 
 - `core/` contains the compiler
