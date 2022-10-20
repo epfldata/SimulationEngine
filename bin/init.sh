@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 DIRS=("gen-core/src/main/" "generated/src/main/")
 CMDS=("project core; test" "project example; runAll")
 

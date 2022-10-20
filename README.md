@@ -89,6 +89,11 @@ On linux or Mac:
 bash bin/init.sh 
 ```
 
+Following which, you can test with
+```
+bash bin/test.sh 
+```
+
 ### <a name="Folder"></a> Folder Structure 
 - `core/` contains the compiler
 - `Akka/` distributed runtime based on Akka
