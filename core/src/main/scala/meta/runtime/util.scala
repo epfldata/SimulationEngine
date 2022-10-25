@@ -2,7 +2,7 @@ package meta.runtime
 
 object util {
   def displayTime(turn: Int): String = {
-    "(Turn " + turn + ")"
+    "(Round " + turn + ")"
   }
 
   def bench(code: => Unit ): Long = {

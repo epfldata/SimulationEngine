@@ -35,7 +35,8 @@ class Vertex() extends Actor {
                 sendMessage(a.id, msg)
             })
             // println(id + " distance to source is " + dist + " at round " + time)
-            SpecialInstructions.barrierSync()
+            SpecialInstructions.waitRounds(1)
+            // SpecialInstructions.barrierSync()
         }
     }
 }
@@ -59,7 +60,7 @@ class shortestPathExample extends FlatSpec {
 
                 // Assertions not supported in litelift
                 // assert(totalVertices > 5)
-                vertices(5).isSource = true
+                vertices(0).isSource = true
                 vertices
             }
         }
