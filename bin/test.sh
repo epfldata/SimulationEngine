@@ -1,8 +1,10 @@
 #!/bin/bash
 
 set -e
-
+bash bin/init.sh
 sbt clean
-sbt "project core; test"
-sbt "project example; runAll"
+sbt "project akka; test"
+sbt clean
 sbt "project base; test"
+sbt clean
+sbt "project spark; test"

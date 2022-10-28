@@ -86,7 +86,7 @@ lazy val spark = (project in file("Spark"))
     name := f"${project_name}-spark",
     commonSettings, sparkSettings,
     Test / parallelExecution := false,
-  )
+  ).dependsOn(core % "compile->compile;compile->test", genCore, genExample)
 
 lazy val akka = (project in file("Akka"))
   .settings(
@@ -101,6 +101,7 @@ lazy val base = (project in file("Base"))
     commonSettings,
     Test / parallelExecution := false,
   ).dependsOn(core % "compile->compile;compile->test", genCore, genExample)
+
 
 
 lazy val library = (project in file("library"))

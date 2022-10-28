@@ -59,7 +59,7 @@ class shortestPathExample extends FlatSpec {
 
                 // Assertions not supported in litelift
                 // assert(totalVertices > 5)
-                vertices(5).isSource = true
+                vertices(0).isSource = true
                 vertices
             }
         }
