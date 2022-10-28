@@ -21,6 +21,7 @@ class Cell(var alive: Int) extends Actor {
     }
     
     def main(): Unit = {
+      markAllowDirectAccess("tell")
         while(true) {
             aliveNeighbors.getOrElseUpdate(time, 0)
             handleRPC()

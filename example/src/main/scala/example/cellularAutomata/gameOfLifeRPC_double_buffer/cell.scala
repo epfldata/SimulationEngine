@@ -18,6 +18,7 @@ class Cell(var alive: Int) extends Actor {
     }
     
     def main(): Unit = {
+      markAllowDirectAccess("tell")
         while(true) {
           handleRPC()          
           if (alive==1 && (aliveNeighbors(time%2) > 3 || aliveNeighbors(time%2) < 2)) {

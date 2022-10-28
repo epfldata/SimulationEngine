@@ -30,14 +30,14 @@ object gameOfLifeBench {
             }
 
             case 3 => {
-                // Direct method call
+                // Direct method call, double buffer
                 val agents = generated.example.gameOfLifeRPCOneSideDoubleBuffer.InitData(width, height)
                 API.OptimizationConfig.directMethodCall()
                 val snapshot1 = API.Simulate(agents, 2*totalTurns, role, port)
             }
 
             case 4 => {
-                // Direct method call
+                // Direct method call, multi-version
                 val agents = generated.example.gameOfLifeRPCOneSideMultiversion.InitData(width, height)
                 API.OptimizationConfig.directMethodCall()
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
