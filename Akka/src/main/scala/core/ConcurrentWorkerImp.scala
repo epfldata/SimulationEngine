@@ -134,42 +134,47 @@ class Worker {
                     receivedWorkers.clear()
 
                     if (totalAgents > 0){
-                        local_sims.foreach(a => {
-                            a._2.time += acceptedInterval
-                            val x = receivedMessages.remove(a._1)
-                            if (x != null) {
-                                a._2.receivedMessages.addAll(x)
-                            }
-                        })
-
-                        proposeInterval = Int.MaxValue
-                        ctx.spawnAnonymous(
-                            new Aggregator[LocalAgentSpec.MessagesAdded, AgentsCompleted](
-                            sendRequests = { replyTo =>
-                                local_compute_threads.forEach((k, v) => {
-                                    v ! LocalAgentSpec.AddMessages(replyTo)                                   
-                                })
-                            },
-                            expectedReplies = local_compute_threads.size,
-                            ctx.self,
-                            aggregateReplies = replies => {
-                                var collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
-                                for (r <- replies) {
-                                    r.indexedSentMessages.foreach(i => {
-                                        collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2) 
-                                    })
-                                    if (r.proposeInterval < proposeInterval){
-                                        proposeInterval = r.proposeInterval
-                                    }
+                        var localRounds: Int = 0
+                        while (localRounds < this.availability) {
+                            local_sims.foreach(a => {
+                                a._2.time += acceptedInterval
+                                val x = receivedMessages.remove(a._1)
+                                if (x != null) {
+                                    a._2.receivedMessages.addAll(x)
                                 }
-                                // Deliver local messages to agents' mailboxes
-                                collectedMessages.filterKeys(x => local_sims.get(x)!=null).foreach(i => {
-                                    local_sims.get(i._1).receivedMessages.addAll(collectedMessages.remove(i._1).get)
-                                })
-                                message_map = collectedMessages.toMap.groupBy(i => nameMap.getOrElse(i._1, workerId))
-                                AgentsCompleted()
-                            },
-                            timeout=1000.seconds).apply())
+                            })
+
+                            proposeInterval = Int.MaxValue
+                            ctx.spawnAnonymous(
+                                new Aggregator[LocalAgentSpec.MessagesAdded, AgentsCompleted](
+                                sendRequests = { replyTo =>
+                                    local_compute_threads.forEach((k, v) => {
+                                        v ! LocalAgentSpec.AddMessages(replyTo)                                   
+                                    })
+                                },
+                                expectedReplies = local_compute_threads.size,
+                                ctx.self,
+                                aggregateReplies = replies => {
+                                    var collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
+                                    for (r <- replies) {
+                                        r.indexedSentMessages.foreach(i => {
+                                            collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2) 
+                                        })
+                                        if (r.proposeInterval < proposeInterval){
+                                            proposeInterval = r.proposeInterval
+                                        }
+                                    }
+                                    // Deliver local messages to agents' mailboxes
+                                    collectedMessages.filterKeys(x => local_sims.get(x)!=null).foreach(i => {
+                                        local_sims.get(i._1).receivedMessages.addAll(collectedMessages.remove(i._1).get)
+                                    })
+                                    message_map = collectedMessages.toMap.groupBy(i => nameMap.getOrElse(i._1, workerId))
+                                    AgentsCompleted()
+                                },
+                                timeout=1000.seconds).apply())
+                            acceptedInterval = proposeInterval
+                            localRounds += proposeInterval
+                        }
                     } else {
                         ctx.self ! AgentsCompleted()
                     }
