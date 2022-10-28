@@ -18,17 +18,18 @@ import scala.collection.mutable.ListBuffer
   * @tparam A return value type
   */
 
-class MethodInfo[A0](val modifiers: ListBuffer[String],
-                    val name: String,
+class MethodInfo[A0](val name: String,
                     val tparams: List[IR.TypParam],
                     val vparams: List[List[IR.Variable[_]]], 
                     val body: OpenCode[A0], 
                     var defInGeneratedCode: Boolean)(implicit val A: CodeType[A0]) extends FieldOrMethod {
   def replica(newSym: String, inSubclass: Boolean): MethodInfo[A0] = {
     if (!inSubclass || modifiers.contains("override")){
-      new MethodInfo[A0](modifiers, newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
+      new MethodInfo[A0](newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
     } else {
-      new MethodInfo[A0]("override"+:modifiers, newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
+      val ans = new MethodInfo[A0](newSym, this.tparams, this.vparams, this.body, this.defInGeneratedCode)(A)
+      "override" +=: ans.modifiers
+      ans
     }
   }
 

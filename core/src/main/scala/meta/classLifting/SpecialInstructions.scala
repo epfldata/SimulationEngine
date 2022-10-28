@@ -48,4 +48,6 @@ object SpecialInstructions {
   def markPrivate(fieldName: String*): Unit = {}
   
   def markOverride(fieldName: String*): Unit = {}
+
+  def markAllowDirectAccess(methodName: String*): Unit = {}
 }

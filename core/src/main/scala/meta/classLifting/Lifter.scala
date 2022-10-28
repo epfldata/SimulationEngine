@@ -75,20 +75,6 @@ object Lifter {
     actorSelfVariable.Typ.rep.toString.split("\\.").last
   }
 
-  /**
-    * Find markPrivate or markOverride in pgrm, extract, and remove
-    */
-  private def rewriteAnnotations[T](cde: OpenCode[T], privateNames: ListBuffer[String], overrideNames: ListBuffer[String]): OpenCode[T] = {
-    cde rewrite {
-      case code"SpecialInstructions.markPrivate($n: _*): Unit" =>
-        privateNames ++= n.unsafe_asClosedCode.run
-        code"()"
-      case code"SpecialInstructions.markOverride($n: _*): Unit" =>
-        overrideNames ++= n.unsafe_asClosedCode.run
-        code"()"
-    }    
-  }
-
   // Each class in Scala can inherit from at most one class and 
   // Squid does not lift traits, we can evaluate the parents sequentially
   private def copyToSubclasses[T](dependencyGraph: Map[String, List[String]], classValuesMap: Map[String, List[T]], newItemsUpdate: (String, List[(String, T)]) => Unit) = {
@@ -159,20 +145,20 @@ class Lifter {
   var ssoEnabled: Boolean = false
 
   // Update the modifiers for fields or methods in fieldsMap and methodsMap
-  def updateModifiers(actorName: String, privateNames: ListBuffer[String], overrideNames: ListBuffer[String]): Unit = {
-    val updateHelper = (n: String, names: ListBuffer[String]) => {
+  def updateModifiers(actorName: String, modifier: String, names: ListBuffer[String], compileTimeOnly: Boolean): Unit = {
       names.foreach(name => 
         if (name!="main"){  // ignore any modifiers for main
           val targetField = fieldsMap(actorName).find(_.name==name)
           val targetMtd = methodsMap.filter(_._1==s"${actorName}.${name}").map(_._2).headOption
           List(targetField, targetMtd).filterNot(_.isEmpty).map(i => {
             // println(f"Add modifier ${n} to ${name} in class ${actorName}")
-            i.get.asInstanceOf[FieldOrMethod].modifiers += n
+            if (compileTimeOnly){
+              i.get.asInstanceOf[FieldOrMethod].compileTimeModifiers += modifier
+            } else {
+              i.get.asInstanceOf[FieldOrMethod].modifiers += modifier
+            }
           })
-        })
-      }
-    updateHelper("private", privateNames)
-    updateHelper("override", overrideNames)
+        })   
   }
 
   def init(initClasses: List[Clasz[_ <: Actor]]): Unit = {
@@ -180,6 +166,7 @@ class Lifter {
       val actorName: String = c.name
       val privateNames: ListBuffer[String] = new ListBuffer[String]()
       val overrideNames: ListBuffer[String] = new ListBuffer[String]()
+      val allowDirectAccess: ListBuffer[String] = new ListBuffer[String]()
 
       val classMethodNames = c.methods.map({
         case method: c.Method[_, _] =>
@@ -190,9 +177,24 @@ class Lifter {
           if (localMtdName=="main"||(localMtdName!="main" && validLocalMethodDef(method.body.asOpenCode))){
             val nextId: Int = Method.getNextMethodId
             methodsIdMap = methodsIdMap + (mtdName -> nextId)
-            val cde: OpenCode[method.A] = rewriteAnnotations[method.A](method.body.asOpenCode, privateNames, overrideNames)
+
+              /**
+              * Find, extract, and remove annotations
+              */
+
+            val cde: OpenCode[method.A] = method.body.asOpenCode rewrite {
+              case code"SpecialInstructions.markPrivate($n: _*): Unit" =>
+                privateNames ++= n.unsafe_asClosedCode.run
+                code"()"
+              case code"SpecialInstructions.markOverride($n: _*): Unit" =>
+                overrideNames ++= n.unsafe_asClosedCode.run
+                code"()"
+              case code"SpecialInstructions.markAllowDirectAccess($n: _*): Unit" =>
+                allowDirectAccess ++= n.unsafe_asClosedCode.run
+                code"()"
+            }  
+
             methodsMap = methodsMap + (mtdName -> new MethodInfo(
-              ListBuffer(),
               localMtdName, 
               method.tparams, 
               method.vparamss, 
@@ -216,15 +218,13 @@ class Lifter {
       val fields: List[Field] = c.fields.map(x => {
         val varName: String = x.symbol.asTerm.name.toString
         if (x.init.isDefined) {   // state variable
-          Field(ListBuffer(),
-            varName, 
+          Field(varName, 
             x.A.rep.tpe.toString, 
             IR.showScala(x.init.get.rep), 
             x.set.nonEmpty, 
             false)
         } else {                  // parameter
-          Field(ListBuffer(),
-            varName, 
+          Field(varName, 
             x.A.rep.tpe.toString, 
             "",
             x.set.nonEmpty, 
@@ -233,7 +233,9 @@ class Lifter {
       fieldsMap += (actorName -> fields)
 
       // Update the modifiers after the fieldsMap and methodsMap are updated
-      updateModifiers(actorName, privateNames.distinct, overrideNames.distinct)
+      updateModifiers(actorName, "private", privateNames.distinct, false)
+      updateModifiers(actorName, "override", overrideNames.distinct, false)
+      updateModifiers(actorName, "allowDirectAccess", allowDirectAccess.distinct, true)
     }
   }
 
@@ -496,18 +498,28 @@ class Lifter {
         case code"SpecialInstructions.callAndForget[$mt]({${m@ MethodApplication(msg)}}: mt, $t: Int)" =>
           if (methodsIdMap.get(msg.symbol.toString).isDefined) {
             defInGeneratedCode = false
+            
             val recipientActorVariable: OpenCode[Actor] = msg.args.head.head.asInstanceOf[OpenCode[Actor]]
             val argss: List[List[OpenCode[_]]] = msg.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
             val mname = msg.symbol.asTerm.name.toString
 
-            val f = IfThenElse(code"$actorSelfVariable.reachableAgents.contains($recipientActorVariable.id)",
-                ScalaCode(m.asOpenCode).asInstanceOf[Algo[T]], // If convert local, then call directly
-                OnesideSend[T](
-                      actorSelfVariable.toCode,
-                      recipientActorVariable,
-                      mname,
-                      t,
-                      argss).asInstanceOf[Algo[T]])
+            val f = if (methodsMap(msg.symbol.toString).compileTimeModifiers.contains("allowDirectAccess")){
+              IfThenElse(code"$actorSelfVariable.reachableAgents.contains($recipientActorVariable.id)",
+                  ScalaCode(m.asOpenCode).asInstanceOf[Algo[T]], // If convert local, then call directly
+                  OnesideSend[T](
+                        actorSelfVariable.toCode,
+                        recipientActorVariable,
+                        mname,
+                        t,
+                        argss).asInstanceOf[Algo[T]])
+            } else {
+              OnesideSend[T](
+                        actorSelfVariable.toCode,
+                        recipientActorVariable,
+                        mname,
+                        t,
+                        argss)
+            }
             cache += (cde -> f)
             f
           } else {

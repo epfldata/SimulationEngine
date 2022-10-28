@@ -14,7 +14,6 @@ import scala.collection.mutable.ListBuffer
   * @param isCopiedToSubclass: a boolean
   */
 case class Field (
-    modifiers: ListBuffer[String],
     name: String,
     tpeRep: String, 
     init: String, 
@@ -22,6 +21,8 @@ case class Field (
     parameter: Boolean) extends FieldOrMethod {
       // add "override" to the modifier in replicated fields
       def replica(): Field = {
-        Field("override" +: modifiers, name, tpeRep, init, mutable, parameter)
+        val ans = Field(name, tpeRep, init, mutable, parameter)
+        "override" +=: ans.modifiers
+        ans
       }
     } 
