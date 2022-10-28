@@ -33,7 +33,7 @@ class City(val population: List[Person], var delayInResponse: Int) extends Actor
         while (true) {
             fs = population.map(i => asyncCall(() => i.isInfected(), 5))
             while (fs.exists(p => !p.isCompleted)){
-              barrierSync()
+              waitRounds(1)
             }
             total_infected = fs.map(i => i.popValue.get).filter(i => i).length
             println("Total infected people in city " + id + " is " + total_infected + " total population is " + total_population)

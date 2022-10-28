@@ -28,9 +28,9 @@ class Cell(var alive: Int) extends Actor {
           connectedAgents.map(x => 
             x.asInstanceOf[Cell]).foreach(v => callAndForget(v.tell((time+1)%2, alive), 1)
           )
-          barrierSync()
+          waitRounds(1)
           aliveNeighbors((time+1)%2) = 0
-          barrierSync()
+          waitRounds(1)
         }
     }
 }

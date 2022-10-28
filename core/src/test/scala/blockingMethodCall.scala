@@ -17,7 +17,7 @@ class AgentWithBlockingCall(val n: AgentWithBlockingCall) extends Actor {
 
     def blockingMtd(): Int = {
         totalBlockingMtdCalls = totalBlockingMtdCalls + 1
-        barrierSync()
+        waitRounds(1)
         totalBlockingMtdCalls
     }
 
@@ -44,7 +44,7 @@ class AgentWithBlockingCallLocal() extends Actor {
 
     def blockingMtd(): Unit = {
         totalBlockingMtdCalls = totalBlockingMtdCalls + 1
-        barrierSync()
+        waitRounds(1)
     }
 
     def nonBlockingMtd(): Unit = {

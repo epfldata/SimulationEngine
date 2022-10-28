@@ -19,7 +19,7 @@ class Country(val cities: List[City], var priority: Int, var delayInResponse: In
         while (true) {
             fs = cities.map(i => asyncCall(() => i.getLatestInfectiousRatio(), 15))
             while (fs.exists(p => !p.isCompleted)){
-              barrierSync()
+              waitRounds(1)
             }
             infectious_ratios = fs.map(i => i.popValue.get)
             

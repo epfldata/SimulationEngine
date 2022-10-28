@@ -18,7 +18,7 @@ class AgentWithSpecialInst(val n: AgentWithSpecialInst) extends Actor {
     @transparencyPropagating
     def blockingMtd(): Boolean = {
         println(id + " processes blocking mtd!")
-        barrierSync()
+        waitRounds(1)
         println(id + " finishes processing!")
         true
     }

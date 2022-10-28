@@ -42,7 +42,7 @@ class Teacher() extends Person {
     override def work(): String = {
         // With the special instruction wait, workplace is set to Self-employed 
         // invoking the inherited method instead
-        // barrierSync()
+        // waitRounds(1)
         "School"
     }
 
