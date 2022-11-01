@@ -623,14 +623,11 @@ class Lifter {
             val funcName = ma.symbol.asTerm.name.toString
             val f = if (actorSelfVariable.toCode != recipientActorVariable) {
               defInGeneratedCode = false
-              IfThenElse(code"$actorSelfVariable.reachableAgents.contains($recipientActorVariable.id)",
-                ScalaCode(cde), // If convert local, then call directly
-                Send[T](actorSelfVariable.toCode,
+              Send[T](actorSelfVariable.toCode,
                 recipientActorVariable,
                 funcName,
                 code"1",
                 argss)
-              )
             } else {
               // Calling an overloaded method locally
               val actorRep = actorVarToStr(actorSelfVariable)
