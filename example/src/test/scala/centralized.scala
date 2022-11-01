@@ -3,7 +3,7 @@ package example.gameOfLife
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import lib.Grid.Torus2D
-import meta.runtime.simulation.util
+import meta.runtime.util
 
 object centralizedGameOfLife {
 

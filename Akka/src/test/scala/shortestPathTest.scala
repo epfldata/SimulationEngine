@@ -26,7 +26,7 @@ class shortestPath extends FlatSpec {
     f"The single source shortest path algorithm over a linked list with ${totalVertices} vertices, sequential workers" should f"update the distance of all vertices in ${totalVertices} rounds" in {
         val agents = generated.core.test.shortestPath.InitData()
         API.OptimizationConfig.mergedWorker()
-        val snapshot1 = API.Simulate(agents, totalVertices)
+        val snapshot1 = API.Simulate(agents, totalRounds)
         assert(snapshot1.sims.map(i => i.asInstanceOf[generated.core.test.shortestPath.Vertex].dist).toSet == Range(0, totalVertices).toSet)
     }
 }
