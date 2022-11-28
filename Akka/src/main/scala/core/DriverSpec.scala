@@ -1,7 +1,7 @@
 package simulation.akka.core
 
 import akka.actor.NoSerializationVerificationNeeded
-import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
+import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes, JsonTypeName}
 import meta.runtime.JsonSerializable
 
 object DriverSpec {
@@ -12,7 +12,13 @@ object DriverSpec {
         new JsonSubTypes.Type(value = classOf[RoundStart], name = "RoundStart"),
         new JsonSubTypes.Type(value = classOf[RoundEnd], name = "RoundEnd")))
     sealed trait DriverEvent
-    final case class InitializeWorkers() extends DriverEvent with NoSerializationVerificationNeeded
-    final case class RoundStart() extends DriverEvent with NoSerializationVerificationNeeded
-    final case class RoundEnd() extends DriverEvent with NoSerializationVerificationNeeded
+
+    @JsonTypeName("InitializeWorkers")
+    final case class InitializeWorkers() extends DriverEvent with JsonSerializable
+    
+    @JsonTypeName("RoundStart")
+    final case class RoundStart() extends DriverEvent with JsonSerializable
+    
+    @JsonTypeName("RoundEnd")
+    final case class RoundEnd() extends DriverEvent with JsonSerializable
 }
