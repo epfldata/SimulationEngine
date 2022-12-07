@@ -14,7 +14,7 @@ if __name__=="__main__":
         print("""Please enter the name of the config file, keys, and value to be set
 Note that all config files are assumed to be located under Akka/src/main/resources/
 Example:
-driver-worker workers-per-machine 10
+driver-worker.conf workers-per-machine 10
         """)
     else:
         filename = sys.argv[1]
