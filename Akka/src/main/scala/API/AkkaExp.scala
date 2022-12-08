@@ -7,6 +7,7 @@ import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 import scala.collection.JavaConversions._
 import akka.actor.typed.{Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+// import akka.actor.typed.DispatcherSelector
 
 object AkkaExp {
     sealed trait Command
@@ -94,8 +95,10 @@ object AkkaExp {
                 case SpawnWorker(workerId, agents, totalWorkers) =>
                     val sim = if (OptimizationConfig.conf == ConcurrentWorker) {
                         ctx.spawn((new simulation.akka.core.concurrent.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
+                        // ctx.spawn((new simulation.akka.core.concurrent.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}", DispatcherSelector.fromConfig("my-dispatcher"))
                     } else {
                         ctx.spawn((new simulation.akka.core.sequential.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
+                        // ctx.spawn((new simulation.akka.core.sequential.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}", DispatcherSelector.fromConfig("my-dispatcher"))
                     }
                      
                     activeWorkers.add(workerId)
