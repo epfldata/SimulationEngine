@@ -12,7 +12,7 @@ object epidemicTest {
         // val agents1 = generated.example.epidemic.evalNPI.InitData(List(1000), 0.01, true)
         // val snapshot1 = API.Simulate(agents1, totalTurns)
 
-        val agents = generated.example.epidemic.evalNPIFlat.InitData(1000, p, isSBM, blocks)
+        val agents = generated.example.epidemic.v1.InitData(1000, p, isSBM, blocks)
         val snapshot = API.Simulate(agents, totalTurns)
     }
 }

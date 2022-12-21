@@ -9,7 +9,7 @@ object epidemicTest {
         val isSBM: Boolean = (args(1).toInt == 1)
         val blocks: Int = args(2).toInt
 
-        val agents = generated.example.epidemic.evalNPIFlat.InitData(1000, p, isSBM, blocks)
+        val agents = generated.example.epidemic.v1.InitData(1000, p, isSBM, blocks)
         val snapshot = API.Simulate(agents, totalTurns)
     }
 }

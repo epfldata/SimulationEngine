@@ -1,14 +1,12 @@
 package example
-package epidemic.evalNPIFlat
+package epidemic.v1
 
 import scala.util.Random
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
         def apply(population: Int, p: Double, sbm: Boolean, blocks: Int): List[Actor] = {
-            val dayUnit: Int = 10
-
-            val citizens = (1 to population).map(c => { new Person(Random.nextInt(90) + 10, dayUnit) })
+            val citizens = (1 to population).map(c => { new Person(Random.nextInt(90) + 10) })
 
             // Stochastic block model (5 blocks, q=0)
             if (sbm){
@@ -21,7 +19,7 @@ object MainInit {
                             
             // Random seeds of infected people
             (0 to (Random.nextInt(10)+4)).foreach(_ => {
-                citizens(Random.nextInt(population)).health = "Infectious"
+                citizens(Random.nextInt(population)).health = 1
             })
 
             citizens.toList
