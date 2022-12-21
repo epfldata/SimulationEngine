@@ -6,9 +6,9 @@ import scala.collection.mutable.ListBuffer
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(populationsPerCountry: List[Int], p: Double, sbm: Boolean): List[Actor] = {
+        def apply(populationsPerCountry: List[Int], p: Double, sbm: Boolean, blocks: Int): List[Actor] = {
             val totalCountries: Int = populationsPerCountry.size
-            val dayUnit: Int = 10
+            val dayUnit: Int = 10 
             val countries: ListBuffer[Country] = ListBuffer[Country]()
             val allCitizens: ListBuffer[Person] = ListBuffer[Person]()
 
@@ -22,8 +22,8 @@ object MainInit {
 
                 // Stochastic block model (50 blocks, q=0)
                 if (sbm){
-                    (0 to 4).foreach(i => {
-                        lib.Graph.ErdosRenyiGraph(citizens.slice(i*population/5, (i+1)*population/5), p)
+                    (0 to blocks-1).foreach(i => {
+                        lib.Graph.ErdosRenyiGraph(citizens.slice(i*population/blocks, (i+1)*population/blocks), p)
                     })
                 } else {
                     allCitizens.appendAll(citizens)

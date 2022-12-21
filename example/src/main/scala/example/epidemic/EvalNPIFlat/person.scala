@@ -1,5 +1,5 @@
 package example
-package epidemic.evalNPI
+package epidemic.evalNPIFlat
 
 import scala.util.Random
 import meta.classLifting.SpecialInstructions._
@@ -10,7 +10,6 @@ import squid.lib.transparencyPropagating
 class Person(val age: Int, val dayUnit: Int) extends Actor {
     val symptomatic: Boolean = Random.nextBoolean()
     var health: String = "Susceptible"
-    var country: Country = null
     var vulnerability: String = "low"
     var daysInfected: Int = 0
     var policy: Int = 0
@@ -56,7 +55,6 @@ class Person(val age: Int, val dayUnit: Int) extends Actor {
                     }
                 }
             } 
-            // callAndForget(country.report(health), 1)
             waitAndReply(1)
         }
     }
