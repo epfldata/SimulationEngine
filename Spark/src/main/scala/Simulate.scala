@@ -57,11 +57,13 @@ object Simulate {
     while (currentTurn < totalTurn ) {
         println(meta.runtime.util.displayTime(currentTurn))
 
-        // if (currentTurn % 70 == 0) {
-        //   actorRDD.checkpoint()
-        // }
+        if (currentTurn % 70 == 0) {
+          actorRDD.checkpoint()
+        }
 
         t1 = System.currentTimeMillis()
+        
+        actorRDD.persist()
         
         collectedMessages = actorRDD.flatMap(a => {
           a.sendMessages.map(i => (i._1, i._2.toList))
@@ -69,17 +71,12 @@ object Simulate {
           (l: List[Message], message: List[Message]) => message ::: l,
           (l1: List[Message], l2: List[Message]) => l1 ::: l2).collectAsMap()
         
-        val dMessages = sc.broadcast(collectedMessages)
-
-        actorRDD = actorRDD.map(x => {
-          x.receivedMessages.addAll(dMessages.value.getOrElse(x.id, Buffer[Message]()).asJava)
+        elapsedRound = actorRDD.map(x => {
+          x.receivedMessages.addAll(collectedMessages.getOrElse(x.id, Buffer[Message]()).asJava)
           x.time += elapsedRound
           x.run()
-          x
-        })
+        }).collect().min
         
-        elapsedRound = actorRDD.collect().map(i => i.proposeInterval).min
-
         currentTurn += elapsedRound
         t2 = System.currentTimeMillis()
         time_seq = time_seq ::: List(t2-t1)
