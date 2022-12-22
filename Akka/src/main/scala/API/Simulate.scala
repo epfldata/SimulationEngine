@@ -25,26 +25,39 @@ object Simulate {
 
     def apply(actors: List[Actor], totalTurn: Int, 
               role: String= "Standalone", port: Int = 25251): SimulationSnapshot = {
-        def startup(role: String, port: Int): Unit ={
-            val config = ConfigFactory.parseString(s"""
-                akka.remote.artery.canonical.port=$port
-                akka.cluster.roles = [$role]
-                """).withFallback(ConfigFactory.load("application"))
-            // If there are more workers than agents, then set the worker number to the same as agents
-            val workersPerMachine: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.workers-per-machine").render().toInt
-            val totalMachines: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.total-machines").render().toInt
-            var totalWorkers = workersPerMachine * totalMachines
-            println(f"Total workers are ${totalWorkers} Total actors ${actors.size}")
-            if (totalWorkers > actors.size){
-                println(f"Detect more workers than agents! Set total workers from ${totalWorkers} to ${actors.size}")
-                totalWorkers = actors.size
-            }
-            val actorSystem = ActorSystem(AkkaExp(totalTurn, totalWorkers, actors), "SimsCluster", config)
-            Await.ready(actorSystem.whenTerminated, 10.days)
-        }
+
         initialize()    
-        println(f"Simulation starts in ${role} mode!")
-        startup(role, port)
+
+        val config = ConfigFactory.parseString(s"""
+            akka.remote.artery.canonical.port=$port
+            akka.cluster.roles = [$role]
+            """).withFallback(ConfigFactory.load("application"))
+        // If there are more workers than agents, then set the worker number to the same as agents
+        val workersPerMachine: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.workers-per-machine").render().toInt
+        val totalMachines: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.total-machines").render().toInt
+        var totalWorkers = workersPerMachine * totalMachines
+        println(f"${totalMachines} total machines, ${totalWorkers} total workers, and ${actors.size} actors")
+        // well-formedness check
+        val machinePrefix = "Machine-"
+        val workerPrefix = "Worker-"
+        try {
+            role match {
+                case "Standalone" => println(f"Simulation starts on a single server!")
+                case s if s.startsWith(machinePrefix) && s.stripPrefix(machinePrefix).toInt < totalMachines => println(f"Starts ${s}!")
+                case s if s.startsWith(workerPrefix) && s.stripPrefix(workerPrefix).toInt < totalWorkers => println(f"Starts ${s}!")
+                case _ => throw new Exception("Invalid role!")
+            }
+        } catch {
+            case e: Exception => throw new Exception("Available roles are Standalone, Machine-id, or Worker-id. Replacing id with 0-based int (less than total machines or workers)")
+        }
+        
+        if (totalWorkers > actors.size){
+            println(f"Found more workers than agents! Set total workers from ${totalWorkers} to ${actors.size}")
+            totalWorkers = actors.size
+        }
+
+        val actorSystem = ActorSystem(AkkaExp(totalTurn, totalWorkers, actors), "SimsCluster", config)
+        Await.ready(actorSystem.whenTerminated, 10.days)
         println("Simulation ends!")
         // Actor.reset 
         SimulationSnapshot(stoppedAgents, lastWords)
