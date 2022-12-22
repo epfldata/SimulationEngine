@@ -42,13 +42,14 @@ object Simulate {
         val workerPrefix = "Worker-"
         try {
             role match {
-                case "Standalone" => println(f"Simulation starts on a single server!")
-                case s if s.startsWith(machinePrefix) && s.stripPrefix(machinePrefix).toInt < totalMachines => println(f"Starts ${s}!")
-                case s if s.startsWith(workerPrefix) && s.stripPrefix(workerPrefix).toInt < totalWorkers => println(f"Starts ${s}!")
+                case "Standalone" => 
+                case "Driver" => 
+                case s if s.startsWith(machinePrefix) && s.stripPrefix(machinePrefix).toInt < totalMachines => 
+                case s if s.startsWith(workerPrefix) && s.stripPrefix(workerPrefix).toInt < totalWorkers => 
                 case _ => throw new Exception("Invalid role!")
             }
         } catch {
-            case e: Exception => throw new Exception("Available roles are Standalone, Machine-id, or Worker-id. Replacing id with 0-based int (less than total machines or workers)")
+            case e: Exception => throw new Exception(f"Invalid role {role}. Available roles are Standalone, Driver, Machine-id, or Worker-id. Replacing id with 0-based int (less than total machines or workers)")
         }
         
         if (totalWorkers > actors.size){
