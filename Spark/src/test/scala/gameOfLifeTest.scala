@@ -49,3 +49,15 @@ object gameOfLifeBench {
         }
     }
 }
+
+object gameOfLifeCommFreq {
+    val totalTurns: Int = 200
+    val width: Int = 10
+    val height: Int = 100
+
+    def main(args: Array[String]): Unit = {
+        val cfreq: Int = args(0).toInt
+        val agents = generated.example.gameOfLifeCommFreq.InitData(width, height, cfreq)
+        API.Simulate(agents, totalTurns)
+    }
+}
