@@ -1,5 +1,5 @@
 package example
-package stockMarket
+package stockMarket.v1
 
 // Artificial economic life: a simple model of a stockmarket
 class Stock(var priceAdjustmentFactor: Double) {

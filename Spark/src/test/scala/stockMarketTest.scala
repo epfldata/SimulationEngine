@@ -14,7 +14,13 @@ object stockMarketTest {
         mode match {
             case 1 => {
                 // callAndForget
-                val agents = generated.example.stockMarket.InitData(totalMarkets, tradersPerMarket)
+                val agents = generated.example.stockMarket.v1.InitData(totalMarkets, tradersPerMarket)
+                val snapshot1 = API.Simulate(agents, totalTurns)
+            }
+
+            case 2 => {
+                // v2, cfreq
+                val agents = generated.example.stockMarket.v2.InitData(totalMarkets, tradersPerMarket, 0)
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
         }
