@@ -7,25 +7,23 @@ object stockMarketTest {
         val tradersPerMarket: Int = args(1).toInt
         val totalTurns: Int = args(2).toInt
         val mode: Int = args(3).toInt
-        val role: String = args(4)
-        val port: Int = args(5).toInt
-        apply(totalMarkets, tradersPerMarket, totalTurns, mode, role, port)
-    }
+        // val role: String = args(4)
+        // val port: Int = args(5).toInt
 
-    def apply(totalMarkets: Int, tradersPerMarket: Int, totalTurns: Int, mode: Int, role: String, port: Int): Unit = {
         mode match {
             case 1 => {
                 // v1
                 val agents = generated.example.stockMarket.v1.InitData(totalMarkets, tradersPerMarket)
                 API.OptimizationConfig.mergedWorker()
-                val snapshot1 = API.Simulate(agents, totalTurns, role, port)
+                val snapshot1 = API.Simulate(agents, totalTurns)
             }
 
             case 2 => {
                 // v2
-                val agents = generated.example.stockMarket.v2.InitData(totalMarkets, tradersPerMarket, 10)
+                val cfreq: Int = args(4).toInt
+                val agents = generated.example.stockMarket.v2.InitData(totalMarkets, tradersPerMarket, cfreq)
                 API.OptimizationConfig.mergedWorker()
-                val snapshot1 = API.Simulate(agents, totalTurns, role, port)
+                val snapshot1 = API.Simulate(agents, totalTurns)
             }
         }
     }

@@ -26,6 +26,7 @@ class Driver {
 
     var start: Long = 0
     var end: Long = 0
+    var initialStart: Long = 0
 
     def apply(workers: Int, maxTurn: Int): Behavior[DriverEvent] = Behaviors.setup {ctx =>
         totalWorkers = workers
@@ -62,6 +63,7 @@ class Driver {
             message match { 
                 case InitializeWorkers() =>
                     if (!workersStart.isEmpty && !workersStop.isEmpty){
+                        initialStart = System.currentTimeMillis()
                         ctx.log.debug("All workers are initialized! Start round.")
                         ctx.self ! RoundStart()
                     } 
@@ -100,6 +102,7 @@ class Driver {
                     ctx.log.info(f"Round ${currentTurn} takes ${end-start} ms")
                     if (currentTurn >= totalTurn){
                         Behaviors.stopped {() => 
+                            ctx.log.info(f"Average ${(end-initialStart)/totalTurn} ms")
                             ctx.log.debug(f"Simulation completes! Stop the driver")
                             workersStop.foreach(a => a ! WorkerSpec.Stop())
                         }
