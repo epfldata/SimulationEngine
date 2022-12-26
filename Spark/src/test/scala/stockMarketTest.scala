@@ -7,10 +7,7 @@ object stockMarketTest {
         val tradersPerMarket: Int = args(1).toInt
         val totalTurns: Int = args(2).toInt
         val mode: Int = args(3).toInt
-        apply(totalMarkets, tradersPerMarket, totalTurns, mode)
-    }
 
-    def apply(totalMarkets: Int, tradersPerMarket: Int, totalTurns: Int, mode: Int): Unit = {
         mode match {
             case 1 => {
                 // callAndForget
@@ -20,7 +17,8 @@ object stockMarketTest {
 
             case 2 => {
                 // v2, cfreq
-                val agents = generated.example.stockMarket.v2.InitData(totalMarkets, tradersPerMarket, 0)
+                val cfreq: Int = args(4).toInt
+                val agents = generated.example.stockMarket.v2.InitData(totalMarkets, tradersPerMarket, cfreq)
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
         }
