@@ -15,7 +15,7 @@ import collection.JavaConverters._
 object Simulate { 
 
   @transient protected lazy val conf: SparkConf =
-    new SparkConf().setMaster("local")
+    new SparkConf().setMaster("local[*]")
       .setAppName("TickTalk")
       .set("spark.driver.memory", "50g")
       .set("spark.executor.memory", "5g")
