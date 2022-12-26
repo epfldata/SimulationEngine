@@ -1,7 +1,7 @@
 package simulation.spark
-package test
+package examples
 
-object stockMarketTest {
+object stockMarket {
     def main(args: Array[String]): Unit = {
         val totalMarkets = args(0).toInt
         val tradersPerMarket: Int = args(1).toInt

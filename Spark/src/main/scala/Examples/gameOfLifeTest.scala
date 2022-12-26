@@ -1,18 +1,15 @@
 package simulation.spark
-package test
+package examples
 
 // sbt -mem 100000 "project akka; test:runMain simulation.akka.test.gameOfLifeBench 100 100 50 1"
 
-object gameOfLifeBench {
+object gameOfLife {
     def main(args: Array[String]): Unit = {
         val width = args(0).toInt
         val height: Int = args(1).toInt
         val totalTurns: Int = args(2).toInt
         val mode: Int = args(3).toInt
-        apply(width, height, totalTurns, mode)
-    }
 
-    def apply(width: Int, height: Int, totalTurns: Int, mode: Int): Unit = {
         mode match {
             case 1 => {
                 // Messaging

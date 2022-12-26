@@ -43,8 +43,11 @@ lazy val akkaSettings = Seq(
 )
 
 lazy val sparkSettings = Seq(
+  // libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion, 
+  // libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion, 
+  // Use following config with "provided" when assemblying a uber jar
   libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
-  libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
+  libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided", 
 )
 
 // Enable graph drawing when debugging
@@ -86,7 +89,26 @@ lazy val spark = (project in file("Spark"))
     name := f"${project_name}-spark",
     commonSettings, sparkSettings,
     Test / parallelExecution := false,
-  ).dependsOn(core % "compile->compile;compile->test", genCore, genExample)
+    excludeDependencies += "commons-logging" % "commons-logging",
+    assemblyMergeStrategy in assembly := {
+      case PathList("io", "netty", xs @ _*)               => MergeStrategy.first
+      case PathList("google", "protobuf", xs @ _*)        => MergeStrategy.first
+      case PathList("com", "google", "protobuf", xs @ _*) => MergeStrategy.first
+      case PathList("scalapb", xs @ _*)                   => MergeStrategy.first
+      case "application.conf"                             => MergeStrategy.concat
+      case "reference.conf"                               => MergeStrategy.concat
+      case "module-info.class"                            => MergeStrategy.concat
+      case "META-INF/io.netty.versions.properties"        => MergeStrategy.first
+      case "META-INF/native/libnetty-transport-native-epoll.so" =>
+        MergeStrategy.first
+      case n if n.endsWith(".txt")   => MergeStrategy.concat
+      case n if n.endsWith("NOTICE") => MergeStrategy.concat
+      case "logback.xml" => MergeStrategy.first 
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    }
+  ).dependsOn(core % "compile->compile", genCore, genExample)
 
 lazy val akka = (project in file("Akka"))
   .settings(
@@ -101,8 +123,6 @@ lazy val base = (project in file("Base"))
     commonSettings,
     Test / parallelExecution := false,
   ).dependsOn(core % "compile->compile;compile->test", genCore, genExample)
-
-
 
 lazy val library = (project in file("library"))
   .settings(
@@ -144,30 +164,3 @@ lazy val genExample = (project in file("generated"))
     libraryDependencies += "org.plotly-scala" %%% "plotly-render" % "0.8.2",
     commonSettings, akkaSettings, sparkSettings,
   ).dependsOn(core, library, example, gui)
-
-// Separate out Spark 
-lazy val genExampleSpark = (project in file("generated-spark"))
-  .settings(
-    name := f"${project_name}-genExampleSpark",
-    Test / parallelExecution := false,
-    commonSettings, sparkSettings,
-    excludeDependencies += "commons-logging" % "commons-logging",
-    assemblyMergeStrategy in assembly := {
-      case PathList("io", "netty", xs @ _*)               => MergeStrategy.first
-      case PathList("google", "protobuf", xs @ _*)        => MergeStrategy.first
-      case PathList("com", "google", "protobuf", xs @ _*) => MergeStrategy.first
-      case PathList("scalapb", xs @ _*)                   => MergeStrategy.first
-      case "application.conf"                             => MergeStrategy.concat
-      case "reference.conf"                               => MergeStrategy.concat
-      case "module-info.class"                            => MergeStrategy.concat
-      case "META-INF/io.netty.versions.properties"        => MergeStrategy.first
-      case "META-INF/native/libnetty-transport-native-epoll.so" =>
-        MergeStrategy.first
-      case n if n.endsWith(".txt")   => MergeStrategy.concat
-      case n if n.endsWith("NOTICE") => MergeStrategy.concat
-      case "logback.xml" => MergeStrategy.first 
-      case x =>
-        val oldStrategy = (assemblyMergeStrategy in assembly).value
-        oldStrategy(x)
-    }
-  ).dependsOn(core, library, example)

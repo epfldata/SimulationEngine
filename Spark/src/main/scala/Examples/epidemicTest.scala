@@ -1,5 +1,5 @@
 package simulation.spark
-package test
+package examples
 
 object epidemicTest {
     val totalTurns: Int = 200
