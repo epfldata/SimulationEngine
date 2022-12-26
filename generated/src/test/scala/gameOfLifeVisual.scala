@@ -16,8 +16,6 @@ object gameOfLifeVisual {
 
         val agents = generated.example.gameOfLife.InitData(width, height, 1)
 
-        val c = new SimulationConfig(agents, totalTurns, true, 1)
-
         val pw = new PrintWriter(new FileOutputStream(new File(output),true))
 
         val visualConfig = new Grid2DSnapshot(agents.map(x => 
