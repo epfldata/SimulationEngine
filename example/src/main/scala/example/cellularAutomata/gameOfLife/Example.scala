@@ -25,7 +25,7 @@ object MainInit {
 
             val nodesSeq = points.toIndexedSeq
             points.zipWithIndex.foreach(n => {
-                n._1.connectedAgents = Torus2D.getNeighborCells(width, height)(n._2, neighborRadius).map(j => nodesSeq(j))
+                n._1.connectedAgentIds = Torus2D.getNeighborCells(width, height)(n._2, neighborRadius)
             })
 
             points.toList

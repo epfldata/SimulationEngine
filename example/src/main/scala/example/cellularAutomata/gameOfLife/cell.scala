@@ -14,7 +14,8 @@ import meta.runtime.Message
   */
 @lift
 class Cell(var alive: Int) extends Actor {
-
+  var connectedAgentIds: List[Int] = List()
+  
   var aliveNeighbors: Int = 0
     def main(): Unit = {
         while(true) {
@@ -32,10 +33,10 @@ class Cell(var alive: Int) extends Actor {
                 alive = 1
             }
 
-            connectedAgents.foreach(i => {
+            connectedAgentIds.foreach(i => {
               val msg = new Message()
               msg.value = alive
-              sendMessage(i.id, msg)
+              sendMessage(i, msg)
             })
             waitRounds(1)
         }
