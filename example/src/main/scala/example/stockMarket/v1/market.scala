@@ -22,6 +22,7 @@ class Market(val traders: List[Trader]) extends Actor {
             marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
             futures = traders.map(x => asyncCall(x.action(stockPrice, dividendPerShare, marketState), 1))
             while (!futures.forall(x => x.isCompleted)){
+                // println("Market agent wait!")
                 waitAndReply(1)
             }
             val x = futures.map(x => x.popValue.get)
@@ -29,7 +30,7 @@ class Market(val traders: List[Trader]) extends Actor {
             val sellOrders = x.count(_ == 2)
             stockPrice = stock.priceAdjustment(buyOrders, sellOrders)
             dividendPerShare = stock.getDividend()
-            // println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
+            println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
         }
     }
 }

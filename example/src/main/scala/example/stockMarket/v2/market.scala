@@ -35,7 +35,7 @@ class Market(val traders: List[Trader], val cfreq: Int) extends Actor {
             val sellOrders = x.count(_ == 2)
             stockPrice = stock.priceAdjustment(buyOrders, sellOrders)
             dividendPerShare = stock.getDividend()
-            // println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
+            println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
         }
     }
 }
