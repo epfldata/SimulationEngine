@@ -3,7 +3,7 @@ package gameOfLife
 
 import scala.collection.mutable.{Map => MutMap}
 
-import lib.Graph.Torus2DGraph
+import lib.Grid.Torus2D
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
@@ -20,7 +20,14 @@ object MainInit {
                 }
             })
 
-            Torus2DGraph(points, width, height, neighborRadius)
+            // Such initialization failed on Spark
+            // Torus2DGraph(points, width, height, neighborRadius)
+
+            val nodesSeq = points.toIndexedSeq
+            points.zipWithIndex.foreach(n => {
+                n._1.connectedAgents = Torus2D.getNeighborCells(width, height)(n._2, neighborRadius).map(j => nodesSeq(j))
+            })
+
             points.toList
         }
     }
