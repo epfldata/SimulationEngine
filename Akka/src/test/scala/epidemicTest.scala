@@ -2,7 +2,7 @@ package simulation.akka
 package test
 
 object epidemicTest {
-    val totalTurns: Int = 200
+    val totalTurns: Int = 15
 
     def main(args: Array[String]): Unit = {
         val population: Int = args(0).toInt
@@ -23,6 +23,13 @@ object epidemicTest {
                 // v2
                 val cfreq: Int = args(5).toInt
                 val agents = generated.example.epidemic.v2.InitData(population, p, isSBM, blocks, cfreq)
+                API.OptimizationConfig.mergedWorker()
+                val snapshot1 = API.Simulate(agents, totalTurns)
+            }
+
+            case 3 => {
+                // v1
+                val agents = generated.example.epidemic.v3.InitData(population, p, isSBM, blocks)
                 API.OptimizationConfig.mergedWorker()
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }

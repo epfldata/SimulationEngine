@@ -21,6 +21,12 @@ object stockMarket {
                 val agents = generated.example.stockMarket.v2.InitData(totalMarkets, tradersPerMarket, cfreq)
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
+
+            case 3 => {
+                // v3
+                val agents = generated.example.stockMarket.v3.InitData(totalMarkets, tradersPerMarket)
+                val snapshot1 = API.Simulate(agents, totalTurns)
+            }
         }
     }
 }

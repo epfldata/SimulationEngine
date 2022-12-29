@@ -14,7 +14,6 @@ import meta.runtime.Message
   */
 @lift
 class Cell(var alive: Int) extends Actor {
-  var connectedAgentIds: List[Int] = List()
   
   var aliveNeighbors: Int = 0
     def main(): Unit = {

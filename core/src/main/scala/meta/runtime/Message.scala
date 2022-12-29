@@ -20,6 +20,12 @@ class DoubleMessage extends Message {
   var doubleValue: Double = 0
 }
 
+@JsonTypeName("doubleArrayMessage")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+class DoubleArrayMessage extends Message {
+  var doubleArrayValue: List[Double] = List()
+}
+
 @JsonTypeName("timedMessage")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(

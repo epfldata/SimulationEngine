@@ -65,6 +65,8 @@ class Actor extends Serializable {
 
   var connectedAgents: List[Actor] = List()
 
+  var connectedAgentIds: List[Int] = List()
+
   // todo: add a logger to redirect warning to stderr
   def setConnectedAgents(agents: List[Actor]): Unit = {
     if (agents.size > agents.toSet.size){

@@ -22,6 +22,12 @@ object ErdosRenyiGraph extends Graph {
                 x !=n && edgeProb>Random.nextDouble()
             }).toList)
     }
+
+    def addIds(nodes: Iterable[Actor], edgeProb: Double): Unit = {
+        nodes.foreach(n => n.connectedAgentIds = nodes.filter(x => {
+                (x !=n) && (edgeProb>Random.nextDouble())
+            }).map(i => i.id.toInt).toList)
+    }
 }
 
 object Torus2DGraph extends Graph {
