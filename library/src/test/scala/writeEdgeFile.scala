@@ -3,7 +3,7 @@ package test
 
 import java.io._
 
-object writeEdgeFile {
+object writeTorusEdgeFile {
   def main(args: Array[String]): Unit = {
    val width: Int = args(0).toInt
    val height: Int = args(1).toInt
@@ -20,7 +20,7 @@ object writeEdgeFile {
  }  
 }
 
-object writeEdgeFileWithClock {
+object writeTorusEdgeFileWithClock {
    def main(args: Array[String]): Unit = {
       val width: Int = args(0).toInt
       val height: Int = args(1).toInt
