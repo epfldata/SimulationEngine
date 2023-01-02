@@ -23,7 +23,7 @@ class Worker {
     private val peer_workers: ConcurrentHashMap[Int, ActorRef[ReceiveMessages]] = new ConcurrentHashMap[Int, ActorRef[ReceiveMessages]]() 
     private var message_map: Map[Int, Map[Long, List[Message]]] = Map[Int, Map[Long, List[Message]]]()
     // private val receivedMessages: ConcurrentHashMap[Long, ConcurrentLinkedQueue[Message]] = new ConcurrentHashMap[Long, ConcurrentLinkedQueue[Message]]()
-    private val receivedMessages = new ConcurrentHashMap[Long, List[Message]]()
+    // private val receivedMessages = new ConcurrentHashMap[Long, List[Message]]()
     private val receivedWorkers = new ConcurrentHashMap[Int, Int]()
     private var sendToRef: ActorRef[SendTo] = null
 
@@ -97,11 +97,11 @@ class Worker {
                     Behaviors.same
 
                 case ReceiveMessages(wid, messages) =>
-                    val start = System.currentTimeMillis()
+                    // val start = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} receives ${messages.size} messages from worker ${wid}")
                     receivedWorkers.computeIfAbsent(wid, x => {
                         for (m <- messages) {
-                            receivedMessages.update(m._1, receivedMessages.getOrElse(m._1, List()) ::: m._2)
+                            local_sims(m._1).receivedMessages.addAll(m._2)
                         }
                         0
                     })
@@ -109,7 +109,7 @@ class Worker {
                     if (receivedWorkers.keys().size == totalWorkers-1){
                         ctx.self ! Start()
                     }
-                    val end = System.currentTimeMillis()
+                    // val end = System.currentTimeMillis()
                     // ctx.log.info(f"Worker ${workerId} processes message takes ${end-start} ms")
                     worker()
                     
@@ -126,10 +126,6 @@ class Worker {
                             // collectedMessages.clear()
                             local_sims.foreach(a => {
                                 a._2.time += acceptedInterval
-                                val x = receivedMessages.remove(a._1)
-                                if (x != null) {
-                                    a._2.receivedMessages.addAll(x)
-                                }
                                 val tmpProposeInterval = a._2.run()
                                 if (tmpProposeInterval < proposeInterval){
                                     proposeInterval = tmpProposeInterval
