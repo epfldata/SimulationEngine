@@ -161,6 +161,6 @@ lazy val genExample = (project in file("generated"))
   .settings(
     name := f"${project_name}-genExample",
     Test / parallelExecution := false,
-    libraryDependencies += "org.plotly-scala" %%% "plotly-render" % "0.8.2",
-    commonSettings, akkaSettings, sparkSettings,
-  ).dependsOn(core, library, example, gui)
+    // libraryDependencies += "org.plotly-scala" %%% "plotly-render" % "0.8.2",
+    commonSettings
+  ).dependsOn(core, library, example)
