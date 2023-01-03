@@ -1,8 +1,6 @@
 package simulation.spark
 package examples
 
-// sbt -mem 100000 "project akka; test:runMain simulation.akka.test.gameOfLifeBench 100 100 50 1"
-
 object gameOfLife {
     def main(args: Array[String]): Unit = {
         val width = args(0).toInt
@@ -21,28 +19,6 @@ object gameOfLife {
                 val agents = generated.example.gameOfLifeRPCOneSide.InitData(width, height)
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
-
-            // case 3 => {
-            //     // Direct method call, double buffer
-            //     val agents = generated.example.gameOfLifeRPCOneSideDoubleBuffer.InitData(width, height)
-            //     API.OptimizationConfig.directMethodCall()
-            //     val snapshot1 = API.Simulate(agents, 2*totalTurns)
-            // }
-
-            // case 4 => {
-            //     // Direct method call, multi-version
-            //     val agents = generated.example.gameOfLifeRPCOneSideMultiversion.InitData(width, height)
-            //     API.OptimizationConfig.directMethodCall()
-            //     val snapshot1 = API.Simulate(agents, totalTurns)
-            // }
-
-
-            // case 5 => {
-            //     // asyncCall
-            //     val agents = generated.example.gameOfLifeRPC.InitData(width, height)
-            //     API.OptimizationConfig.mergedWorker()
-            //     val snapshot1 = API.Simulate(agents, totalTurns)
-            // }
         }
     }
 }

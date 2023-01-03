@@ -1,7 +1,7 @@
 package simulation.spark
 package examples
 
-object shortestPathTest {
+object shortestPath {
     def main(args: Array[String]): Unit = {
         val totalVertices: Int = 50
         val totalRounds: Int = 50

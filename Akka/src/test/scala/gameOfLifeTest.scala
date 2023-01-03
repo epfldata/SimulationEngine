@@ -1,20 +1,19 @@
 package simulation.akka
 package test
 
-// sbt -mem 100000 "project akka; test:runMain simulation.akka.test.gameOfLifeBench 100 100 50 1"
-
-object gameOfLifeBench {
+object gameOfLife {
     def main(args: Array[String]): Unit = {
         val width = args(0).toInt
         val height: Int = args(1).toInt
         val totalTurns: Int = args(2).toInt
         val mode: Int = args(3).toInt
-        val role: String = args(4)
-        val port: Int = args(5).toInt
-        apply(width, height, totalTurns, mode, role, port)
-    }
+        var role: String = "Standalone"
+        var port: Int = 25251
+        if (args.size > 4) {
+            role = args(4)
+            port = args(5).toInt
+        }
 
-    def apply(width: Int, height: Int, totalTurns: Int, mode: Int, role: String, port: Int): Unit = {
         mode match {
             case 1 => {
                 // Messaging
@@ -62,9 +61,9 @@ object gameOfLifeBench {
 }
 
 object gameOfLifeCommFreq {
-    val totalTurns: Int = 200
-    val width: Int = 100
-    val height: Int = 1000
+    val totalTurns: Int = 50
+    val width: Int = 10
+    val height: Int = 100
 
     def main(args: Array[String]): Unit = {
         val cfreq: Int = args(0).toInt

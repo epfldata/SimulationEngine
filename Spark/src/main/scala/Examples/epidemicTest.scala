@@ -1,15 +1,14 @@
 package simulation.spark
 package examples
 
-object epidemicTest {
-    val totalTurns: Int = 50
-
+object epidemic {
     def main(args: Array[String]): Unit = {
         val population: Int = args(0).toInt
         val p: Double = args(1).toDouble
         val isSBM: Boolean = (args(2).toInt == 1)
         val blocks: Int = args(3).toInt
-        val mode: Int = args(4).toInt
+        val totalTurns: Int = args(4).toInt
+        val mode: Int = args(5).toInt
 
         mode match {
             case 1 => {
