@@ -51,10 +51,10 @@ object SIRModel {
     }
 
     def stateDuration(health: Int): Int = {
-        val randDuration: Int = Random.nextGaussian().toInt
+        val randDuration: Int = (3*Random.nextGaussian()).toInt
 
         health match {
-            case Infectious => max(2, randDuration+10) 
+            case Infectious => max(2, randDuration+6) 
             case Hospitalized => max(2, randDuration+7) 
             case Exposed => max(3, randDuration+5)
         }

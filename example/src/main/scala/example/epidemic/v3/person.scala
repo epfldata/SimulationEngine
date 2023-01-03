@@ -18,6 +18,20 @@ class Person(val age: Int) extends Actor {
 
         while (true) {
             if (health != SIRModel.Deceased) {
+                var m = receiveMessage()
+                while (m.isDefined){
+                    if (health == 0) {
+                        var personalRisk = m.get.asInstanceOf[DoubleMessage].doubleValue
+                        if (age > 60) {
+                            personalRisk = personalRisk * 2
+                        }
+                        if (personalRisk > 1) {
+                            health = SIRModel.change(health, vulnerability)
+                        }
+                    }
+                    m = receiveMessage()
+                }
+
                 // Meet with contacts 
                 val selfRisk = SIRModel.infectiousness(health, symptomatic)
 
@@ -38,20 +52,6 @@ class Person(val age: Int) extends Actor {
                 }
             } 
             waitRounds(1)
-            
-            var m = receiveMessage()
-            while (m.isDefined){
-                if (health == 0) {
-                    var personalRisk = m.get.asInstanceOf[DoubleMessage].doubleValue
-                    if (age > 60) {
-                        personalRisk = personalRisk * 2
-                    }
-                    if (personalRisk > 1) {
-                        health = SIRModel.change(health, vulnerability)
-                    }
-                }
-                m = receiveMessage()
-            }
         }
     }
 }
