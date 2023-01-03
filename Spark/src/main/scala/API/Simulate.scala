@@ -17,6 +17,7 @@ object Simulate {
     new SparkConf().setMaster("local[*]")
     .setAppName("TickTalk")
     .set("spark.driver.memory", "50g")
+    .set("spark.driver.maxResultSize", "10g")
     .set("spark.executor.memory", "5g")
     .set("spark.executor.cores", "48")
     .set("spark.default.parallelism", "96")
