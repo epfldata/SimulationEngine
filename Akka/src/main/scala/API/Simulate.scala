@@ -49,7 +49,7 @@ object Simulate {
                 case _ => throw new Exception("Invalid role!")
             }
         } catch {
-            case e: Exception => throw new Exception(f"Invalid role {role}. Available roles are Standalone, Driver, Machine-id, or Worker-id. Replacing id with 0-based int (less than total machines or workers)")
+            case e: Exception => throw new Exception(f"Invalid role ${role}. Available roles are Standalone, Driver, Machine-id, or Worker-id. Replacing id with 0-based int (less than total machines or workers)")
         }
         
         if (totalWorkers > actors.size){
