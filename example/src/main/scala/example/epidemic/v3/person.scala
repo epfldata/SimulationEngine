@@ -4,12 +4,12 @@ package epidemic.v3
 import scala.util.Random
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-import meta.runtime.DoubleMessage
+import meta.runtime.Message
 
 @lift
 class Person(val age: Int) extends Actor {
     val symptomatic: Boolean = Random.nextBoolean()
-    var health: Int = 0 // susceptible
+    var health: Int = Random.nextInt(5)
     var vulnerability: Int = 0
     var daysInfected: Int = 0
 
@@ -21,7 +21,7 @@ class Person(val age: Int) extends Actor {
                 var m = receiveMessage()
                 while (m.isDefined){
                     if (health == 0) {
-                        var personalRisk = m.get.asInstanceOf[DoubleMessage].doubleValue
+                        var personalRisk = m.get.value
                         if (age > 60) {
                             personalRisk = personalRisk * 2
                         }
@@ -36,14 +36,15 @@ class Person(val age: Int) extends Actor {
                 val selfRisk = SIRModel.infectiousness(health, symptomatic)
 
                 connectedAgentIds.foreach(i => {
-                    val msg = new DoubleMessage()
-                    msg.doubleValue = selfRisk
+                    val msg = new Message()
+                    msg.value = selfRisk
                     sendMessage(i, msg)
                 })
                 
 
-                if ((health != SIRModel.Susceptible) && (health != SIRModel.Recover)) {
+                if ((health != 0) && (health != 4)) {
                     if (daysInfected == SIRModel.stateDuration(health)) {
+                        // health = 4
                         health = SIRModel.change(health, vulnerability)
                         daysInfected = 0
                     } else {

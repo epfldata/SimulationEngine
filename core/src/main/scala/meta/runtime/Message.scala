@@ -3,22 +3,14 @@ package meta.runtime
 import java.util.UUID
 import Actor.AgentId
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes, JsonTypeName}
-// import meta.io._
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
   Array(
-    new JsonSubTypes.Type(value = classOf[DoubleMessage], name = "doubleMessage"),
     new JsonSubTypes.Type(value = classOf[DoubleArrayMessage], name = "doubleArrayMessage"),
     new JsonSubTypes.Type(value = classOf[TimedMessage], name = "timedMessage")))
 class Message extends JsonSerializable {
-  var value: Int = 0
-}
-
-@JsonTypeName("doubleMessage")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-class DoubleMessage extends Message {
-  var doubleValue: Double = 0
+  var value: Double = 0
 }
 
 @JsonTypeName("doubleArrayMessage")

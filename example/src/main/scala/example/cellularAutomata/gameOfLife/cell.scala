@@ -22,7 +22,7 @@ class Cell(var alive: Int) extends Actor {
             aliveNeighbors = 0
             
             while (m.isDefined){
-              aliveNeighbors = aliveNeighbors + m.get.value
+              aliveNeighbors = aliveNeighbors + m.get.value.toInt
               m = receiveMessage()
             }
 
@@ -34,7 +34,7 @@ class Cell(var alive: Int) extends Actor {
 
             connectedAgentIds.foreach(i => {
               val msg = new Message()
-              msg.value = alive
+              msg.value = alive.toDouble
               sendMessage(i, msg)
             })
             waitRounds(1)

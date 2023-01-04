@@ -24,14 +24,14 @@ class Vertex() extends Actor {
             received = receiveMessage()
             while (received!=None){
                 if (received.get.value < dist){
-                    dist = received.get.value + 1
+                    dist = received.get.value.toInt + 1
                 }
                 received = receiveMessage()
             }
 
             connectedAgents.foreach(a => {
                 val msg = new Message()
-                msg.value = dist
+                msg.value = dist.toDouble
                 sendMessage(a.id, msg)
             })
             // println(id + " distance to source is " + dist + " at round " + time)

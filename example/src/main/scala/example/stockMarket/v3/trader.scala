@@ -21,7 +21,7 @@ class Trader(var budget: Double, val interestRate: Double) extends Actor {
                 wealth.addDividends(ans(2))
                 // reply message
                 val msg = new Message()
-                msg.value = wealth.takeAction(ans(1), ans.slice(3, 6).map(_.asInstanceOf[Int]))
+                msg.value = wealth.takeAction(ans(1), ans.slice(3, 6).map(_.asInstanceOf[Int])).toDouble
                 sendMessage(ans(0).toLong, msg)
                 m = receiveMessage()
             }

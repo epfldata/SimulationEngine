@@ -22,7 +22,7 @@ class Cell(var alive: Int, val cfreq: Int) extends Actor {
             aliveNeighbors = 0
             
             while (m.isDefined){
-              aliveNeighbors = aliveNeighbors + m.get.value
+              aliveNeighbors = aliveNeighbors + m.get.value.toInt
               m = receiveMessage()
             }
 
@@ -35,7 +35,7 @@ class Cell(var alive: Int, val cfreq: Int) extends Actor {
             connectedAgents.foreach(i => {
               Range(0, cfreq).foreach(j => {
                 val msg = new Message()
-                msg.value = alive
+                msg.value = alive.toDouble
                 sendMessage(i.id, msg)
               })
             })
