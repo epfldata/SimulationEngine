@@ -5,6 +5,7 @@ import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
+import scala.collection.mutable.ListBuffer
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
@@ -27,6 +28,7 @@ class Driver {
     var start: Long = 0
     var end: Long = 0
     var initialStart: Long = 0
+    val ts: ListBuffer[Long] = new ListBuffer[Long]()
 
     def apply(workers: Int, maxTurn: Int): Behavior[DriverEvent] = Behaviors.setup {ctx =>
         totalWorkers = workers
@@ -100,9 +102,11 @@ class Driver {
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Driver receives notifications from all workers! Accepted interval ${acceptedInterval}")
                     ctx.log.info(f"Round ${currentTurn} takes ${end-start} ms")
+                    ts.append(end-start)
                     if (currentTurn >= totalTurn){
                         Behaviors.stopped {() => 
                             ctx.log.info(f"Average ${(end-initialStart)/totalTurn} ms")
+                            ctx.log.info(f"Timeseries ${ts}")
                             ctx.log.debug(f"Simulation completes! Stop the driver")
                             workersStop.foreach(a => a ! WorkerSpec.Stop())
                         }
