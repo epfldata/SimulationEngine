@@ -1,7 +1,7 @@
-package lib
-package test
+package example
 
 import java.io._
+import lib.Grid
 
 object writeTorusEdgeFile {
   def main(args: Array[String]): Unit = {

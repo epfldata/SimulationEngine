@@ -1,6 +1,9 @@
 package lib
 package test
 
+import org.scalatest.FlatSpec
+import org.scalatest.Matchers
+
 class Torus2DSpec extends FlatSpec with Matchers {
 
  val w1: Int = 3
