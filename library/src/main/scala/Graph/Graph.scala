@@ -23,7 +23,7 @@ object ErdosRenyiGraph extends Graph {
             }).toList)
     }
 
-    def addIds(iRange: List[Int], edgeProb: Double): Unit = {
+    def addIds(nodes: Iterable[Actor], iRange: List[Int], edgeProb: Double): Unit = {
         nodes.foreach(n => {
             n.connectedAgentIds = iRange.filter(x => {
                 (x !=n.id) && (edgeProb>Random.nextDouble())
