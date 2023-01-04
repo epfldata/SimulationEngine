@@ -8,35 +8,18 @@ object MainInit {
         def apply(population: Int, p: Double, sbm: Boolean, blocks: Int): List[Actor] = {
             val citizens = (1 to population).map(c => { new Person(Random.nextInt(90) + 10) })
 
-            if (sbm){
-                (0 to blocks-1).foreach(i => {
-                    lib.Graph.ErdosRenyiGraph.addIds(citizens.slice(i*population/blocks, (i+1)*population/blocks), p)
+            if (!sbm){
+                citizens.foreach(c => {
+                    c.connectedAgentIds = Range(1, population).filter(i => {(i!= c.id) &&  Random.nextDouble() < p}).toList
                 })
             } else {
-                lib.Graph.ErdosRenyiGraph.addIds(citizens, p)
+                (0 to blocks-1).foreach(i => {
+                    citizens.slice(i*population/blocks, (i+1)*population/blocks).foreach(j => {
+                        j.connectedAgentIds = Range(i*population/blocks, (i+1)*population/blocks).filter(k => {(k!= j.id) &&  Random.nextDouble() < p}).toList
+                    })
+                })
             }
-
-            // if (sbm){
-            //     Range(0, blocks).foreach(i => {
-            //         citizens.slice(i*population/blocks, (i+1)*population/blocks).foreach(c => {
-            //             c.connectedAgentIds = Range(i*population/blocks, (i+1)*population/blocks).filter(k => {
-            //                 (k!=c.id) && (p>Random.nextDouble())
-            //             }).toList
-            //         })
-            //     })                
-            // } else {
-            //     citizens.foreach(c => {
-            //         c.connectedAgentIds = Range(0, population).filter(k => {
-            //             (k != c.id) && (p>Random.nextDouble())
-            //         }).toList
-            //     })
-            // }
-                            
-            // Random seeds of infected people
-            (0 to (Random.nextInt(10)+4)).foreach(_ => {
-                citizens(Random.nextInt(population)).health = 1
-            })
-
+            
             citizens.toList
         }
     }

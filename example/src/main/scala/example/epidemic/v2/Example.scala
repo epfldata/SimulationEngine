@@ -8,13 +8,16 @@ object MainInit {
         def apply(population: Int, p: Double, sbm: Boolean, blocks: Int, cfreq: Int): List[Actor] = {
             val citizens = (1 to population).map(c => { new Person(Random.nextInt(90) + 10, cfreq) })
 
-            // Stochastic block model (5 blocks, q=0)
-            if (sbm){
-                (0 to blocks-1).foreach(i => {
-                    lib.Graph.ErdosRenyiGraph(citizens.slice(i*population/blocks, (i+1)*population/blocks), p)
+            if (!sbm){
+                citizens.foreach(c => {
+                    c.connectedAgentIds = Range(1, population).filter(i => {(i!= c.id) &&  Random.nextDouble() < p}).toList
                 })
             } else {
-                lib.Graph.ErdosRenyiGraph(citizens, p)
+                (0 to blocks-1).foreach(i => {
+                    citizens.slice(i*population/blocks, (i+1)*population/blocks).foreach(j => {
+                        j.connectedAgentIds = Range(i*population/blocks, (i+1)*population/blocks).filter(k => {(k!= j.id) &&  Random.nextDouble() < p}).toList
+                    })
+                })
             }
                             
             // Random seeds of infected people
