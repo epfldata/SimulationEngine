@@ -19,11 +19,6 @@ object MainInit {
                     })
                 })
             }
-                            
-            // Random seeds of infected people
-            (0 to (Random.nextInt(10)+4)).foreach(_ => {
-                citizens(Random.nextInt(population)).health = 1
-            })
 
             citizens.toList
         }

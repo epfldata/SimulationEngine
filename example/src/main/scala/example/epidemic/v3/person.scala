@@ -9,13 +9,15 @@ import meta.runtime.Message
 @lift
 class Person(val age: Int) extends Actor {
     val symptomatic: Boolean = Random.nextBoolean()
-    var health: Int = Random.nextInt(5)
+    var health: Int = 0
     var vulnerability: Int = 0
     var daysInfected: Int = 0
 
     def main(): Unit = {
         vulnerability = if (age > 60) 1 else 0
-
+        if (Random.nextInt(10)==0){
+            health = 1
+        }
         while (true) {
             if (health != SIRModel.Deceased) {
                 var m = receiveMessage()
