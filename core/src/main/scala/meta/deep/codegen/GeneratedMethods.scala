@@ -48,7 +48,7 @@ case object runUntil extends GeneratedMethods {
 s"""
   override def run(): Int = {
     messageListener()
-    sendMessages.clear()
+    sendMessages = scala.collection.immutable.Map[Long, List[meta.runtime.Message]]()
     ${createCode.unblockRegMap(actorName)} = true
     while (${createCode.unblockRegMap(actorName)} && (${instructionRegister} < ${totalStates})) {
       ${memAddr}(${instructionRegister})()
