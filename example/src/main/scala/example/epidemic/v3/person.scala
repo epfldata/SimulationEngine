@@ -15,9 +15,10 @@ class Person(val age: Int) extends Actor {
 
     def main(): Unit = {
         vulnerability = if (age > 60) 1 else 0
-        if (Random.nextInt(10)==0){
+        if (Random.nextInt(100)==0){
             health = 1
         }
+
         while (true) {
             if (health != SIRModel.Deceased) {
                 var m = receiveMessage()
@@ -37,14 +38,15 @@ class Person(val age: Int) extends Actor {
                 // Meet with contacts 
                 val selfRisk = SIRModel.infectiousness(health, symptomatic)
 
-                connectedAgentIds.foreach(i => {
-                    val msg = new Message()
-                    msg.value = selfRisk
-                    sendMessage(i, msg)
-                })
-                
+                if (health == SIRModel.Infectious) {
+                    connectedAgentIds.foreach(i => {
+                        val msg = new Message()
+                        msg.value = selfRisk
+                        sendMessage(i, msg)
+                    })
+                }
 
-                if ((health != 0) && (health != 4)) {
+                if ((health != SIRModel.Susceptible) && (health != SIRModel.Recover)) {
                     if (daysInfected == SIRModel.stateDuration(health)) {
                         // health = 4
                         health = SIRModel.change(health, vulnerability)
