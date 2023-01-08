@@ -59,8 +59,7 @@ class Actor extends Serializable {
   /**
     * A map of listeners, which is required to register a listener for a response of a request message
     */
-  val responseListeners
-    : MutMap[String, Message => Unit] = MutMap()
+  var responseListeners: Map[String, Message => Unit] = Map[String, Message => Unit]()
 
   var reachableAgents: Set[AgentId] = Set()
 
@@ -101,7 +100,7 @@ class Actor extends Serializable {
     }
   }
 
-  val scheduledRPCRequests: MutMap[Int, Buffer[RequestMessage]] = MutMap[Int, Buffer[RequestMessage]]()
+  var scheduledRPCRequests: Map[Int, List[RequestMessage]] = Map[Int, List[RequestMessage]]()
 
   def messageListener(): Unit = {
     val totalMessages = receivedMessages.size()
@@ -111,11 +110,18 @@ class Actor extends Serializable {
       msg match {
         case m: ResponseMessage => 
           if (responseListeners.get(m.sessionId).isDefined){
-            responseListeners.remove(m.sessionId).get(m)
+            responseListeners.get(m.sessionId).get(m)
+            responseListeners = responseListeners - m.sessionId 
           }
         case m: RequestMessage =>
           // send_time is 0-based
-          scheduledRPCRequests.getOrElseUpdate(m.send_time+m.latency, Buffer()).append(m)
+          val procTime = m.send_time + m.latency
+          val existing = scheduledRPCRequests.get(procTime)
+          if (existing.isDefined) {
+            scheduledRPCRequests = scheduledRPCRequests + (procTime -> (m :: existing.get))
+          } else {
+            scheduledRPCRequests = scheduledRPCRequests + (procTime -> List(m))
+          }
         case m: Message =>
           receivedMessages.add(m)
       }
@@ -130,7 +136,7 @@ class Actor extends Serializable {
     */
   final def setMessageResponseHandler(sessionId: String,
                                       handler: Message => Unit): Unit = {
-    responseListeners += (sessionId -> handler)
+    responseListeners = responseListeners + (sessionId -> handler)
   }
 
   /**
