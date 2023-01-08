@@ -11,25 +11,9 @@ import org.apache.spark.RangePartitioner
 import org.apache.spark.HashPartitioner
 
 import collection.JavaConverters._
+import SparkGlobal._
 
-object Simulate { 
-    @transient protected lazy val conf: SparkConf = 
-    new SparkConf().setMaster("local[*]")
-    .setAppName("TickTalk")
-    .set("spark.driver.memory", "50g")
-    .set("spark.driver.maxResultSize", "10g")
-    .set("spark.executor.memory", "5g")
-    .set("spark.executor.cores", "48")
-    .set("spark.default.parallelism", "96")
-    .set("spark.hadoop.dfs.replication", "1")
-    // .set("spark.serializer", "akka.serialization.jackson.JacksonJsonSerializer")
-    .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    // .set("spark.driver.allowMultipleContexts", "true")
-
-    conf.registerKryoClasses(Array(classOf[meta.runtime.Message]))
-    @transient protected lazy val sc: SparkContext = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-    sc.setCheckpointDir("checkpoint/")
+object Simulate extends Serializable { 
 
   def apply(actors: List[Actor], totalTurn: Int): SimulationSnapshot = {
 
@@ -56,9 +40,9 @@ object Simulate {
     while (currentTurn < totalTurn ) {
         println(meta.runtime.util.displayTime(currentTurn))
 
-        if (currentTurn % 70 == 0) {
-          actorRDD.checkpoint()
-        }
+        // if (currentTurn % 70 == 0) {
+        //   actorRDD.checkpoint()
+        // }
 
         t1 = System.currentTimeMillis()
 
@@ -72,7 +56,7 @@ object Simulate {
         val dMessages = sc.broadcast(collectedMessages)
 
         actorRDD = actorRDD.map(x => {
-          x.receivedMessages.addAll(dMessages.value.getOrElse(x.id, Buffer[Message]()).asJava)
+          x.receivedMessages :::= (dMessages.value.getOrElse(x.id, List[Message]()))
           x.time += elapsedRound
           x.run()
           x
