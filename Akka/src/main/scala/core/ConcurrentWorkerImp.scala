@@ -140,7 +140,7 @@ class Worker {
                                 a._2.time += acceptedInterval
                                 val x = receivedMessages.remove(a._1)
                                 if (x != null) {
-                                    a._2.receivedMessages.addAll(x)
+                                    a._2.receivedMessages :::= x
                                 }
                             })
 
@@ -166,7 +166,8 @@ class Worker {
                                     }
                                     // Deliver local messages to agents' mailboxes
                                     collectedMessages.filterKeys(x => local_sims.get(x)!=null).foreach(i => {
-                                        local_sims.get(i._1).receivedMessages.addAll(collectedMessages.remove(i._1).get)
+                                        local_sims.get(i._1).receivedMessages :::= (collectedMessages.remove(i._1).get)
+                                        // local_sims.get(i._1).receivedMessages.addAll(collectedMessages.remove(i._1).get)
                                     })
                                     message_map = collectedMessages.toMap.groupBy(i => nameMap.getOrElse(i._1, workerId))
                                     AgentsCompleted()

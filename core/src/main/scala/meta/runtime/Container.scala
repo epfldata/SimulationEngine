@@ -54,7 +54,7 @@ class Container extends Actor {
             sentMessages.foreach(cmap => {
                 cmap.foreach(r => {
                     if (containedAgents.get(r._1).isDefined){
-                        containedAgents.get(r._1).get.receivedMessages.addAll(r._2.asJava)
+                        containedAgents.get(r._1).get.receivedMessages :::= r._2
                     } else {
                         sendMessages = sendMessages + (r._1 -> (sendMessages.getOrElse(r._1, List()) ::: r._2))
                     }
