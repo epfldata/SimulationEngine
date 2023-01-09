@@ -48,7 +48,7 @@ object epidemic {
                 } else if (role.startsWith("Machine-")){
                     val mid = role.stripPrefix("Machine-").toInt
                     val totalMachines = blocks
-                    meta.runtime.Actor.lastAgentId = mid * (population/totalMachines)
+                    meta.runtime.Actor.lastAgentId = mid * population
                     val agents = generated.example.epidemic.v4.InitData(population, p, isSBM, totalMachines)
                     API.OptimizationConfig.mergedWorker()
                     API.Simulate.machine(mid, agents, totalTurns)

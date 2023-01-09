@@ -26,7 +26,6 @@ object AkkaExp {
         Behaviors.setup { ctx => 
             cluster = Cluster(ctx.system)
             this.totalWorkers = totalWorkers
-            val roles: Set[String] = cluster.selfMember.getRoles.toSet
             val totalActors = actors.size
             val workersPerMachine: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.workers-per-machine").render().toInt
             // Machine id is 0-indexed

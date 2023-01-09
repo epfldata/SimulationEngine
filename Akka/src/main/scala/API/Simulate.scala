@@ -28,7 +28,7 @@ object Simulate {
 
         val config = ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port=$port
-            akka.cluster.roles = [driver]
+            akka.cluster.roles = [Driver]
             """).withFallback(ConfigFactory.load("application"))
         // If there are more workers than agents, then set the worker number to the same as agents
         val workersPerMachine: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.workers-per-machine").render().toInt
