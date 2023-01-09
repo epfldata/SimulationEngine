@@ -22,7 +22,34 @@ object AkkaExp {
     var activeWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
     var finalAgents: ConcurrentLinkedQueue[Actor] = new ConcurrentLinkedQueue[Actor]()
 
-    def apply(totalTurn: Int, totalWorkers: Int, actors: List[Actor]): Behavior[Command] = 
+    def materializedMachine(mid: Int, totalTurn: Int, totalWorkers: Int, actors: List[Actor]=List()): Behavior[Command] = 
+        Behaviors.setup { ctx => 
+            cluster = Cluster(ctx.system)
+            this.totalWorkers = totalWorkers
+            val roles: Set[String] = cluster.selfMember.getRoles.toSet
+            val totalActors = actors.size
+            val workersPerMachine: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.workers-per-machine").render().toInt
+            // Machine id is 0-indexed
+            var actorsPerWorker = totalActors/workersPerMachine
+
+            stoppedWorkers.clear()
+            activeWorkers.clear()
+            finalAgents.clear()
+            
+            ctx.log.debug(f"Creating machine ${mid}!")
+            for (i <- Range(0, workersPerMachine)) {
+                val wid = mid * workersPerMachine + i
+                val containedAgents = if (wid == totalWorkers-1){
+                    actors.slice(i*actorsPerWorker, totalActors)    
+                } else {
+                    actors.slice(i*actorsPerWorker, (i+1)*actorsPerWorker)  
+                }
+                ctx.self ! SpawnWorker(wid, containedAgents, totalWorkers)
+            } 
+            waitTillFinish(Vector.empty)
+        }
+
+    def apply(totalTurn: Int, totalWorkers: Int, actors: List[Actor]=List()): Behavior[Command] = 
         Behaviors.setup { ctx => 
             cluster = Cluster(ctx.system)
             this.totalWorkers = totalWorkers
