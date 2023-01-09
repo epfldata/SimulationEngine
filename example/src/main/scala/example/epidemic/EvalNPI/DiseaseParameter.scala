@@ -14,7 +14,7 @@ object DiseaseParameter {
     val asymptomaticLatentPeriod = 7 * day
 
     val infectiousAlpha = 0.25
-    val infectiousBeta = 4
+    val infectiousBeta = 1
 
     val hospitalizationDelayMean = 5 * day
 

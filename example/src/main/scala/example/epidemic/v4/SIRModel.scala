@@ -19,7 +19,7 @@ object SIRModel {
     val High: Int = 1
     // Infectious parameter (gamma distribution)
     val infectiousAlpha = 0.25
-    val infectiousBeta = 4
+    val infectiousBeta = 1
     val symptomaticSkew = 2
 
     def change(health: Int, vulnerability: Int): Int = {
