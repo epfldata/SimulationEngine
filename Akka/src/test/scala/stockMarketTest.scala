@@ -9,7 +9,7 @@ object stockMarket {
         val mode: Int = args(3).toInt
         var role: String = "Standalone"
         var port: Int = 25251
-        if (args.size > 5) {
+        if (args.size > 4) {
             role = args(4)
             if (role == "Driver") {
                 port = 25251
