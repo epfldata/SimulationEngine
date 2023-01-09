@@ -36,9 +36,9 @@ class Person(val age: Int) extends Actor {
                 }
 
                 // Meet with contacts 
-                val selfRisk = SIRModel.infectiousness(health, symptomatic)
 
                 if (health == SIRModel.Infectious) {
+                    val selfRisk = SIRModel.infectiousness(health, symptomatic)
                     connectedAgentIds.foreach(i => {
                         val msg = new Message()
                         msg.value = selfRisk
