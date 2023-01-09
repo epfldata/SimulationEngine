@@ -16,7 +16,7 @@ class Person(val age: Int) extends Actor {
     def main(): Unit = {
         vulnerability = if (age > 60) 1 else 0
         if (Random.nextInt(100)==0){
-            health = 1
+            health = 2
         }
 
         while (true) {
