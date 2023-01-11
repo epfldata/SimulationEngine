@@ -83,7 +83,7 @@ object Simulate {
         val workerPrefix = "Worker-"
         try {
             role match {
-                case "Standalone" => 
+                case "Standalone" => totalWorkers = workersPerMachine // ignore totalMachine setting
                 case "Driver" => 
                 case s if s.startsWith(machinePrefix) && s.stripPrefix(machinePrefix).toInt < totalMachines => 
                 case s if s.startsWith(workerPrefix) && s.stripPrefix(workerPrefix).toInt < totalWorkers => 
