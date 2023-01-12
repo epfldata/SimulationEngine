@@ -23,6 +23,47 @@ object Simulate {
         lastWords=List()
     }
 
+    def driver(totalTurn: Int, port: Int = 25251): SimulationSnapshot = {
+        initialize()    
+
+        val config = ConfigFactory.parseString(s"""
+            akka.remote.artery.canonical.port=$port
+            akka.cluster.roles = [Driver]
+            """).withFallback(ConfigFactory.load("application"))
+        // If there are more workers than agents, then set the worker number to the same as agents
+        val workersPerMachine: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.workers-per-machine").render().toInt
+        val totalMachines: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.total-machines").render().toInt
+        var totalWorkers = workersPerMachine * totalMachines
+        println(f"${totalMachines} total machines, ${totalWorkers} total workers")
+
+        val actorSystem = ActorSystem(AkkaExp(totalTurn, totalWorkers), "SimsCluster", config)
+        Await.ready(actorSystem.whenTerminated, 10.days)
+        println("Simulation ends!")
+        // Actor.reset 
+        SimulationSnapshot(stoppedAgents, lastWords)
+    }
+
+
+    // Materialized (actors are all containedActors)
+    def machine(mid: Int, actors: List[Actor], totalTurn: Int, port: Int = 0): SimulationSnapshot = {
+        initialize()
+        val config = ConfigFactory.parseString(s"""
+            akka.remote.artery.canonical.port=$port
+            akka.cluster.roles = [Machine-$mid]
+            """).withFallback(ConfigFactory.load("application"))
+        // If there are more workers than agents, then set the worker number to the same as agents
+        val workersPerMachine: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.workers-per-machine").render().toInt
+        val totalMachines: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.total-machines").render().toInt
+        var totalWorkers = workersPerMachine * totalMachines
+        println(f"${totalMachines} total machines, ${totalWorkers} total workers")
+
+        val actorSystem = ActorSystem(AkkaExp.materializedMachine(mid, totalTurn, totalWorkers, actors), "SimsCluster", config)
+        Await.ready(actorSystem.whenTerminated, 10.days)
+        println("Simulation ends!")
+        // Actor.reset 
+        SimulationSnapshot(stoppedAgents, lastWords)
+    }
+
     def apply(actors: List[Actor], totalTurn: Int, 
               role: String= "Standalone", port: Int = 25251): SimulationSnapshot = {
 
@@ -42,7 +83,7 @@ object Simulate {
         val workerPrefix = "Worker-"
         try {
             role match {
-                case "Standalone" => 
+                case "Standalone" => totalWorkers = workersPerMachine // ignore totalMachine setting
                 case "Driver" => 
                 case s if s.startsWith(machinePrefix) && s.stripPrefix(machinePrefix).toInt < totalMachines => 
                 case s if s.startsWith(workerPrefix) && s.stripPrefix(workerPrefix).toInt < totalWorkers => 
