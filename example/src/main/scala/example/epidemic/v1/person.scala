@@ -29,16 +29,16 @@ class Person(val age: Int) extends Actor {
 
     def main(): Unit = {
         vulnerability = if (age > 60) 1 else 0
-        if (Random.nextInt(10)==0){
-            health = 1
+        if (Random.nextInt(100)==0){
+            health = 2
         }
 
         while (true) {
             if (health != SIRModel.Deceased) {
                 // Meet with contacts 
-                val selfRisk = SIRModel.infectiousness(health, symptomatic)
                 if (!connectedAgents.isEmpty) {
-                    connectedAgents.foreach(x => asyncCall(x.asInstanceOf[Person].makeContact(selfRisk), 1))
+                    val selfRisk = SIRModel.infectiousness(health, symptomatic)
+                    connectedAgents.foreach(x => callAndForget(x.asInstanceOf[Person].makeContact(selfRisk), 1))
                 }
 
                 if ((health != SIRModel.Susceptible) && (health != SIRModel.Recover)) {

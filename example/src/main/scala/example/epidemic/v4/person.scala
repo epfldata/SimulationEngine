@@ -1,5 +1,5 @@
 package example
-package epidemic.v3
+package epidemic.v4
 
 import scala.util.Random
 import meta.classLifting.SpecialInstructions._
@@ -36,9 +36,10 @@ class Person(val age: Int) extends Actor {
                 }
 
                 // Meet with contacts 
+
                 if (health == SIRModel.Infectious) {
+                    val selfRisk = SIRModel.infectiousness(health, symptomatic)
                     connectedAgentIds.foreach(i => {
-                        val selfRisk = SIRModel.infectiousness(health, symptomatic)
                         val msg = new Message()
                         msg.value = selfRisk
                         sendMessage(i, msg)
