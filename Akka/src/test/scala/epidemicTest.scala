@@ -28,7 +28,7 @@ object epidemic {
 
             case 2 => {
                 // v2
-                val cfreq: Int = args(5).toInt
+                val cfreq: Int = 10
                 val agents = generated.example.epidemic.v2.InitData(population, p, isSBM, blocks, cfreq)
                 API.OptimizationConfig.mergedWorker()
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
@@ -39,6 +39,20 @@ object epidemic {
                 val agents = generated.example.epidemic.v3.InitData(population, p, isSBM, blocks)
                 API.OptimizationConfig.mergedWorker()
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
+            }
+
+            case 4 => {
+                // v4, partial materialized workers
+                if (role == "Driver") {
+                    API.Simulate.driver(totalTurns)
+                } else if (role.startsWith("Machine-")){
+                    val mid = role.stripPrefix("Machine-").toInt
+                    val totalMachines = blocks
+                    meta.runtime.Actor.lastAgentId = mid * population
+                    val agents = generated.example.epidemic.v4.InitData(population, p, isSBM, totalMachines)
+                    API.OptimizationConfig.mergedWorker()
+                    API.Simulate.machine(mid, agents, totalTurns)
+                }
             }
         }
     }
