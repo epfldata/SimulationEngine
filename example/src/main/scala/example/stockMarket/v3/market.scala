@@ -19,18 +19,22 @@ class Market() extends Actor {
     var buyOrders: Int = 0
     var sellOrders: Int = 0
 
-    // val foo: ListBuffer[Double] = new ListBuffer[Double]()
-
     def main(): Unit = {
         stock.priceAdjustmentFactor = 0.1 / connectedAgentIds.size
         while (true) {
             marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
             connectedAgentIds.foreach(i => {
-                val msg = new DoubleArrayMessage()
-                // foo.appendAll()
-                // foo.appendAll()
-                msg.doubleArrayValue = List(id.toDouble, stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)
-                sendMessage(i, msg)
+                // Range(0, cfreq).foreach(j => {
+                    val msg = new DoubleArrayMessage()
+                    msg.doubleArrayValue(0) = id.toDouble
+                    msg.doubleArrayValue(1) = stockPrice
+                    msg.doubleArrayValue(2) = dividendPerShare
+                    msg.doubleArrayValue(3) = marketState(0).toDouble
+                    msg.doubleArrayValue(4) = marketState(1).toDouble
+                    msg.doubleArrayValue(5) = marketState(2).toDouble 
+                    // msg.doubleArrayValue = (List(stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)).toArray
+                    sendMessage(i, msg)
+                // }) 
             })
             // foo.clear()
 
