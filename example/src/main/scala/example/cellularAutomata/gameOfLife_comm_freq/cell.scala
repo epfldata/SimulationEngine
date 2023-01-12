@@ -32,11 +32,11 @@ class Cell(var alive: Int, val cfreq: Int) extends Actor {
                 alive = 1
             }
 
-            connectedAgents.foreach(i => {
+            connectedAgentIds.foreach(i => {
               Range(0, cfreq).foreach(j => {
                 val msg = new Message()
                 msg.value = alive.toDouble
-                sendMessage(i.id, msg)
+                sendMessage(i, msg)
               })
             })
             waitRounds(1)
