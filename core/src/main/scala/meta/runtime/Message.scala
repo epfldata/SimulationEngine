@@ -16,7 +16,7 @@ class Message extends JsonSerializable {
 @JsonTypeName("doubleArrayMessage")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 class DoubleArrayMessage extends Message {
-  var doubleArrayValue: List[Double] = List()
+  var doubleArrayValue: Array[Double] = new Array[Double](6)
 }
 
 @JsonTypeName("timedMessage")

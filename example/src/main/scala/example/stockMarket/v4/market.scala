@@ -27,10 +27,14 @@ class Market() extends Actor {
             marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
             connectedAgentIds.foreach(i => {
                 val msg = new DoubleArrayMessage()
-                // foo.appendAll()
-                // foo.appendAll()
-                msg.doubleArrayValue = List(id.toDouble, stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)
-                sendMessage(i, msg)
+                    msg.doubleArrayValue(0) = id.toDouble
+                    msg.doubleArrayValue(1) = stockPrice
+                    msg.doubleArrayValue(2) = dividendPerShare
+                    msg.doubleArrayValue(3) = marketState(0).toDouble
+                    msg.doubleArrayValue(4) = marketState(1).toDouble
+                    msg.doubleArrayValue(5) = marketState(2).toDouble 
+                    // msg.doubleArrayValue = (List(stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)).toArray
+                    sendMessage(i, msg)
             })
             // foo.clear()
 
