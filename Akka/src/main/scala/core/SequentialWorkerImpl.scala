@@ -131,7 +131,8 @@ class Worker {
                                     proposeInterval = tmpProposeInterval
                                 }
                                 a._2.sendMessages.foreach(i => {
-                                    collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2) 
+                                    collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2.toList) 
+                                    // collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2) 
                                 })
                             })
                             // Deliver local messages to agents' mailboxes

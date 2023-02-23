@@ -39,7 +39,8 @@ class Container extends Actor {
     override def run(): Int = {
         messageListener()
         var localTurns: Int = 0
-        sendMessages = Map[Long, List[Message]]()
+        sendMessages.clear()
+        // sendMessages = Map[Long, List[Message]]()
 
         while (localTurns<kbound) {
             var passed: Int = 1
@@ -56,7 +57,8 @@ class Container extends Actor {
                     if (containedAgents.get(r._1).isDefined){
                         containedAgents.get(r._1).get.receivedMessages.addAll(r._2.asJava)
                     } else {
-                        sendMessages = sendMessages + (r._1 -> (sendMessages.getOrElse(r._1, List()) ::: r._2))
+                        // sendMessages = sendMessages + (r._1 -> (sendMessages.getOrElse(r._1, List()) ::: r._2))
+                        sendMessages.getOrElseUpdate(r._1, new ListBuffer[Message]()).appendAll(r._2)
                     }
                 })
             })
