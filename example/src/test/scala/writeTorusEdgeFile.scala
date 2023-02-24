@@ -20,6 +20,24 @@ object writeTorusEdgeFile {
  }  
 }
 
+object writeTorusEdgeFileGraphx {
+  def main(args: Array[String]): Unit = {
+   val width: Int = args(0).toInt
+   val height: Int = args(1).toInt
+   val radius: Int = 1
+
+   val pw = new PrintWriter(new FileOutputStream(new File(f"2DTorus_${width*height}_graphx.txt"),false))
+   for (i <- Range(0, width*height)){
+      val neighbors = Grid.Torus2D.getNeighborCells(width, height)(i, radius)
+      neighbors.foreach(j => {
+         pw.write(f"$i $j\n")
+         pw.flush()
+      })
+   }
+   pw.close()
+ }  
+}
+
 object writeTorusEdgeFileWithClock {
    def main(args: Array[String]): Unit = {
       val width: Int = args(0).toInt

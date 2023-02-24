@@ -27,6 +27,28 @@ object writeERMEdgeFile {
  }  
 }
 
+object writeERMEdgeFileGraphx {
+  def main(args: Array[String]): Unit = {
+   val p: Double = args(0).toDouble
+   val vertices: Int = args(1).toInt
+
+   val pw = new PrintWriter(new FileOutputStream(new File(f"ERM_${p}_${vertices}_graphx.txt"),false))
+   
+   val agentIds = Range(0, vertices)
+
+   agentIds.foreach(a => {
+      val neighbors = agentIds.filter(i => {
+         (i!=a) && (p > Random.nextDouble())
+      })
+      neighbors.foreach(n => {
+         pw.write(f"$a $n\n")
+         pw.flush()
+      })
+   })    
+   pw.close()
+ }  
+}
+
 object writeERMEdgeFileWithClock {
    def main(args: Array[String]): Unit = {
       val p: Double = args(0).toDouble
