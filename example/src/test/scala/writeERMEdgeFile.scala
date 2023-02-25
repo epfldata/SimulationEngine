@@ -34,9 +34,13 @@ object writeERMEdgeFileGraphx {
 
    val pw = new PrintWriter(new FileOutputStream(new File(f"ERM_${p}_${vertices}_graphx.txt"),false))
    
-   val agentIds = Range(0, vertices)
+   val clockId = 0
+   val agentIds = Range(1, vertices+1)
 
    agentIds.foreach(a => {
+      pw.write(f"$clockId $a\n")
+      pw.flush()
+      
       val neighbors = agentIds.filter(i => {
          (i!=a) && (p > Random.nextDouble())
       })

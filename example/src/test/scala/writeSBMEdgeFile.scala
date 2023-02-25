@@ -38,11 +38,17 @@ object writeSBMEdgeFileGraphx {
 
    val pw = new PrintWriter(new FileOutputStream(new File(f"SBM_${p}_${vertices}_graphx.txt"),false))
    
-   val agentIds = Range(0, vertices)
+   val clockId: Int = 0
+   val agentIds = Range(1, vertices+1)
 
    // Initialize it during the simulation
 
-    val verticesPerBlock: Int = (vertices / blocks).toInt
+   val verticesPerBlock: Int = (vertices / blocks).toInt
+   
+   agentIds.foreach(i => {
+      pw.write(f"$clockId $i\n")
+      pw.flush()
+   })
 
    // [vertex id, vertex value, [[dest id, edge value], [dest id, edge value], ...]]
    Range(0, blocks).foreach(i => {
