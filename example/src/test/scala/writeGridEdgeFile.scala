@@ -3,7 +3,7 @@ package example
 import java.io._
 import lib.Grid
 
-object writeTorusEdgeFile {
+object writeGridEdgeFile {
   def main(args: Array[String]): Unit = {
    val width: Int = args(0).toInt
    val height: Int = args(1).toInt
@@ -20,7 +20,7 @@ object writeTorusEdgeFile {
  }  
 }
 
-object writeTorusEdgeFileGraphx {
+object writeGridEdgeFileGraphx {
   def main(args: Array[String]): Unit = {
    val width: Int = args(0).toInt
    val height: Int = args(1).toInt
@@ -38,7 +38,7 @@ object writeTorusEdgeFileGraphx {
  }  
 }
 
-object writeTorusEdgeFileWithClock {
+object writeGridEdgeFileWithClock {
    def main(args: Array[String]): Unit = {
       val width: Int = args(0).toInt
       val height: Int = args(1).toInt
