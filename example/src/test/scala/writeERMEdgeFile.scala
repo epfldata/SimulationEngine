@@ -13,6 +13,9 @@ object writeERMEdgeFileGraphx {
    val clockId = 0
    val agentIds = Range(1, vertices+1)
 
+   pw.write(f"$clockId $clockId\n")
+   pw.flush()
+
    agentIds.foreach(a => {
       pw.write(f"$clockId $a\n")
       pw.flush()

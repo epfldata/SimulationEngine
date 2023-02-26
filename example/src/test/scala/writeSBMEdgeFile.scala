@@ -18,6 +18,7 @@ object writeSBMEdgeFileGraphx {
 
    val verticesPerBlock: Int = (vertices / blocks).toInt
    
+   pw.write(f"$clockId $clockId\n")
    agentIds.foreach(i => {
       pw.write(f"$clockId $i\n")
       pw.flush()
