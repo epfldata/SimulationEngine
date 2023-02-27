@@ -17,7 +17,7 @@ object EpidemicsGraphx {
 
     // Creates a SparkSession.
     val spark = new SparkConf().setMaster(f"local[${cores}]")
-    .setAppName("ERM")
+    .setAppName("Epidemics")
     .set("spark.driver.memory", "50g")
     .set("spark.driver.maxResultSize", "10g")
     .set("spark.executor.memory", "5g")
