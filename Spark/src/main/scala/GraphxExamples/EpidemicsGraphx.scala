@@ -129,7 +129,7 @@ object EpidemicsGraphx {
       List(age, symptomatic, health, vulnerability, daysInfected)
     })
 
-    val gol = graph.pregel(List(0.0), maxIterations = 200)(
+    val gol = graph.pregel(List(0.0), maxIterations = 50)(
       (id, state, receivedMsgs) => {
         val age: Int = state(0)
         val symptomatic: Int = state(1)
