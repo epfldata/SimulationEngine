@@ -87,8 +87,10 @@ object GameOfLifeV2Graphx {
         val aliveNeighbors = receivedMsgs.filter(i => i == 1).size
         if (alive==1 && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
           0
-        } else {
+        } else if (alive==0 && aliveNeighbors == 3){
           1
+        } else {
+          alive
         }}, // Vertex Program
       triplet => {  // Send Message
           Iterator((triplet.dstId, List(triplet.srcAttr)))
