@@ -18,9 +18,9 @@ object epidemic {
             }
 
             case 2 => {
-                // v2
+                // Use v5 as default comm.freq (message-passing)
                 val cfreq: Int = args(5).toInt
-                val agents = generated.example.epidemic.v2.InitData(population, p, isSBM, blocks, cfreq)
+                val agents = generated.example.epidemic.v5.InitData(population, p, isSBM, blocks, cfreq)
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
 
