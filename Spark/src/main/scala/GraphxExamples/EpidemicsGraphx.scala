@@ -14,6 +14,7 @@ object EpidemicsGraphx {
   def main(args: Array[String]): Unit = {
     val cores = args(0)
     val edgeListFile: String = args(1)
+    val cfreq: Int = args(2).toInt
 
     // Creates a SparkSession.
     val spark = new SparkConf().setMaster(f"local[${cores}]")
@@ -171,7 +172,7 @@ object EpidemicsGraphx {
         if (triplet.srcId == 0) {
           Iterator((triplet.dstId, List(0.0)))
         } else {
-          Iterator((triplet.dstId, List(infectiousness(health.toInt, symptomatic))))
+          Range(0, cfreq).map(i => (triplet.dstId, List(infectiousness(health.toInt, symptomatic)))).toIterator
         }
         },
       (a, b) => a ::: b // Merge Message

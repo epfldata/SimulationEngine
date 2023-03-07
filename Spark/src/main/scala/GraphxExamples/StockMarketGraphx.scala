@@ -14,6 +14,7 @@ object StockMarketGraphx {
   def main(args: Array[String]): Unit = {
     val cores = args(0)
     val edgeListFile: String = args(1)
+    val cfreq: Int = args(2).toInt
 
     // Creates a SparkSession.
     val spark = new SparkConf().setMaster(f"local[${cores}]")
@@ -235,10 +236,10 @@ object StockMarketGraphx {
       triplet => {  // Send Message
         if (triplet.srcId == 0) {
             // println("send msg from market " + triplet.srcAttr(1))
-            Iterator((triplet.dstId, List(triplet.srcAttr(1))))
+            Range(0, cfreq).map(i => (triplet.dstId, List(triplet.srcAttr(1)))).toIterator
         } else {
             // println("send msg from traders " + triplet.srcAttr(4)(6))
-            Iterator((triplet.dstId, List(List(triplet.srcAttr(4)(6)))))
+            Range(0, cfreq).map(i => (triplet.dstId, List(List(triplet.srcAttr(4)(6))))).toIterator
         }},
       (a, b) => a ::: b // Merge Message
     )
