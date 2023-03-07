@@ -57,6 +57,7 @@ object GameOfLifeV2Graphx {
   def main(args: Array[String]): Unit = {
     val cores = args(0)
     val edgeListFile: String = args(1)
+    val cfreq: Int = args(2).toInt
 
     // Creates a SparkSession.
     val spark = new SparkConf().setMaster(f"local[${cores}]")
@@ -93,7 +94,8 @@ object GameOfLifeV2Graphx {
           alive
         }}, // Vertex Program
       triplet => {  // Send Message
-          Iterator((triplet.dstId, List(triplet.srcAttr)))
+          Range(0, cfreq).map(_ => (triplet.dstId, List(triplet.srcAttr))).toIterator
+          // Iterator(Range(0, cfreq).map(i => (triplet.dstId, List(triplet.srcAttr))))
         },
       (a, b) => a ::: b // Merge Message
     )
