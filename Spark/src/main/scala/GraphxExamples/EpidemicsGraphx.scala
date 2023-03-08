@@ -15,6 +15,7 @@ object EpidemicsGraphx {
     val cores = args(0)
     val edgeListFile: String = args(1)
     val cfreq: Int = args(2).toInt
+    val interval: Int = args(3).toInt
 
     // Creates a SparkSession.
     val spark = new SparkConf().setMaster(f"local[${cores}]")
@@ -127,7 +128,8 @@ object EpidemicsGraphx {
       val health: Int = if (Random.nextInt(100)==0) 2 else 0
       val vulnerability: Int = if (age > 60) 1 else 0
       val daysInfected: Int = 0
-      List(age, symptomatic, health, vulnerability, daysInfected)
+      val idleCountDown: Int = interval
+      List(age, symptomatic, health, vulnerability, daysInfected, idleCountDown)
     })
 
     val gol = graph.pregel(List(0.0), maxIterations = 50)(
@@ -137,32 +139,38 @@ object EpidemicsGraphx {
         var health: Int = state(2)
         val vulnerability: Int = state(3)
         var daysInfected: Int = state(4)
+        var idleCountDown: Int = state(5)
 
         if (id != 0) {
-          if (health != Deceased) {
-            if ((health != Susceptible) && (health != Recover)) {
-                if (daysInfected == stateDuration(health)) {
-                    // health = 4
-                    health = change(health, vulnerability)
-                    daysInfected = 0
-                } else {
-                    daysInfected = daysInfected + 1
-                }
-            }
-
-            receivedMsgs.foreach(m => {
-              if (health==0) {
-                var risk: Double = m
-                if (age > 60) {
-                  risk = risk * 2
-                } 
-                if (risk > 1) {
-                  health = change(health, vulnerability)
-                }
+          if (idleCountDown > 1) {
+            idleCountDown -= 1
+          } else {
+            if (health != Deceased) {
+              if ((health != Susceptible) && (health != Recover)) {
+                  if (daysInfected == stateDuration(health)) {
+                      // health = 4
+                      health = change(health, vulnerability)
+                      daysInfected = 0
+                  } else {
+                      daysInfected = daysInfected + 1
+                  }
               }
-            })
+
+              receivedMsgs.foreach(m => {
+                if (health==0) {
+                  var risk: Double = m
+                  if (age > 60) {
+                    risk = risk * 2
+                  } 
+                  if (risk > 1) {
+                    health = change(health, vulnerability)
+                  }
+                }
+              })
+              idleCountDown = interval
+            }
           }
-          List(age, symptomatic, health, vulnerability, daysInfected)
+          List(age, symptomatic, health, vulnerability, daysInfected, idleCountDown)
         } else {
           state
         }}, // Vertex Program
@@ -172,9 +180,17 @@ object EpidemicsGraphx {
         if (triplet.srcId == 0) {
           Iterator((triplet.dstId, List(0.0)))
         } else {
-          Range(0, cfreq).map(i => (triplet.dstId, List(infectiousness(health.toInt, symptomatic)))).toIterator
+          val idleCountDown = triplet.srcAttr(5)
+          // Calculate infectiousness only once
+          val infectious = infectiousness(health.toInt, symptomatic)
+          // Only send out messages to others if not idle
+          if (idleCountDown <= 1) {
+            Range(0, cfreq).map(i => (triplet.dstId, List(infectious))).toIterator
+          } else {
+            Iterator.empty
+          }
         }
-        },
+      },
       (a, b) => a ::: b // Merge Message
     )
     gol.vertices.collect
