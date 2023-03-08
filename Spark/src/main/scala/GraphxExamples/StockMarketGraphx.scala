@@ -15,6 +15,7 @@ object StockMarketGraphx {
     val cores = args(0)
     val edgeListFile: String = args(1)
     val cfreq: Int = args(2).toInt
+    val interval: Int = args(3).toInt
 
     // Creates a SparkSession.
     val spark = new SparkConf().setMaster(f"local[${cores}]")
@@ -134,7 +135,8 @@ object StockMarketGraphx {
       val timer = List(0.0)   // for calculating past average
       val traderState = List(1000, 1, 1000.0)
       val rules = List(0, 0, 0, 0, 0.0, Random.nextInt(5), 0)   // 5 rules and their respective strength, initially 0; most recent rule
-      List(stock_timeseries, marketState, timer, traderState, rules)
+      val idleCountDown = List(interval.toDouble)
+      List(stock_timeseries, marketState, timer, traderState, rules, idleCountDown)
     })
 
     val stockMarket = graph.pregel(List(List(0, 1000.0, 1000, 0, 0, 0, 0)), maxIterations = 200)(
@@ -158,40 +160,47 @@ object StockMarketGraphx {
         var lastRule: Int = rules(5).toInt
         var nextAction: Int = rules(6).toInt
 
+        var idleCountDown: Double = state(5).head
+
         timer += 1 
         if (id != 0) {  // trader 
             cash = cash * (1 + interestRate)
-            receivedMsgs.foreach(m => {
-                val ms: List[Double] = m.asInstanceOf[List[Double]]
-                val m_dividendPerShare = ms(0)
-                val m_lastAvg = ms(1)
-                val m_currentPrice = ms(2)
-                val m_dividendIncrease = ms(3)
-                val m_recent10AvgInc = ms(4)
-                val m_recent50AvgInc = ms(5)    
-                val m_recent100AvgInc = ms(6)    
-                val previousWealth = estimatedWealth
-                // Update the number of shares based on the new dividend
-                shares = shares * (1 + m_dividendPerShare)
-                // Calculate the new estimated wealth 
-                estimatedWealth = cash + shares * m_currentPrice
-                // Update the strength of prev action based on the feedback of the wealth changes
-                if (estimatedWealth > previousWealth) {
-                    rules(lastRule) += 1
-                } else if (estimatedWealth < previousWealth) {
-                    rules(lastRule) -= 1
-                }
-                // Select the rule with the highest strength for the next action 
-                val nextRule = rules.zipWithIndex.toList.sortBy(x => x._1).head._2
-                // Obtain the action based on the rule 
-                val x = evalRule(nextRule, m_currentPrice, ms, cash, shares)
-                // Update lastRule with the recently selected rule 
-                rules(5) = nextRule
-                // Update the last action, cash, and shares
-                rules(6) = x._1
-                cash = x._2
-                shares = x._3 
-            })
+            if (idleCountDown > 1) {
+                idleCountDown -= 1
+            } else {
+                receivedMsgs.foreach(m => {
+                    val ms: List[Double] = m.asInstanceOf[List[Double]]
+                    val m_dividendPerShare = ms(0)
+                    val m_lastAvg = ms(1)
+                    val m_currentPrice = ms(2)
+                    val m_dividendIncrease = ms(3)
+                    val m_recent10AvgInc = ms(4)
+                    val m_recent50AvgInc = ms(5)    
+                    val m_recent100AvgInc = ms(6)    
+                    val previousWealth = estimatedWealth
+                    // Update the number of shares based on the new dividend
+                    shares = shares * (1 + m_dividendPerShare)
+                    // Calculate the new estimated wealth 
+                    estimatedWealth = cash + shares * m_currentPrice
+                    // Update the strength of prev action based on the feedback of the wealth changes
+                    if (estimatedWealth > previousWealth) {
+                        rules(lastRule) += 1
+                    } else if (estimatedWealth < previousWealth) {
+                        rules(lastRule) -= 1
+                    }
+                    // Select the rule with the highest strength for the next action 
+                    val nextRule = rules.zipWithIndex.toList.sortBy(x => x._1).head._2
+                    // Obtain the action based on the rule 
+                    val x = evalRule(nextRule, m_currentPrice, ms, cash, shares)
+                    // Update lastRule with the recently selected rule 
+                    rules(5) = nextRule
+                    // Update the last action, cash, and shares
+                    rules(6) = x._1
+                    cash = x._2
+                    shares = x._3 
+                })
+                idleCountDown = interval
+            }
         } else {    // market
             var buyOrders: Int = 0
             var sellOrders: Int = 0
@@ -231,15 +240,20 @@ object StockMarketGraphx {
             recent100AvgInc = update(100, timer, lastAvg, stock_timeseries)
         }
         List(stock_timeseries, List(lastDividend, lastAvg, currentPrice, dividendIncrease, recent10AvgInc, recent50AvgInc, recent100AvgInc), List(timer), 
-        List(cash, shares, estimatedWealth), rules.toList)
+        List(cash, shares, estimatedWealth), rules.toList, List(idleCountDown))
       }, // Vertex Program
       triplet => {  // Send Message
         if (triplet.srcId == 0) {
             // println("send msg from market " + triplet.srcAttr(1))
             Range(0, cfreq).map(i => (triplet.dstId, List(triplet.srcAttr(1)))).toIterator
         } else {
+            val idleCountDown: Double = triplet.srcAttr(5).head
+            if (idleCountDown <= 1) {
+                Range(0, cfreq).map(i => (triplet.dstId, List(List(triplet.srcAttr(4)(6))))).toIterator
+            } else {
+                Iterator.empty
+            }
             // println("send msg from traders " + triplet.srcAttr(4)(6))
-            Range(0, cfreq).map(i => (triplet.dstId, List(List(triplet.srcAttr(4)(6))))).toIterator
         }},
       (a, b) => a ::: b // Merge Message
     )
