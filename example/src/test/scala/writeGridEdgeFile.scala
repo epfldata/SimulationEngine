@@ -38,6 +38,32 @@ object writeGridEdgeFileGraphx {
  }  
 }
 
+object writeGridEdgeFileWithClockGraphx {
+   def main(args: Array[String]): Unit = {
+      val width: Int = args(0).toInt
+      val height: Int = args(1).toInt
+      val radius: Int = 1
+      val clockId: Int = 0
+
+      val pw = new PrintWriter(new FileOutputStream(new File(f"2DTorus_${width*height}_clock_graphx.txt"),false))
+      
+      pw.write(f"$clockId $clockId\n")
+      Range(0, width*height+1).foreach(i => {
+         pw.write(f"$clockId $i\n")
+         pw.flush()
+      })
+      
+      for (i <- Range(0, width*height)){
+         val neighbors = Grid.Torus2D.getNeighborCells(width, height)(i, radius)
+         neighbors.foreach(n => {
+            pw.write(f"${i+1} ${n+1}\n")
+            pw.flush()
+         })
+      }
+      pw.close()
+   }
+}
+
 object writeGridEdgeFileWithClock {
    def main(args: Array[String]): Unit = {
       val width: Int = args(0).toInt
