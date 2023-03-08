@@ -1,5 +1,6 @@
 package example
-package stockMarket.v4
+package stockMarket
+package v4
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
@@ -27,14 +28,14 @@ class Market() extends Actor {
             marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
             connectedAgentIds.foreach(i => {
                 val msg = new DoubleArrayMessage()
-                    msg.doubleArrayValue(0) = id.toDouble
-                    msg.doubleArrayValue(1) = stockPrice
-                    msg.doubleArrayValue(2) = dividendPerShare
-                    msg.doubleArrayValue(3) = marketState(0).toDouble
-                    msg.doubleArrayValue(4) = marketState(1).toDouble
-                    msg.doubleArrayValue(5) = marketState(2).toDouble 
-                    // msg.doubleArrayValue = (List(stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)).toArray
-                    sendMessage(i, msg)
+                msg.doubleArrayValue(0) = id.toDouble
+                msg.doubleArrayValue(1) = stockPrice
+                msg.doubleArrayValue(2) = dividendPerShare
+                msg.doubleArrayValue(3) = marketState(0).toDouble
+                msg.doubleArrayValue(4) = marketState(1).toDouble
+                msg.doubleArrayValue(5) = marketState(2).toDouble 
+                // msg.doubleArrayValue = (List(stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)).toArray
+                sendMessage(i, msg)
             })
             // foo.clear()
 
@@ -53,7 +54,7 @@ class Market() extends Actor {
             }
             stockPrice = stock.priceAdjustment(buyOrders, sellOrders)
             dividendPerShare = stock.getDividend()
-            println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
+            // println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
             buyOrders = 0
             sellOrders = 0
         }

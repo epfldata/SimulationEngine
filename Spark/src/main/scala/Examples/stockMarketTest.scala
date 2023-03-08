@@ -16,9 +16,9 @@ object stockMarket {
             }
 
             case 2 => {
-                // v2, cfreq
+                // v4, cfreq
                 val cfreq: Int = args(4).toInt
-                val agents = generated.example.stockMarket.v2.InitData(totalMarkets, tradersPerMarket, cfreq)
+                val agents = generated.example.stockMarket.v4.InitData(totalMarkets, tradersPerMarket, cfreq)
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
 

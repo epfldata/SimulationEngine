@@ -1,5 +1,5 @@
 package example
-package stockMarket.v3
+package stockMarket
 
 
 class WealthManagement(var initWealth: Double, val interestRate: Double) {

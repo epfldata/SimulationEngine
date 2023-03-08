@@ -1,5 +1,6 @@
 package example
-package stockMarket.v3
+package stockMarket
+package v3
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._

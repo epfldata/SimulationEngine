@@ -1,5 +1,5 @@
 package example
-package stockMarket.v1
+package stockMarket
 
 class conditionActionRule {
     var strength: Double = 0

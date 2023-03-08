@@ -1,5 +1,5 @@
 package example
-package stockMarket.v3
+package stockMarket
 
 // Artificial economic life: a simple model of a stockmarket
 class Stock(var priceAdjustmentFactor: Double) {
@@ -76,8 +76,11 @@ class Stock(var priceAdjustmentFactor: Double) {
     // p(t+1) = p(t) * (1 + z*(buy - sell))
     // z*(buy - sell) << 1
     def priceAdjustment(buy: Int, sell: Int): Double = {
-        assert(currentPrice>=0)
-        currentPrice * (1 + priceAdjustmentFactor*(buy - sell))
+        if(currentPrice<=0){
+            100
+        } else {
+            currentPrice * (1 + priceAdjustmentFactor*(buy - sell))
+        }
     }
 
     // Model the dividend stream (pay in cash) using a stochastic process
