@@ -39,12 +39,20 @@ class Person(val age: Int, val cfreq: Int) extends Actor {
                 // Meet with contacts 
                 if (health == SIRModel.Infectious) {
                     connectedAgentIds.foreach(i => {
-                        Range(0, cfreq).foreach(j => {
-                            val selfRisk = SIRModel.infectiousness(health, symptomatic)
+                        // calculate infectiousness only once
+                        val selfRisk = SIRModel.infectiousness(health, symptomatic)
+                        // default 
+                        // Range(0, cfreq).foreach(j => {
+                        //     val msg = new Message()
+                        //     msg.value = selfRisk
+                        //     sendMessage(i, msg)
+                        // })
+                        // batching
+                        sendMessages.getOrElseUpdate(i, new ListBuffer[Message]()).appendAll(Range(0, cfreq).map(i => {
                             val msg = new Message()
                             msg.value = selfRisk
-                            sendMessage(i, msg)
-                        })
+                            msg
+                        }))
                     })
                 }
 
