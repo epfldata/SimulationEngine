@@ -8,7 +8,7 @@ import scala.collection.mutable.{Map => MutMap}
 import meta.runtime.{Message, DoubleArrayMessage}
 
 @lift 
-class Market() extends Actor {
+class Market(val cfreq: Int) extends Actor {
 
     val stock: Stock = new Stock(0.01)
     private var futures: List[Future[Int]] = null
@@ -24,7 +24,7 @@ class Market() extends Actor {
         while (true) {
             marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
             connectedAgentIds.foreach(i => {
-                // Range(0, cfreq).foreach(j => {
+                Range(0, cfreq).foreach(j => {
                     val msg = new DoubleArrayMessage()
                     msg.doubleArrayValue(0) = id.toDouble
                     msg.doubleArrayValue(1) = stockPrice
@@ -34,7 +34,7 @@ class Market() extends Actor {
                     msg.doubleArrayValue(5) = marketState(2).toDouble 
                     // msg.doubleArrayValue = (List(stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)).toArray
                     sendMessage(i, msg)
-                // }) 
+                })
             })
             // foo.clear()
 
@@ -53,7 +53,7 @@ class Market() extends Actor {
             }
             stockPrice = stock.priceAdjustment(buyOrders, sellOrders)
             dividendPerShare = stock.getDividend()
-            println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
+            // println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
             buyOrders = 0
             sellOrders = 0
         }

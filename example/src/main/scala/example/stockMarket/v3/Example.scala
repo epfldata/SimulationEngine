@@ -6,7 +6,7 @@ import scala.collection.mutable.ListBuffer
 object Example extends App {
     
     val liftedMain = meta.classLifting.liteLift {
-        def apply(totalMarkets: Int, tradersPerMarket: Int): List[Actor] = {
+        def apply(totalMarkets: Int, tradersPerMarket: Int, cfreq: Int): List[Actor] = {
             val allAgents: ListBuffer[Actor] = new ListBuffer[Actor]
             val initialWealth: Double = 1000
             val interestRate: Double = 0.001
@@ -14,7 +14,7 @@ object Example extends App {
             Range(0, totalMarkets).foreach(i => {
                 val traders = (1 to tradersPerMarket).map(x => new Trader(initialWealth, interestRate))
                 allAgents.appendAll(traders)
-                val market = new Market()
+                val market = new Market(cfreq)
                 market.connectedAgentIds = traders.map(i => i.id.toInt).toList
                 allAgents.append(market)
             })
