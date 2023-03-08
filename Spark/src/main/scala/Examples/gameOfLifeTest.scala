@@ -26,6 +26,14 @@ object gameOfLife {
                 val agents = generated.example.gameOfLifeCommFreq.InitData(width, height, cfreq)
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
+
+            
+            case 4 => {
+                // computation interval 
+                val cint: Int = args(4).toInt
+                val agents = generated.example.gameOfLifeCompInterval.InitData(width, height, cint)
+                val snapshot1 = API.Simulate(agents, totalTurns)
+            }
         }
     }
 }

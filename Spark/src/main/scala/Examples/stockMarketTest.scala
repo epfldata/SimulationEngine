@@ -16,16 +16,16 @@ object stockMarket {
             }
 
             case 2 => {
-                // v4, cfreq
+                // v3, cfreq
                 val cfreq: Int = args(4).toInt
-                val agents = generated.example.stockMarket.v4.InitData(totalMarkets, tradersPerMarket, cfreq)
+                val agents = generated.example.stockMarket.v3.InitData(totalMarkets, tradersPerMarket, cfreq)
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
 
             case 3 => {
-                // v3, cfreq
-                val cfreq: Int = args(4).toInt
-                val agents = generated.example.stockMarket.v3.InitData(totalMarkets, tradersPerMarket, cfreq)
+                // v5, interval
+                val interval: Int = args(4).toInt
+                val agents = generated.example.stockMarket.v5.InitData(totalMarkets, tradersPerMarket, interval)
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
         }

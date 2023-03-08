@@ -88,10 +88,12 @@ object Simulate {
 
     val updatedActors: List[Actor] = actorRDD.collect.toList
     val snapshot = SimulationSnapshot(updatedActors, collectedMessages.flatMap(i => i._2).toList)
-    val average = time_seq.sum / time_seq.length
-    val stdev = Math.sqrt(time_seq.map(i => (i-average)*(i-average)).sum/time_seq.length)
-    println(f"Time sequence ${time_seq}")
-    println(f"Average time per round ${average} StdDev ${stdev}")
+    // val average = time_seq.sum / time_seq.length
+    val average = time_seq.sum / totalTurn
+    // val stdev = Math.sqrt(time_seq.map(i => (i-average)*(i-average)).sum/time_seq.length)
+    // println(f"Time sequence ${time_seq}")
+    println(f"Average time per round ${average}")
+    // println(f"Average time per round ${average} StdDev ${stdev}")
     sc.stop()
     snapshot
   }

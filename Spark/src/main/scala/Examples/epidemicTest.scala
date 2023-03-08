@@ -29,6 +29,13 @@ object epidemic {
                 val agents = generated.example.epidemic.v3.InitData(population, p, isSBM, blocks)
                 val snapshot1 = API.Simulate(agents, totalTurns)
             }
+
+            case 4 => {
+                // comp. interval
+                val interval: Int = args(5).toInt
+                val agents = generated.example.epidemic.v6.InitData(population, p, isSBM, blocks, interval)
+                val snapshot1 = API.Simulate(agents, totalTurns)
+            }
         }
     }
 }

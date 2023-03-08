@@ -1,5 +1,5 @@
 package example
-package epidemic.v5
+package epidemic.v6
 
 import scala.util.Random
 import meta.classLifting.SpecialInstructions._
@@ -8,7 +8,7 @@ import meta.runtime.Message
 import example.epidemic._
 
 @lift
-class Person(val age: Int, val cfreq: Int) extends Actor {
+class Person(val age: Int, val interval: Int) extends Actor {
     val symptomatic: Boolean = Random.nextBoolean()
     var health: Int = 0
     var vulnerability: Int = 0
@@ -38,21 +38,12 @@ class Person(val age: Int, val cfreq: Int) extends Actor {
 
                 // Meet with contacts 
                 if (health == SIRModel.Infectious) {
-                    // calculate infectiousness only once
                     val selfRisk = SIRModel.infectiousness(health, symptomatic)
                     connectedAgentIds.foreach(i => {
-                        // default 
-                        // Range(0, cfreq).foreach(j => {
-                        //     val msg = new Message()
-                        //     msg.value = selfRisk
-                        //     sendMessage(i, msg)
-                        // })
-                        // batching
-                        sendMessages.getOrElseUpdate(i, new ListBuffer[Message]()).appendAll(Range(0, cfreq).map(i => {
-                            val msg = new Message()
-                            msg.value = selfRisk
-                            msg
-                        }))
+                        // calculate infectiousness only once
+                        val msg = new Message()
+                        msg.value = selfRisk
+                        sendMessage(i, msg)
                     })
                 }
 
@@ -66,7 +57,7 @@ class Person(val age: Int, val cfreq: Int) extends Actor {
                     }
                 }
             } 
-            waitRounds(1)
+            waitRounds(interval)
         }
     }
 }
