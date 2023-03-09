@@ -14,6 +14,8 @@ object EpidemicsGraphx {
   import simulation.spark.API.Simulate.sc
 
   def main(args: Array[String]): Unit = {
+    val t1 = System.currentTimeMillis()
+    val totalIterations: Int = 50
     val edgeListFile: String = args(0)
     val cfreq: Int = args(1).toInt
     val interval: Int = args(2).toInt
@@ -118,7 +120,7 @@ object EpidemicsGraphx {
       List(age, symptomatic, health, vulnerability, daysInfected, idleCountDown)
     })
 
-    val vertexProgram = graph.pregel(List(0.0), maxIterations = 50)(
+    val vertexProgram = graph.pregel(List(0.0), maxIterations = totalIterations)(
       (id, state, receivedMsgs) => {
         val age: Int = state(0)
         val symptomatic: Int = state(1)
@@ -180,6 +182,8 @@ object EpidemicsGraphx {
       (a, b) => a ::: b // Merge Message
     )
     vertexProgram.vertices.collect
+    println(f"Average time per iteration ${(System.currentTimeMillis() - t1)/totalIterations}")
+
     // $example off$
     sc.stop()
   }

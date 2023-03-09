@@ -14,6 +14,8 @@ object StockMarketGraphx {
   import simulation.spark.API.Simulate.sc
 
   def main(args: Array[String]): Unit = {
+    val t1 = System.currentTimeMillis()
+    val totalIterations: Int = 200
     val edgeListFile: String = args(0)
     val cfreq: Int = args(1).toInt
     val interval: Int = args(2).toInt
@@ -125,7 +127,7 @@ object StockMarketGraphx {
       List(stock_timeseries, marketState, timer, traderState, rules, idleCountDown)
     })
 
-    val stockMarket = graph.pregel(List(List(0, 1000.0, 1000, 0, 0, 0, 0)), maxIterations = 200)(
+    val stockMarket = graph.pregel(List(List(0, 1000.0, 1000, 0, 0, 0, 0)), maxIterations = totalIterations)(
       (id, state, receivedMsgs) => {
         var stock_timeseries = state(0)
         var marketState = state(1)
@@ -246,6 +248,8 @@ object StockMarketGraphx {
     stockMarket.vertices.collect
     // println(gol.vertices.collect.mkString("\n"))
     // $example off$
+    println(f"Average time per iteration ${(System.currentTimeMillis() - t1)/totalIterations}")
+
     sc.stop()
   }
 }

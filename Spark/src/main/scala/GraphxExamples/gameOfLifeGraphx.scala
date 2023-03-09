@@ -12,15 +12,17 @@ object GameOfLifeGraphx {
   import simulation.spark.API.Simulate.sc
 
   def main(args: Array[String]): Unit = {
+    val t1 = System.currentTimeMillis()
+    val totalIterations: Int = 200
     val edgeListFile: String = args(0)
-
+    
     // $example on$
     // A graph with edge attributes containing distances
     val graph: Graph[Int, Int] = GraphLoader.edgeListFile(sc, edgeListFile)
     // Initialize the graph such that each vertex is either alive or dead.
     val initialGraph = graph.mapVertices((id, _) =>
         if (Random.nextBoolean()){1} else {0})
-    val gol = initialGraph.pregel(0, maxIterations = 200)(
+    val gol = initialGraph.pregel(0, maxIterations = totalIterations)(
       (id, alive, aliveNeighbors) => {
         if (alive==1 && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
             0
@@ -34,6 +36,7 @@ object GameOfLifeGraphx {
     )
     gol.vertices.collect
     // println(gol.vertices.collect.mkString("\n"))
+    println(f"Average time per iteration ${(System.currentTimeMillis() - t1)/totalIterations}")
     // $example off$
     sc.stop()
   }
@@ -41,10 +44,12 @@ object GameOfLifeGraphx {
 
 object GameOfLifeV2Graphx { 
   import simulation.spark.API.Simulate.sc
-
+  
   def main(args: Array[String]): Unit = {
     val edgeListFile: String = args(0)
     val cfreq: Int = args(1).toInt
+    val totalIterations: Int = 200
+    val t1 = System.currentTimeMillis()
 
     // $example on$
     // Msg(A): List[Int]
@@ -54,7 +59,7 @@ object GameOfLifeV2Graphx {
     val graph: Graph[Int, List[Int]] = GraphLoader.edgeListFile(sc, edgeListFile).mapVertices((id, _) => if (Random.nextBoolean()){ 1 } else { 0 }).mapEdges(e => List(e.attr))
     // Initialize the graph such that each vertex is either alive or dead.
     // val initialGraph = graph.mapVertices((id, _) => if (Random.nextBoolean()){1} else {0})
-    val gol = graph.pregel(List[Int](0), maxIterations = 200)(
+    val gol = graph.pregel(List[Int](0), maxIterations = totalIterations)(
       (id, alive, receivedMsgs) => {
         // println("Total received messages " + receivedMsgs.size)
         val aliveNeighbors = receivedMsgs.filter(i => i == 1).size
@@ -74,6 +79,7 @@ object GameOfLifeV2Graphx {
     gol.vertices.collect
     // println(gol.vertices.collect.mkString("\n"))
     // $example off$
+    println(f"Average time per iteration ${(System.currentTimeMillis() - t1)/totalIterations}")
     sc.stop()
   }
 }
@@ -86,6 +92,8 @@ object GameOfLifeV3Graphx {
     val edgeListFile: String = args(0)
     val cfreq: Int = args(1).toInt
     val interval: Int = args(2).toInt
+    val totalIterations: Int = 200
+    val t1 = System.currentTimeMillis()
 
     // $example on$
     // Msg(A): List[Int]
@@ -97,7 +105,7 @@ object GameOfLifeV3Graphx {
       .mapEdges(e => List(0))
     // Initialize the graph such that each vertex is either alive or dead.
     // val initialGraph = graph.mapVertices((id, _) => if (Random.nextBoolean()){1} else {0})
-    val gol = graph.pregel(List[Int](0), maxIterations = 200)(
+    val gol = graph.pregel(List[Int](0), maxIterations = totalIterations)(
       (id, state, receivedMsgs) => {
           var alive: Int = state(0)
           var idleCountDown: Int = state(1)
@@ -135,6 +143,7 @@ object GameOfLifeV3Graphx {
     gol.vertices.collect
     // println(gol.vertices.collect.mkString("\n"))
     // $example off$
+    println(f"Average time per iteration ${(System.currentTimeMillis() - t1)/totalIterations}")
     sc.stop()
   }
 }
