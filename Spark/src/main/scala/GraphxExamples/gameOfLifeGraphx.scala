@@ -9,24 +9,10 @@ import org.apache.spark.rdd.RDD
 import scala.util.Random
 
 object GameOfLifeGraphx { 
-  def main(args: Array[String]): Unit = {
-    val cores = args(0)
-    val edgeListFile: String = args(1)
+  import simulation.spark.API.Simulate.sc
 
-    // Creates a SparkSession.
-    val spark = new SparkConf().setMaster(f"local[${cores}]")
-    .setAppName("GameOfLife")
-    .set("spark.driver.memory", "50g")
-    .set("spark.driver.maxResultSize", "10g")
-    .set("spark.executor.memory", "5g")
-    .set("spark.executor.cores", "48")
-    .set("spark.default.parallelism", "96")
-    .set("spark.hadoop.dfs.replication", "1")
-    // .set("spark.serializer", "akka.serialization.jackson.JacksonJsonSerializer")
-    .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val sc = new SparkContext(spark)
-    sc.setLogLevel("ERROR")
-    sc.setCheckpointDir("checkpoint/")
+  def main(args: Array[String]): Unit = {
+    val edgeListFile: String = args(0)
 
     // $example on$
     // A graph with edge attributes containing distances
@@ -54,25 +40,11 @@ object GameOfLifeGraphx {
 }
 
 object GameOfLifeV2Graphx { 
-  def main(args: Array[String]): Unit = {
-    val cores = args(0)
-    val edgeListFile: String = args(1)
-    val cfreq: Int = args(2).toInt
+  import simulation.spark.API.Simulate.sc
 
-    // Creates a SparkSession.
-    val spark = new SparkConf().setMaster(f"local[${cores}]")
-    .setAppName("GameOfLife2")
-    .set("spark.driver.memory", "50g")
-    .set("spark.driver.maxResultSize", "10g")
-    .set("spark.executor.memory", "5g")
-    .set("spark.executor.cores", "48")
-    .set("spark.default.parallelism", "96")
-    .set("spark.hadoop.dfs.replication", "1")
-    // .set("spark.serializer", "akka.serialization.jackson.JacksonJsonSerializer")
-    .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val sc = new SparkContext(spark)
-    sc.setLogLevel("ERROR")
-    sc.setCheckpointDir("checkpoint/")
+  def main(args: Array[String]): Unit = {
+    val edgeListFile: String = args(0)
+    val cfreq: Int = args(1).toInt
 
     // $example on$
     // Msg(A): List[Int]
@@ -108,26 +80,12 @@ object GameOfLifeV2Graphx {
 
 // With a clock vertex to track idle interval
 object GameOfLifeV3Graphx { 
-  def main(args: Array[String]): Unit = {
-    val cores = args(0)
-    val edgeListFile: String = args(1)
-    val cfreq: Int = args(2).toInt
-    val interval: Int = args(3).toInt
+  import simulation.spark.API.Simulate.sc
 
-    // Creates a SparkSession.
-    val spark = new SparkConf().setMaster(f"local[${cores}]")
-    .setAppName("GameOfLife3")
-    .set("spark.driver.memory", "50g")
-    .set("spark.driver.maxResultSize", "10g")
-    .set("spark.executor.memory", "5g")
-    .set("spark.executor.cores", "48")
-    .set("spark.default.parallelism", "96")
-    .set("spark.hadoop.dfs.replication", "1")
-    // .set("spark.serializer", "akka.serialization.jackson.JacksonJsonSerializer")
-    .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val sc = new SparkContext(spark)
-    sc.setLogLevel("ERROR")
-    sc.setCheckpointDir("checkpoint/")
+  def main(args: Array[String]): Unit = {
+    val edgeListFile: String = args(0)
+    val cfreq: Int = args(1).toInt
+    val interval: Int = args(2).toInt
 
     // $example on$
     // Msg(A): List[Int]

@@ -11,26 +11,12 @@ import scala.math.{min, max}
 import breeze.stats.distributions.Gamma
 
 object StockMarketGraphx { 
-  def main(args: Array[String]): Unit = {
-    val cores = args(0)
-    val edgeListFile: String = args(1)
-    val cfreq: Int = args(2).toInt
-    val interval: Int = args(3).toInt
+  import simulation.spark.API.Simulate.sc
 
-    // Creates a SparkSession.
-    val spark = new SparkConf().setMaster(f"local[${cores}]")
-    .setAppName("StockMarket")
-    .set("spark.driver.memory", "50g")
-    .set("spark.driver.maxResultSize", "10g")
-    .set("spark.executor.memory", "5g")
-    .set("spark.executor.cores", "48")
-    .set("spark.default.parallelism", "96")
-    .set("spark.hadoop.dfs.replication", "1")
-    // .set("spark.serializer", "akka.serialization.jackson.JacksonJsonSerializer")
-    .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val sc = new SparkContext(spark)
-    sc.setLogLevel("ERROR")
-    sc.setCheckpointDir("checkpoint/")
+  def main(args: Array[String]): Unit = {
+    val edgeListFile: String = args(0)
+    val cfreq: Int = args(1).toInt
+    val interval: Int = args(2).toInt
 
     val priceAdjustmentFactor = 0.01
     val interestRate = 0.0001
@@ -249,7 +235,7 @@ object StockMarketGraphx {
         } else {
             val idleCountDown: Double = triplet.srcAttr(5).head
             if (idleCountDown <= 1) {
-                Range(0, cfreq).map(i => (triplet.dstId, List(List(triplet.srcAttr(4)(6))))).toIterator
+                Iterator((triplet.dstId, List(List(triplet.srcAttr(4)(6)))))
             } else {
                 Iterator.empty
             }

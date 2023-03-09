@@ -11,26 +11,12 @@ import scala.math.{min, max}
 import breeze.stats.distributions.Gamma
 
 object EpidemicsGraphx { 
-  def main(args: Array[String]): Unit = {
-    val cores = args(0)
-    val edgeListFile: String = args(1)
-    val cfreq: Int = args(2).toInt
-    val interval: Int = args(3).toInt
+  import simulation.spark.API.Simulate.sc
 
-    // Creates a SparkSession.
-    val spark = new SparkConf().setMaster(f"local[${cores}]")
-    .setAppName("Epidemics")
-    .set("spark.driver.memory", "50g")
-    .set("spark.driver.maxResultSize", "10g")
-    .set("spark.executor.memory", "5g")
-    .set("spark.executor.cores", "48")
-    .set("spark.default.parallelism", "96")
-    .set("spark.hadoop.dfs.replication", "1")
-    // .set("spark.serializer", "akka.serialization.jackson.JacksonJsonSerializer")
-    .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val sc = new SparkContext(spark)
-    sc.setLogLevel("ERROR")
-    sc.setCheckpointDir("checkpoint/")
+  def main(args: Array[String]): Unit = {
+    val edgeListFile: String = args(0)
+    val cfreq: Int = args(1).toInt
+    val interval: Int = args(2).toInt
 
     // Encodings (health states)
     val Susceptible: Int = 0
@@ -132,7 +118,7 @@ object EpidemicsGraphx {
       List(age, symptomatic, health, vulnerability, daysInfected, idleCountDown)
     })
 
-    val gol = graph.pregel(List(0.0), maxIterations = 50)(
+    val vertexProgram = graph.pregel(List(0.0), maxIterations = 50)(
       (id, state, receivedMsgs) => {
         val age: Int = state(0)
         val symptomatic: Int = state(1)
@@ -193,8 +179,7 @@ object EpidemicsGraphx {
       },
       (a, b) => a ::: b // Merge Message
     )
-    gol.vertices.collect
-    // println(gol.vertices.collect.mkString("\n"))
+    vertexProgram.vertices.collect
     // $example off$
     sc.stop()
   }
