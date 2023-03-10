@@ -12,7 +12,6 @@ import meta.runtime.{Message, DoubleArrayMessage}
 class Market(val interval: Int) extends Actor {
 
     val stock: Stock = new Stock(0.01)
-    private var futures: List[Future[Int]] = null
     private var marketState: List[Int] = null
     // Initial price
     var stockPrice: Double = 100
@@ -23,22 +22,8 @@ class Market(val interval: Int) extends Actor {
     def main(): Unit = {
         stock.priceAdjustmentFactor = 0.1 / connectedAgentIds.size
         while (true) {
-            marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
-            connectedAgentIds.foreach(i => {
-                val msg = new DoubleArrayMessage()
-                msg.doubleArrayValue(0) = id.toDouble
-                msg.doubleArrayValue(1) = stockPrice
-                msg.doubleArrayValue(2) = dividendPerShare
-                msg.doubleArrayValue(3) = marketState(0).toDouble
-                msg.doubleArrayValue(4) = marketState(1).toDouble
-                msg.doubleArrayValue(5) = marketState(2).toDouble 
-                // msg.doubleArrayValue = (List(stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)).toArray
-                sendMessage(i, msg)
-            })
-            // foo.clear()
-
-            waitRounds(2+interval)
-            
+            buyOrders = 0
+            sellOrders = 0
             var m = receiveMessage()
             while (m.isDefined){
                 var ans = m.get.value
@@ -53,8 +38,19 @@ class Market(val interval: Int) extends Actor {
             stockPrice = stock.priceAdjustment(buyOrders, sellOrders)
             dividendPerShare = stock.getDividend()
             // println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
-            buyOrders = 0
-            sellOrders = 0
+            marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
+            connectedAgentIds.foreach(i => {
+                val msg = new DoubleArrayMessage()
+                msg.doubleArrayValue(0) = id.toDouble
+                msg.doubleArrayValue(1) = stockPrice
+                msg.doubleArrayValue(2) = dividendPerShare
+                msg.doubleArrayValue(3) = marketState(0).toDouble
+                msg.doubleArrayValue(4) = marketState(1).toDouble
+                msg.doubleArrayValue(5) = marketState(2).toDouble 
+                // msg.doubleArrayValue = (List(stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)).toArray
+                sendMessage(i, msg)
+            })
+            waitRounds(interval)
         }
     }
 }

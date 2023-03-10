@@ -12,7 +12,6 @@ import meta.runtime.{Message, DoubleArrayMessage}
 class Market() extends Actor {
 
     val stock: Stock = new Stock(0.01)
-    private var futures: List[Future[Int]] = null
     private var marketState: List[Int] = null
     // Initial price
     var stockPrice: Double = 100
@@ -25,6 +24,24 @@ class Market() extends Actor {
     def main(): Unit = {
         stock.priceAdjustmentFactor = 0.1 / connectedAgentIds.size
         while (true) {
+            buyOrders = 0
+            sellOrders = 0
+
+            var m = receiveMessage()
+            while (m.isDefined){
+                var ans = m.get.value
+                if (ans == 1) {
+                    buyOrders = buyOrders + 1
+                } 
+                if (ans == 2) {
+                    sellOrders = sellOrders + 1
+                }
+                m = receiveMessage()
+            }
+
+            stockPrice = stock.priceAdjustment(buyOrders, sellOrders)
+            dividendPerShare = stock.getDividend()
+
             marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
             connectedAgentIds.foreach(i => {
                 val msg = new DoubleArrayMessage()
@@ -37,26 +54,8 @@ class Market() extends Actor {
                 // msg.doubleArrayValue = (List(stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)).toArray
                 sendMessage(i, msg)
             })
-            // foo.clear()
-
-            waitRounds(2)
-            
-            var m = receiveMessage()
-            while (m.isDefined){
-                var ans = m.get.value
-                if (ans == 1) {
-                    buyOrders = buyOrders + 1
-                } 
-                if (ans == 2) {
-                    sellOrders = sellOrders + 1
-                }
-                m = receiveMessage()
-            }
-            stockPrice = stock.priceAdjustment(buyOrders, sellOrders)
-            dividendPerShare = stock.getDividend()
+            waitRounds(1)
             // println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
-            buyOrders = 0
-            sellOrders = 0
         }
     }
 }
