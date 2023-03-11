@@ -39,15 +39,17 @@ class Market(val cfreq: Int) extends Actor {
             dividendPerShare = stock.getDividend()
             // println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
             marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
+            
+            val msg = new DoubleArrayMessage()
+            msg.doubleArrayValue(0) = id.toDouble
+            msg.doubleArrayValue(1) = stockPrice
+            msg.doubleArrayValue(2) = dividendPerShare
+            msg.doubleArrayValue(3) = marketState(0).toDouble
+            msg.doubleArrayValue(4) = marketState(1).toDouble
+            msg.doubleArrayValue(5) = marketState(2).toDouble 
+
             connectedAgentIds.foreach(i => {
                 Range(0, cfreq).foreach(j => {
-                    val msg = new DoubleArrayMessage()
-                    msg.doubleArrayValue(0) = id.toDouble
-                    msg.doubleArrayValue(1) = stockPrice
-                    msg.doubleArrayValue(2) = dividendPerShare
-                    msg.doubleArrayValue(3) = marketState(0).toDouble
-                    msg.doubleArrayValue(4) = marketState(1).toDouble
-                    msg.doubleArrayValue(5) = marketState(2).toDouble 
                     // msg.doubleArrayValue = (List(stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)).toArray
                     sendMessage(i, msg)
                 })
