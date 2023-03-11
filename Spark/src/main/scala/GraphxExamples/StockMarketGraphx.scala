@@ -237,7 +237,8 @@ object StockMarketGraphx {
         } else {
             val idleCountDown: Double = triplet.srcAttr(5).head
             if (idleCountDown <= 1) {
-                Iterator((triplet.dstId, List(List(triplet.srcAttr(4)(6)))))
+                Range(0, cfreq).map(i => (triplet.dstId, List(List(triplet.srcAttr(4)(6))))).toIterator
+                // Iterator((triplet.dstId, List(List(triplet.srcAttr(4)(6)))))
             } else {
                 Iterator.empty
             }
