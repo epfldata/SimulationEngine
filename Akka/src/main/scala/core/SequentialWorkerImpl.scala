@@ -31,7 +31,7 @@ class Worker {
     var start: Long = 0
     var end: Long = 0
     
-    // private var logicalClock: Int = 0
+    private var logicalClock: Int = 0
     private var acceptedInterval: Int = 0
     private var proposeInterval: Int = Int.MaxValue
     private var availability: Int = 1
@@ -160,7 +160,7 @@ class Worker {
                     sendToRef = replyTo      
                     this.acceptedInterval = acceptedInterval    
                     this.availability = availability
-                    // logicalClock += acceptedInterval       
+                    logicalClock += acceptedInterval       
                     if (receivedWorkers.keys().size == totalWorkers-1){
                         ctx.self ! Start()
                     } 
@@ -170,9 +170,9 @@ class Worker {
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms, propose ${proposeInterval}")
                     sendToRef ! SendTo(workerId, proposeInterval)
-                    // if (simulation.akka.API.Simulate.log != null){
-                    //     simulation.akka.API.Simulate.log.add[Actor](logicalClock, local_sims.map(_._2.SimClone()))
-                    // }
+                    if (simulation.akka.API.Simulate.log != null){
+                        simulation.akka.API.Simulate.log.add[Actor](logicalClock, local_sims.map(_._2.SimClone()))
+                    }
                     completedAgents = 0
                     Behaviors.same
 
