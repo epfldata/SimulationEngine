@@ -26,10 +26,9 @@ object epidemic {
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
             }
 
-            case 2 => {
-                // v5, cfreq with message-passing
-                val cfreq: Int = args(6).toInt
-                val agents = generated.example.epidemic.v5.InitData(population, p, isSBM, blocks, cfreq)
+            case 2=> {
+                // Generalized double-buffering, with delayed processing 
+                val agents = generated.example.epidemic.v2.InitData(population, p, isSBM, blocks)
                 API.OptimizationConfig.mergedWorker()
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
             }
@@ -53,6 +52,21 @@ object epidemic {
                     API.OptimizationConfig.mergedWorker()
                     API.Simulate.machine(mid, agents, totalTurns)
                 }
+            }
+
+            case 5 => {
+                // cfreq
+                val cfreq: Int = args(6).toInt
+                val agents = generated.example.epidemic.v5.InitData(population, p, isSBM, blocks, cfreq)
+                API.OptimizationConfig.mergedWorker()
+                val snapshot1 = API.Simulate(agents, totalTurns, role, port)
+            }
+
+            case 6 => {
+                // Messaging, concurrent
+                val agents = generated.example.epidemic.v3.InitData(population, p, isSBM, blocks)
+                API.OptimizationConfig.concurrentWorker()
+                val snapshot1 = API.Simulate(agents, totalTurns, role, port)
             }
         }
     }
