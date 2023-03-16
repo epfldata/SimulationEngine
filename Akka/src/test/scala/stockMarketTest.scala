@@ -54,6 +54,29 @@ object stockMarket {
                     API.Simulate.machine(mid, agents, totalTurns)
                 }
             }
+            
+            case 5 => {
+                // v3
+                val cfreq: Int = args(4).toInt
+                val agents = generated.example.stockMarket.v3.InitData(totalMarkets, tradersPerMarket, cfreq)
+                API.OptimizationConfig.concurrentWorker()
+                val snapshot1 = API.Simulate(agents, totalTurns, role, port)
+            }
+
+                        
+            case 6 => {
+                // generalized double-buffering
+                val agents = generated.example.stockMarket.v6.InitData(totalMarkets, tradersPerMarket)
+                API.OptimizationConfig.mergedWorker()
+                val snapshot1 = API.Simulate(agents, totalTurns, role, port)
+            }
+
+            case 7 => {
+                // same semantics as generalized double-buffering, but do not allow dma
+                val agents = generated.example.stockMarket.v7.InitData(totalMarkets, tradersPerMarket)
+                API.OptimizationConfig.mergedWorker()
+                val snapshot1 = API.Simulate(agents, totalTurns, role, port)
+            }
         }
     }
 }
