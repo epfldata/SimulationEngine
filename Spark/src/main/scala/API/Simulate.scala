@@ -50,6 +50,7 @@ object Simulate {
 
     var t1: Long = 0
     var t2: Long = 0
+    var t3: Long = 0
 
     var totalTime: Long = 0
     var elapsedRound: Int = 0
@@ -74,6 +75,8 @@ object Simulate {
 
         // println(collectedMessages)
         val dMessages = sc.broadcast(collectedMessages)
+        t2 = System.currentTimeMillis()
+        // println(f"Iteration ${currentTurn} send new messages takes ${t2-t1} ms")
 
         actorRDD = actorRDD.map(x => {
           x.receivedMessages.addAll(dMessages.value.getOrElse(x.id, Buffer[Message]()).asJava)
@@ -82,12 +85,12 @@ object Simulate {
           x
         })
         actorRDD.cache()
-        elapsedRound = actorRDD.collect().map(i => i.proposeInterval).min
+        elapsedRound = actorRDD.map(i => i.proposeInterval).collect.min
         currentTurn += elapsedRound
-        // actorRDD.collect()
-        // currentTurn += 1
-        t2 = System.currentTimeMillis()
-        time_seq = time_seq ::: List(t2-t1)
+        t3 = System.currentTimeMillis()
+        // println(f"Iteration ${currentTurn} update vertices takes ${t3-t2} ms")
+
+        time_seq = time_seq ::: List(t3-t1)
     }
 
     val updatedActors: List[Actor] = actorRDD.collect.toList
