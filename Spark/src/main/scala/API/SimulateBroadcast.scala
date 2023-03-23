@@ -12,7 +12,7 @@ import org.apache.spark.HashPartitioner
 
 import collection.JavaConverters._
 
-object Simulate { 
+object SimulateBroadcast { 
     val deployOption = Option(System.getProperty("sparkDeploy")).getOrElse("local")
     
     @transient lazy val conf: SparkConf = new SparkConf()
