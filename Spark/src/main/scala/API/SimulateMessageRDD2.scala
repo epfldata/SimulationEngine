@@ -13,8 +13,8 @@ import org.apache.spark.storage.StorageLevel
 
 import collection.JavaConverters._
 
-// Use both actor RDD and message RDD
-object SimulateMessageRDD { 
+// Use two actor RDDs 
+object SimulateMessageRDD2 { 
     val deployOption = Option(System.getProperty("sparkDeploy")).getOrElse("local")
     
     @transient lazy val conf: SparkConf = new SparkConf()
@@ -49,29 +49,38 @@ object SimulateMessageRDD {
     while (currentTurn < totalTurn ) {
         println(meta.runtime.util.displayTime(currentTurn))
 
-        if (currentTurn % 70 == 0) {
-          actorRDD.checkpoint()
-          messageRDD.checkpoint()
-        }
+        // if (currentTurn % 70 == 0) {
+        //   actorRDD.checkpoint()
+        //   messageRDD.checkpoint()
+        //   // updatedActorRDD.checkpoint()
+        // }
 
         t1 = System.currentTimeMillis()
 
-        actorRDD = actorRDD.leftOuterJoin(messageRDD).mapValues(x => {
+        val updatedActorRDD = actorRDD
+        // .map(i => {println(currentTurn); i})
+        .leftOuterJoin(messageRDD).mapValues(x => {
           x._1.receivedMessages.addAll(x._2.getOrElse(Buffer[Message]()).asJava)
           x._1.time += elapsedRound
           x._1.run()
           x._1
-        })
-        actorRDD.persist(StorageLevel.MEMORY_ONLY_SER)
+        }).persist(StorageLevel.MEMORY_ONLY)
+
+        elapsedRound = updatedActorRDD.map(x => x._2.proposeInterval).collect().min
+
         messageRDD.unpersist()
-        messageRDD = actorRDD.flatMap(x => x._2.sendMessages.map(m => (m._1, m._2.toList))).reduceByKey((m1, m2) => m1 ::: m2)
-        elapsedRound = actorRDD.map(x => x._2.proposeInterval).collect().min
-        currentTurn += elapsedRound
-        messageRDD.persist(StorageLevel.MEMORY_ONLY_SER)
+        actorRDD.unpersist()
+        messageRDD = updatedActorRDD.flatMap(x => {
+          // println(x._2.sendMessages.size); 
+          x._2.sendMessages.map(m => (m._1, m._2.toList))}).reduceByKey((m1, m2) => m1 ::: m2).persist(StorageLevel.MEMORY_ONLY)
+        
         messageRDD.count()
+
+        actorRDD = updatedActorRDD
+        currentTurn += elapsedRound
         t2 = System.currentTimeMillis()
-        time_seq = time_seq ::: List(t2-t1)
         println(f"Iteration ${currentTurn} takes ${t2-t1} ms")
+        time_seq = time_seq ::: List(t2-t1)
     }
 
     val updatedActors: List[Actor] = actorRDD.map(i => i._2).collect.toList
