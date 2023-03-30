@@ -1,11 +1,6 @@
-This folder contains examples for the simulation. To run an example, type the following instructions in sbt shell. ("sbt >>" stands for sbt shell. Please substitute *mainClass* and *yourTest* with appropriate arguments.)
+This folder shows how to define agent-based simulations using our DSL. Since the agent definitions contain special instructions, they need to be compiled before running on our system. To compile an example, type the following instructions in sbt shell. ("sbt >>" stands for sbt shell. Please substitute *mainClass* and *yourTest* with appropriate arguments.)
 ```
 sbt >> project example 
 sbt >> runMain *mainClass*
 ```
-Each example generates files in folder `economic_simulations/generated/src/main/scala/*exampleName*`. 
-You can add the corresponding test for your example in `economic_simulations/generated/test/scala/*yourTest*`
-```
-sbt >> project genExample 
-sbt >> testOnly *yourTest*
-```
+The generated files can be found in folder `generated/src/main/scala/*exampleName*`. To run a simulation, please execute the generated code using one of our backends, such as `Akka` or `Base`. See instructions in the corresponding directory.
