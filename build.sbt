@@ -49,13 +49,11 @@ lazy val sparkSettings = if (sparkDeployOption == "local") {
   Seq(
   libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion, 
   libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion, 
-  libraryDependencies += "org.apache.spark" %% "spark-graphx" % sparkVersion, 
 )} else { 
   Seq(
   // Use following config with "provided" when assemblying a uber jar
   libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
   libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided", 
-  libraryDependencies += "org.apache.spark" %% "spark-graphx" % sparkVersion % "provided", 
 )}
 
 // Enable graph drawing when debugging

@@ -12,16 +12,13 @@ import org.apache.spark.HashPartitioner
 
 import collection.JavaConverters._
 
+// Use broadcast variable
 object Simulate { 
     val deployOption = Option(System.getProperty("sparkDeploy")).getOrElse("local")
     
     @transient lazy val conf: SparkConf = new SparkConf()
       .setAppName("TickTalk")
-      .set("spark.driver.memory", "50g")
       .set("spark.driver.maxResultSize", "10g")
-      .set("spark.executor.memory", "5g")
-      .set("spark.executor.cores", "48")
-      .set("spark.default.parallelism", "96")
       .set("spark.hadoop.dfs.replication", "1")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       // .set("spark.driver.allowMultipleContexts", "true")
@@ -73,10 +70,8 @@ object Simulate {
           (l: List[Message], message: List[Message]) => message ::: l,
           (l1: List[Message], l2: List[Message]) => l1 ::: l2).collectAsMap()
 
-        // println(collectedMessages)
         val dMessages = sc.broadcast(collectedMessages)
         t2 = System.currentTimeMillis()
-        // println(f"Iteration ${currentTurn} send new messages takes ${t2-t1} ms")
 
         actorRDD = actorRDD.map(x => {
           x.receivedMessages.addAll(dMessages.value.getOrElse(x.id, Buffer[Message]()).asJava)
@@ -88,14 +83,13 @@ object Simulate {
         elapsedRound = actorRDD.map(i => i.proposeInterval).collect.min
         currentTurn += elapsedRound
         t3 = System.currentTimeMillis()
-        // println(f"Iteration ${currentTurn} update vertices takes ${t3-t2} ms")
+        println(f"Iteration ${currentTurn} takes ${t3-t1} ms")
 
         time_seq = time_seq ::: List(t3-t1)
     }
 
     val updatedActors: List[Actor] = actorRDD.collect.toList
     val snapshot = SimulationSnapshot(updatedActors, collectedMessages.flatMap(i => i._2).toList)
-    // val average = time_seq.sum / time_seq.length
     val average = time_seq.sum / totalTurn
     // val stdev = Math.sqrt(time_seq.map(i => (i-average)*(i-average)).sum/time_seq.length)
     // println(f"Time sequence ${time_seq}")
