@@ -1,6 +1,5 @@
 package example
 package stockMarket
-package v1
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
@@ -21,7 +20,7 @@ class Market(val traders: List[Trader]) extends Actor {
         stock.priceAdjustmentFactor = 0.1 / traders.size
         while (true) {
             marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
-            futures = traders.map(x => asyncCall(x.action(stockPrice, dividendPerShare, marketState), 1))
+            futures = traders.map(x => asyncCall(() => x.action(stockPrice, dividendPerShare, marketState), 1))
             while (!futures.forall(x => x.isCompleted)){
                 // println("Market agent wait!")
                 waitAndReply(1)

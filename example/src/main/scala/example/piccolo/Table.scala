@@ -5,8 +5,6 @@ import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import scala.collection.mutable.{Map => MutMap}
 
-import squid.lib.transparencyPropagating
-
 // Represent shared mutable states as partitioned tables
 // All table entries in a given partition are stored on the same machine
 @lift
@@ -49,8 +47,7 @@ class Table(val partition: MutMap[Int, Double]) extends Actor {
     def main(): Unit = {
         while (true) {
             println("Distributed page rank table " + id + " partition " + partition)
-            handleRPC()
-            waitRounds(1)
+            waitAndReply(1)
         }
     }
 }
