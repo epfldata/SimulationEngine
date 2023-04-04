@@ -16,6 +16,7 @@ class Cell(var alive: Int) extends Actor {
 
     var aliveNeighbors: Int = 0
 
+    @transparencyPropagating
     def tell(state: Int): Int = {
       aliveNeighbors = aliveNeighbors + state
       aliveNeighbors
@@ -24,7 +25,7 @@ class Cell(var alive: Int) extends Actor {
     def main(): Unit = {
         while(true) {
             connectedAgents.map(x => 
-              x.asInstanceOf[Cell]).foreach(v => callAndForget(() => v.tell(alive), 1))
+              x.asInstanceOf[Cell]).foreach(v => callAndForget(v.tell(alive), 1))
             aliveNeighbors = 0
             waitAndReply(1)
             if (alive==1 && (aliveNeighbors > 3 || aliveNeighbors < 2)) {
