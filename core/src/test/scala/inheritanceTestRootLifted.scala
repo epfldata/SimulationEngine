@@ -16,7 +16,7 @@ import org.scalatest.FlatSpec
 class Vehicle() extends Actor {
     var price: Int = 20
     var load: Int = 10
-    val licensePlate: Int = 0
+    private val licensePlate: Int = 0
 
     private val donot_copy: Int = 12
     private val another_private_var: List[Double] = List(1.2, 1.4)
@@ -46,7 +46,7 @@ class Vehicle() extends Actor {
 
 @lift
 class ShortDistanceTransport() extends Vehicle {
-    val licensePlace: Int = 800
+    // val licensePlate: Int = 800
 
     private val donot_copy: Double = 521
     // price = 15

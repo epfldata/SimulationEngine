@@ -11,37 +11,36 @@ import scala.util.Random
 import squid.lib.transparencyPropagating
 
 @lift
-class SenderWithBound(val r: ReceiverForBound) extends Actor {
+class Sender(val r: Receiver) extends Actor {
 
     def main(): Unit = {
         while (true){
-            asyncCall(() => r.rpc1(), 5)
-            asyncCall(r.rpc2, 5)
-            callAndForget(r.rpc3, 5)
+            asyncCall(() => r.rpc1(), 1)
+            asyncCall(r.rpc2, 2)
+            callAndForget(r.rpc3, 3)
             waitRounds(1)
         }
     }
 }
 
 @lift
-class ReceiverForBound() extends Actor {
-    var counter: Int = 0
+class Receiver() extends Actor {
+    var counter1: Int = 0
+    var counter2: Int = 0
+    var counter3: Int = 0
 
     def rpc1(): Unit = {
-        counter = counter + 1
-        println("Received a message for rpc1 at time " + time)
+        counter1 = counter1 + 1
     }
 
     @transparencyPropagating
     def rpc2(): Unit = {
-      counter = counter + 1
-      println("Received a message for rpc2 at time " + time)
+      counter2 = counter2 + 1
     }
 
     @transparencyPropagating
     def rpc3(): Unit = {
-      counter = counter + 1
-      println("Received a message for rpc3 at time " + time)
+      counter3 = counter3 + 1
     }
 
 
@@ -56,12 +55,12 @@ class MessageLatencyTest extends FlatSpec {
     import meta.deep.IR.Predef._
 
     "The message latency example" should "compile" in {
-        val liftSender: ClassWithObject[SenderWithBound] = SenderWithBound.reflect(IR)
-        val liftReceiver: ClassWithObject[ReceiverForBound] = ReceiverForBound.reflect(IR)
+        val liftSender: ClassWithObject[Sender] = Sender.reflect(IR)
+        val liftReceiver: ClassWithObject[Receiver] = Receiver.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
             def apply(): List[Actor] = {
-                val r: ReceiverForBound = new ReceiverForBound()
-                val s: SenderWithBound = new SenderWithBound(r)
+                val r: Receiver = new Receiver()
+                val s: Sender = new Sender(r)
                 List(r, s)
             }
         }
