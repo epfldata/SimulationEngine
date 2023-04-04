@@ -11,9 +11,14 @@ trait SimulationTimeseries[T, R] {
   def reducer(x: Iterable[T]): R
   
   // worker proposes collected data from agents
-  def add(round: Int, partial_reduced: R): Unit = synchronized {
-    intermediateLog.update(round, partial_reduced :: intermediateLog.getOrElse(round, List[R]()))
+  def add(round: Int, agents: Iterable[Actor]): Unit = synchronized {
+    intermediateLog.update(round, (reducer(agents.map(a => mapper(a)))) :: intermediateLog.getOrElse(round, List[R]()))
   }
+
+  // // worker proposes collected data from agents
+  // def add(round: Int, partial_reduced: R): Unit = synchronized {
+  //   intermediateLog.update(round, partial_reduced :: intermediateLog.getOrElse(round, List[R]()))
+  // }
 
   // driver reduces collected data from workers
   def reduce(round: Int): Unit 
