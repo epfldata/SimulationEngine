@@ -173,7 +173,8 @@ class CreateCode(initCode: String,
     val handleMsg: String = if (methodCases.isEmpty()) ""  else 
     s"""
   override def handleRPC(): Unit = {
-    val messages = scheduledRPCRequests.remove(time)
+    val messages = scheduledRPCRequests.get(time)
+    scheduledRPCRequests = scheduledRPCRequests - time
     if (messages.isDefined){
       for (m <- messages.get){
         val args = m.argss.flatten

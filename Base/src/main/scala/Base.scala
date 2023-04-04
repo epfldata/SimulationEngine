@@ -38,7 +38,7 @@ class Base(var actors: List[Actor], val totalRound: Int) {
         }).min
         collect()
         actors.filterNot(_.deleted).foreach(a => {
-          a.receivedMessages.addAll(a.proxyIds.flatMap(id => collectedMessages.getOrElse(id, Buffer())).asJava)
+          a.receivedMessages :::= (a.proxyIds.flatMap(id => collectedMessages.getOrElse(id, Buffer())))
         })
         currentRound += elapsedRound
         collectedMessages.clear()

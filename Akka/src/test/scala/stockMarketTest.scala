@@ -9,7 +9,7 @@ object stockMarket {
         val mode: Int = args(3).toInt
         var role: String = "Standalone"
         var port: Int = 25251
-        if (args.size > 5) {
+        if (args.size > 4) {
             role = args(4)
             if (role == "Driver") {
                 port = 25251
@@ -76,6 +76,19 @@ object stockMarket {
                 val agents = generated.example.stockMarket.v7.InitData(totalMarkets, tradersPerMarket)
                 API.OptimizationConfig.mergedWorker()
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
+            }
+
+            case 4 => {
+                // v4
+                if (role == "Driver") {
+                    API.Simulate.driver(totalTurns)
+                } else if (role.startsWith("Machine-")){
+                    val mid = role.stripPrefix("Machine-").toInt
+                    val totalMachines = args(5).toInt
+                    val agents = generated.example.stockMarket.v4.InitData(tradersPerMarket, mid, totalMachines)
+                    API.OptimizationConfig.mergedWorker()
+                    API.Simulate.machine(mid, agents, totalTurns)
+                }
             }
         }
     }

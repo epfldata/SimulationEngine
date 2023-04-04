@@ -11,26 +11,9 @@ import org.apache.spark.RangePartitioner
 import org.apache.spark.HashPartitioner
 
 import collection.JavaConverters._
+import SparkGlobal._
 
-// Use broadcast variable
-object Simulate { 
-    val deployOption = Option(System.getProperty("sparkDeploy")).getOrElse("local")
-    
-    @transient lazy val conf: SparkConf = new SparkConf()
-      .setAppName("TickTalk")
-      .set("spark.driver.maxResultSize", "10g")
-      .set("spark.hadoop.dfs.replication", "1")
-      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-      // .set("spark.driver.allowMultipleContexts", "true")
-    
-    if (deployOption == "local") {
-      conf.setMaster("local[*]")
-    } 
-
-    conf.registerKryoClasses(Array(classOf[meta.runtime.Message]))
-    @transient lazy val sc: SparkContext = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-    sc.setCheckpointDir("checkpoint/")
+object Simulate extends Serializable { 
 
   def apply(actors: List[Actor], totalTurn: Int): SimulationSnapshot = {
 
@@ -58,9 +41,9 @@ object Simulate {
     while (currentTurn < totalTurn ) {
         println(meta.runtime.util.displayTime(currentTurn))
 
-        if (currentTurn % 70 == 0) {
-          actorRDD.checkpoint()
-        }
+        // if (currentTurn % 70 == 0) {
+        //   actorRDD.checkpoint()
+        // }
 
         t1 = System.currentTimeMillis()
 
@@ -74,7 +57,7 @@ object Simulate {
         t2 = System.currentTimeMillis()
 
         actorRDD = actorRDD.map(x => {
-          x.receivedMessages.addAll(dMessages.value.getOrElse(x.id, Buffer[Message]()).asJava)
+          x.receivedMessages :::= (dMessages.value.getOrElse(x.id, List[Message]()))
           x.time += elapsedRound
           x.run()
           x

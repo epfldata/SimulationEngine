@@ -102,7 +102,8 @@ class Worker {
                     ctx.log.debug(f"Worker ${workerId} receives ${messages.size} messages from worker ${wid}")
                     receivedWorkers.computeIfAbsent(wid, x => {
                         for (m <- messages) {
-                            local_sims(m._1).receivedMessages.addAll(m._2)
+                            // local_sims(m._1).receivedMessages.addAll(m._2)
+                            local_sims(m._1).receivedMessages :::= m._2
                         }
                         0
                     })
@@ -138,7 +139,8 @@ class Worker {
                             })
                             // Deliver local messages to agents' mailboxes
                             collectedMessages.filterKeys(x => local_sims.get(x).isDefined).foreach(i => {
-                                local_sims(i._1).receivedMessages.addAll(collectedMessages.remove(i._1).get)
+                                // local_sims(i._1).receivedMessages.addAll(collectedMessages.remove(i._1).get)
+                                local_sims(i._1).receivedMessages :::= collectedMessages.remove(i._1).get
                             })
                             acceptedInterval = proposeInterval
                             localRounds += proposeInterval
