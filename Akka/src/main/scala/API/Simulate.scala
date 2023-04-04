@@ -8,11 +8,6 @@ import scala.concurrent.duration._
 import akka.actor.typed.ActorSystem
 
 object Simulate {
-    // right now need to manually change the type of timeseries for deforestation
-    // defined in Akka/src/main/scala/API/CustomSchema.scala
-    var log = FullTimeseries    
-    // var log = GoLQ3Timeseries
-
     private var stoppedAgents = List[Actor]()
 
     var lastWords: List[Message] = List[Message]()

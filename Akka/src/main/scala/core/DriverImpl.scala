@@ -24,7 +24,7 @@ class Driver {
 
     private var acceptedInterval: Int = 0
     private var availability: Int = simulation.akka.API.OptimizationConfig.availability
-    private var timeseriesController = simulation.akka.API.Simulate.log
+    private var timeseriesSchema = simulation.akka.API.OptimizationConfig.timeseries
 
     var start: Long = 0
     var end: Long = 0
@@ -92,8 +92,8 @@ class Driver {
                                     }
                                 }
                                 
-                                if (timeseriesController != null) {
-                                    timeseriesController.reduce(currentTurn)
+                                if (timeseriesSchema.isDefined) {
+                                    timeseriesSchema.get.reduce(currentTurn)
                                 }
 
                                 acceptedInterval = tmpProposeInterval 

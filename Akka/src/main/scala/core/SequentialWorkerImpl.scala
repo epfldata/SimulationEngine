@@ -38,7 +38,7 @@ class Worker {
 
     private var completedAgents: Int = 0
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
-    lazy val timeseriesControllerStub = simulation.akka.API.Simulate.log
+    lazy val timeseriesSchema = simulation.akka.API.OptimizationConfig.timeseries
 
     def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
         local_sims = sims.map(x => (x.id, x)).toMap
@@ -172,15 +172,9 @@ class Worker {
                 case AgentsCompleted() =>
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms, propose ${proposeInterval}")
-                    if (timeseriesControllerStub != null){
-                        timeseriesControllerStub.add(logicalClock, timeseriesControllerStub.reducer(
-                            local_sims.map(s => s._2).map(x => timeseriesControllerStub.mapper(x.SimClone()))))
-                        // q1
-                        // simulation.akka.API.Simulate.log.add[Int](logicalClock, Iterable(local_sims.filter(i => i._2.asInstanceOf[generated.example.gameOfLife.Cell].alive==1).size))
-                        // q3
-                        // simulation.akka.API.Simulate.log.add[Actor](logicalClock, local_sims.filter(i => i._2.asInstanceOf[generated.example.gameOfLife.Cell].alive==1).map(_._2.SimClone()))
-                        // time series
-                        // simulation.akka.API.Simulate.log.add[Actor](logicalClock, local_sims.map(_._2.SimClone()))
+                    if (timeseriesSchema.isDefined){
+                        // timeseriesSchema.get.add(logicalClock, timeseriesSchema.get.reducer(local_sims.map(s => s._2).map(x => timeseriesSchema.get.mapper(x.SimClone()))))
+                        timeseriesSchema.get.add(logicalClock, local_sims.map(s => s._2).map(_.SimClone()))
                     }
 
                     sendToRef ! SendTo(workerId, proposeInterval)
