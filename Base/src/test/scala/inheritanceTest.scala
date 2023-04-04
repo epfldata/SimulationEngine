@@ -1,17 +1,18 @@
 package simulation.base
 package test
 
-import meta.API._
+import API._
 import org.scalatest.Suites
 import org.scalatest.{DoNotDiscover, FunSuite}
 
-@DoNotDiscover
+class InheritanceTest extends Suites (new InheritanceRootLifted, new InheritanceRootNonlifted)
+
 class InheritanceRootNonlifted extends FunSuite{
   // Messages are processed randomly, so both lists are possible.
   class Fixture {
     val agents = generated.core.test.inheritance.InitData()
     val totalRounds: Int = 5
-    val finalAgents = (new Base(agents, totalRounds)).run().sims
+    val finalAgents = Simulate(agents, totalRounds).sims.toList
   }
 
   def fixture = new Fixture
@@ -31,13 +32,12 @@ class InheritanceRootNonlifted extends FunSuite{
   }
 }
 
-@DoNotDiscover
 class InheritanceRootLifted extends FunSuite{
   // Messages are processed randomly, so both lists are possible.
   class Fixture {
     val agents = generated.core.test.inheritance2.InitData()
     val totalRounds: Int = 5
-    val finalAgents = (new Base(agents, totalRounds)).run().sims.map(_.asInstanceOf[generated.core.test.inheritance2.Vehicle])
+    val finalAgents = Simulate(agents, totalRounds).sims.map(_.asInstanceOf[generated.core.test.inheritance2.Vehicle]).toList
   }
 
   def fixture = new Fixture
@@ -56,8 +56,8 @@ class InheritanceRootLifted extends FunSuite{
     // van
     assert(f.finalAgents(3).price==20)
     assert(f.finalAgents(3).load==10)
-
-    assert(f.finalAgents(4).asInstanceOf[generated.core.test.inheritance2.CommunicatingVehicle].neighborPrices==List(20, 25, 20, 20))
+    // message takes 1 round to arrive, hence price for shortDistanceTransport has the old value 23
+    assert(f.finalAgents(4).asInstanceOf[generated.core.test.inheritance2.CommunicatingVehicle].neighborPrices==List(20, 23, 20, 20))
   }
 
   test("Private attributes in parent classes are preserved in the generated code") {
@@ -91,5 +91,3 @@ class InheritanceRootLifted extends FunSuite{
   }
 }
 
-@DoNotDiscover
-class InheritanceTest extends Suites (new InheritanceRootLifted, new InheritanceRootNonlifted)

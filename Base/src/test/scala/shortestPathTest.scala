@@ -1,23 +1,15 @@
 package simulation.base
 package test
 
-import meta.classLifting.SpecialInstructions._
-import squid.quasi.lift
-import meta.deep.IR.TopLevel.ClassWithObject
-import meta.deep.IR
-import meta.runtime.{Actor}
-import meta.API._
+import API._
 import org.scalatest.FlatSpec
 
 class shortestPathTest extends FlatSpec {
-    import meta.deep.IR.Predef._
 
     val totalVertices: Int = 50
-    val totalRounds: Int = 50
-
-    f"The single source shortest path algorithm over a linked list with ${totalVertices} vertices" should f"update the distance of all vertices in ${totalRounds} rounds" in {
+    f"The single source shortest path algorithm over a linked list with ${totalVertices} vertices" should f"update the distance of all vertices in ${totalVertices} rounds" in {
         val agents = generated.core.test.shortestPath.InitData()
-        val snapshot1 = new Base(agents, 50).run()
+        val snapshot1 = Simulate(agents, totalVertices)
         assert(snapshot1.sims.map(i => i.asInstanceOf[generated.core.test.shortestPath.Vertex].dist).toSet == Range(0, totalVertices).toSet)
     }
 }
