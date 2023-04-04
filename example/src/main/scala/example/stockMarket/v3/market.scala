@@ -1,5 +1,6 @@
 package example
-package stockMarket.v3
+package stockMarket
+package v3
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
@@ -8,10 +9,9 @@ import scala.collection.mutable.{Map => MutMap}
 import meta.runtime.{Message, DoubleArrayMessage}
 
 @lift 
-class Market() extends Actor {
+class Market(val cfreq: Int) extends Actor {
 
     val stock: Stock = new Stock(0.01)
-    private var futures: List[Future[Int]] = null
     private var marketState: List[Int] = null
     // Initial price
     var stockPrice: Double = 100
@@ -19,23 +19,11 @@ class Market() extends Actor {
     var buyOrders: Int = 0
     var sellOrders: Int = 0
 
-    // val foo: ListBuffer[Double] = new ListBuffer[Double]()
-
     def main(): Unit = {
         stock.priceAdjustmentFactor = 0.1 / connectedAgentIds.size
         while (true) {
-            marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
-            connectedAgentIds.foreach(i => {
-                val msg = new DoubleArrayMessage()
-                // foo.appendAll()
-                // foo.appendAll()
-                msg.doubleArrayValue = List(id.toDouble, stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)
-                sendMessage(i, msg)
-            })
-            // foo.clear()
-
-            waitRounds(2)
-            
+            buyOrders = 0
+            sellOrders = 0
             var m = receiveMessage()
             while (m.isDefined){
                 var ans = m.get.value
@@ -49,9 +37,24 @@ class Market() extends Actor {
             }
             stockPrice = stock.priceAdjustment(buyOrders, sellOrders)
             dividendPerShare = stock.getDividend()
-            println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
-            buyOrders = 0
-            sellOrders = 0
+            // println(buyOrders + ", " + sellOrders + ", " + dividendPerShare + ", " + stockPrice)
+            marketState = stock.updateMarketInfo(stockPrice, dividendPerShare)
+            
+            val msg = new DoubleArrayMessage()
+            msg.doubleArrayValue(0) = id.toDouble
+            msg.doubleArrayValue(1) = stockPrice
+            msg.doubleArrayValue(2) = dividendPerShare
+            msg.doubleArrayValue(3) = marketState(0).toDouble
+            msg.doubleArrayValue(4) = marketState(1).toDouble
+            msg.doubleArrayValue(5) = marketState(2).toDouble 
+
+            connectedAgentIds.foreach(i => {
+                Range(0, cfreq).foreach(j => {
+                    // msg.doubleArrayValue = (List(stockPrice, dividendPerShare) ::: marketState.map(j => j.toDouble)).toArray
+                    sendMessage(i, msg)
+                })
+            })
+            waitRounds(1)
         }
     }
 }

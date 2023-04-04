@@ -13,7 +13,7 @@ object epidemic {
         var role: String = "Standalone"
         var port: Int = 25251
 
-        if (args.size > 6) {
+        if (args.size > 7) {
             role = args(6)
             port = args(7).toInt
         }
@@ -26,16 +26,15 @@ object epidemic {
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
             }
 
-            case 2 => {
-                // v2
-                val cfreq: Int = 10
-                val agents = generated.example.epidemic.v2.InitData(population, p, isSBM, blocks, cfreq)
+            case 2=> {
+                // Generalized double-buffering, with delayed processing 
+                val agents = generated.example.epidemic.v2.InitData(population, p, isSBM, blocks)
                 API.OptimizationConfig.mergedWorker()
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
             }
 
             case 3 => {
-                // v3
+                // v3,
                 val agents = generated.example.epidemic.v3.InitData(population, p, isSBM, blocks)
                 API.OptimizationConfig.mergedWorker()
                 val snapshot1 = API.Simulate(agents, totalTurns, role, port)
@@ -53,6 +52,21 @@ object epidemic {
                     API.OptimizationConfig.mergedWorker()
                     API.Simulate.machine(mid, agents, totalTurns)
                 }
+            }
+
+            case 5 => {
+                // cfreq
+                val cfreq: Int = args(6).toInt
+                val agents = generated.example.epidemic.v5.InitData(population, p, isSBM, blocks, cfreq)
+                API.OptimizationConfig.mergedWorker()
+                val snapshot1 = API.Simulate(agents, totalTurns, role, port)
+            }
+
+            case 6 => {
+                // Messaging, concurrent
+                val agents = generated.example.epidemic.v3.InitData(population, p, isSBM, blocks)
+                API.OptimizationConfig.concurrentWorker()
+                val snapshot1 = API.Simulate(agents, totalTurns, role, port)
             }
         }
     }

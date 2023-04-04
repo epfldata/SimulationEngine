@@ -1,28 +1,29 @@
 package simulation.akka.API
 
-import com.typesafe.config.ConfigFactory
-import meta.API.SimulationSnapshot
-import meta.runtime.{Actor, Message}
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import akka.actor.typed.ActorSystem
+import meta.runtime.Actor
+import scala.collection.mutable.Map
 
-import scala.collection.mutable.{Map}
-
-class Log[T, R](mapper: Actor => T, reducer: Iterable[T] => R) {
+trait SimulationTimeseries[T, R] {
   val log: Map[Int, R] = Map[Int, R]()
-  // val reduced: Map[Int, Iterable[T]] = Map[Int, Iterable[T]]()
-  val timeseries: Map[Int, Iterable[Any]] = Map[Int, Iterable[Any]]()
+  val intermediateLog: Map[Int, List[R]] = Map[Int, List[R]]()
 
-  def getMapper(): Actor => T = {
-    mapper
+  def mapper(x: Actor): T
+  def reducer(x: Iterable[T]): R
+  
+  // worker proposes collected data from agents
+  def add(round: Int, partial_reduced: R): Unit = synchronized {
+    intermediateLog.update(round, partial_reduced :: intermediateLog.getOrElse(round, List[R]()))
   }
 
-  def getReducer(): Iterable[T] => R = {
-    reducer
-  }
+  // driver reduces collected data from workers
+  def reduce(round: Int): Unit 
+}
 
-  def add[K](round: Int, partial_reduced: Iterable[K]): Unit = synchronized {
-    timeseries.update(round, timeseries.getOrElse(round, List[K]())++partial_reduced)
+case object FullTimeseries extends SimulationTimeseries[Actor, Iterable[Actor]] {
+  def mapper(x: Actor): Actor = x
+  def reducer(x: Iterable[Actor]): Iterable[Actor] = x
+
+  def reduce(round: Int): Unit = {
+    log.update(round, intermediateLog.getOrElse(round, List[Iterable[Actor]]()).flatten)
   }
 }

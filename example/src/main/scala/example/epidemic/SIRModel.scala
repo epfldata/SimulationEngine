@@ -1,5 +1,5 @@
 package example
-package epidemic.v1
+package epidemic
 
 import scala.util.Random
 import scala.math.{min, max}

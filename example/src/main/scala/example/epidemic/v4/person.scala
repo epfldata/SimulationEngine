@@ -5,6 +5,7 @@ import scala.util.Random
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import meta.runtime.Message
+import example.epidemic._
 
 @lift
 class Person(val age: Int) extends Actor {

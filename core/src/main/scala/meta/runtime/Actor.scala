@@ -55,7 +55,8 @@ class Actor extends Serializable {
     * Contains the messages, which should be sent to other actors in the next step
     */
     // Replace mutable with immutable ds, for Spark serialization
-  var sendMessages: Map[Long, List[Message]] = Map[Long, List[Message]]()
+  var sendMessages: MutMap[Long, Buffer[Message]] = MutMap[Long, Buffer[Message]]()
+  // var sendMessages: Map[Long, List[Message]] = Map[Long, List[Message]]()
 
   /**
     * A map of listeners, which is required to register a listener for a response of a request message
@@ -88,8 +89,8 @@ class Actor extends Serializable {
   }
 
   final def sendMessage(receiver: Long, message: Message): Unit = {
-    sendMessages = sendMessages + (receiver -> (message :: sendMessages.getOrElse(receiver, List[Message]()))) 
-    // sendMessages.getOrElseUpdate(receiver, new ListBuffer[Message]()).append(message)
+    // sendMessages = sendMessages + (receiver -> (message :: sendMessages.getOrElse(receiver, List[Message]()))) 
+    sendMessages.getOrElseUpdate(receiver, new ListBuffer[Message]()).append(message)
   }
 
   final def receiveMessage(): Option[Message] = {

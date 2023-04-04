@@ -9,7 +9,7 @@ object gameOfLife {
         val mode: Int = args(3).toInt
         var role: String = "Standalone"
         var port: Int = 25251
-        if (args.size > 4) {
+        if (args.size > 5) {
             role = args(4)
             port = args(5).toInt
         }
@@ -61,12 +61,12 @@ object gameOfLife {
 }
 
 object gameOfLifeCommFreq {
-    val totalTurns: Int = 50
-    val width: Int = 10
-    val height: Int = 100
-
     def main(args: Array[String]): Unit = {
-        val cfreq: Int = args(0).toInt
+        val width = args(0).toInt
+        val height: Int = args(1).toInt
+        val totalTurns: Int = args(2).toInt
+        val cfreq: Int = args(3).toInt
+
         val agents = generated.example.gameOfLifeCommFreq.InitData(width, height, cfreq)
         API.OptimizationConfig.mergedWorker()
         API.Simulate(agents, totalTurns)

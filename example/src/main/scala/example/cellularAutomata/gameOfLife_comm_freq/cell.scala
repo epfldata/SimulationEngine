@@ -32,12 +32,19 @@ class Cell(var alive: Int, val cfreq: Int) extends Actor {
                 alive = 1
             }
 
-            connectedAgents.foreach(i => {
-              Range(0, cfreq).foreach(j => {
-                val msg = new Message()
-                msg.value = alive.toDouble
-                sendMessage(i.id, msg)
-              })
+            connectedAgentIds.foreach(i => {
+              // default 
+              // Range(0, cfreq).foreach(j => {
+              //   val msg = new Message()
+              //   msg.value = alive.toDouble
+              //   sendMessage(i, msg)
+              // })
+              // batching  
+              sendMessages.getOrElseUpdate(i, new ListBuffer[Message]()).appendAll(Range(0, cfreq).map(i => {
+                  val msg = new Message()
+                  msg.value = alive.toDouble
+                  msg
+              }))
             })
             waitRounds(1)
         }

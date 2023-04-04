@@ -1,5 +1,6 @@
 package example
-package stockMarket.v3
+package stockMarket
+package v3
 
 import squid.quasi.lift
 import meta.classLifting.SpecialInstructions._
@@ -21,7 +22,7 @@ class Trader(var budget: Double, val interestRate: Double) extends Actor {
                 wealth.addDividends(ans(2))
                 // reply message
                 val msg = new Message()
-                msg.value = wealth.takeAction(ans(1), ans.slice(3, 6).map(_.asInstanceOf[Int])).toDouble
+                msg.value = wealth.takeAction(ans(1), List(ans(3).toInt, ans(4).toInt, ans(5).toInt)).toDouble
                 sendMessage(ans(0).toLong, msg)
                 m = receiveMessage()
             }

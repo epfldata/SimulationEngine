@@ -24,6 +24,7 @@ class Driver {
 
     private var acceptedInterval: Int = 0
     private var availability: Int = simulation.akka.API.OptimizationConfig.availability
+    private var timeseriesController = simulation.akka.API.Simulate.log
 
     var start: Long = 0
     var end: Long = 0
@@ -90,6 +91,11 @@ class Driver {
                                         tmpProposeInterval = r.proposeInterval
                                     }
                                 }
+                                
+                                if (timeseriesController != null) {
+                                    timeseriesController.reduce(currentTurn)
+                                }
+
                                 acceptedInterval = tmpProposeInterval 
                                 currentTurn += acceptedInterval + availability -1
                                 RoundEnd()
@@ -102,6 +108,7 @@ class Driver {
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Driver receives notifications from all workers! Accepted interval ${acceptedInterval}")
                     ctx.log.info(f"Round ${currentTurn} takes ${end-start} ms")
+
                     ts.append(end-start)
                     if (currentTurn >= totalTurn){
                         Behaviors.stopped {() => 

@@ -5,8 +5,8 @@ import scala.util.Random
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(population: Int, p: Double, sbm: Boolean, blocks: Int, cfreq: Int): List[Actor] = {
-            val citizens = (1 to population).map(c => { new Person(Random.nextInt(90) + 10, cfreq) })
+        def apply(population: Int, p: Double, sbm: Boolean, blocks: Int): List[Actor] = {
+            val citizens = (1 to population).map(c => { new Person(Random.nextInt(90) + 10) })
             if (!sbm){
                 lib.Graph.ErdosRenyiGraph(citizens, p)
             } else {

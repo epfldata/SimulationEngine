@@ -25,7 +25,8 @@ class LocalAgent {
                     // println(f"Agent ${sim.id} receives ${messages.size} messages")
                     ctx.log.debug(f"Agent ${sim.id} receives ${sim.receivedMessages.size} messages")
                     val time = sim.run()
-                    replyTo ! MessagesAdded(time, sim.sendMessages)
+                    // replyTo ! MessagesAdded(time, sim.sendMessages)
+                    replyTo ! MessagesAdded(time, sim.sendMessages.toMap.map(i => (i._1, i._2.toList)))
                     end = System.currentTimeMillis()
                     // println(f"Agent ${sim.id} runs ${end-start} ms")
                     Behaviors.same

@@ -1,5 +1,6 @@
 package example
-package stockMarket.v1
+package stockMarket
+package v1
 
 import scala.collection.mutable.ListBuffer
 

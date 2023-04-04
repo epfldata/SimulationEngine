@@ -5,6 +5,7 @@ import scala.util.Random
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import squid.lib.transparencyPropagating
+import example.epidemic._
 
 @lift
 class Person(val age: Int) extends Actor {
@@ -35,10 +36,13 @@ class Person(val age: Int) extends Actor {
 
         while (true) {
             if (health != SIRModel.Deceased) {
-                // Meet with contacts 
-                if (!connectedAgents.isEmpty) {
-                    val selfRisk = SIRModel.infectiousness(health, symptomatic)
-                    connectedAgents.foreach(x => callAndForget(x.asInstanceOf[Person].makeContact(selfRisk), 1))
+                handleRPC()
+                if (health == SIRModel.Infectious) {
+                    // Meet with contacts 
+                    if (!connectedAgents.isEmpty) {
+                        val selfRisk = SIRModel.infectiousness(health, symptomatic)
+                        connectedAgents.foreach(x => callAndForget(x.asInstanceOf[Person].makeContact(selfRisk), 1))
+                    }
                 }
 
                 if ((health != SIRModel.Susceptible) && (health != SIRModel.Recover)) {
@@ -50,7 +54,7 @@ class Person(val age: Int) extends Actor {
                     }
                 }
             } 
-            waitAndReply(1)
+            waitRounds(1)
         }
     }
 }

@@ -42,13 +42,19 @@ lazy val akkaSettings = Seq(
   libraryDependencies += "com.typesafe.akka" %% "akka-cluster-typed"         % akkaVersion,
 )
 
-lazy val sparkSettings = Seq(
+val sparkDeployOption = Option(System.getProperty("sparkDeploy")).getOrElse("local")
+
+lazy val sparkSettings = if (sparkDeployOption == "local") { 
+  println("Local Spark deployment. Please add -DsparkDeploy=cluster to your sbt command to assemble for Spark cluster.")
+  Seq(
   libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion, 
   libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion, 
+)} else { 
+  Seq(
   // Use following config with "provided" when assemblying a uber jar
-  // libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
-  // libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided", 
-)
+  libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
+  libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided", 
+)}
 
 // Enable graph drawing when debugging
 lazy val graphSettings = Seq(

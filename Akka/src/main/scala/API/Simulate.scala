@@ -8,7 +8,10 @@ import scala.concurrent.duration._
 import akka.actor.typed.ActorSystem
 
 object Simulate {
-    var log: Log[_, _] = new Log[Actor, Iterable[Actor]]((a: Actor) => a, (b: Iterable[Actor]) => b)
+    // right now need to manually change the type of timeseries for deforestation
+    // defined in Akka/src/main/scala/API/CustomSchema.scala
+    var log = FullTimeseries    
+    // var log = GoLQ3Timeseries
 
     private var stoppedAgents = List[Actor]()
 
@@ -68,7 +71,6 @@ object Simulate {
               role: String= "Standalone", port: Int = 25251): SimulationSnapshot = {
 
         initialize()    
-
         val config = ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port=$port
             akka.cluster.roles = [$role]

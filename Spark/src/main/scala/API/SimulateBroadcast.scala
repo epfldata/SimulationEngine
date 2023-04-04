@@ -30,6 +30,7 @@ object Simulate extends Serializable {
 
     var t1: Long = 0
     var t2: Long = 0
+    var t3: Long = 0
 
     var totalTime: Long = 0
     var elapsedRound: Int = 0
@@ -52,8 +53,8 @@ object Simulate extends Serializable {
           (l: List[Message], message: List[Message]) => message ::: l,
           (l1: List[Message], l2: List[Message]) => l1 ::: l2).collectAsMap()
 
-        // println(collectedMessages)
         val dMessages = sc.broadcast(collectedMessages)
+        t2 = System.currentTimeMillis()
 
         actorRDD = actorRDD.map(x => {
           x.receivedMessages :::= (dMessages.value.getOrElse(x.id, List[Message]()))
@@ -62,20 +63,21 @@ object Simulate extends Serializable {
           x
         })
         actorRDD.cache()
-        elapsedRound = actorRDD.collect().map(i => i.proposeInterval).min
+        elapsedRound = actorRDD.map(i => i.proposeInterval).collect.min
         currentTurn += elapsedRound
-        // actorRDD.collect()
-        // currentTurn += 1
-        t2 = System.currentTimeMillis()
-        time_seq = time_seq ::: List(t2-t1)
+        t3 = System.currentTimeMillis()
+        println(f"Iteration ${currentTurn} takes ${t3-t1} ms")
+
+        time_seq = time_seq ::: List(t3-t1)
     }
 
     val updatedActors: List[Actor] = actorRDD.collect.toList
     val snapshot = SimulationSnapshot(updatedActors, collectedMessages.flatMap(i => i._2).toList)
-    val average = time_seq.sum / time_seq.length
-    val stdev = Math.sqrt(time_seq.map(i => (i-average)*(i-average)).sum/time_seq.length)
-    println(f"Time sequence ${time_seq}")
-    println(f"Average time per round ${average} StdDev ${stdev}")
+    val average = time_seq.sum / totalTurn
+    // val stdev = Math.sqrt(time_seq.map(i => (i-average)*(i-average)).sum/time_seq.length)
+    // println(f"Time sequence ${time_seq}")
+    println(f"Average time per round ${average}")
+    // println(f"Average time per round ${average} StdDev ${stdev}")
     sc.stop()
     snapshot
   }

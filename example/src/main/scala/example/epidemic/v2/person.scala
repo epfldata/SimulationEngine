@@ -5,32 +5,29 @@ import scala.util.Random
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import squid.lib.transparencyPropagating
+import example.epidemic._
+import scala.collection.mutable.ListBuffer
 
 @lift
-class Person(val age: Int, val cfreq: Int) extends Actor {
+class Person(val age: Int) extends Actor {
     val symptomatic: Boolean = Random.nextBoolean()
     var health: Int = 0 // susceptible
     var vulnerability: Int = 0
     var daysInfected: Int = 0
+    var riskBuffer: ListBuffer[Double] = new ListBuffer[Double]()
 
     @transparencyPropagating
-    def makeContact(risk: Double): Boolean = {
-        if (health == 0) {
-            var personalRisk = risk
-            if (age > 60) {
-                personalRisk = personalRisk * 2
-            }
-            if (personalRisk > 1) {
-                health = SIRModel.change(health, vulnerability)
-            }
-        }
-        false
+    def makeContact(risk: Double): Int = {
+        riskBuffer.append(risk)
+        0
     }
 
     def main(): Unit = {
+        markAllowDirectAccess("makeContact")
+
         vulnerability = if (age > 60) 1 else 0
-        if (Random.nextInt(10)==0){
-            health = 1
+        if (Random.nextInt(100)==0){
+            health = 2
         }
 
         while (true) {
@@ -38,9 +35,7 @@ class Person(val age: Int, val cfreq: Int) extends Actor {
                 // Meet with contacts 
                 val selfRisk = SIRModel.infectiousness(health, symptomatic)
                 if (!connectedAgents.isEmpty) {
-                    Range(0, cfreq).foreach(i => {
-                        connectedAgents.foreach(x => asyncCall(x.asInstanceOf[Person].makeContact(selfRisk), 1))
-                    })
+                    connectedAgents.foreach(x => callAndForget(x.asInstanceOf[Person].makeContact(selfRisk), 1))
                 }
 
                 if ((health != SIRModel.Susceptible) && (health != SIRModel.Recover)) {
@@ -52,6 +47,20 @@ class Person(val age: Int, val cfreq: Int) extends Actor {
                     }
                 }
             } 
+            waitAndReply(1)
+            // merge and process
+            riskBuffer.toList.foreach(risk => {
+                if (health == 0) {
+                    var personalRisk = risk
+                    if (age > 60) {
+                        personalRisk = personalRisk * 2
+                    }
+                    if (personalRisk > 1) {
+                        health = SIRModel.change(health, vulnerability)
+                    }
+                }
+            })
+            riskBuffer.clear()
             waitAndReply(1)
         }
     }

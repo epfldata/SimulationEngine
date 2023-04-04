@@ -31,13 +31,14 @@ class Worker {
     var start: Long = 0
     var end: Long = 0
     
-    // private var logicalClock: Int = 0
+    private var logicalClock: Int = 0
     private var acceptedInterval: Int = 0
     private var proposeInterval: Int = Int.MaxValue
     private var availability: Int = 1
 
     private var completedAgents: Int = 0
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
+    lazy val timeseriesControllerStub = simulation.akka.API.Simulate.log
 
     def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
         local_sims = sims.map(x => (x.id, x)).toMap
@@ -132,7 +133,8 @@ class Worker {
                                     proposeInterval = tmpProposeInterval
                                 }
                                 a._2.sendMessages.foreach(i => {
-                                    collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2) 
+                                    collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2.toList) 
+                                    // collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2) 
                                 })
                             })
                             // Deliver local messages to agents' mailboxes
@@ -161,7 +163,7 @@ class Worker {
                     sendToRef = replyTo      
                     this.acceptedInterval = acceptedInterval    
                     this.availability = availability
-                    // logicalClock += acceptedInterval       
+                    logicalClock += acceptedInterval       
                     if (receivedWorkers.keys().size == totalWorkers-1){
                         ctx.self ! Start()
                     } 
@@ -170,10 +172,18 @@ class Worker {
                 case AgentsCompleted() =>
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms, propose ${proposeInterval}")
+                    if (timeseriesControllerStub != null){
+                        timeseriesControllerStub.add(logicalClock, timeseriesControllerStub.reducer(
+                            local_sims.map(s => s._2).map(x => timeseriesControllerStub.mapper(x.SimClone()))))
+                        // q1
+                        // simulation.akka.API.Simulate.log.add[Int](logicalClock, Iterable(local_sims.filter(i => i._2.asInstanceOf[generated.example.gameOfLife.Cell].alive==1).size))
+                        // q3
+                        // simulation.akka.API.Simulate.log.add[Actor](logicalClock, local_sims.filter(i => i._2.asInstanceOf[generated.example.gameOfLife.Cell].alive==1).map(_._2.SimClone()))
+                        // time series
+                        // simulation.akka.API.Simulate.log.add[Actor](logicalClock, local_sims.map(_._2.SimClone()))
+                    }
+
                     sendToRef ! SendTo(workerId, proposeInterval)
-                    // if (simulation.akka.API.Simulate.log != null){
-                    //     simulation.akka.API.Simulate.log.add[Actor](logicalClock, local_sims.map(_._2.SimClone()))
-                    // }
                     completedAgents = 0
                     Behaviors.same
 
