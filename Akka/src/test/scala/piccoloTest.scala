@@ -15,8 +15,8 @@ class piccolo extends FlatSpec {
     val totalRounds: Int = 100
 
     f"The page rank algorithm with vertices, sequential workers" should f"complete" in {
+        meta.runtime.Actor.reset
         val agents = generated.example.piccolo.InitData()
-        // API.OptimizationConfig.mergedWorker()
         val snapshot1 = API.Simulate(agents, totalRounds)
     }
 }
