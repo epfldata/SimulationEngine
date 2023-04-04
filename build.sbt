@@ -13,7 +13,6 @@ val paradiseVersion = "2.1.0"
 val breezeVersion = "0.13.2"
 val scalaTestVersion = "3.1.2"
 val squidVersion = "0.4.1-SNAPSHOT"
-val sparkVersion = "3.3.0"
 val graphVizVersion = "0.10.0"
 val akkaVersion = "2.6.14"
 // val scalapbVersion = "1.0.6"
@@ -41,20 +40,6 @@ lazy val akkaSettings = Seq(
   libraryDependencies += "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
   libraryDependencies += "com.typesafe.akka" %% "akka-cluster-typed"         % akkaVersion,
 )
-
-val sparkDeployOption = Option(System.getProperty("sparkDeploy")).getOrElse("local")
-
-lazy val sparkSettings = if (sparkDeployOption == "local") { 
-  println("Local Spark deployment. Please add -DsparkDeploy=cluster to your sbt command to assemble for Spark cluster.")
-  Seq(
-  libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion, 
-  libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion, 
-)} else { 
-  Seq(
-  // Use following config with "provided" when assemblying a uber jar
-  libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
-  libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided", 
-)}
 
 // Enable graph drawing when debugging
 lazy val graphSettings = Seq(
@@ -89,32 +74,6 @@ lazy val genCore = (project in file("gen-core"))
     name := f"${project_name}-genCore",
     Test / parallelExecution := false,
   ).dependsOn(core % "compile->compile;compile->test")
-
-lazy val spark = (project in file("Spark"))
-  .settings(
-    name := f"${project_name}-spark",
-    commonSettings, sparkSettings,
-    Test / parallelExecution := false,
-    excludeDependencies += "commons-logging" % "commons-logging",
-    assemblyMergeStrategy in assembly := {
-      case PathList("io", "netty", xs @ _*)               => MergeStrategy.first
-      case PathList("google", "protobuf", xs @ _*)        => MergeStrategy.first
-      case PathList("com", "google", "protobuf", xs @ _*) => MergeStrategy.first
-      case PathList("scalapb", xs @ _*)                   => MergeStrategy.first
-      case "application.conf"                             => MergeStrategy.concat
-      case "reference.conf"                               => MergeStrategy.concat
-      case "module-info.class"                            => MergeStrategy.concat
-      case "META-INF/io.netty.versions.properties"        => MergeStrategy.first
-      case "META-INF/native/libnetty-transport-native-epoll.so" =>
-        MergeStrategy.first
-      case n if n.endsWith(".txt")   => MergeStrategy.concat
-      case n if n.endsWith("NOTICE") => MergeStrategy.concat
-      case "logback.xml" => MergeStrategy.first 
-      case x =>
-        val oldStrategy = (assemblyMergeStrategy in assembly).value
-        oldStrategy(x)
-    }
-  ).dependsOn(core % "compile->compile", genCore, genExample)
 
 lazy val akka = (project in file("Akka"))
   .settings(
