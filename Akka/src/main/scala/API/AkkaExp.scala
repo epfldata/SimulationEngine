@@ -119,14 +119,7 @@ object AkkaExp {
                     Behaviors.same
 
                 case SpawnWorker(workerId, agents, totalWorkers) =>
-                    val sim = if (OptimizationConfig.conf == ConcurrentWorker) {
-                        ctx.spawn((new simulation.akka.core.concurrent.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
-                        // ctx.spawn((new simulation.akka.core.concurrent.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}", DispatcherSelector.fromConfig("my-dispatcher"))
-                    } else {
-                        ctx.spawn((new simulation.akka.core.sequential.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
-                        // ctx.spawn((new simulation.akka.core.sequential.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}", DispatcherSelector.fromConfig("my-dispatcher"))
-                    }
-                     
+                    val sim = ctx.spawn((new simulation.akka.core.sequential.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
                     activeWorkers.add(workerId)
                     ctx.watchWith(sim, WorkerStopped(workerId, agents))
                     Behaviors.same

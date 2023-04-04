@@ -10,10 +10,11 @@ import akka.actor.typed.ActorSystem
 sealed trait Optimization
 case object DirectMethodCall extends Optimization
 case object MergedWorker extends Optimization
-case object ConcurrentWorker extends Optimization
 
 object OptimizationConfig {
-    var conf: Optimization = ConcurrentWorker
+    var conf: Optimization = MergedWorker
+
+    var timeseries: Option[SimulationTimeseries[_, _]] = None
 
     // todo: tmp, fix with proper availability input
     var availability: Int = 1
@@ -24,9 +25,5 @@ object OptimizationConfig {
 
     def mergedWorker(): Unit = {
       conf = MergedWorker
-    }
-
-    def concurrentWorker(): Unit = {
-      conf = ConcurrentWorker
     }
 }
