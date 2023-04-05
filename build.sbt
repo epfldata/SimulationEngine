@@ -15,6 +15,8 @@ val akkaVersion = "2.6.14"
 
 run / fork := true
 
+val pubLocal = Option(System.getProperty("pubLocal")).getOrElse("false")
+
 lazy val commonSettings = Seq(
   libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
   libraryDependencies += "org.scalanlp" %% "breeze" % breezeVersion,
@@ -42,15 +44,6 @@ lazy val graphSettings = Seq(
   libraryDependencies += "guru.nidi" % "graphviz-java" % graphVizVersion,
 )
 
-// lazy val protobufSettings = Seq(
-//   libraryDependencies ++= Seq(
-//     "com.trueaccord.scalapb" %% "scalapb-runtime" % "0.6.7" % "protobuf"
-//   ),
-//   Compile / PB.targets := Seq(
-//     scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
-//   )
-// )
-
 lazy val noMessaging = (project in file("ecosim"))
   .settings(
     name := f"${project_name}-noMessaging",
@@ -71,19 +64,37 @@ lazy val genCore = (project in file("gen-core"))
     Test / parallelExecution := false,
   ).dependsOn(core % "compile->compile;compile->test")
 
-lazy val akka = (project in file("Akka"))
+lazy val akka = if (pubLocal == "true") {
+  (project in file("Akka"))
   .settings(
     name := f"${project_name}-akka",
     commonSettings, akkaSettings,
     Test / parallelExecution := false,
-  ).dependsOn(core % "compile->compile;compile->test", genCore, genExample)
+  ).dependsOn(core % "compile->compile;compile->test")
+} else {
+  (project in file("Akka"))
+    .settings(
+      name := f"${project_name}-akka",
+      commonSettings, akkaSettings,
+      Test / parallelExecution := false,
+    ).dependsOn(core % "compile->compile;compile->test", genCore, genExample)
+}
 
-lazy val base = (project in file("Base"))
+lazy val base = if (pubLocal == "true") {
+  (project in file("Base"))
   .settings(
     name := f"${project_name}-base",
     commonSettings,
     Test / parallelExecution := false,
-  ).dependsOn(core % "compile->compile;compile->test", genCore, genExample)
+  ).dependsOn(core % "compile->compile;compile->test")
+} else {
+  (project in file("Base"))
+    .settings(
+      name := f"${project_name}-base",
+      commonSettings,
+      Test / parallelExecution := false,
+    ).dependsOn(core % "compile->compile;compile->test", genCore, genExample)
+}
 
 lazy val library = (project in file("library"))
   .settings(
