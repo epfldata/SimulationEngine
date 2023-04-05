@@ -1,12 +1,8 @@
 ThisBuild / organization := "ch.epfl.data"
 ThisBuild / scalaVersion := "2.12.8"
-ThisBuild / version := "1.3-SNAPSHOT"
+ThisBuild / version := "2.0-SNAPSHOT"
 
-// import com.trueaccord.scalapb.compiler.Version.scalapbVersion
-// import com.typesafe.sbt.SbtMultiJvm.multiJvmSettings
-// import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
-
-val project_name = "TickTalk"
+val project_name = "CloudCity"
 name := project_name
 
 val paradiseVersion = "2.1.0"
