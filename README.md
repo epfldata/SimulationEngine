@@ -60,23 +60,13 @@ Here are some tips for writing meta-programs in this framework:
   * To add modifiers, use instructions `markPrivate(names: String*)` or `markOverride(names: String*)`, see examples `inheritance1` and `inheritance2`.
   * Public methods in the parent class which are inherited by children should *not* have references to private variables.
 
-* The lifter recognizes following code patterns: 
-  * while(cond) {code}
-  * val x = code or var x = code
-  * List.map(code)
-  * List.flatMap(code)
-  * Iterable.foreach(code)
-  * Iterable.exists(code)
-  * Iterable.forall(code)
-  * if(cond) code else code2
-* You can extend the lifting by:
-  * creating a subclass of algo
-  * add in this subclass the nodes to the graph
-  * Extend the lifter and override the method liftCodeOther  
-  and handle there your created algos.
-* To lift a class, annotate it with @lift and extend from runtime.Actor
-
-* The `main` method is the entrypoint of the compiler. Please initialize any variables that require references to `this` inside `main`. 
+* The Squid class-lifting interface has the following non-exhaustive restrictions. The lifter does *not* support: 
+  * instance variables inside an agent class definition. You cannot use the keyword *this* and should add the modifier *val* or *var* to your variables in the parameter list. 
+  * pattern match. You can only use good old if-else or while-loop.
+  * Array type. You will see errors complaining about Scala ClassTag not found if you a class variable of type Array
+  * return instruction. You cannot use "return" inside a method definition.
+  * default values in a parameter list
+* To lift a class, annotate it with @lift and extend from runtime.Actor. When in doubt, please check how the examples are defined.
 
 ### <a name="Simulation"></a> Start Simulation 
 For the compiled version, you can start simulation after generating object programs. The object programs are in folders `/generated*/`. To start a simulation, first select a runtime, such as base (sequential), then create a driver program in the `test` folder in `Base`. 
