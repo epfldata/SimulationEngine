@@ -9,8 +9,7 @@ To export the compiler, library, and runtime as jars that can be included in you
 ```
 bash bin/publishLocal.sh
 ```
-which would generate jar files in `target/scala-2.12` under respective projects (Akka, core, or library).
-Then you can include it in your project as
+which would create a directory `{user}/.ivy2/local/ch.epfl.data/` that contains folders `cloudcity-{module}_{scala version}`. You can then include the corresponding module in your project by adding the following to your `build.sbt`
 ```
 libraryDependencies += "ch.epfl.data" %% "cloudcity-core" % "2.0-SNAPSHOT",
 libraryDependencies += "ch.epfl.data" %% "cloudcity-library" % "2.0-SNAPSHOT",
