@@ -33,7 +33,7 @@ class FooA() extends Actor {
     }
 
     def ___manyArgs___(x: Int, y: Boolean, z: Double) : Unit = {
-        println(x + " ___manyArgs___ is called! "+y.toString + z.toString)
+        println(x + " ___manyArgs___ is called! "+ y.toString + " " + z.toString)
     }
 
     def main(): Unit = {

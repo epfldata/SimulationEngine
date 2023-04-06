@@ -18,7 +18,13 @@ object Simulate {
         }))
 
       while (currentRound < totalRound) {
-        // println(util.displayTime(currentRound))
+        println(util.displayTime(currentRound))
+        // Add newly generated agents
+        if (!SimRuntime.newActors.isEmpty) {
+          actors = SimRuntime.newActors ++ actors
+          SimRuntime.newActors.clear()
+        }
+        
         elapsedRound = actors.filterNot(_.deleted).map(a => {
           a.time += elapsedRound
           var proposed = a.run()
@@ -27,12 +33,6 @@ object Simulate {
           })
           proposed
         }).min
-        
-        // Add newly generated agents
-        if (!SimRuntime.newActors.isEmpty) {
-          actors = SimRuntime.newActors ++ actors
-          SimRuntime.newActors.clear()
-        }
 
         actors.filterNot(_.deleted).foreach(a => {
           a.receivedMessages :::= (a.proxyIds.flatMap(id => collectedMessages.getOrElse(id, Buffer())))
