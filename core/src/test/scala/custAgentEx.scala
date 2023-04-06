@@ -2,10 +2,7 @@ package meta.test
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-import meta.deep.IR.TopLevel.ClassWithObject
-import meta.deep.IR
 import meta.runtime._
-import meta.API._
 import org.scalatest.FlatSpec
 
 // A test that shows how users can override methods in Actor for debugging or other purposes

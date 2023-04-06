@@ -7,7 +7,6 @@ import meta.deep.IR
 import meta.runtime.{Actor}
 import meta.API._
 import org.scalatest.FlatSpec
-import scala.util.Random
 import squid.lib.transparencyPropagating
 
 @lift
@@ -52,7 +51,6 @@ class Receiver() extends Actor {
 }
 
 class MessageLatencyTest extends FlatSpec {
-    import meta.deep.IR.Predef._
 
     "The message latency example" should "compile" in {
         val liftSender: ClassWithObject[Sender] = Sender.reflect(IR)

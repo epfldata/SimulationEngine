@@ -6,7 +6,7 @@ import meta.deep.IR.Predef.base.MethodApplication
 import meta.deep.IR.TopLevel._
 import meta.deep.algo._
 import meta.deep.member._
-import meta.runtime.{Actor, Message, RequestMessage}
+import meta.runtime.{Actor, RequestMessage}
 import scala.collection.mutable.{Map => MutMap, ListBuffer}
 
 /** Code lifter
@@ -611,15 +611,10 @@ class Lifter {
           if methodsIdMap.get(ma.symbol.toString).isDefined =>
             // println("Method application name is " + ma.symbol.toString)
             //extracting arguments and formatting them
-            var argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
-
-            val methodName: String = ma.symbol.toString()
-
+            val argss: List[List[OpenCode[_]]] = ma.args.tail.map(args => args.toList.map(arg => code"$arg")).toList
             val recipientActorVariable =
               ma.args.head.head.asInstanceOf[OpenCode[Actor]]
             
-            val convertLocal = Variable[Boolean]
-
             val funcName = ma.symbol.asTerm.name.toString
             val f = if (actorSelfVariable.toCode != recipientActorVariable) {
               defInGeneratedCode = false

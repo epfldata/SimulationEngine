@@ -6,7 +6,6 @@ import meta.deep.IR
 import meta.deep.IR.Predef._
 import meta.deep.algo.AlgoInfo
 import meta.deep.member.{EdgeInfo, CompiledActorGraph, VarValue, VarWrapper, MethodInfo}
-import meta.runtime.Actor
 
 import meta.classLifting.Lifter
 import scala.collection.mutable.ListBuffer
@@ -473,7 +472,6 @@ class CreateCode(initCode: String,
                   run_until: String,
                   parents: String): Unit = {
 
-    val agentName: String = className.split("\\.").last
     val classString =
       s"""package ${generatedPackage}
 

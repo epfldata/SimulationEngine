@@ -2,7 +2,7 @@ package meta.deep.codegen
 
 import meta.deep.IR.Predef._
 import meta.deep.member.{CodeNodeMtd, CodeNodePos, EdgeInfo}
-import meta.deep.algo.{AlgoInfo, CallMethod, Send}
+import meta.deep.algo.{AlgoInfo, CallMethod}
 import meta.deep.codegen.CreateActorGraphs._
 import meta.deep.member._
 import squid.lib.MutVar

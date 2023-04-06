@@ -4,7 +4,7 @@ import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import meta.deep.IR.TopLevel.ClassWithObject
 import meta.deep.IR
-import meta.runtime.{Actor, Future, Message}
+import meta.runtime.{Actor, Future}
 import meta.API._
 import org.scalatest.{FlatSpec, DoNotDiscover}
 
@@ -62,11 +62,8 @@ class AgentWithBlockingCallLocal() extends Actor {
 
 @DoNotDiscover
 class blockingMethodCallTest extends FlatSpec {
-    import meta.classLifting.Lifter
     import meta.deep.IR.TopLevel._
-    import meta.deep.codegen._
     import meta.runtime.Actor
-    import meta.deep.IR.Predef._ 
 
     "An agent with blocking method call" should "compile" in {
         val liftMyClass: ClassWithObject[AgentWithBlockingCall] = AgentWithBlockingCall.reflect(IR)

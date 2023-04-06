@@ -1,12 +1,10 @@
 package meta.deep.algo
 
 import meta.deep.IR.Predef._
-import meta.runtime.{Future, ResponseMessage}
+import meta.runtime.ResponseMessage
 import squid.lib.MutVar
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-
 import meta.deep.member.VarWrapper
 
 /**

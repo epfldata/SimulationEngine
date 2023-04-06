@@ -1,6 +1,5 @@
 package meta.runtime
 
-import java.util.UUID
 import Actor.AgentId
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes, JsonTypeName}
 

@@ -96,8 +96,6 @@ class FooBar() extends FooA {
 
 
 class methodNameTest extends FlatSpec {
-    import meta.deep.IR.Predef._
-    import meta.classLifting.Lifter
 
     "Calling methods with underscores locally" should "compile and resolve correctly" in {    
         val foo: ClassWithObject[FooA] = FooA.reflect(IR)

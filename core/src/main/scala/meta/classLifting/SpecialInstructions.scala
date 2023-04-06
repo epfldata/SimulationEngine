@@ -1,7 +1,5 @@
 package meta.classLifting
 
-import meta.deep.IR.Predef._
-
 object SpecialInstructions {
   import meta.runtime.Future
 

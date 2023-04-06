@@ -2,10 +2,6 @@ package meta.deep.member
 
 import meta.deep.IR
 import meta.deep.IR.Predef._
-import meta.deep.IR.TopLevel._
-import meta.deep.algo._
-import meta.deep.member._
-import scala.collection.mutable.ListBuffer
 
 /** contains all info about a method except the body of the method
   * used body methods to gather the needed data when calling this method

@@ -41,7 +41,6 @@ class Vertex() extends Actor {
 }
 
 class shortestPathExample extends FlatSpec {
-    import meta.deep.IR.Predef._
 
     "Mutable agent" should "compile" in {
         val liftMyClass: ClassWithObject[Vertex] = Vertex.reflect(IR)

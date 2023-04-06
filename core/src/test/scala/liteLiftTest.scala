@@ -3,8 +3,6 @@ package meta.test
 import scala.collection.mutable.ListBuffer
 import org.scalatest.{Matchers, FlatSpec}
 import meta.classLifting.liteLift
-import squid.quasi.lift
-
 
 class Foo() {
     def run(): Unit = {
@@ -12,7 +10,7 @@ class Foo() {
     }
 }
 
-class liteLiftExample extends org.scalatest.FlatSpec with Matchers {
+class liteLiftExample extends FlatSpec with Matchers {
 
     "lift method" should "return the full path for imported library and capture arguments" in {
         val liftedMethod = liteLift {

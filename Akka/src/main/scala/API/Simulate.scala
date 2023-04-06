@@ -37,7 +37,6 @@ object Simulate {
         val actorSystem = ActorSystem(AkkaExp(totalTurn, totalWorkers), "SimsCluster", config)
         Await.ready(actorSystem.whenTerminated, 10.days)
         println("Simulation ends!")
-        // Actor.reset 
         SimulationSnapshot(stoppedAgents, lastWords)
     }
 
@@ -58,7 +57,6 @@ object Simulate {
         val actorSystem = ActorSystem(AkkaExp.materializedMachine(mid, totalTurn, totalWorkers, actors), "SimsCluster", config)
         Await.ready(actorSystem.whenTerminated, 10.days)
         println("Simulation ends!")
-        // Actor.reset 
         SimulationSnapshot(stoppedAgents, lastWords)
     }
 
@@ -98,7 +96,6 @@ object Simulate {
         val actorSystem = ActorSystem(AkkaExp(totalTurn, totalWorkers, actors), "SimsCluster", config)
         Await.ready(actorSystem.whenTerminated, 10.days)
         println("Simulation ends!")
-        // Actor.reset 
         SimulationSnapshot(stoppedAgents, lastWords)
     }
 }

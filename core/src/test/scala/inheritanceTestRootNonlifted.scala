@@ -7,7 +7,6 @@ import meta.deep.IR
 import meta.runtime.{Actor, Future}
 import meta.API._
 import org.scalatest.FlatSpec
-import java.io.File
 
 /**
  * Test override
@@ -73,7 +72,6 @@ class Student(var neighbor: Teacher) extends Person {
 }
 
 class InheritanceTestRootNonlifted extends FlatSpec {
-    import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 
     "Lifting agents with overriding keywords" should "compile" in {

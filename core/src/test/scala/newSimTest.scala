@@ -20,7 +20,6 @@ class NewSim() extends Actor {
 }
 
 class NewSimTest extends FlatSpec {
-    import meta.deep.IR.Predef._
 
     "Generating new agents" should "compile" in {
         val liftMyClass: ClassWithObject[NewSim] = NewSim.reflect(IR)

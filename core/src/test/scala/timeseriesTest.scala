@@ -4,7 +4,7 @@ import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
 import meta.deep.IR.TopLevel.ClassWithObject
 import meta.deep.IR
-import meta.runtime.{Actor, Message}
+import meta.runtime.{Actor}
 import meta.API._
 import org.scalatest.FlatSpec
 
@@ -33,7 +33,6 @@ class CounterSim(val n: CounterSim) extends Actor {
 }
 
 class timeseriesTest extends FlatSpec {
-    import meta.deep.IR.Predef._
 
     "The counter agents" should "compile" in {
         val liftMyClass: ClassWithObject[CounterSim] = CounterSim.reflect(IR)

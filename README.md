@@ -15,7 +15,7 @@ libraryDependencies += "ch.epfl.data" %% "cloudcity-core" % "2.0-SNAPSHOT",
 libraryDependencies += "ch.epfl.data" %% "cloudcity-library" % "2.0-SNAPSHOT",
 libraryDependencies += "ch.epfl.data" %% "cloudcity-akka" % "2.0-SNAPSHOT",
 ```
-selecting only the ones you need.
+selecting only the ones you need. Support Scala 2.12*.
 
 ### Overview 
 - [Synchronization DSL](#DSL)

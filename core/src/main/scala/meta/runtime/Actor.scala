@@ -1,9 +1,6 @@
 package meta.runtime
 
-import java.util.UUID
 import scala.collection.mutable.{Buffer, ListBuffer, Map => MutMap}
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.ArrayList
 
 /**
   * This object handles the unique id generation of an actor
@@ -18,12 +15,12 @@ object Actor {
     *
     * @return id for an agent
     */
-  def getNextAgentId: AgentId = this.synchronized {
+  def getNextAgentId(): AgentId = this.synchronized {
     lastAgentId = lastAgentId + 1
     lastAgentId
   }
 
-  def reset: Unit = this.synchronized {
+  def reset(): Unit = this.synchronized {
     lastAgentId = 0
   }
 }

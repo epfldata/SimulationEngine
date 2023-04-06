@@ -34,7 +34,6 @@ class Vertex() extends Actor {
 }
 
 class ResetTest extends FlatSpec {
-    import meta.deep.IR.Predef._
 
     "Vertex with connections" should "compile" in {
         val liftMyClass: ClassWithObject[Vertex] = Vertex.reflect(IR)
