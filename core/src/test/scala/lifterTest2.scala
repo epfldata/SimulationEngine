@@ -5,10 +5,7 @@ import squid.quasi.lift
 import meta.deep.IR.TopLevel.ClassWithObject
 import meta.deep.IR
 import meta.runtime.{Actor}
-import meta.API._
 import org.scalatest.FlatSpec
-import scala.util.Random
-import meta.runtime.Future
 import squid.lib.transparencyPropagating
 
 
@@ -54,7 +51,6 @@ class MyClass5(var s: MyClass4) extends Actor {
 }
 
 class lifterTest2 extends FlatSpec with org.scalatest.Matchers {
-    import meta.deep.IR.Predef._
     import meta.classLifting.Lifter
 
     val liftSchool = School.reflect(IR)

@@ -5,7 +5,6 @@ object compileSims {
   import meta.deep.IR.TopLevel._
   import meta.deep.codegen._
   import meta.runtime.Actor
-  import meta.deep.IR.Predef._ 
 
   /**
     * Staging, convert Sims from source programs to object programs. 

@@ -1,16 +1,6 @@
 package meta.deep.codegen
 
-import java.io.{BufferedWriter, File, FileWriter}
-
-import meta.deep.IR
-import meta.deep.IR.Predef._
-import meta.deep.algo.AlgoInfo
-import meta.deep.member.{EdgeInfo, CompiledActorGraph, VarValue, VarWrapper, MethodInfo}
-import meta.runtime.Actor
-
-import scala.collection.mutable.ListBuffer
-import meta.API.CompilationMode
-import scala.util.Random
+import meta.deep.member.{CompiledActorGraph, MethodInfo}
 
 object GeneratedMethods {
     var actorName: String = null

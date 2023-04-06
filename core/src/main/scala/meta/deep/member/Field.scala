@@ -1,10 +1,5 @@
 package meta.deep.member
 
-import meta.deep.IR.Predef._
-import meta.deep.algo.Algo
-import meta.runtime.Actor
-import scala.collection.mutable.ListBuffer
-
 /**
   * Class representation of a field for code generation
   * @param name: the symbol of the field in string 

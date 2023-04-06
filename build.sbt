@@ -53,6 +53,7 @@ lazy val core = (project in file("core"))
   .settings(
     name := f"${project_name}-core",
     commonSettings, squidSettings, graphSettings,
+    scalacOptions ++= Seq("-Xlint"),
     libraryDependencies += "org.scalameta" %% "scalameta" % "4.4.20",
     libraryDependencies += "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion,
     Test / parallelExecution := false,

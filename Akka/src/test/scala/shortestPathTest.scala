@@ -4,8 +4,6 @@ package test
 import org.scalatest.FlatSpec
 
 class shortestPath extends FlatSpec {
-    import meta.deep.IR.Predef._
-
     val totalVertices: Int = 50
     val totalRounds: Int = 50
 
