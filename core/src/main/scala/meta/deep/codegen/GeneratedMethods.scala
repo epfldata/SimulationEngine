@@ -1,12 +1,11 @@
 package meta.deep.codegen
 
-import meta.deep.member.{CompiledActorGraph, MethodInfo}
+import meta.deep.member.{CompiledActorGraph}
 
 object GeneratedMethods {
     var actorName: String = null
-    var methodsIdMap: Map[String, Int] = null
-    var methodsMap: Map[String, MethodInfo[_]] = null
     var compiledActorGraph: CompiledActorGraph = null
+    var hasRPCMethods: Boolean = true
     var parts: Array[String] = Array()
     var createCode: CreateCode = null
     var instructionRegister: String = null
@@ -14,11 +13,9 @@ object GeneratedMethods {
     var memAddr: String = ""
     var parameterApplication: String = null
 
-    def apply(graph: CompiledActorGraph, methodsIdMap: Map[String, Int], methodsMap: Map[String, MethodInfo[_]], createCode: CreateCode): Unit = {
+    def apply(graph: CompiledActorGraph, createCode: CreateCode): Unit = {
         compiledActorGraph = graph
         actorName = graph.name
-        this.methodsIdMap = methodsIdMap
-        this.methodsMap = methodsMap
         this.createCode = createCode
         this.parameterApplication = compiledActorGraph.actorTypes.flatMap(actorType => {
             actorType.states.filter(x => x.parameter).map(s => {
@@ -34,19 +31,19 @@ trait GeneratedMethods {
 
 case object runUntil extends GeneratedMethods {
     import GeneratedMethods._
+
     override def run(): String = {
 s"""
   override def run(): Int = {
-    messageListener()
+    ${if (hasRPCMethods) {"messageListener()"} else {""}}
     sendMessages.clear()
-    // sendMessages = scala.collection.immutable.Map[Long, List[meta.runtime.Message]]()
     ${createCode.unblockRegMap(actorName)} = true
     while (${createCode.unblockRegMap(actorName)} && (${instructionRegister} < ${totalStates})) {
       ${memAddr}(${instructionRegister})()
     }
     proposeInterval
   }
-"""
+"""            
     }
 }
 
@@ -123,7 +120,7 @@ override def SimReset(preserved_names: Set[String]): Unit = {
   ${userVarsReset}
 }
 """ 
-}
+    }
 }
 
 case object reflectionMethods extends GeneratedMethods {

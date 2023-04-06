@@ -62,9 +62,9 @@ class Actor extends Serializable {
 
   var reachableAgents: Set[AgentId] = Set()
 
-  var connectedAgents: List[Actor] = List()
+  var connectedAgents: Iterable[Actor] = List()
 
-  var connectedAgentIds: List[AgentId] = List()  
+  var connectedAgentIds: Iterable[AgentId] = List()  
 
   /**
     * Adds one message to the sendActions list, which will be collected and distributed at the end of the step
@@ -98,7 +98,6 @@ class Actor extends Serializable {
     val totalMessages = receivedMessages.size
 
     Range(0, totalMessages).foreach(i => {
-      // val msg = receivedMessages.poll()
       val msg = receivedMessages.head
       msg match {
         case m: ResponseMessage => 

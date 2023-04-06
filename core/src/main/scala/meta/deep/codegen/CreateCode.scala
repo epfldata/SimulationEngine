@@ -52,7 +52,7 @@ class CreateCode(initCode: String,
     this.typesReplaceWith = updateTypesToReplace(compiledActorGraphs)
 
     for (cAG <- this.compiledActorGraphs) {
-      GeneratedMethods(cAG, methodsIdMap, methodsMap, this)
+      GeneratedMethods(cAG, this)
       prepareClass(cAG)
     }
 
@@ -168,6 +168,8 @@ class CreateCode(initCode: String,
       methodss += changeTypes(foo.toWrapperDeclaration())
       f"""case "${x._1.split("\\.").last}" => ${foo.toWrapperInvocation()}"""
     }).mkString("\n")
+
+    GeneratedMethods.hasRPCMethods = methodCases.nonEmpty
 
     val handleMsg: String = if (methodCases.isEmpty()) ""  else 
     s"""
