@@ -2,7 +2,21 @@
 
 ## Large-scale agent-based simulation 
 
-This framework is designed for large-scale agent-based simulations, following the BSP model. 
+CloudCity is a full-stack system designed for large-scale agent-based simulations, following the BSP model. The system contains three parts, frontend (DSL), core (compiler that translates the DSL to Scala), and backend (Akka-based runtime and a single-threaded runtime). We also provide a user-level library that contains some helpful methods, which you can optionally use in your simulation.
+
+### <a name="bin"></a> Include in your own project
+To export the compiler, library, and runtime as jars that can be included in your project, you can call `publishLocal`
+```
+bash bin/publishLocal.sh
+```
+which would generate jar files in `target/scala-2.12` under respective projects (Akka, core, or library).
+Then you can include it in your project as
+```
+libraryDependencies += "ch.epfl.data" %% "cloudcity-core" % "2.0-SNAPSHOT",
+libraryDependencies += "ch.epfl.data" %% "cloudcity-library" % "2.0-SNAPSHOT",
+libraryDependencies += "ch.epfl.data" %% "cloudcity-akka" % "2.0-SNAPSHOT",
+```
+selecting only the ones you need.
 
 ### Overview 
 - [Synchronization DSL](#DSL)
@@ -11,7 +25,6 @@ This framework is designed for large-scale agent-based simulations, following th
 - [Run in a cluster](#Distributed)
 - [Test Locally](#bin)
 - [Folder Structure](#Folder)
-- [Issues and Solutions](docs/Issues.md)
 
 ### <a name="DSL"></a> Synchronization DSL
 
@@ -32,16 +45,7 @@ An agent is sequential and processes one message at a time. Therefore, you can n
 ### <a name="Meta-Programs"></a> Sims as Meta-Programs
 The embedded DSL is in a staged meta-programming environment. Staging is the operation that generates **object programs** from **meta-programs**. In our framework, users define the behaviour of each agent in **meta-programs** written in a subset of Scala enriched with DSL. We offer two flavors of DSL, one with compilation and one without. For the compiled version, our transpiler compiles the source programs to **object programs** (valid Scala source programs) in `generated\` folder with the help of Squid. For the non-compiled version, we use ScalaMeta and coroutines, see branch `staged`.
  
-We include uber jars of the Squid (class-lifting branch) in the lib/ folder of dependent subprojects (currently under `core/` and `example/`). If you prefer, you can also build it locally and uncomment the lines in build.sbt which loads Squid snapshot. 
-
-```
-- clone the class-lifting branch of Squid repo: 
-  https://github.com/epfldata/squid.git
-- create a local snapshot by running publishLocal: 
-  bash bin/publishLocal.sh
-- Expected output: 
-  you should see "build 0.4.1-SNAPSHOT"
-```
+We include uber jars of the Squid (class-lifting branch) in the lib/ folder of dependent subprojects (currently under `core/` and `example/`). If you prefer, you can also build it locally (using the class-lifting branch of Squid repo: https://github.com/epfldata/squid.git) and uncomment the lines in build.sbt which loads Squid snapshot. 
    
 Here are some tips for writing meta-programs in this framework: 
 <!-- * The optimzations created work for specific use-cases:
@@ -72,30 +76,17 @@ Here are some tips for writing meta-programs in this framework:
 For the compiled version, you can start simulation after generating object programs. The object programs are in folders `/generated*/`. To start a simulation, first select a runtime, such as base (sequential), then create a driver program in the `test` folder in `Base`. 
 
 ### <a name="Distributed"></a> Run in a cluster 
-Both Akka and Spark backends support distributed experiments in a cluster. Make sure you can reach any machine using `ssh` without entering passwords.    
+The Akka backend enables you to run distributed simulations in a cluster. Make sure you can reach any machine using `ssh` without entering passwords.    
 
 For Akka, update file `Akka/src/main/resources/application.conf` to reflect the cluster setting. More specifically, replace the `localhost` in `remote.artery.canonical.hostnames` and `remote.cluster.seed-nodes` to the ip of the server and the seed machine respectively. Please refer to the Akka home page (https://akka.io/) for more information.
 
-### <a name="bin"></a> Local test
+### <a name="bin"></a> Initialization
 After cloning this repo, please initialize the repo with `init.sh`, which generates files for the tests in akka and base projects.
 
 On linux or Mac:
 ```
 bash bin/init.sh 
 ```
-
-To export the compiler, library, and runtime as a jar, you can call `publishLocal`
-```
-bash bin/publishLocal.sh
-```
-which would generate jar files in `target/scala-2.12` under respective projects (Akka, core, or library).
-Then you can include it in your project as
-```
-libraryDependencies += "ch.epfl.data" %% "cloudcity-core" % "2.0-SNAPSHOT",
-libraryDependencies += "ch.epfl.data" %% "cloudcity-library" % "2.0-SNAPSHOT",
-libraryDependencies += "ch.epfl.data" %% "cloudcity-akka" % "2.0-SNAPSHOT",
-```
-selecting only the ones you need.
 
 ### <a name="Folder"></a> Folder Structure 
 - `core/` contains the compiler
@@ -107,10 +98,4 @@ selecting only the ones you need.
 - `library/` contains user-level library that you can include when designing simulations
 - `lib/` contains jar files for Squid library
 - `ecosim/` contains the legacy implementation of the economic simulation without using message passing 
-- `docs/` contains documentation
- 
-### Code Format
-We use Scalafmt for formatting the code.
-For installing Scalafmt with your favorite IDE see https://scalameta.org/scalafmt/
- 
-Please open an issue or make a pull request if you encounter other problems or have suggestions. Thank you.  
+- `docs/` contains known issues and their solutions
