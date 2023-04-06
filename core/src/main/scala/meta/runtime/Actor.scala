@@ -67,16 +67,7 @@ class Actor extends Serializable {
 
   var connectedAgents: List[Actor] = List()
 
-  var connectedAgentIds: List[Int] = List()
-
-  // todo: add a logger to redirect warning to stderr
-  def setConnectedAgents(agents: List[Actor]): Unit = {
-    if (agents.size > agents.toSet.size){
-      println(f"Duplicated agents found in ${id} connection!")
-    }
-    connectedAgents = agents
-  }
-  
+  var connectedAgentIds: List[AgentId] = List()  
 
   /**
     * Adds one message to the sendActions list, which will be collected and distributed at the end of the step

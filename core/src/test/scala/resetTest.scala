@@ -49,14 +49,14 @@ class ResetTest extends FlatSpec {
                 val v7 = new Vertex()
                 val v8 = new Vertex()
 
-                v1.setConnectedAgents(List(v2, v3, v4, v5, v6, v7, v8))
-                v2.setConnectedAgents(List(v1, v3, v4, v5, v6, v7, v8))
-                v3.setConnectedAgents(List(v1, v2, v4, v5, v6, v7, v8))
-                v4.setConnectedAgents(List(v1, v2, v3, v5, v6, v7, v8))
-                v5.setConnectedAgents(List(v1, v2, v3, v4, v6, v7, v8))
-                v6.setConnectedAgents(List(v1, v3, v4, v5, v2, v7, v8))
-                v7.setConnectedAgents(List(v1, v2, v4, v5, v6, v3, v8))
-                v8.setConnectedAgents(List(v1, v2, v3, v5, v6, v7, v4))
+                v1.connectedAgents=List(v2, v3, v4, v5, v6, v7, v8)
+                v2.connectedAgents=List(v1, v3, v4, v5, v6, v7, v8)
+                v3.connectedAgents=List(v1, v2, v4, v5, v6, v7, v8)
+                v4.connectedAgents=List(v1, v2, v3, v5, v6, v7, v8)
+                v5.connectedAgents=List(v1, v2, v3, v4, v6, v7, v8)
+                v6.connectedAgents=List(v1, v3, v4, v5, v2, v7, v8)
+                v7.connectedAgents=List(v1, v2, v4, v5, v6, v3, v8)
+                v8.connectedAgents=List(v1, v2, v3, v5, v6, v7, v4)
 
                 List(v1, v2, v3, v4, v5, v6, v7, v8)
             }

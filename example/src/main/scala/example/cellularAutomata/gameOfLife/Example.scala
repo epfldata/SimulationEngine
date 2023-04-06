@@ -1,34 +1,33 @@
 package example
 package gameOfLife
 
-import scala.collection.mutable.{Map => MutMap}
+import scala.io.Source
 
-import lib.Grid.Torus2D
-
+// This MainInit demonstrates how to use an external edge file as the social graph of a simulation
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(width: Int, height: Int): List[Actor] = {
-            val totalPoints: Int = width * height
-            // 2D space
-            val neighborRadius: Int = 1
+        def apply(edgeFilePath: String): List[Actor] = {
 
-            val points = (1 to totalPoints).map(x => {
-                if (Random.nextBoolean()){
+            val source = Source.fromFile(edgeFilePath)
+            var edges: Map[Long, List[Long]] = Map[Long, List[Long]]()
+            for (line <- source.getLines()) {
+                val fields = line.split(" ")
+                val srcId: Long = fields(0).toLong
+                val dstId: Long = fields(1).toLong
+                edges = edges + (srcId -> (dstId :: edges.getOrElse(srcId, List())))
+            }
+            source.close()
+
+            edges.map(i => {
+                val cell = if (Random.nextBoolean) {
                     new Cell(1)
                 } else {
-                    new Cell(0)
+                    new Cell(1)
                 }
-            })
-
-            // Such initialization failed on Spark
-            // Torus2DGraph(points, width, height, neighborRadius)
-
-            val nodesSeq = points.toIndexedSeq
-            points.zipWithIndex.foreach(n => {
-                n._1.connectedAgentIds = Torus2D.getNeighborCells(width, height)(n._2, neighborRadius)
-            })
-
-            points.toList
+                cell.id = i._1
+                cell.connectedAgentIds = i._2
+                cell
+            }).toList
         }
     }
 }
