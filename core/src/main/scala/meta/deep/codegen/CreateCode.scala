@@ -169,9 +169,15 @@ class CreateCode(initCode: String,
       f"""case "${x._1.split("\\.").last}" => ${foo.toWrapperInvocation()}"""
     }).mkString("\n")
 
-    GeneratedMethods.hasRPCMethods = methodCases.nonEmpty
+    // if an agent does not have an RPC method, then it does not call "messageHandler" per round
+    // apply this optimization only to agents that inherited directly from Actor
+    GeneratedMethods.hasRPCMethods = if (compiledActorGraph.parentNames == List("meta.runtime.Actor")) {
+      methodCases.nonEmpty
+    } else {
+      true
+    }
 
-    val handleMsg: String = if (methodCases.isEmpty()) ""  else 
+    val handleMsg: String = if (methodCases.isEmpty) ""  else 
     s"""
   override def handleRPC(): Unit = {
     val messages = scheduledRPCRequests.get(time)
