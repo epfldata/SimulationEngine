@@ -13,8 +13,10 @@ object AkkaExp {
     sealed trait Command
     final case class SpawnDriver(totalWorkers: Int, totalTurn: Int) extends Command
     final case class SpawnWorker(workerId: Int, sims: Seq[Actor], totalWorkers: Int) extends Command
+    final case class SpawnLogController(totalWorkers: Int) extends Command
     final case class DriverStopped() extends Command
     final case class WorkerStopped(workerId: Int, sims: Seq[Actor]) extends Command
+    final case class LogControllerStopped() extends Command
 
     var cluster: Cluster = null
     var totalWorkers: Int = 0
@@ -93,11 +95,18 @@ object AkkaExp {
             if (cluster.selfMember.hasRole("Driver")) {
                 ctx.log.debug(f"Creating a driver!")
                 ctx.self ! SpawnDriver(totalWorkers, totalTurn)
+                // Co-locate the log controller with driver
+                if (simulation.akka.API.OptimizationConfig.logControllerEnabled) {
+                    ctx.self ! SpawnLogController(totalWorkers)
+                }
             } 
 
             if (cluster.selfMember.hasRole("Standalone")) {
                 ctx.log.debug(f"Standalone mode")
                 ctx.self ! SpawnDriver(totalWorkers, totalTurn)
+                if (simulation.akka.API.OptimizationConfig.logControllerEnabled) {
+                    ctx.self ! SpawnLogController(totalWorkers)
+                }
                 for (i <- Range(0, totalWorkers)){
                     val containedAgents = if (i == totalWorkers-1){
                         actors.slice(i*actorsPerWorker, totalActors)    
@@ -118,13 +127,27 @@ object AkkaExp {
                     ctx.watchWith(driver, DriverStopped())
                     Behaviors.same
 
+                case SpawnLogController(totalWorkers) => 
+                    val logController = ctx.spawn((new simulation.akka.core.LogController).apply(totalWorkers), "logController")
+                    ctx.watchWith(logController, LogControllerStopped())
+                    Behaviors.same
+
                 case SpawnWorker(workerId, agents, totalWorkers) =>
-                    val sim = ctx.spawn((new simulation.akka.core.sequential.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
+                    val sim = ctx.spawn((new simulation.akka.core.Worker).apply(workerId, agents, totalWorkers), f"worker${workerId}")
                     activeWorkers.add(workerId)
                     ctx.watchWith(sim, WorkerStopped(workerId, agents))
                     Behaviors.same
                 
                 case DriverStopped() =>
+                    if (cluster.selfMember.hasRole("Standalone")) {
+                        Behaviors.same
+                    } else {
+                        Behaviors.stopped {() =>
+                            ctx.system.terminate()
+                        }
+                    }
+                
+                case LogControllerStopped() =>
                     if (cluster.selfMember.hasRole("Standalone")) {
                         Behaviors.same
                     } else {

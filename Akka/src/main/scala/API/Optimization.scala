@@ -14,7 +14,7 @@ case object MergedWorker extends Optimization
 object OptimizationConfig {
     var conf: Optimization = MergedWorker
 
-    var timeseries: Option[SimulationTimeseries[_, _]] = None
+    var logControllerEnabled: Boolean = false
 
     // todo: tmp, fix with proper availability input
     var availability: Int = 1

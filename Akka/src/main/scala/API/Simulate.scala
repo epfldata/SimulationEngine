@@ -16,6 +16,8 @@ object Simulate {
         stoppedAgents = agents.toList 
     }
 
+    var timeseries: Iterable[Iterable[Actor]] = null
+
     def initialize(): Unit = {
         stoppedAgents=List()
         lastWords=List()

@@ -9,7 +9,6 @@ import scala.collection.mutable.ListBuffer
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
-import akka.util.Timeout
 
 class Driver {
     import DriverSpec._
@@ -21,10 +20,11 @@ class Driver {
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
     private var workersStop: Set[ActorRef[WorkerSpec.Stop]] = Set()
     private var workersStart: Set[ActorRef[WorkerSpec.ExpectedReceives]] = Set()
+    private var loggerStop: Set[ActorRef[LogControllerSpec.Stop]] = Set()
 
     private var acceptedInterval: Int = 0
     private var availability: Int = simulation.akka.API.OptimizationConfig.availability
-    private var timeseriesSchema = simulation.akka.API.OptimizationConfig.timeseries
+    private val logControllerEnabled = simulation.akka.API.OptimizationConfig.logControllerEnabled
 
     var start: Long = 0
     var end: Long = 0
@@ -54,10 +54,23 @@ class Driver {
                     workersStart = workers
                 } 
                 InitializeWorkers()
+            
+            case LogControllerSpec.LoggerStopServiceKey.Listing(logger) =>
+                ctx.log.debug(f"Log controller registered!")
+                if (logger.size > 0) {
+                    ctx.log.debug(f"Recorded all loggers!")
+                    loggerStop = logger
+                } 
+                InitializeWorkers()
         } 
 
         ctx.system.receptionist ! Receptionist.Subscribe(WorkerSpec.WorkerStartServiceKey, workerSub)
         ctx.system.receptionist ! Receptionist.Subscribe(WorkerSpec.WorkerStopServiceKey, workerSub)
+        // Allow users to disable log controller
+        if (logControllerEnabled) {
+            ctx.system.receptionist ! Receptionist.Register(DriverSpec.LogControllerFinishedServiceKey, ctx.self)
+            ctx.system.receptionist ! Receptionist.Subscribe(LogControllerSpec.LoggerStopServiceKey, workerSub)
+        }
         driver()
     }
 
@@ -91,11 +104,6 @@ class Driver {
                                         tmpProposeInterval = r.proposeInterval
                                     }
                                 }
-                                
-                                if (timeseriesSchema.isDefined) {
-                                    timeseriesSchema.get.reduce(currentTurn)
-                                }
-
                                 acceptedInterval = tmpProposeInterval 
                                 currentTurn += acceptedInterval + availability -1
                                 RoundEnd()
@@ -108,18 +116,24 @@ class Driver {
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Driver receives notifications from all workers! Accepted interval ${acceptedInterval}")
                     ctx.log.info(f"Round ${currentTurn} takes ${end-start} ms")
-
                     ts.append(end-start)
                     if (currentTurn >= totalTurn){
-                        Behaviors.stopped {() => 
-                            ctx.log.info(f"Average ${(end-initialStart)/totalTurn} ms")
-                            ctx.log.info(f"Timeseries ${ts}")
-                            ctx.log.debug(f"Simulation completes! Stop the driver")
-                            workersStop.foreach(a => a ! WorkerSpec.Stop())
+                        if (logControllerEnabled) {
+                            loggerStop.foreach(a => a ! LogControllerSpec.Stop(currentTurn-1))
+                        } else {
+                            ctx.self ! LogControllerFinished()
                         }
                     } else {
                         ctx.self ! RoundStart()
-                        driver()
+                    }
+                    driver()
+
+                case LogControllerFinished() =>
+                    Behaviors.stopped {() => 
+                        ctx.log.info(f"Average ${(end-initialStart)/totalTurn} ms")
+                        ctx.log.info(f"Timeseries ${ts}")
+                        ctx.log.debug(f"Simulation completes! Stop the driver")
+                        workersStop.foreach(a => a ! WorkerSpec.Stop())
                     }
             }
         }

@@ -12,7 +12,6 @@ object WorkerSpec {
     @JsonSubTypes(
     Array(
         new JsonSubTypes.Type(value= classOf[Stop], name = "Stop"),
-        new JsonSubTypes.Type(value= classOf[Start], name = "Start"),
         new JsonSubTypes.Type(value= classOf[ReceiveMessages], name = "ReceiveMessages"),
         new JsonSubTypes.Type(value= classOf[ReceiveAgentMap], name = "ReceiveAgentMap"),
         new JsonSubTypes.Type(value = classOf[SendTo], name = "SendTo"), 
@@ -22,7 +21,7 @@ object WorkerSpec {
     final case class AgentsCompleted() extends WorkerEvent with NoSerializationVerificationNeeded
     @JsonTypeName("Stop")
     final case class Stop() extends WorkerEvent with JsonSerializable
-    final case class Start() extends WorkerEvent with NoSerializationVerificationNeeded
+    final case class RoundStart() extends WorkerEvent with NoSerializationVerificationNeeded
     // After receiving messages from other workers, do not immediately add to the mailbox of the agents, 
     // since current worker may have not finished and the agent can accidentally see and process (if not timed) future messages
     @JsonTypeName("ReceiveMessages")
