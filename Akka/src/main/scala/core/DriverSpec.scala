@@ -1,9 +1,7 @@
 package simulation.akka.core
 
-import akka.actor.NoSerializationVerificationNeeded
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes, JsonTypeName}
 import meta.runtime.JsonSerializable
-import akka.actor.typed.receptionist.{ServiceKey}
 
 object DriverSpec {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -26,6 +24,4 @@ object DriverSpec {
 
     @JsonTypeName("LogControllerFinished")
     final case class LogControllerFinished() extends DriverEvent with JsonSerializable
-
-    val LogControllerFinishedServiceKey = ServiceKey[LogControllerFinished]("LogControllerFinished")
 }

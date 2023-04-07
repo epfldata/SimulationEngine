@@ -1,7 +1,7 @@
 package simulation.akka.core
 
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
-import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import akka.actor.typed.receptionist.{Receptionist}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
@@ -68,7 +68,6 @@ class Driver {
         ctx.system.receptionist ! Receptionist.Subscribe(WorkerSpec.WorkerStopServiceKey, workerSub)
         // Allow users to disable log controller
         if (logControllerEnabled) {
-            ctx.system.receptionist ! Receptionist.Register(DriverSpec.LogControllerFinishedServiceKey, ctx.self)
             ctx.system.receptionist ! Receptionist.Subscribe(LogControllerSpec.LoggerStopServiceKey, workerSub)
         }
         driver()
@@ -119,7 +118,7 @@ class Driver {
                     ts.append(end-start)
                     if (currentTurn >= totalTurn){
                         if (logControllerEnabled) {
-                            loggerStop.foreach(a => a ! LogControllerSpec.Stop(currentTurn-1))
+                            loggerStop.foreach(a => a ! LogControllerSpec.Stop(currentTurn-1, ctx.self))
                         } else {
                             ctx.self ! LogControllerFinished()
                         }

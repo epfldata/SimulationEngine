@@ -2,7 +2,6 @@ package simulation.akka
 package test
 
 import org.scalatest.FlatSpec
-import meta.runtime.Actor
 import simulation.akka.API._
 
 class shortestPath extends FlatSpec {

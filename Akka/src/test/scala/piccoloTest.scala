@@ -1,12 +1,7 @@
 package simulation.akka
 package test
 
-import meta.classLifting.SpecialInstructions._
-import squid.quasi.lift
-import meta.deep.IR.TopLevel.ClassWithObject
-import meta.deep.IR
-import meta.runtime.{Actor}
-import meta.API._
+import simulation.akka.API._
 import org.scalatest.FlatSpec
 
 class piccolo extends FlatSpec {
@@ -14,6 +9,9 @@ class piccolo extends FlatSpec {
 
     f"The page rank algorithm with vertices, sequential workers" should f"complete" in {
         val agents = generated.example.piccolo.InitData()
+        API.OptimizationConfig.logControllerEnabled = true
+        API.OptimizationConfig.timeseriesSchema = FullTimeseries
         val snapshot1 = API.Simulate(agents, totalRounds)
+        API.Simulate.timeseries.foreach(t => { println(t) })
     }
 }

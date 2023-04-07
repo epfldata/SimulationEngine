@@ -8,7 +8,7 @@ import scala.collection.JavaConversions._
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import akka.actor.typed.receptionist.{Receptionist}
 import java.util.concurrent.atomic.AtomicInteger
 
 class Worker {
