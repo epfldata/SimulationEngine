@@ -13,7 +13,7 @@ object LogControllerSpec {
         new JsonSubTypes.Type(value = classOf[Stop], name = "Stop")))
     sealed trait LogControllerEvent
     @JsonTypeName("AggregateLog")
-    final case class AggregateLog(wid: Int, time: Int, agents: Iterable[Actor]) extends LogControllerEvent with JsonSerializable
+    final case class AggregateLog(wid: Int, time: Int, agents: Iterable[Serializable]) extends LogControllerEvent with JsonSerializable
     @JsonTypeName("Stop")
     final case class Stop(time: Int) extends LogControllerEvent with JsonSerializable
     final case class RegisteredDriverNotifier() extends LogControllerEvent

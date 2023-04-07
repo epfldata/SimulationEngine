@@ -177,7 +177,7 @@ class Worker {
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms, propose ${proposeInterval}")
                     if (logControllerEnabled){
-                        loggerRef ! LogControllerSpec.AggregateLog(workerId, logicalClock, local_sims.map(s => s._2).map(_.SimClone()))
+                        loggerRef ! LogControllerSpec.AggregateLog(workerId, logicalClock, local_sims.map(s => s._2).map(agent => simulation.akka.API.OptimizationConfig.timeseriesSchema.mapper(agent.SimClone())))
                     }
 
                     sendToRef ! SendTo(workerId, proposeInterval)

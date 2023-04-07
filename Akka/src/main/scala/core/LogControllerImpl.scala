@@ -8,14 +8,17 @@ import scala.collection.mutable.ListBuffer
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
-import meta.runtime.Actor
 import DriverSpec.{LogControllerFinishedServiceKey, LogControllerFinished}
 
 class LogController {
     import LogControllerSpec._
     
     private var totalWorkers: Int = 0
-    val timeseries = new ConcurrentHashMap[Int, ConcurrentHashMap[Int, Iterable[Actor]]]()
+    // partially aggregated results
+    val timeseries = new ConcurrentHashMap[Int, ConcurrentHashMap[Int, Iterable[Serializable]]]()
+    // apply reducer and drop entries that have been materialized from  
+    val reducedTimeseries = new ConcurrentHashMap[Int, Iterable[Serializable]]()
+
     var firstReceivedStop: Long = 0
     val timeout: Long = 1000    // ms
     var notifyDriver: ActorRef[LogControllerFinished] = null
@@ -46,8 +49,13 @@ class LogController {
 
                 case AggregateLog(wid, time, agents) =>
                     timeseries.computeIfAbsent(time, x => {
-                        new ConcurrentHashMap[Int, Iterable[Actor]]
+                        new ConcurrentHashMap[Int, Iterable[Serializable]]
                     }).put(wid, agents)
+                    if (timeseries.get(time).size == totalWorkers) {
+                        reducedTimeseries.computeIfAbsent(time, x => {
+                            simulation.akka.API.OptimizationConfig.timeseriesSchema.reducer(timeseries.remove(time).toSeq.map(_._2))
+                        })
+                    }
                     // println("Aggregate log received from worker " + wid)
                     Behaviors.same
                     
@@ -56,8 +64,8 @@ class LogController {
                         firstReceivedStop = System.currentTimeMillis()
                     }
                     // wait up to $timeout$ ms for the rest of log to arrive from workers
-                    if ((timeseries.get(time).size == totalWorkers) || ((System.currentTimeMillis() - firstReceivedStop) > timeout)) {
-                        simulation.akka.API.Simulate.timeseries = timeseries.map(i => (i._1, i._2.toSeq.sortBy(_._1).flatMap(j => j._2))).toSeq.sortBy(_._1).map(_._2)
+                    if ((reducedTimeseries.containsKey(time)) || ((System.currentTimeMillis() - firstReceivedStop) > timeout)) {
+                        simulation.akka.API.Simulate.timeseries = reducedTimeseries.toSeq.sortBy(_._1).map(_._2)
                         notifyDriver ! LogControllerFinished()
                         Behaviors.stopped {() => 
                             ctx.log.info("Time series has " + timeseries.size + " entries")

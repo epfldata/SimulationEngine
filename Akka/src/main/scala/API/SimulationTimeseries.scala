@@ -3,32 +3,20 @@ package simulation.akka.API
 import meta.runtime.Actor
 import scala.collection.mutable.Map
 
-trait SimulationTimeseries[T, R] {
-  val log: Map[Int, R] = Map[Int, R]()
-  val intermediateLog: Map[Int, List[R]] = Map[Int, List[R]]()
-
-  def mapper(x: Actor): T
-  def reducer(x: Iterable[T]): R
-  
-  // worker proposes collected data from agents
-  def add(round: Int, agents: Iterable[Actor]): Unit = synchronized {
-    intermediateLog.update(round, (reducer(agents.map(a => mapper(a)))) :: intermediateLog.getOrElse(round, List[R]()))
-  }
-
-  // // worker proposes collected data from agents
-  // def add(round: Int, partial_reduced: R): Unit = synchronized {
-  //   intermediateLog.update(round, partial_reduced :: intermediateLog.getOrElse(round, List[R]()))
-  // }
-
-  // driver reduces collected data from workers
-  def reduce(round: Int): Unit 
+abstract class SimulationTimeseries {
+  def mapper(x: Serializable): Serializable
+  def reducer(x: Iterable[Iterable[Serializable]]): Iterable[Serializable]
 }
 
-case object FullTimeseries extends SimulationTimeseries[Actor, Iterable[Actor]] {
-  def mapper(x: Actor): Actor = x
-  def reducer(x: Iterable[Actor]): Iterable[Actor] = x
+case object FullTimeseries extends SimulationTimeseries {
+  // a sequential worker applies the mapper to each agent
+  override def mapper(x: Serializable): Serializable = {
+    x
+  }
 
-  def reduce(round: Int): Unit = {
-    log.update(round, intermediateLog.getOrElse(round, List[Iterable[Actor]]()).flatten)
+  // the driver sends an Iterable[Serializable] to the log controller. Log controller collects Iterable[Iterable[Serializable]]
+  // and applies the reducer method to reduce the intermediate data 
+  override def reducer(x: Iterable[Iterable[Serializable]]): Iterable[Serializable] = {
+    x.flatten
   }
 }

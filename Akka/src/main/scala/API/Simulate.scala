@@ -16,7 +16,7 @@ object Simulate {
         stoppedAgents = agents.toList 
     }
 
-    var timeseries: Iterable[Iterable[Actor]] = null
+    var timeseries: Iterable[Iterable[Serializable]] = null
 
     def initialize(): Unit = {
         stoppedAgents=List()
