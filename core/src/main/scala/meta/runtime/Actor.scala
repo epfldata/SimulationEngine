@@ -1,6 +1,7 @@
 package meta.runtime
 
 import scala.collection.mutable.{Buffer, ListBuffer, Map => MutMap}
+import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonTypeName}
 
 /**
   * This object handles the unique id generation of an actor
@@ -30,7 +31,9 @@ object Actor {
   * It contains the logic for message handling and defines the
   * functions for a step-wise simulation
   */
-class Actor extends Serializable {
+@JsonTypeName("Actor")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+class Actor extends JsonSerializable {
   import Actor.AgentId
   
   var id: AgentId = Actor.getNextAgentId
@@ -157,9 +160,4 @@ class Actor extends Serializable {
   def SimReset(args: Set[String] = Set()): Unit = {}
   
   def handleRPC(): Unit = {}
-  
-  def runAndEval[K](mapper: Actor=>K): K = {
-    run() 
-    mapper(this)
-  }
 }

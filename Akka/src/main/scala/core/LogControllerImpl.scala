@@ -8,15 +8,16 @@ import scala.collection.JavaConversions._
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import DriverSpec.{LogControllerFinished}
+import meta.runtime.JsonSerializable
 
 class LogController {
     import LogControllerSpec._
     
     private var totalWorkers: Int = 0
     // partially aggregated results
-    val timeseries = new ConcurrentHashMap[Int, ConcurrentHashMap[Int, Iterable[Serializable]]]()
+    val timeseries = new ConcurrentHashMap[Int, ConcurrentHashMap[Int, Iterable[JsonSerializable]]]()
     // apply reducer and drop entries that have been materialized from  
-    val reducedTimeseries = new ConcurrentHashMap[Int, Iterable[Serializable]]()
+    val reducedTimeseries = new ConcurrentHashMap[Int, Iterable[JsonSerializable]]()
 
     var firstReceivedStop: Long = 0
     val timeout: Long = 1000    // ms
@@ -26,24 +27,24 @@ class LogController {
         // Let workers and driver discover the log controller
         ctx.system.receptionist ! Receptionist.Register(LoggerAggregateServiceKey, ctx.self)
         ctx.system.receptionist ! Receptionist.Register(LoggerStopServiceKey, ctx.self) 
-        logController()
-    }
 
-    def logController(): Behavior[LogControllerEvent] = 
         Behaviors.receive[LogControllerEvent] { (ctx, message) => 
             message match { 
-                case AggregateLog(wid, time, agents) =>
+                case AggregateLog(wid, time, logPerWorker) =>
                     timeseries.computeIfAbsent(time, x => {
-                        new ConcurrentHashMap[Int, Iterable[Serializable]]
-                    }).put(wid, agents)
+                        new ConcurrentHashMap[Int, Iterable[JsonSerializable]]
+                    }).put(wid, logPerWorker)
                     if (timeseries.get(time).size == totalWorkers) {
-                        reducedTimeseries.computeIfAbsent(time, x => {
-                            simulation.akka.API.OptimizationConfig.timeseriesSchema.reducer(timeseries.remove(time).toSeq.map(_._2))
-                        })
+                        ctx.self ! ReduceLog(time, timeseries.remove(time).toMap)
                     }
-                    // println("Aggregate log received from worker " + wid)
                     Behaviors.same
-                    
+
+                case ReduceLog(time, logPerRound) => 
+                    reducedTimeseries.computeIfAbsent(time, x => {
+                        simulation.akka.API.OptimizationConfig.timeseriesSchema.reducer(logPerRound.map(_._2))
+                    })
+                    Behaviors.same
+
                 case Stop(time, replyTo) =>
                     if (firstReceivedStop == 0) {
                         firstReceivedStop = System.currentTimeMillis()
@@ -56,9 +57,11 @@ class LogController {
                             ctx.log.info("Time series has " + timeseries.size + " entries")
                             ctx.log.info(f"Log controller received terminate signal")
                         }
+                    } else {
+                        ctx.self ! Stop(time, replyTo)
+                        Behaviors.same
                     }
-                    ctx.self ! Stop(time, replyTo)
-                    logController()
+                }
             }
         }
 }

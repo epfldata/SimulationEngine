@@ -2,7 +2,7 @@ package simulation.akka.API
 
 import com.typesafe.config.ConfigFactory
 import meta.API.SimulationSnapshot
-import meta.runtime.{Actor, Message}
+import meta.runtime.{Actor, Message, JsonSerializable}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.typed.ActorSystem
@@ -16,7 +16,7 @@ object Simulate {
         stoppedAgents = agents.toList 
     }
 
-    var timeseries: Iterable[Iterable[Serializable]] = null
+    var timeseries: Iterable[Iterable[JsonSerializable]] = null
 
     def initialize(): Unit = {
         stoppedAgents=List()

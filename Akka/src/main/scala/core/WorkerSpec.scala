@@ -6,7 +6,9 @@ import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes, JsonTypeNam
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import akka.actor.typed.ActorRef
 import akka.actor.typed.receptionist.{ServiceKey}
- 
+import akka.actor.typed.receptionist.Receptionist.Listing
+
+
 object WorkerSpec {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes(
@@ -32,6 +34,7 @@ object WorkerSpec {
     final case class SendTo(workerId: Int, proposeInterval: Int) extends WorkerEvent with JsonSerializable
     @JsonTypeName("ExpectedReceives")
     final case class ExpectedReceives(sendTo: ActorRef[SendTo], acceptedInterval: Int, availability: Int) extends WorkerEvent with JsonSerializable
+    final case class ListingResponse(listing: Listing) extends WorkerEvent
 
     val WorkerStartServiceKey = ServiceKey[ExpectedReceives]("WorkerStart")
     val WorkerStopServiceKey = ServiceKey[Stop]("WorkerStop")

@@ -9,7 +9,7 @@ object OptimizationConfig {
 
     var logControllerEnabled: Boolean = false
 
-    var timeseriesSchema: SimulationTimeseries = FullTimeseries
+    var timeseriesSchema: SimulationTimeseries = new SimulationTimeseries
 
     // todo: tmp, fix with proper availability input
     var availability: Int = 1

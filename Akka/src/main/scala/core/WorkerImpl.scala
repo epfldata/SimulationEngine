@@ -1,6 +1,6 @@
 package simulation.akka.core
 
-import meta.runtime.{Actor, Message}
+import meta.runtime.{Actor, Message, JsonSerializable}
 import scala.collection.mutable.{Map => MutMap}
 
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
@@ -22,7 +22,7 @@ class Worker {
     private var message_map: Map[Int, Map[Long, List[Message]]] = Map[Int, Map[Long, List[Message]]]()
     private val receivedWorkers = new ConcurrentHashMap[Int, Int]()
     private var sendToRef: ActorRef[SendTo] = null
-    private var loggerRef: ActorRef[LogControllerSpec.AggregateLog] = null
+    private var loggerRef: Iterable[ActorRef[LogControllerSpec.AggregateLog]] = List()
 
     var start: Long = 0
     var end: Long = 0
@@ -50,55 +50,41 @@ class Worker {
             })
         }
 
-        val workerSub = ctx.messageAdapter[Receptionist.Listing] {
-            case WorkerUpdateAgentMapServiceKey.Listing(workers) =>
-                if (workers.size == totalWorkers){
-                    workers.filter(i => i!= ctx.self).foreach(w => {
-                        w ! ReceiveAgentMap(workerId, simIds.asInstanceOf[Set[java.lang.Long]], ctx.self)
-                    })
-                }
-                Prepare()
+        val listingResponseAdater = ctx.messageAdapter[Receptionist.Listing] (ListingResponse.apply) 
 
-            case LogControllerSpec.LoggerAggregateServiceKey.Listing(logger) =>
-                ctx.log.debug(f"Log controller registered!")
-                if (logger.size == 1) {
-                    loggerRef = logger.head
-                }
-                Prepare()
-        }  
+        // Notify the driver about the references to StartService
+        ctx.system.receptionist ! Receptionist.Register(WorkerStartServiceKey, ctx.self)
+        ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
 
         if (totalWorkers>1){
             ctx.system.receptionist ! Receptionist.Register(WorkerUpdateAgentMapServiceKey, ctx.self)     
-            ctx.system.receptionist ! Receptionist.Subscribe(WorkerUpdateAgentMapServiceKey, workerSub)
-        } else {
-            ctx.system.receptionist ! Receptionist.Register(WorkerStartServiceKey, ctx.self)
-            ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
-        }
+            ctx.system.receptionist ! Receptionist.Subscribe(WorkerUpdateAgentMapServiceKey, listingResponseAdater)
+        } 
 
         if (logControllerEnabled) {
-            ctx.system.receptionist ! Receptionist.Subscribe(LogControllerSpec.LoggerAggregateServiceKey, workerSub)
+            ctx.system.receptionist ! Receptionist.Subscribe(LogControllerSpec.LoggerAggregateServiceKey, listingResponseAdater)
         }
-        worker()
-    }
 
-    // Consider replacing receivedWorkers with a total workers
-    private def worker(): Behavior[WorkerEvent] =
         Behaviors.receive[WorkerEvent] { (ctx, message) =>
             message match {
-                case Prepare() => 
-                    worker()
+                case ListingResponse(WorkerUpdateAgentMapServiceKey.Listing(workers)) => 
+                    workers.filter(i => i!= ctx.self).foreach(w => {
+                        w ! ReceiveAgentMap(workerId, simIds.asInstanceOf[Set[java.lang.Long]], ctx.self)
+                    })
+                    Behaviors.same
+                
+                case ListingResponse(LogControllerSpec.LoggerAggregateServiceKey.Listing(logger)) => 
+                    loggerRef = logger
+                    Behaviors.same
 
                 case ReceiveAgentMap(wid, nameIds, reply) => 
+                    // Assume a static partition where agents in each worker remains static
                     if (!peer_workers.containsKey(wid)){
                         val total = registeredWorkers.addAndGet(1)
                         nameIds.foreach(n => {
                             nameMap.putIfAbsent(n, wid)
                         })
                         peer_workers.putIfAbsent(wid, reply)
-                        if (total == totalWorkers - 1){
-                            ctx.system.receptionist ! Receptionist.Register(WorkerStartServiceKey, ctx.self)
-                            ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
-                        }
                     }
                     Behaviors.same
 
@@ -118,7 +104,7 @@ class Worker {
                     }
                     // val end = System.currentTimeMillis()
                     // ctx.log.info(f"Worker ${workerId} processes message takes ${end-start} ms")
-                    worker()
+                    Behaviors.same
                     
                 case RoundStart() =>
                     ctx.log.debug(f"Worker ${workerId} starts! Received from ${receivedWorkers.keys().toSet}")
@@ -153,7 +139,7 @@ class Worker {
                         message_map = collectedMessages.toMap.groupBy(i => nameMap.getOrElse(i._1, workerId))
                     } 
                     ctx.self ! AgentsCompleted()
-                    worker()
+                    Behaviors.same
 
                 case ExpectedReceives(replyTo, acceptedInterval, availability) => 
                     // send out messages to other workers only at the beginning of a round to avoid race condition
@@ -171,13 +157,15 @@ class Worker {
                     if (receivedWorkers.keys().size == totalWorkers-1){
                         ctx.self ! RoundStart()
                     } 
-                    worker()
+                    Behaviors.same
                     
                 case AgentsCompleted() =>
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms, propose ${proposeInterval}")
                     if (logControllerEnabled){
-                        loggerRef ! LogControllerSpec.AggregateLog(workerId, logicalClock, local_sims.map(s => s._2).map(agent => simulation.akka.API.OptimizationConfig.timeseriesSchema.mapper(agent.SimClone())))
+                        loggerRef.foreach(logger => 
+                            logger ! LogControllerSpec.AggregateLog(workerId, logicalClock, local_sims.map(s => s._2).map(agent => simulation.akka.API.OptimizationConfig.timeseriesSchema.mapper(agent.SimClone())).toSeq)
+                        )
                     }
 
                     sendToRef ! SendTo(workerId, proposeInterval)
@@ -187,6 +175,7 @@ class Worker {
                 case Stop() =>
                     ctx.log.debug(f"Stop worker ${workerId}")
                     Behaviors.stopped
+                }
             }
         }
 }

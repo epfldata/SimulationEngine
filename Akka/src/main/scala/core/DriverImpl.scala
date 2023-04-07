@@ -54,7 +54,7 @@ class Driver {
                     workersStart = workers
                 } 
                 InitializeWorkers()
-            
+
             case LogControllerSpec.LoggerStopServiceKey.Listing(logger) =>
                 ctx.log.debug(f"Log controller registered!")
                 if (logger.size > 0) {
@@ -66,7 +66,7 @@ class Driver {
 
         ctx.system.receptionist ! Receptionist.Subscribe(WorkerSpec.WorkerStartServiceKey, workerSub)
         ctx.system.receptionist ! Receptionist.Subscribe(WorkerSpec.WorkerStopServiceKey, workerSub)
-        // Allow users to disable log controller
+        // Allow users to disable log controller        // Allow users to disable log controller
         if (logControllerEnabled) {
             ctx.system.receptionist ! Receptionist.Subscribe(LogControllerSpec.LoggerStopServiceKey, workerSub)
         }
@@ -77,11 +77,13 @@ class Driver {
         Behaviors.receive[DriverEvent] { (ctx, message) => 
             message match { 
                 case InitializeWorkers() =>
-                    if (!workersStart.isEmpty && !workersStop.isEmpty){
-                        initialStart = System.currentTimeMillis()
-                        ctx.log.debug("All workers are initialized! Start round.")
-                        ctx.self ! RoundStart()
-                    } 
+                    if ((!workersStart.isEmpty) && (!workersStop.isEmpty)){
+                        if ((!logControllerEnabled) || (logControllerEnabled && (!loggerStop.isEmpty))) {
+                            initialStart = System.currentTimeMillis()
+                            ctx.log.debug("All workers are initialized! Start round.")
+                            ctx.self ! RoundStart()
+                        }
+                    }
                     Behaviors.same
 
                 case RoundStart() => {

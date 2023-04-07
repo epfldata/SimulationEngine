@@ -1,3 +1,4 @@
 package meta.runtime
 
-trait JsonSerializable
+// @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+trait JsonSerializable 

@@ -3,6 +3,7 @@ package meta.runtime
 import Actor.AgentId
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes, JsonTypeName}
 
+@JsonTypeName("Message")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
   Array(
