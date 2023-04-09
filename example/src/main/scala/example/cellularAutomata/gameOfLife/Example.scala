@@ -8,11 +8,12 @@ object MainInit {
     val liftedMain = meta.classLifting.liteLift {
         def apply(edgeFilePath: String): List[Actor] = {
             var edges: Map[Long, Iterable[Long]] = LoadGraph(edgeFilePath)
+            // map is unordered, hence input agents can be out of order
             edges.map(i => {
                 val cell = if (Random.nextBoolean) {
                     new Cell(1)
                 } else {
-                    new Cell(1)
+                    new Cell(0)
                 }
                 cell.id = i._1
                 cell.connectedAgentIds = i._2
