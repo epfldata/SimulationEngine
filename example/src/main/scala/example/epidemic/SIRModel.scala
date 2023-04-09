@@ -1,8 +1,7 @@
 package example
 package epidemic
 
-import scala.util.Random
-import scala.math.{min, max}
+import scala.math.max
 import breeze.stats.distributions.Gamma
 
 // Extended SIR model

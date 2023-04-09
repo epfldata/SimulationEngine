@@ -3,25 +3,30 @@ package gameOfLifeRPC
 
 import scala.collection.mutable.{Map => MutMap}
 
-import lib.Graph.Torus2DGraph
+import cloudcity.lib.Graph.GenerateGraph.Torus2DGraph
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
         def apply(width: Int, height: Int): List[Actor] = {
             val totalPoints: Int = width * height
             // 2D space
-            val neighborRadius: Int = 1
+            val graph: Map[Long, Iterable[Long]] = Torus2DGraph(width, height)
 
-            val points = (1 to totalPoints).map(x => {
-                if (Random.nextBoolean()){
+            val cells = graph.map(i => {
+                val cell = if (Random.nextBoolean()){ 
                     new Cell(1)
                 } else {
                     new Cell(0)
                 }
-            }).toList
+                cell.id = i._1
+                (i._1, cell)
+            })
 
-            Torus2DGraph(points, width, height, neighborRadius)
-            points
+            cells.map(c => {
+                c._2.connectedAgents = graph(c._1).map(i => cells(i))
+            })
+
+            cells.values.toList
         }
     }
 }

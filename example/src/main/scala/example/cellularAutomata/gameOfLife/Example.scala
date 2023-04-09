@@ -1,23 +1,13 @@
 package example
 package gameOfLife
 
-import scala.io.Source
+import cloudcity.lib.Graph.LoadGraph
 
 // This MainInit demonstrates how to use an external edge file as the social graph of a simulation
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
         def apply(edgeFilePath: String): List[Actor] = {
-
-            val source = Source.fromFile(edgeFilePath)
-            var edges: Map[Long, List[Long]] = Map[Long, List[Long]]()
-            for (line <- source.getLines()) {
-                val fields = line.split(" ")
-                val srcId: Long = fields(0).toLong
-                val dstId: Long = fields(1).toLong
-                edges = edges + (srcId -> (dstId :: edges.getOrElse(srcId, List())))
-            }
-            source.close()
-
+            var edges: Map[Long, Iterable[Long]] = LoadGraph(edgeFilePath)
             edges.map(i => {
                 val cell = if (Random.nextBoolean) {
                     new Cell(1)

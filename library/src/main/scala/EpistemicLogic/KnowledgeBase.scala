@@ -1,6 +1,5 @@
-package lib.EpistemicLogic
-
-import EpistemicLogicCommon._
+package cloudcity.lib
+package EpistemicLogic
 
 object KnowledgeBase {
   type Rule = EpistemicSentence => Boolean
