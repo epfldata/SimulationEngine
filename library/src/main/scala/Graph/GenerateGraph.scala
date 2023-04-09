@@ -69,7 +69,7 @@ object BipartiteGraph extends GenerateGraph {
         (Range(startingIndex, set1Size + startingIndex).map(i => {
             (i.toLong, Range(set1Size + startingIndex, set2Size).map(_.toLong))
         }) ++ Range(startingIndex + set1Size, startingIndex + set1Size + set2Size).map(i => {
-            (i.toLong, Range(startingIndex, startingIndex +startingIndex).map(_.toLong))
+            (i.toLong, Range(startingIndex, startingIndex +startingIndex + set1Size).map(_.toLong))
         })).toMap
     }
 }
