@@ -3,8 +3,7 @@ package gameOfLife
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-import meta.runtime.Message
-// import meta.io._
+import meta.runtime._
 
 /**
   * Conway's game of life
@@ -20,8 +19,7 @@ class Cell(var alive: Int) extends Actor {
         while(true) {
             // Messages are buffered and not delivered immediately
             connectedAgentIds.foreach(i => {
-              val msg = new Message()
-              msg.value = alive.toDouble
+              val msg = new IntMessage(alive)
               sendMessage(i, msg)
             })
             // Messages are sent and arrive at the beginning of the next round
@@ -29,9 +27,8 @@ class Cell(var alive: Int) extends Actor {
 
             var m: Option[Message] = receiveMessage()
             aliveNeighbors = 0
-            
             while (m.isDefined){
-              aliveNeighbors = aliveNeighbors + m.get.value.toInt
+              aliveNeighbors = aliveNeighbors + m.get.asInstanceOf[IntMessage].value
               m = receiveMessage()
             }
 

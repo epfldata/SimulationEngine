@@ -1,29 +1,64 @@
 package meta.runtime
 
 import Actor.AgentId
-import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes, JsonTypeName}
+import scala.math.BigInt
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonSubTypes(
-  Array(
-    new JsonSubTypes.Type(value = classOf[DoubleArrayMessage], name = "doubleArrayMessage"),
-    new JsonSubTypes.Type(value = classOf[TimedMessage], name = "timedMessage")))
-class Message extends JsonSerializable {
-  var value: Double = 0
+class Message {
+  def toBinary(): Array[Byte] = ???
+  def fromBinary(bytes: Array[Byte]): AnyRef = ???
 }
 
-@JsonTypeName("doubleArrayMessage")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-class DoubleArrayMessage(size: Int) extends Message {
-  var doubleArrayValue: Array[Double] = new Array[Double](size)
+case class BooleanMessage(value: Boolean) extends Message {
+  override def toBinary(): Array[Byte] = {
+    if (value) {
+      Array(0)
+    } else {
+      Array(1)
+    }
+  }
 }
 
-@JsonTypeName("timedMessage")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonSubTypes(
-  Array(
-    new JsonSubTypes.Type(value = classOf[RequestMessage], name = "requestMessage"),
-    new JsonSubTypes.Type(value = classOf[ResponseMessage], name = "responseMessage")))
+object BooleanMessage {
+  def fromBinary(bytes: Array[Byte]): Boolean = {
+    bytes.head match {
+      case 0 => true
+      case 1 => false
+    }
+  }
+}
+
+case class IntMessage(value: Int) extends Message {
+  override def toBinary(): Array[Byte] = {
+    BigInt(value).toByteArray
+  }
+}
+
+case object IntMessage {
+  def fromBinary(bytes: Array[Byte]): Int = {
+    BigInt(bytes).toInt
+  }
+}
+
+case class DoubleMessage(value: Double) extends Message {
+  override def toBinary(): Array[Byte] = {
+      val l = java.lang.Double.doubleToLongBits(value)
+      val a = Array.fill(8)(0.toByte)
+      for (i <- 0 to 7) a(i) = ((l >> ((7 - i) * 8)) & 0xff).toByte
+      a
+  }
+}
+
+case object DoubleMessage {
+  def fromBinary(bytes: Array[Byte]): Double = {
+    var i = 0
+    var res = 0.toLong
+    for (i <- 0 to 7) {
+        res +=  ((bytes(i) & 0xff).toLong << ((7 - i) * 8))
+    }
+    java.lang.Double.longBitsToDouble(res)
+  }
+}
+
 class TimedMessage extends Message {
   var send_time: Int = 0
   var latency: Int = 1  // the allowed delay of the message
@@ -37,7 +72,6 @@ class TimedMessage extends Message {
   * @param send_time the timestamp of the send message
   * @param argss the arguments of the method
   */
-@JsonTypeName("requestMessage")
 case class RequestMessage(senderId: AgentId,
                           sessionId: Option[String],
                           methodInfo: String,
@@ -49,6 +83,5 @@ case class RequestMessage(senderId: AgentId,
   * @param arg the return value of the method/answer of the request message
   * @param sessionId the same as that of the request
   */
-@JsonTypeName("responseMessage")
 case class ResponseMessage(arg: Any, sessionId: String)
     extends TimedMessage
