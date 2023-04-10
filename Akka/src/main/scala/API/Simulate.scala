@@ -35,7 +35,6 @@ object Simulate {
         val totalMachines: Int = ConfigFactory.load("driver-worker").getValue("driver-worker.total-machines").render().toInt
         var totalWorkers = workersPerMachine * totalMachines
         println(f"${totalMachines} total machines, ${totalWorkers} total workers")
-
         val actorSystem = ActorSystem(AkkaExp(totalTurn, totalWorkers), "SimsCluster", config)
         Await.ready(actorSystem.whenTerminated, 10.days)
         println("Simulation ends!")
@@ -64,7 +63,6 @@ object Simulate {
 
     def apply(actors: List[Actor], totalTurn: Int, 
               role: String= "Standalone", port: Int = 25251): SimulationSnapshot = {
-
         initialize()    
         val config = ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port=$port

@@ -18,6 +18,7 @@ class Worker {
     private var totalAgents: Int = 0
     private var totalWorkers: Int = 0
     private val nameMap: ConcurrentHashMap[Long, Int] = new ConcurrentHashMap[Long, Int]()
+    // private val nameMapCache: MutMap[Long, Int] = MutMap[Long, Int]()
     private val peer_workers: ConcurrentHashMap[Int, ActorRef[ReceiveMessages]] = new ConcurrentHashMap[Int, ActorRef[ReceiveMessages]]() 
     private var message_map: Map[Int, Map[Long, List[Message]]] = Map[Int, Map[Long, List[Message]]]()
     private val receivedWorkers = new ConcurrentHashMap[Int, Int]()
@@ -103,12 +104,12 @@ class Worker {
                     Behaviors.same
 
                 case ReceiveMessages(wid, messages) =>
-                    // val start = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} receives ${messages.size} messages from worker ${wid}")
                     receivedWorkers.computeIfAbsent(wid, x => {
                         for (m <- messages) {
-                            // local_sims(m._1).receivedMessages.addAll(m._2)
                             local_sims(m._1).receivedMessages :::= m._2
+                            // local_sims(m._1).receivedMessages :::= m._2._1
+                            // local_sims(m._1).receivedSerializedMessages :::= m._2._2
                         }
                         0
                     })
@@ -116,41 +117,50 @@ class Worker {
                     if (receivedWorkers.keys().size == totalWorkers-1){
                         ctx.self ! RoundStart()
                     }
-                    // val end = System.currentTimeMillis()
-                    // ctx.log.info(f"Worker ${workerId} processes message takes ${end-start} ms")
                     worker()
-                    
+                
                 case RoundStart() =>
                     ctx.log.debug(f"Worker ${workerId} starts! Received from ${receivedWorkers.keys().toSet}")
                     start = System.currentTimeMillis()
 
                     if (totalAgents > 0){
                         receivedWorkers.clear()
-                        var collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
+                        val collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
+                        // val collectedSerializedMessages: MutMap[Long, List[Array[Byte]]] = MutMap[Long, List[Array[Byte]]]()
 
                         var localRounds: Int = 0
                         while (localRounds < this.availability) {
-                            // collectedMessages.clear()
                             local_sims.foreach(a => {
                                 a._2.time += acceptedInterval
                                 val tmpProposeInterval = a._2.run()
                                 if (tmpProposeInterval < proposeInterval){
                                     proposeInterval = tmpProposeInterval
                                 }
-                                a._2.sendMessages.foreach(i => {
-                                    collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2.toList) 
-                                    // collectedMessages.update(i._1, collectedMessages.getOrElse(i._1, List[Message]()) ::: i._2) 
-                                })
+                                a._2.sendMessages.foreach(m => collectedMessages.update(m._1, collectedMessages.getOrElse(m._1, List[Message]()) ::: m._2.toList)) 
+                                // a._2.sendSerializedMessages.foreach(m => collectedSerializedMessages.update(m._1, collectedSerializedMessages.getOrElse(m._1, List[Array[Byte]]()) ::: m._2.toList))
                             })
                             // Deliver local messages to agents' mailboxes
                             collectedMessages.filterKeys(x => local_sims.get(x).isDefined).foreach(i => {
-                                // local_sims(i._1).receivedMessages.addAll(collectedMessages.remove(i._1).get)
                                 local_sims(i._1).receivedMessages :::= collectedMessages.remove(i._1).get
                             })
+                            // collecting serialized messages is experimental
+                            // collectedSerializedMessages.filterKeys(x => local_sims.get(x).isDefined).foreach(i => {
+                            //     local_sims(i._1).receivedSerializedMessages :::= collectedSerializedMessages.remove(i._1).get
+                            // })
                             acceptedInterval = proposeInterval
                             localRounds += proposeInterval
                         }
-                        message_map = collectedMessages.toMap.groupBy(i => nameMap.getOrElse(i._1, workerId))
+                        message_map = collectedMessages.toMap.groupBy(i => {
+                            nameMap.getOrElse(i._1, workerId)
+                            // val x = nameMapCache.get(i._1)
+                            // if (x.isDefined) {
+                            //     x.get
+                            // } else {
+                            //     val y = nameMap.getOrElse(i._1, workerId)
+                            //     nameMapCache.update(i._1, y)
+                            //     y
+                            // }
+                        })
                     } 
                     ctx.self ! AgentsCompleted()
                     worker()

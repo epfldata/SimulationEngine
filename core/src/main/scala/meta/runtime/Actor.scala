@@ -48,12 +48,15 @@ class Actor extends Serializable {
   // val receivedMessages: ConcurrentLinkedQueue[Message] = new ConcurrentLinkedQueue[Message]()
   var receivedMessages: List[Message] = List[Message]()
 
+  var receivedSerializedMessages: List[Array[Byte]] = List[Array[Byte]]()
+
   /**
     * Contains the messages, which should be sent to other actors in the next step
     */
-    // Replace mutable with immutable ds, for Spark serialization
-  var sendMessages: MutMap[Long, Buffer[Message]] = MutMap[Long, Buffer[Message]]()
-  // var sendMessages: Map[Long, List[Message]] = Map[Long, List[Message]]()
+  val sendMessages: MutMap[Long, Buffer[Message]] = MutMap[Long, Buffer[Message]]()
+  
+  val sendSerializedMessages: MutMap[Long, Buffer[Array[Byte]]] = MutMap[Long, Buffer[Array[Byte]]]()
+
 
   /**
     * A map of listeners, which is required to register a listener for a response of a request message
@@ -77,12 +80,14 @@ class Actor extends Serializable {
   }
 
   final def sendMessage(receiver: Long, message: Message): Unit = {
-    // sendMessages = sendMessages + (receiver -> (message :: sendMessages.getOrElse(receiver, List[Message]()))) 
     sendMessages.getOrElseUpdate(receiver, new ListBuffer[Message]()).append(message)
   }
 
+  final def sendSerializedMessage(receiver: Long, message: Array[Byte]): Unit = {
+    sendSerializedMessages.getOrElseUpdate(receiver, new ListBuffer[Array[Byte]]).append(message)
+  }
+
   final def receiveMessage(): Option[Message] = {
-    // val ans = receivedMessages.poll()
     val ans = receivedMessages.headOption
     if (ans == None){
       return None
@@ -92,20 +97,29 @@ class Actor extends Serializable {
     }
   }
 
+  final def receiveSerializedMessage(): Option[Array[Byte]] = {
+    val ans = receivedSerializedMessages.headOption
+    if (ans == None){
+      return None
+    } else {
+      receivedSerializedMessages = receivedSerializedMessages.tail
+      ans
+    }
+  }
+
+
   var scheduledRPCRequests: Map[Int, List[RequestMessage]] = Map[Int, List[RequestMessage]]()
 
+  // Only applicable for Message type
   def messageListener(): Unit = {
-    val totalMessages = receivedMessages.size
-
-    Range(0, totalMessages).foreach(i => {
-      val msg = receivedMessages.head
+    receivedMessages = receivedMessages.filter(msg => {
       msg match {
         case m: ResponseMessage => 
           if (responseListeners.get(m.sessionId).isDefined){
             responseListeners.get(m.sessionId).get(m)
             responseListeners = responseListeners - m.sessionId 
           }
-          receivedMessages = receivedMessages.tail
+          false
         case m: RequestMessage =>
           // send_time is 0-based
           val procTime = m.send_time + m.latency
@@ -115,9 +129,9 @@ class Actor extends Serializable {
           } else {
             scheduledRPCRequests = scheduledRPCRequests + (procTime -> List(m))
           }
-          receivedMessages = receivedMessages.tail
+          false
         case m: Message =>
-          // receivedMessages.add(m)
+          true
       }
     })
   }
@@ -157,9 +171,4 @@ class Actor extends Serializable {
   def SimReset(args: Set[String] = Set()): Unit = {}
   
   def handleRPC(): Unit = {}
-  
-  def runAndEval[K](mapper: Actor=>K): K = {
-    run() 
-    mapper(this)
-  }
 }

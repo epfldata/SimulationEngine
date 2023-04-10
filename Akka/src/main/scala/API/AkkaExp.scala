@@ -7,10 +7,12 @@ import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 import scala.collection.JavaConversions._
 import akka.actor.typed.{Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.NoSerializationVerificationNeeded
+
 // import akka.actor.typed.DispatcherSelector
 
 object AkkaExp {
-    sealed trait Command
+    sealed trait Command extends NoSerializationVerificationNeeded
     final case class SpawnDriver(totalWorkers: Int, totalTurn: Int) extends Command
     final case class SpawnWorker(workerId: Int, sims: Seq[Actor], totalWorkers: Int) extends Command
     final case class SpawnLogController(totalWorkers: Int) extends Command

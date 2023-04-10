@@ -26,6 +26,7 @@ object WorkerSpec {
     // since current worker may have not finished and the agent can accidentally see and process (if not timed) future messages
     @JsonTypeName("ReceiveMessages")
     final case class ReceiveMessages(workerId: Int, messages: Map[java.lang.Long, List[Message]]) extends WorkerEvent with JsonSerializable
+    // final case class ReceiveMessages(workerId: Int, messages: Map[java.lang.Long, (List[Message], List[Array[Byte]])]) extends WorkerEvent with JsonSerializable
     @JsonTypeName("ReceiveAgentMap")
     final case class ReceiveAgentMap(workerId: Int, agentIds: Iterable[java.lang.Long], replyTo: ActorRef[ReceiveMessages]) extends WorkerEvent with JsonSerializable
     @JsonTypeName("SendTo")

@@ -9,15 +9,11 @@ object Simulate {
       var currentRound: Int = 0
       var elapsedRound: Int = 0
       var collectedMessages: MutMap[Long, Buffer[Message]] = MutMap[Long, Buffer[Message]]()
+      var collectedSerializedMessages: MutMap[Long, Buffer[Array[Byte]]] = MutMap[Long, Buffer[Array[Byte]]]()
       var actors: Traversable[Actor] = agents
-            // Upon resuming
-      actors.foreach(a => 
-        a.sendMessages.foreach(i => {
-          collectedMessages.getOrElseUpdate(i._1, Buffer[Message]())++=i._2
-        }))
 
-      var end: Long = System.currentTimeMillis()
-      val initial: Long = end
+      val initial: Long = System.currentTimeMillis()
+      var end: Long = initial
 
       while (currentRound < totalRound) {
         val start: Long = end
@@ -33,14 +29,24 @@ object Simulate {
           a.sendMessages.foreach(i => {
             collectedMessages.getOrElseUpdate(i._1, Buffer[Message]())++=i._2
           })
+          a.sendSerializedMessages.foreach(i => {
+            collectedSerializedMessages.getOrElseUpdate(i._1, Buffer[Array[Byte]]())++=i._2
+          })
           proposed
         }).min
 
         actors.filterNot(_.deleted).foreach(a => {
-          a.receivedMessages :::= (a.proxyIds.flatMap(id => collectedMessages.getOrElse(id, Buffer())))
+          a.receivedMessages :::= (a.proxyIds.flatMap(id => {
+            collectedMessages.getOrElse(id, Buffer())
+          }))
+          a.receivedSerializedMessages :::= (a.proxyIds.flatMap(id => {
+            collectedSerializedMessages.getOrElse(id, Buffer())
+          }))
         })
+
         currentRound += elapsedRound
         collectedMessages.clear()
+        collectedSerializedMessages.clear()
         end = System.currentTimeMillis()
         println(f"Round ${currentRound} takes ${end-start} ms")
       }
