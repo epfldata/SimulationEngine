@@ -24,8 +24,8 @@ class NewSimTest extends FlatSpec {
     "Generating new agents" should "compile" in {
         val liftMyClass: ClassWithObject[NewSim] = NewSim.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
-                List(new NewSim())
+            def apply(): IndexedSeq[Actor] = {
+                Vector(new NewSim())
             }
         }
 

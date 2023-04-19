@@ -120,8 +120,6 @@ class CommunicatingVehicle(val neighbors: List[Vehicle]) extends Vehicle {
 }
 
 class InheritanceTestRootLifted extends FlatSpec {
-    import meta.deep.IR.Predef._
-    import meta.classLifting.Lifter
 
     "Inherit from a lifted agent" should "invoke the right function" in {
         
@@ -131,23 +129,23 @@ class InheritanceTestRootLifted extends FlatSpec {
         val vanClass: ClassWithObject[Van] = Van.reflect(IR)
         val cVehicleClass: ClassWithObject[CommunicatingVehicle] = CommunicatingVehicle.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
+            def apply(): IndexedSeq[Actor] = {
                 val v = new Vehicle()
                 val s = new ShortDistanceTransport()
                 val bus = new Bus()
                 val van = new Van()
                 val c = new CommunicatingVehicle(List(v, s, bus, van))
-                List(v, s, bus, van, c)
+                Vector(v, s, bus, van, c)
             }
         }
 
         compileSims(List(
-        vehicleClass, 
-        shortDistanceClass, 
-        busClass, vanClass, cVehicleClass
+            vehicleClass, 
+            shortDistanceClass, 
+            busClass, vanClass, cVehicleClass
         ), 
-            mainInit = Some(liftedMain), 
-            initPkgName = Some("core.test.inheritance2"),
-            destFolder = "gen-core/src/main/scala/inheritance2/")
+        mainInit = Some(liftedMain), 
+        initPkgName = Some("core.test.inheritance2"),
+        destFolder = "gen-core/src/main/scala/inheritance2/")
     }
 }

@@ -80,11 +80,11 @@ class InheritanceTestRootNonlifted extends FlatSpec {
         val studentClass: ClassWithObject[Student] = Student.reflect(IR)
 
         val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
+            def apply(): IndexedSeq[Actor] = {
                 val teacher = new Teacher()
                 val worker = new Worker()
                 val student = new Student(teacher)
-                List(teacher, worker, student)
+                Vector(teacher, worker, student)
             }
         }
 

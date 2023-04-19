@@ -13,7 +13,7 @@ import akka.actor.NoSerializationVerificationNeeded
 
 object AkkaExp {
     sealed trait Command extends NoSerializationVerificationNeeded
-    final case class SpawnDriver(totalWorkers: Int, totalTurn: Int) extends Command
+    final case class SpawnDriver(totalWorkers: Int, totalTurn: Long) extends Command
     final case class SpawnWorker(workerId: Int, sims: Seq[Actor], totalWorkers: Int) extends Command
     final case class SpawnLogController(totalWorkers: Int) extends Command
     final case class DriverStopped() extends Command
@@ -26,7 +26,7 @@ object AkkaExp {
     var activeWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
     var finalAgents: ConcurrentLinkedQueue[Actor] = new ConcurrentLinkedQueue[Actor]()
 
-    def materializedMachine(mid: Int, totalTurn: Int, totalWorkers: Int, actors: List[Actor]=List()): Behavior[Command] = 
+    def materializedMachine(mid: Int, totalTurn: Long, totalWorkers: Int, actors: IndexedSeq[Actor]=Vector[Actor]()): Behavior[Command] = 
         Behaviors.setup { ctx => 
             cluster = Cluster(ctx.system)
             this.totalWorkers = totalWorkers
@@ -52,7 +52,7 @@ object AkkaExp {
             waitTillFinish(Vector.empty)
         }
 
-    def apply(totalTurn: Int, totalWorkers: Int, actors: List[Actor]=List()): Behavior[Command] = 
+    def apply(totalTurn: Long, totalWorkers: Int, actors: IndexedSeq[Actor]=Vector[Actor]()): Behavior[Command] = 
         Behaviors.setup { ctx => 
             cluster = Cluster(ctx.system)
             this.totalWorkers = totalWorkers

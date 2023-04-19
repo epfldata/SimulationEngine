@@ -14,9 +14,9 @@ object LogControllerSpec {
         new JsonSubTypes.Type(value = classOf[Stop], name = "Stop")))
     sealed trait LogControllerEvent
     @JsonTypeName("AggregateLog")
-    final case class AggregateLog(wid: Int, time: Int, agents: Iterable[Serializable]) extends LogControllerEvent with JsonSerializable
+    final case class AggregateLog(wid: Int, time: Long, agents: Iterable[Serializable]) extends LogControllerEvent with JsonSerializable
     @JsonTypeName("Stop")
-    final case class Stop(time: Int, reply: ActorRef[DriverSpec.LogControllerFinished]) extends LogControllerEvent with JsonSerializable
+    final case class Stop(time: Long, reply: ActorRef[DriverSpec.LogControllerFinished]) extends LogControllerEvent with JsonSerializable
 
     val LoggerAggregateServiceKey = ServiceKey[AggregateLog]("AggregateLog")
     val LoggerStopServiceKey = ServiceKey[Stop]("Stop")

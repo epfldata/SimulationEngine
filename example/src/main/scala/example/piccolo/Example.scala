@@ -6,13 +6,13 @@ import scala.collection.mutable.Map
 // MutMap would result in compilation error
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(): List[Actor] = {
+        def apply(): IndexedSeq[Actor] = {
             val partition = new GraphTable(Map(1 -> List(2), 2-> List(1, 3), 3 -> List(2)))
             // Initially all pages have equal ranks
             val current = new Table(Map(1 -> 1, 2-> 1, 3->1))
             val next = new Table(Map(1 -> 1, 2-> 1, 3->1))
             val kernel = new PageRankKernel(current, next, partition)
-            List(partition, current, next, kernel)
+            Vector(partition, current, next, kernel)
         }
     }
 }

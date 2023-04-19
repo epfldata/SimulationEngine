@@ -6,7 +6,7 @@ import cloudcity.lib.Graph.LoadGraph
 // This MainInit demonstrates how to use an external edge file as the social graph of a simulation
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(edgeFilePath: String): List[Actor] = {
+        def apply(edgeFilePath: String): IndexedSeq[Actor] = {
             var edges: Map[Long, Iterable[Long]] = LoadGraph(edgeFilePath)
             // map is unordered, hence input agents can be out of order
             edges.map(i => {
@@ -18,7 +18,7 @@ object MainInit {
                 cell.id = i._1
                 cell.connectedAgentIds = i._2
                 cell
-            }).toList
+            }).toVector
         }
     }
 }

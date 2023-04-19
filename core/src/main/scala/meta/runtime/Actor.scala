@@ -1,6 +1,6 @@
 package meta.runtime
 
-import scala.collection.mutable.{Buffer, ListBuffer, Map => MutMap}
+import scala.collection.mutable.{Buffer, Map => MutMap}
 
 /**
   * This object handles the unique id generation of an actor
@@ -37,7 +37,7 @@ class Actor extends Serializable {
 
   var proxyIds: List[AgentId] = List(id)
 
-  var time: Int = 0
+  var time: Long = 0
   
   var deleted: Boolean = false
 
@@ -46,9 +46,9 @@ class Actor extends Serializable {
     * Contains the received messages from the previous step
     */
   // val receivedMessages: ConcurrentLinkedQueue[Message] = new ConcurrentLinkedQueue[Message]()
-  var receivedMessages: List[Message] = List[Message]()
+  var receivedMessages: Buffer[Message] = Buffer[Message]()
 
-  var receivedSerializedMessages: List[Array[Byte]] = List[Array[Byte]]()
+  var receivedSerializedMessages: Buffer[Array[Byte]] = Buffer[Array[Byte]]()
 
   /**
     * Contains the messages, which should be sent to other actors in the next step
@@ -80,35 +80,32 @@ class Actor extends Serializable {
   }
 
   final def sendMessage(receiver: Long, message: Message): Unit = {
-    sendMessages.getOrElseUpdate(receiver, new ListBuffer[Message]()).append(message)
+    sendMessages.getOrElseUpdate(receiver, Buffer[Message]()) += message
   }
 
   final def sendSerializedMessage(receiver: Long, message: Array[Byte]): Unit = {
-    sendSerializedMessages.getOrElseUpdate(receiver, new ListBuffer[Array[Byte]]).append(message)
+    sendSerializedMessages.getOrElseUpdate(receiver, Buffer[Array[Byte]]()) += message
   }
 
   final def receiveMessage(): Option[Message] = {
     val ans = receivedMessages.headOption
-    if (ans == None){
-      return None
+    if (ans.isDefined) {
+      Some(receivedMessages.remove(0))
     } else {
-      receivedMessages = receivedMessages.tail
-      ans
+      None
     }
   }
 
   final def receiveSerializedMessage(): Option[Array[Byte]] = {
     val ans = receivedSerializedMessages.headOption
-    if (ans == None){
-      return None
+    if (ans.isDefined) {
+      Some(receivedSerializedMessages.remove(0))
     } else {
-      receivedSerializedMessages = receivedSerializedMessages.tail
-      ans
+      None
     }
   }
 
-
-  var scheduledRPCRequests: Map[Int, List[RequestMessage]] = Map[Int, List[RequestMessage]]()
+  val scheduledRPCRequests: MutMap[Long, Buffer[RequestMessage]] = MutMap[Long, Buffer[RequestMessage]]()
 
   // Only applicable for Message type
   def messageListener(): Unit = {
@@ -123,12 +120,7 @@ class Actor extends Serializable {
         case m: RequestMessage =>
           // send_time is 0-based
           val procTime = m.send_time + m.latency
-          val existing = scheduledRPCRequests.get(procTime)
-          if (existing.isDefined) {
-            scheduledRPCRequests = scheduledRPCRequests + (procTime -> (m :: existing.get))
-          } else {
-            scheduledRPCRequests = scheduledRPCRequests + (procTime -> List(m))
-          }
+          scheduledRPCRequests.getOrElseUpdate(procTime, Buffer[RequestMessage]()) += m
           false
         case m: Message =>
           true
@@ -148,9 +140,8 @@ class Actor extends Serializable {
   }
 
   /**
-    * Stub, gets overriden by generated code
-    * messages: a list of input messages
-    * return: (a list of output messages, passed rounds)
+    * The API for interacting with the runtime, called at the beginning of a round
+    * return the proposed interval
     */
   def run(): Int = {
     ???

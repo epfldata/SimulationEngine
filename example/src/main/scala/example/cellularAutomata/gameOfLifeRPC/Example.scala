@@ -7,9 +7,9 @@ import cloudcity.lib.Graph.GenerateGraph.Torus2DGraph
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(width: Int, height: Int): List[Actor] = {
+        def apply(width: Int, height: Int): IndexedSeq[Actor] = {
             // sequential order of input agents
-            val cells: List[Actor] = Range(0, width * height).map(i => {
+            val cells = Range(0, width * height).map(i => {
                 val cell = if (Random.nextBoolean()){ 
                     new Cell(1)
                 } else {
@@ -18,7 +18,7 @@ object MainInit {
                 // Not strictly necessary. Just to be sure.
                 cell.id = i
                 cell
-            }).toList
+            })
 
             // 2D space
             val graph: Map[Long, Iterable[Long]] = Torus2DGraph(width, height)

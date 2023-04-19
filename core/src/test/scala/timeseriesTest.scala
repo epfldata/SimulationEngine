@@ -37,11 +37,11 @@ class timeseriesTest extends FlatSpec {
     "The counter agents" should "compile" in {
         val liftMyClass: ClassWithObject[CounterSim] = CounterSim.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
+            def apply(): IndexedSeq[Actor] = {
                 val s1 = new CounterSim(null)
                 val s2 = new CounterSim(s1)
                 val s3 = new CounterSim(s2)
-                List(s1, s2, s3)
+                Vector(s1, s2, s3)
             }
         }
 

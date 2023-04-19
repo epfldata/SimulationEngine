@@ -56,10 +56,10 @@ class MessageLatencyTest extends FlatSpec {
         val liftSender: ClassWithObject[Sender] = Sender.reflect(IR)
         val liftReceiver: ClassWithObject[Receiver] = Receiver.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
+            def apply(): IndexedSeq[Actor] = {
                 val r: Receiver = new Receiver()
                 val s: Sender = new Sender(r)
-                List(r, s)
+                Vector(r, s)
             }
         }
 

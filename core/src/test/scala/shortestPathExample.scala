@@ -45,12 +45,12 @@ class shortestPathExample extends FlatSpec {
     "Mutable agent" should "compile" in {
         val liftMyClass: ClassWithObject[Vertex] = Vertex.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
+            def apply(): IndexedSeq[Actor] = {
                 val totalVertices: Int = 50
                 // Fully connected 10 vertices
                 val vertices = (1 to totalVertices).map(i => {
                     new Vertex()
-                }).toList
+                })
 
                 (1 to totalVertices).foreach(i => {
                     vertices(i-1).connectedAgents = List(vertices(i % totalVertices))

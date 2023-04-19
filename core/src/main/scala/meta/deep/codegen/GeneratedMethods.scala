@@ -36,7 +36,6 @@ case object runUntil extends GeneratedMethods {
 s"""
   override def run(): Int = {
     ${if (hasRPCMethods) {"messageListener()"} else {""}}
-    sendMessages.clear()
     ${createCode.unblockRegMap(actorName)} = true
     while (${createCode.unblockRegMap(actorName)} && (${instructionRegister} < ${totalStates})) {
       ${memAddr}(${instructionRegister})()

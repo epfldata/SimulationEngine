@@ -465,7 +465,7 @@ class Lifter {
 
         case code"SpecialInstructions.waitRounds($y: Int)" =>
           defInGeneratedCode = false
-          val waitCounter = Variable[Int]
+          val waitCounter = Variable[Long]
           y match {
             case code"${Const(n)}: Int" =>
               if (n <= 0) {
@@ -480,7 +480,7 @@ class Lifter {
                 ScalaCode(code"${actorSelfVariable.toCode}.time + $y"),
                 DoWhile(code"${actorSelfVariable.toCode}.time < $waitCounter",
                   LetBinding(None,
-                            ScalaCode(code"${actorSelfVariable.toCode}.proposeInterval = $waitCounter - ${actorSelfVariable.toCode}.time"),
+                            ScalaCode(code"${actorSelfVariable.toCode}.proposeInterval = ($waitCounter - ${actorSelfVariable.toCode}.time).toInt"),
                             Wait()
                             ))).asInstanceOf[Algo[T]]
           cache += (cde -> f)

@@ -103,11 +103,11 @@ class methodNameTest extends FlatSpec {
         val foobar: ClassWithObject[FooBar] = FooBar.reflect(IR)
 
         val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
+            def apply(): IndexedSeq[Actor] = {
                 val a = new FooA()
                 val b = new BarA()
                 val c = new FooBar()
-                List(a, b, c)
+                Vector(a, b, c)
             }
         }
 

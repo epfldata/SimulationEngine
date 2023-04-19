@@ -14,9 +14,9 @@ class LogController {
     
     private var totalWorkers: Int = 0
     // partially aggregated results
-    val timeseries = new ConcurrentHashMap[Int, ConcurrentHashMap[Int, Iterable[Serializable]]]()
+    val timeseries = new ConcurrentHashMap[Long, ConcurrentHashMap[Long, Iterable[Serializable]]]()
     // apply reducer and drop entries that have been materialized from  
-    val reducedTimeseries = new ConcurrentHashMap[Int, Iterable[Serializable]]()
+    val reducedTimeseries = new ConcurrentHashMap[Long, Iterable[Serializable]]()
 
     var firstReceivedStop: Long = 0
     val timeout: Long = 1000    // ms
@@ -34,7 +34,7 @@ class LogController {
             message match { 
                 case AggregateLog(wid, time, agents) =>
                     timeseries.computeIfAbsent(time, x => {
-                        new ConcurrentHashMap[Int, Iterable[Serializable]]
+                        new ConcurrentHashMap[Long, Iterable[Serializable]]
                     }).put(wid, agents)
                     if (timeseries.get(time).size == totalWorkers) {
                         reducedTimeseries.computeIfAbsent(time, x => {

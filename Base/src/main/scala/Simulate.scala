@@ -5,8 +5,8 @@ import meta.runtime.{SimRuntime, Actor, Message}
 import meta.API.{SimulationSnapshot, util}
 
 object Simulate {
-    def apply(agents: Traversable[Actor], totalRound: Int): SimulationSnapshot = {
-      var currentRound: Int = 0
+    def apply(agents: Traversable[Actor], totalRound: Long): SimulationSnapshot = {
+      var currentRound: Long = 0
       var elapsedRound: Int = 0
       var collectedMessages: MutMap[Long, Buffer[Message]] = MutMap[Long, Buffer[Message]]()
       var collectedSerializedMessages: MutMap[Long, Buffer[Array[Byte]]] = MutMap[Long, Buffer[Array[Byte]]]()
@@ -28,18 +28,20 @@ object Simulate {
           var proposed = a.run()
           a.sendMessages.foreach(i => {
             collectedMessages.getOrElseUpdate(i._1, Buffer[Message]())++=i._2
+            i._2.clear()
           })
           a.sendSerializedMessages.foreach(i => {
             collectedSerializedMessages.getOrElseUpdate(i._1, Buffer[Array[Byte]]())++=i._2
+            i._2.clear()
           })
           proposed
         }).min
 
         actors.filterNot(_.deleted).foreach(a => {
-          a.receivedMessages :::= (a.proxyIds.flatMap(id => {
+          a.receivedMessages ++= (a.proxyIds.flatMap(id => {
             collectedMessages.getOrElse(id, Buffer())
           }))
-          a.receivedSerializedMessages :::= (a.proxyIds.flatMap(id => {
+          a.receivedSerializedMessages ++= (a.proxyIds.flatMap(id => {
             collectedSerializedMessages.getOrElse(id, Buffer())
           }))
         })

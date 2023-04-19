@@ -22,13 +22,12 @@ class MutableSim() extends Actor {
 }
 
 class CloneTest extends FlatSpec {
-    import meta.deep.IR.Predef._
 
     "Mutable agent" should "compile" in {
         val liftMyClass: ClassWithObject[MutableSim] = MutableSim.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
-                List(new MutableSim())
+            def apply(): IndexedSeq[Actor] = {
+                Vector(new MutableSim())
             }
         }
 

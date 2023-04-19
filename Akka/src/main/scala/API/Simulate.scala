@@ -8,22 +8,22 @@ import scala.concurrent.duration._
 import akka.actor.typed.ActorSystem
 
 object Simulate {
-    private var stoppedAgents = List[Actor]()
+    private var stoppedAgents = IndexedSeq[Actor]()
 
-    var lastWords: List[Message] = List[Message]()
+    var lastWords: IndexedSeq[Message] = IndexedSeq[Message]()
 
     def addStoppedAgents(agents: IndexedSeq[Actor]): Unit = {
-        stoppedAgents = agents.toList 
+        stoppedAgents = agents 
     }
 
     var timeseries: Iterable[Iterable[Serializable]] = null
 
     def initialize(): Unit = {
-        stoppedAgents=List()
-        lastWords=List()
+        stoppedAgents=IndexedSeq[Actor]()
+        lastWords=IndexedSeq[Message]()
     }
 
-    def driver(totalTurn: Int, port: Int = 25251): SimulationSnapshot = {
+    def driver(totalTurn: Long, port: Int = 25251): SimulationSnapshot = {
         initialize()    
 
         val config = ConfigFactory.parseString(s"""
@@ -43,7 +43,7 @@ object Simulate {
 
 
     // Materialized (actors are all containedActors)
-    def machine(mid: Int, actors: List[Actor], totalTurn: Int, port: Int = 0): SimulationSnapshot = {
+    def machine(mid: Int, actors: IndexedSeq[Actor], totalTurn: Long, port: Int = 0): SimulationSnapshot = {
         initialize()
         val config = ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port=$port
@@ -61,9 +61,9 @@ object Simulate {
         SimulationSnapshot(stoppedAgents, lastWords)
     }
 
-    def apply(actors: List[Actor], totalTurn: Int, 
+    def apply(actors: IndexedSeq[Actor], totalTurn: Long, 
               role: String= "Standalone", port: Int = 25251): SimulationSnapshot = {
-        initialize()    
+        initialize()
         val config = ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port=$port
             akka.cluster.roles = [$role]

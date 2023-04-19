@@ -38,7 +38,7 @@ class ResetTest extends FlatSpec {
     "Vertex with connections" should "compile" in {
         val liftMyClass: ClassWithObject[Vertex] = Vertex.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
+            def apply(): IndexedSeq[Actor] = {
                 val v1 = new Vertex()
                 val v2 = new Vertex()
                 val v3 = new Vertex()
@@ -57,7 +57,7 @@ class ResetTest extends FlatSpec {
                 v7.connectedAgents=List(v1, v2, v4, v5, v6, v3, v8)
                 v8.connectedAgents=List(v1, v2, v3, v5, v6, v7, v4)
 
-                List(v1, v2, v3, v4, v5, v6, v7, v8)
+                Vector(v1, v2, v3, v4, v5, v6, v7, v8)
             }
         }
 

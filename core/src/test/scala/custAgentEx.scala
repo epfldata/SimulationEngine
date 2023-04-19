@@ -2,8 +2,7 @@ package meta.test
 
 import meta.classLifting.SpecialInstructions._
 import squid.quasi.lift
-import meta.runtime._
-import org.scalatest.FlatSpec
+import meta.runtime.Actor
 
 // A test that shows how users can override methods in Actor for debugging or other purposes
 trait custActor extends Actor {

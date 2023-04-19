@@ -14,8 +14,8 @@ class Driver {
     import DriverSpec._
     
     private var totalWorkers: Int = 0
-    private var totalTurn: Int = 0
-    private var currentTurn: Int = 0
+    private var totalTurn: Long = 0
+    private var currentTurn: Long = 0
     // worker x, a list of workers which x expects messages from
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
     private var workersStop: Set[ActorRef[WorkerSpec.Stop]] = Set()
@@ -29,9 +29,8 @@ class Driver {
     var start: Long = 0
     var end: Long = 0
     var initialStart: Long = 0
-    val ts: ListBuffer[Long] = new ListBuffer[Long]()
 
-    def apply(workers: Int, maxTurn: Int): Behavior[DriverEvent] = Behaviors.setup {ctx =>
+    def apply(workers: Int, maxTurn: Long): Behavior[DriverEvent] = Behaviors.setup {ctx =>
         totalWorkers = workers
         totalTurn = maxTurn
         currentTurn = 0 
@@ -81,7 +80,7 @@ class Driver {
                         initialStart = System.currentTimeMillis()
                         ctx.log.debug("All workers are initialized! Start round.")
                         ctx.self ! RoundStart()
-                    } 
+                    }
                     Behaviors.same
 
                 case RoundStart() => {
@@ -115,7 +114,6 @@ class Driver {
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Driver receives notifications from all workers! Accepted interval ${acceptedInterval}")
                     ctx.log.info(f"Round ${currentTurn} takes ${end-start} ms")
-                    ts.append(end-start)
                     if (currentTurn >= totalTurn){
                         if (logControllerEnabled) {
                             loggerStop.foreach(a => a ! LogControllerSpec.Stop(currentTurn-1, ctx.self))

@@ -11,7 +11,7 @@ class InheritanceRootNonlifted extends FunSuite{
   // Messages are processed randomly, so both lists are possible.
   class Fixture {
     val agents = generated.core.test.inheritance.InitData()
-    val totalRounds: Int = 5
+    val totalRounds = 5
     val finalAgents = Simulate(agents, totalRounds).sims.toList
   }
 

@@ -68,11 +68,11 @@ class blockingMethodCallTest extends FlatSpec {
     "An agent with blocking method call" should "compile" in {
         val liftMyClass: ClassWithObject[AgentWithBlockingCall] = AgentWithBlockingCall.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
+            def apply(): IndexedSeq[Actor] = {
                 val a = new AgentWithBlockingCall(null)
                 val b = new AgentWithBlockingCall(a)
                 val c = new AgentWithBlockingCall(a)
-                List(a, b, c)
+                Vector(a, b, c)
             }
         }
 
@@ -85,9 +85,9 @@ class blockingMethodCallTest extends FlatSpec {
     "An agent that calls a local blocking method call" should "compile" in {
         val liftMyClass: ClassWithObject[AgentWithBlockingCallLocal] = AgentWithBlockingCallLocal.reflect(IR)
         val liftedMain = meta.classLifting.liteLift {
-            def apply(): List[Actor] = {
+            def apply(): IndexedSeq[Actor] = {
                 val a = new AgentWithBlockingCallLocal()
-                List(a)
+                Vector(a)
             }
         }
 

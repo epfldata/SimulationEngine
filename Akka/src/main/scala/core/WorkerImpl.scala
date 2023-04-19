@@ -1,7 +1,7 @@
 package simulation.akka.core
 
 import meta.runtime.{Actor, Message}
-import scala.collection.mutable.{Map => MutMap}
+import scala.collection.mutable.{Buffer, Map => MutMap}
 
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 import scala.collection.JavaConversions._
@@ -13,14 +13,15 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class Worker {
     import WorkerSpec._
-    private var local_sims: Map[Long, Actor] = Map[Long, Actor]()
+    private var localSims: Map[Long, Actor] = Map[Long, Actor]()
     private var workerId: Int = 0
     private var totalAgents: Int = 0
     private var totalWorkers: Int = 0
-    private val nameMap: ConcurrentHashMap[Long, Int] = new ConcurrentHashMap[Long, Int]()
-    // private val nameMapCache: MutMap[Long, Int] = MutMap[Long, Int]()
-    private val peer_workers: ConcurrentHashMap[Int, ActorRef[ReceiveMessages]] = new ConcurrentHashMap[Int, ActorRef[ReceiveMessages]]() 
-    private var message_map: Map[Int, Map[Long, List[Message]]] = Map[Int, Map[Long, List[Message]]]()
+    // key: agent id, value: worker id. Track which worker an agent is placed at
+    private val nameMap: MutMap[Long, Int] = MutMap[Long, Int]()
+    // private val nameMapCache: MutMap[Long, Long] = MutMap[Long, Long]()
+    private val peerWorkers: ConcurrentHashMap[Int, ActorRef[ReceiveMessages]] = new ConcurrentHashMap[Int, ActorRef[ReceiveMessages]]() 
+    private var messageMap: Map[Int, Map[Long, Seq[Message]]] = Map[Int, Map[Long, Seq[Message]]]()
     private val receivedWorkers = new ConcurrentHashMap[Int, Int]()
     private var sendToRef: ActorRef[SendTo] = null
     private var loggerRef: ActorRef[LogControllerSpec.AggregateLog] = null
@@ -28,17 +29,17 @@ class Worker {
     var start: Long = 0
     var end: Long = 0
     
-    private var logicalClock: Int = 0
+    private var logicalClock: Long = 0
     private var acceptedInterval: Int = 0
     private var proposeInterval: Int = Int.MaxValue
     private var availability: Int = 1
 
-    private var completedAgents: Int = 0
+    private var completedAgents: Long = 0
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
     private val logControllerEnabled = simulation.akka.API.OptimizationConfig.logControllerEnabled
 
     def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
-        local_sims = sims.map(x => (x.id, x)).toMap
+        localSims = sims.map(x => (x.id, x)).toMap
         totalAgents = sims.size
         this.totalWorkers = totalWorkers
         workerId = id
@@ -90,26 +91,37 @@ class Worker {
                     worker()
 
                 case ReceiveAgentMap(wid, nameIds, reply) => 
-                    if (!peer_workers.containsKey(wid)){
+                    peerWorkers.computeIfAbsent(wid, x => {
                         val total = registeredWorkers.addAndGet(1)
                         nameIds.foreach(n => {
-                            nameMap.putIfAbsent(n, wid)
+                            nameMap.update(n, wid)
                         })
-                        peer_workers.putIfAbsent(wid, reply)
                         if (total == totalWorkers - 1){
                             ctx.system.receptionist ! Receptionist.Register(WorkerStartServiceKey, ctx.self)
                             ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
                         }
-                    }
+                        reply
+                    })
+                    // if (!peerWorkers.containsKey(wid)){
+                    //     val total = registeredWorkers.addAndGet(1)
+                    //     nameIds.foreach(n => {
+                    //         nameMap.putIfAbsent(n, wid)
+                    //     })
+                    //     peerWorkers.putIfAbsent(wid, reply)
+                    //     if (total == totalWorkers - 1){
+                    //         ctx.system.receptionist ! Receptionist.Register(WorkerStartServiceKey, ctx.self)
+                    //         ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
+                    //     }
+                    // }
                     Behaviors.same
 
                 case ReceiveMessages(wid, messages) =>
                     ctx.log.debug(f"Worker ${workerId} receives ${messages.size} messages from worker ${wid}")
                     receivedWorkers.computeIfAbsent(wid, x => {
                         for (m <- messages) {
-                            local_sims(m._1).receivedMessages :::= m._2
-                            // local_sims(m._1).receivedMessages :::= m._2._1
-                            // local_sims(m._1).receivedSerializedMessages :::= m._2._2
+                            localSims(m._1).receivedMessages ++= m._2
+                            // localSims(m._1).receivedMessages :::= m._2._1
+                            // localSims(m._1).receivedSerializedMessages :::= m._2._2
                         }
                         0
                     })
@@ -125,41 +137,36 @@ class Worker {
 
                     if (totalAgents > 0){
                         receivedWorkers.clear()
-                        val collectedMessages: MutMap[Long, List[Message]] = MutMap[Long, List[Message]]()
-                        // val collectedSerializedMessages: MutMap[Long, List[Array[Byte]]] = MutMap[Long, List[Array[Byte]]]()
+                        val collectedMessages: MutMap[Long, Buffer[Message]] = MutMap[Long, Buffer[Message]]()
+                        // val collectedSerializedMessages: MutMap[Long, Buffer[Array[Byte]]] = MutMap[Long, Buffer[Array[Byte]]]()
 
-                        var localRounds: Int = 0
+                        var localRounds: Long = 0
                         while (localRounds < this.availability) {
-                            local_sims.foreach(a => {
+                            localSims.foreach(a => {
                                 a._2.time += acceptedInterval
                                 val tmpProposeInterval = a._2.run()
                                 if (tmpProposeInterval < proposeInterval){
                                     proposeInterval = tmpProposeInterval
                                 }
-                                a._2.sendMessages.foreach(m => collectedMessages.update(m._1, collectedMessages.getOrElse(m._1, List[Message]()) ::: m._2.toList)) 
+                                a._2.sendMessages.foreach(m => {
+                                    collectedMessages.getOrElseUpdate(m._1, Buffer[Message]()) ++= m._2
+                                    m._2.clear()
+                                })
                                 // a._2.sendSerializedMessages.foreach(m => collectedSerializedMessages.update(m._1, collectedSerializedMessages.getOrElse(m._1, List[Array[Byte]]()) ::: m._2.toList))
                             })
                             // Deliver local messages to agents' mailboxes
-                            collectedMessages.filterKeys(x => local_sims.get(x).isDefined).foreach(i => {
-                                local_sims(i._1).receivedMessages :::= collectedMessages.remove(i._1).get
+                            collectedMessages.filterKeys(x => localSims.get(x).isDefined).foreach(i => {
+                                localSims(i._1).receivedMessages ++= collectedMessages.remove(i._1).get
                             })
                             // collecting serialized messages is experimental
-                            // collectedSerializedMessages.filterKeys(x => local_sims.get(x).isDefined).foreach(i => {
-                            //     local_sims(i._1).receivedSerializedMessages :::= collectedSerializedMessages.remove(i._1).get
+                            // collectedSerializedMessages.filterKeys(x => localSims.get(x).isDefined).foreach(i => {
+                            //     localSims(i._1).receivedSerializedMessages :::= collectedSerializedMessages.remove(i._1).get
                             // })
                             acceptedInterval = proposeInterval
                             localRounds += proposeInterval
                         }
-                        message_map = collectedMessages.toMap.groupBy(i => {
+                        messageMap = collectedMessages.toMap.groupBy(i => {
                             nameMap.getOrElse(i._1, workerId)
-                            // val x = nameMapCache.get(i._1)
-                            // if (x.isDefined) {
-                            //     x.get
-                            // } else {
-                            //     val y = nameMap.getOrElse(i._1, workerId)
-                            //     nameMapCache.update(i._1, y)
-                            //     y
-                            // }
                         })
                     } 
                     ctx.self ! AgentsCompleted()
@@ -167,9 +174,9 @@ class Worker {
 
                 case ExpectedReceives(replyTo, acceptedInterval, availability) => 
                     // send out messages to other workers only at the beginning of a round to avoid race condition
-                    peer_workers.forEach((id, ref) => {
-                        if (message_map.get(id) != None){
-                            ref ! ReceiveMessages(workerId, message_map(id).asInstanceOf[Map[java.lang.Long, List[Message]]])
+                    peerWorkers.forEach((id, ref) => {
+                        if (messageMap.get(id) != None){
+                            ref ! ReceiveMessages(workerId, messageMap(id).asInstanceOf[Map[java.lang.Long, Seq[Message]]])
                         } else {
                             ref ! ReceiveMessages(workerId, Map())
                         }
@@ -187,7 +194,7 @@ class Worker {
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms, propose ${proposeInterval}")
                     if (logControllerEnabled){
-                        loggerRef ! LogControllerSpec.AggregateLog(workerId, logicalClock, local_sims.map(s => s._2).map(agent => simulation.akka.API.OptimizationConfig.timeseriesSchema.mapper(agent.SimClone())))
+                        loggerRef ! LogControllerSpec.AggregateLog(workerId, logicalClock, localSims.map(s => s._2).map(agent => simulation.akka.API.OptimizationConfig.timeseriesSchema.mapper(agent.SimClone())))
                     }
 
                     sendToRef ! SendTo(workerId, proposeInterval)

@@ -25,7 +25,7 @@ class DoubleArrayMessage(size: Int) extends Message {
     new JsonSubTypes.Type(value = classOf[RequestMessage], name = "requestMessage"),
     new JsonSubTypes.Type(value = classOf[ResponseMessage], name = "responseMessage")))
 class TimedMessage extends Message {
-  var send_time: Int = 0
+  var send_time: Long = 0
   var latency: Int = 1  // the allowed delay of the message
 }
 
