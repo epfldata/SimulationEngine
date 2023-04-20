@@ -9,8 +9,8 @@ trait GenerateGraph
 object ErdosRenyiGraph extends GenerateGraph {
     def apply(totalVertices: Int, edgeProb: Double, startingIndex: Int = 0): Map[Long, Iterable[Long]] = {
         val nodes = Range(startingIndex, totalVertices+startingIndex)
-        (0 to totalVertices).map(i => {
-            (i.toLong, nodes.filter(n => {
+        Range(0, totalVertices).map(i => {
+            (i.toLong + startingIndex, nodes.filter(n => {
                 (n!=i) && edgeProb > Random.nextDouble() 
             }).map(_.toLong))
         }).toMap
@@ -47,7 +47,7 @@ object SBMGraph extends GenerateGraph {
 }
 
 object Torus2DGraph extends GenerateGraph {
-    def apply(width: Int, height: Int, startingIndex: Int = 0): Map[Long, Iterable[Long]] = {
+    def apply(width: Int, height: Int, startingIndex: Int = 0): IndexedSeq[(Long, IndexedSeq[Long])] = {
         Range(0, width * height).map(index => {
             val x = index % width
             val y = index / width
@@ -60,7 +60,7 @@ object Torus2DGraph extends GenerateGraph {
                     dy = (y + j + height) % height
             } yield dy * width + dx
             (index.toLong + startingIndex, neighbors.map(n => n.toLong + startingIndex))
-        }).toMap
+        })
     }
 }
 

@@ -15,4 +15,16 @@ class GraphSpec extends FlatSpec {
     graph2.foreach(i => assert(i._2.size == 8))
     assert(graph2.size == 10000)
   }
+
+  "SBM graph" should "generate a line for each node" in {
+    val totalNodes = 36
+    val graph = GenerateGraph.SBMGraph(totalNodes, 0.1, 0, 5)
+    assert(graph.size == totalNodes)
+  }
+
+  "ERM graph" should "generate a line for each node" in {
+    val totalNodes = 71
+    val graph = GenerateGraph.ErdosRenyiGraph(totalNodes, 0.1)
+    assert(graph.size == totalNodes)
+  }
 }
