@@ -25,7 +25,7 @@ object SBMGraph extends GenerateGraph {
         Range(0, blocks).foreach(i => {
             val offset = startingIndex + verticesPerBlock * i
             if (i == (blocks-1)) {
-                graph = graph ++ ErdosRenyiGraph(totalVertices - offset, p, offset)
+                graph = graph ++ ErdosRenyiGraph(totalVertices + startingIndex - offset, p, offset)
             } else {
                 graph = graph ++ ErdosRenyiGraph(verticesPerBlock, p, offset)
             }
