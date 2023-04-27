@@ -38,12 +38,8 @@ object Simulate {
         }).min
 
         actors.filterNot(_.deleted).foreach(a => {
-          a.receivedMessages ++= (a.proxyIds.flatMap(id => {
-            collectedMessages.getOrElse(id, Buffer())
-          }))
-          a.receivedSerializedMessages ++= (a.proxyIds.flatMap(id => {
-            collectedSerializedMessages.getOrElse(id, Buffer())
-          }))
+          a.receivedMessages ++= collectedMessages.getOrElse(a.id, Buffer())
+          a.receivedSerializedMessages ++= collectedSerializedMessages.getOrElse(a.id, Buffer())
         })
 
         currentRound += elapsedRound
