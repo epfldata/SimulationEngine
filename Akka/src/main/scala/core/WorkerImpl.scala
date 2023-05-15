@@ -1,6 +1,6 @@
 package simulation.akka.core
 
-import meta.runtime.{Actor, Message}
+import meta.runtime.{Actor, Message, CustomWorkerProxy}
 import scala.collection.mutable.{Buffer, Map => MutMap}
 
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
@@ -11,10 +11,10 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.receptionist.{Receptionist}
 import java.util.concurrent.atomic.AtomicInteger
 
-class Worker {
+class Worker extends CustomWorkerProxy {
     import WorkerSpec._
     private var localSims: Map[Long, Actor] = Map[Long, Actor]()
-    private var workerId: Int = 0
+    // private var workerId: Int = 0
     private var totalAgents: Int = 0
     private var totalWorkers: Int = 0
     // key: agent id, value: worker id. Track which worker an agent is placed at
@@ -39,6 +39,7 @@ class Worker {
     private val logControllerEnabled = simulation.akka.API.OptimizationConfig.logControllerEnabled
 
     def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
+        localAgentIds = sims.map(_.id).toSet
         localSims = sims.map(x => (x.id, x)).toMap
         totalAgents = sims.size
         this.totalWorkers = totalWorkers
