@@ -45,7 +45,7 @@ class Person(val age: Int) extends Actor {
                 }
 
                 if ((health != SIRModel.Susceptible) && (health != SIRModel.Recover)) {
-                    if (daysInfected == SIRModel.stateDuration(health)) {
+                    if (daysInfected >= SIRModel.stateDuration(health)) {
                         health = SIRModel.change(health, vulnerability)
                         daysInfected = 0
                     } else {
