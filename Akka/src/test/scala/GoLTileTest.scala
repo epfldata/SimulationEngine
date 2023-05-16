@@ -16,8 +16,11 @@ class GoLTileTest extends FlatSpec {
     class Boolean2DArrayMessage(val content: Iterable[Boolean], val cid: (Coordinate2D, Coordinate2D)) extends ComponentMessage
 
     trait Component[T, C] {
-        def topo(c: C): Iterable[C] = ???
-        def actionPerCell(v: T, neighbors: Iterable[T]): T = ???
+        // def topo(c: C): Iterable[C] = ???
+        def topo(c: C): Iterator[T] = ???
+        // def actionPerVertex(v: T, neighbors: Iterable[T]): T = ???
+        def actionPerVertexStream(v: T, vs: Iterator[T]): T = ???
+        def actionPerVertexFused(v: C): T = ???
         def tbs(c: Component[T, C]): () => ComponentMessage = ???
         def tbr(msg: ComponentMessage): Unit = ???
     }
@@ -87,8 +90,8 @@ class GoLTileTest extends FlatSpec {
         def update(): Unit = {
             for (i <- (1 to rows-1)) {
                 for (j <- (0 to cols-1)) {
-                    newBoard(i)(j) = actionPerCell(oldBoard(i)(j), topo(Coordinate2D(i, j)).map(k => oldBoard(k.x)(k.y)))
-                    // manual inline (commented out) results in 50% speedup for 100k agents, 80ms->50ms
+                    // newBoard(i)(j) = actionPerVertexFused(Coordinate2D(i, j))
+                    newBoard(i)(j) = actionPerVertexStream(oldBoard(i)(j), topo(Coordinate2D(i, j)))
                 }
             }
             oldBoard = newBoard
@@ -96,24 +99,67 @@ class GoLTileTest extends FlatSpec {
     }
 
     class GameOfLifeTile(cid: (Coordinate2D, Coordinate2D)) extends Boolean2DArray(cid) {
-        @inline
-        override def topo(c: Coordinate2D): Iterable[Coordinate2D] = {
-            val x = c.x % rows
-            val y = c.y / rows
-
+        override def topo(c: Coordinate2D): Iterator[Boolean] = {    
             for {
-                i <- -1 to 1
-                j <- -1 to 1
+                i <- Iterator.range(-1, 1)
+                j <- Iterator.range(-1, 1)
                 if !(i == 0 && j == 0)
-                    dx = (x + i + rows) % rows
-                    dy = (y + j + cols) % cols
-            } yield Coordinate2D(dx, dy)
+                    dx = (c.x + i + rows) % rows
+                    dy = (c.y + j + cols) % cols
+            } 
+            yield oldBoard(dx)(dy)
         }
 
-        @inline
-        override def actionPerCell(v: Boolean, vs: Iterable[Boolean]): Boolean = {
-            val aliveNeighbors = vs.filter(_==true).size
+        override def actionPerVertexStream(v: Boolean, vs: Iterator[Boolean]): Boolean = {
+            var aliveNeighbors: Int = 0
+            while (vs.hasNext){
+                // val (x, y) = vs.next
+                // if (oldBoard(x)(y)) aliveNeighbors += 1
+                if (vs.next()) {
+                    aliveNeighbors += 1
+                }
+            }
+            
             if (v) {
+                if (aliveNeighbors > 3 || aliveNeighbors < 1) {
+                    false
+                } else {
+                    true
+                }
+            } else {
+                if (aliveNeighbors == 3) {
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+
+        override def actionPerVertexFused(c: Coordinate2D): Boolean = {
+            // topo(Coordinate2D(i, j)).map(k => oldBoard(k.x)(k.y))
+            var i: Int = c.x
+            var j: Int = c.y
+            var ni: Int = -1
+            var nj: Int = -1
+
+            var aliveNeighbors: Int = 0
+            while (ni <= 1) {
+                nj = -1
+                while (nj <= 1) {
+                    if (!(ni == 0 && nj == 0)) {
+                        // val row = i + cols  // handle wrapping at edges
+                        // val col = j + rows  // handle wrapping at edges
+                        val row = (i + ni + rows) % rows // handle wrapping at edges
+                        val col = (j + nj + cols) % cols // handle wrapping at edges
+                        if (oldBoard(row)(col)) 
+                            aliveNeighbors = aliveNeighbors + 1
+                    }
+                    nj = nj + 1
+                }
+                ni = ni + 1
+            }
+
+            if (oldBoard(i)(j)) {
                 if (aliveNeighbors > 3 || aliveNeighbors < 1) {
                     false
                 } else {
@@ -146,10 +192,10 @@ class GoLTileTest extends FlatSpec {
     }
 
     f"Create a number of tile agents for game of life example" should "run" in {
-        val totalTiles: Int = 50
+        val totalTiles: Int = 1
         
-        val rowsPerTile: Int = 200
-        val colsPerTile: Int = 10
+        val rowsPerTile: Int = 100
+        val colsPerTile: Int = 1000
 
         val tiles = Range(0, totalTiles).map(i => {
             val x = new GameOfLifeTile((Coordinate2D(rowsPerTile*i, 0), Coordinate2D(rowsPerTile*(i+1)-1, colsPerTile)))
