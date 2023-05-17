@@ -32,10 +32,11 @@ trait GeneratedMethods {
 case object runUntil extends GeneratedMethods {
     import GeneratedMethods._
 
+    // ${if (hasRPCMethods) {"messageListener()"} else {""}}
     override def run(): String = {
 s"""
   override def run(): Int = {
-    ${if (hasRPCMethods) {"messageListener()"} else {""}}
+    messageListener()
     ${createCode.unblockRegMap(actorName)} = true
     while (${createCode.unblockRegMap(actorName)} && (${instructionRegister} < ${totalStates})) {
       ${memAddr}(${instructionRegister})()
