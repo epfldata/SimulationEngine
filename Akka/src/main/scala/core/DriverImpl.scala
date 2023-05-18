@@ -63,6 +63,8 @@ class Driver {
                 InitializeWorkers()
         } 
 
+        // Let workers and log controller know how to interrupt the driver
+        ctx.system.receptionist ! Receptionist.Register(DriverSpec.InterruptDriverServiceKey, ctx.self) 
         ctx.system.receptionist ! Receptionist.Subscribe(WorkerSpec.WorkerStartServiceKey, workerSub)
         ctx.system.receptionist ! Receptionist.Subscribe(WorkerSpec.WorkerStopServiceKey, workerSub)
         // Allow users to disable log controller
@@ -127,10 +129,19 @@ class Driver {
 
                 case LogControllerFinished() =>
                     Behaviors.stopped {() => 
-                        ctx.log.info(f"Average ${(end-initialStart)/totalTurn} ms")
+                        ctx.log.info(f"Average ${(end-initialStart)/(currentTurn-1)} ms")
                         ctx.log.debug(f"Simulation completes! Stop the driver")
                         workersStop.foreach(a => a ! WorkerSpec.Stop())
                     }
+                
+                // For now accept only stop signal, hence ignoring the vector value
+                case InterruptDriver(v) =>
+                    if (logControllerEnabled) {
+                        loggerStop.foreach(a => a ! LogControllerSpec.Stop(currentTurn-1, ctx.self))
+                    } else {
+                        ctx.self ! LogControllerFinished()
+                    }
+                    Behaviors.same
             }
         }
 }

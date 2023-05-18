@@ -17,6 +17,7 @@ object LogControllerSpec {
     final case class AggregateLog(wid: Int, time: Long, agents: Iterable[Serializable]) extends LogControllerEvent with JsonSerializable
     @JsonTypeName("Stop")
     final case class Stop(time: Long, reply: ActorRef[DriverSpec.LogControllerFinished]) extends LogControllerEvent with JsonSerializable
+    final case class RegisterDriverInterrupt() extends LogControllerEvent with NoSerializationVerificationNeeded
 
     val LoggerAggregateServiceKey = ServiceKey[AggregateLog]("AggregateLog")
     val LoggerStopServiceKey = ServiceKey[Stop]("Stop")

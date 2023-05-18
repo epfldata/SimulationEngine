@@ -25,6 +25,8 @@ object AkkaExp {
     val stoppedWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
     var activeWorkers: ConcurrentLinkedQueue[Int] = new ConcurrentLinkedQueue[Int]()
     var finalAgents: ConcurrentLinkedQueue[Actor] = new ConcurrentLinkedQueue[Actor]()
+    val defaultHaltCond: Iterable[Iterable[Serializable]] => Boolean = (x: Iterable[Iterable[Serializable]]) => false
+    var haltCond: Iterable[Iterable[Serializable]] => Boolean = null
 
     def materializedMachine(mid: Int, totalTurn: Long, totalWorkers: Int, actors: IndexedSeq[Actor]=Vector[Actor]()): Behavior[Command] = 
         Behaviors.setup { ctx => 
@@ -52,13 +54,18 @@ object AkkaExp {
             waitTillFinish(Vector.empty)
         }
 
-    def apply(totalTurn: Long, totalWorkers: Int, actors: IndexedSeq[Actor]=Vector[Actor]()): Behavior[Command] = 
+    def apply(totalTurn: Long, totalWorkers: Int, actors: IndexedSeq[Actor]=Vector[Actor](), 
+            cond: Iterable[Iterable[Serializable]] => Boolean = defaultHaltCond): Behavior[Command] = 
         Behaviors.setup { ctx => 
             cluster = Cluster(ctx.system)
             this.totalWorkers = totalWorkers
             val roles: Set[String] = cluster.selfMember.getRoles.toSet
             val totalActors = actors.size
             var actorsPerWorker = totalActors/totalWorkers
+
+            if (cond != defaultHaltCond) {
+                haltCond = cond
+            }
 
             stoppedWorkers.clear()
             activeWorkers.clear()
@@ -130,7 +137,11 @@ object AkkaExp {
                     Behaviors.same
 
                 case SpawnLogController(totalWorkers) => 
-                    val logController = ctx.spawn((new simulation.akka.core.LogController).apply(totalWorkers), "logController")
+                    val logController = if (haltCond != null) {
+                        ctx.spawn((new simulation.akka.core.LogController).apply(totalWorkers, haltCond), "logController")
+                    } else {
+                        ctx.spawn((new simulation.akka.core.LogController).apply(totalWorkers), "logController")
+                    }
                     ctx.watchWith(logController, LogControllerStopped())
                     Behaviors.same
 
