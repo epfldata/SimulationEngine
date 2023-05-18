@@ -14,8 +14,9 @@ case object FullTimeseries extends SimulationTimeseries {
     x
   }
 
-  // the driver sends an Iterable[Serializable] to the log controller. Log controller collects Iterable[Iterable[Serializable]]
-  // and applies the reducer method to reduce the intermediate data 
+  // workers each send an Iterable[Serializable] to the log controller. 
+  // Log controller collects Iterable[Iterable[Serializable]] and 
+  // applies the reducer method to reduce the intermediate data 
   override def reducer(x: Iterable[Iterable[Serializable]]): Iterable[Serializable] = {
     x.flatten
   }

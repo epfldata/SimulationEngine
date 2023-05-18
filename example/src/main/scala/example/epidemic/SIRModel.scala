@@ -21,6 +21,20 @@ object SIRModel {
     val infectiousBeta = 1
     val symptomaticSkew = 2
 
+    var avgIDuration: Int = 5
+    var avgHDuration: Int = 7
+    var avgEDuration: Int = 5
+
+    var probLE2I: Double = 0.6
+    var probLI2H: Double = 0.1
+    var probLH2D: Double = 0.1
+    var probLDefault: Double = 0.01
+
+    var probHE2I: Double = 0.9
+    var probHI2H: Double = 0.4
+    var probHH2D: Double = 0.5
+    var probHDefault: Double = 0.05
+
     def change(health: Int, vulnerability: Int): Int = {
         health match {
             case Susceptible => Exposed
@@ -51,9 +65,16 @@ object SIRModel {
 
     def stateDuration(health: Int): Int = {
         health match {
-            case Infectious => 3 + Random.nextInt(6) 
-            case Hospitalized => 2 + Random.nextInt(10) 
-            case Exposed => 3 + Random.nextInt(5)
+            case Infectious => 
+                // 3 + Random.nextInt(6)
+                max(1, avgIDuration + Random.nextGaussian().toInt) 
+            case Hospitalized => 
+                // 2 + Random.nextInt(10)
+                max(1, avgHDuration + Random.nextGaussian().toInt) 
+            case Exposed => 
+                // 3 + Random.nextInt(5)
+                max(1, avgEDuration + Random.nextGaussian().toInt)
+            case _ => Int.MaxValue
         }
     }
 
@@ -73,17 +94,17 @@ object SIRModel {
         vulnerability match {
             case Low =>
                 (currentHealth, projectedHealth) match {
-                    case (Exposed, Infectious) => 0.6
-                    case (Infectious, Hospitalized) => 0.1
-                    case (Hospitalized, Deceased) => 0.1
-                    case _ => 0.01
+                    case (Exposed, Infectious) => probLE2I
+                    case (Infectious, Hospitalized) => probLI2H
+                    case (Hospitalized, Deceased) => probLH2D
+                    case _ => probLDefault
                 }
             case High =>
                 (currentHealth, projectedHealth) match {
-                    case (Exposed, Infectious) => 0.9
-                    case (Infectious, Hospitalized) => 0.4
-                    case (Hospitalized, Deceased) => 0.5
-                    case _ => 0.05
+                    case (Exposed, Infectious) => probHE2I
+                    case (Infectious, Hospitalized) => probHI2H
+                    case (Hospitalized, Deceased) => probHH2D
+                    case _ => probHDefault
                 }
         }
     }
