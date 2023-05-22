@@ -4,9 +4,12 @@ package stockMarket
 // Artificial economic life: a simple model of a stockmarket
 class Stock(var priceAdjustmentFactor: Double) {
     var prices: ListBuffer[Double] = new ListBuffer()
+    private val INCREASE: Int = 1
+    private val DECREASE: Int = 2
+    private val NO_CHANGE: Int = 0
+    
     private var period: Int = 0
     private var currentPrice: Double = -1
-
     private var lastDividend: Double = 0
     // Update 10-day-average and return whether the updated val has increased
     private val updateLastAvg10: trackLastAvg = new trackLastAvg(10)
@@ -20,25 +23,28 @@ class Stock(var priceAdjustmentFactor: Double) {
         // return whether the new avg has increased comparing with the prev avg
         def update: Int = {
             // moving window
+            // if not enough information, compare previous average
             val calculated_avg: Option[Double] = if (period > window) {
                 Some(prices.slice(period-window, period).sum/window)
             } else {
                 None
             }
 
-            var ans: Int = 2
             (calculated_avg, lastAvg) match {
-                case (None, _) => 0
+                case (None, _) => NO_CHANGE
                 case (Some(x), None) => {
                     lastAvg = calculated_avg
-                    0
+                    INCREASE
                 }
                 case (Some(x), Some(y)) => {
-                    if (x > y){
-                        ans = 1
-                    }
                     lastAvg = calculated_avg
-                    ans
+                    if (x > y){
+                        INCREASE
+                    } else if (x == y) {
+                        NO_CHANGE
+                    } else {
+                        DECREASE
+                    }
                 }
             }
         }
@@ -49,19 +55,17 @@ class Stock(var priceAdjustmentFactor: Double) {
         period += 1
         prices.append(p)
 
-        // Short-term info: whether dividend has increased. 0 means no dividend
+        // Short-term info: whether dividend has increased
         val dividendIncrease: Int = {
-            if (d == 0){
-                0
+            val ans = if (d == lastDividend) {
+                NO_CHANGE
+            } else if (d > lastDividend) {
+                INCREASE
             } else {
-                val lastDividend_copy = lastDividend
-                lastDividend = d
-                if(lastDividend_copy < d){
-                    1
-                } else {
-                    2
-                }
+                DECREASE
             }
+            lastDividend = d
+            ans
         }
 
         // Mid-term info: whether 10-day avg has increased
