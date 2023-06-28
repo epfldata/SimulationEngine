@@ -141,6 +141,42 @@ trait Component[V] extends Topo[V] {
             val msgGenerator: Map[Long, Iterable[() => BatchComponentMessage[V]]] = connectedComponents.groupBy(_.componentAgentId).map(i => (i._1, i._2.map(tbs(_))))
 
             override def run(): Int = {
+                receivedMessages.foreach(i => {
+                    i match {
+                        case x: BatchComponentMessage[V] => {
+                            x.content.foreach(k => tbr(k))
+                        }
+                    }
+                })
+
+                for (i <- (upperNeighborRadius to rows+upperNeighborRadius-1)) {
+                    for (j <- (0 to cols-1)) {
+                        newBoard(i)(j) = vertexUpdateRule(currentBoard(i)(j), gather(i, j))
+                    }
+                }
+                
+                currentBoard = newBoard
+                // If received remote messages, can be overwritten in the next round when processing receivedMessages
+                updateLocalMessage()
+
+                // send batch msgs 
+                msgGenerator.foreach(i => {
+                    i._2.foreach(j => sendMessage(i._1, j()))
+                })
+                1
+            }
+        }
+        val tileActor = new TileActor
+        componentAgentId = tileActor.id
+        tileActor
+    }
+
+        // Static fixed edge relation
+    def dbgAgent(): Actor = {
+        class TileActor extends Actor {
+            val msgGenerator: Map[Long, Iterable[() => BatchComponentMessage[V]]] = connectedComponents.groupBy(_.componentAgentId).map(i => (i._1, i._2.map(tbs(_))))
+
+            override def run(): Int = {
                 display()
                 receivedMessages.foreach(i => {
                     i match {
