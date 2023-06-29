@@ -49,7 +49,7 @@ trait Component[V] extends Topo[V] {
         }
 
         Range(0, segments).foreach(i => {
-            partitionedComponents(i).connectedComponents = Vector(partitionedComponents(i-1+segments), partitionedComponents((i+1)%segments))
+            partitionedComponents(i).connectedComponents = Vector(partitionedComponents((i-1+segments)%segments), partitionedComponents((i+1)%segments))
         })
         children = partitionedComponents
         partitionedComponents
