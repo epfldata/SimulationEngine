@@ -2,12 +2,12 @@
 
 ## Large-scale agent-based simulation 
 
-CloudCity is a research prototype (not production-ready) designed for distributed agent-based simulations, following the BSP model (see [1,2]). The system contains three parts, frontend (DSL), core (compiler that translates the DSL to Scala), and backend (Akka-based runtime and a single-threaded runtime) (see [1]).The programming model is described in detail in [3].
+CloudCity is a research prototype (not production-ready) designed for distributed agent-based simulations (see [1]), following a BSP-like model (see [2]). The system contains three parts, frontend (DSL), core (compiler that translates the DSL to Scala), and backend (Akka-based runtime and a single-threaded runtime for local development). The programming model (DSL) is described in detail in [3].
 
-Users should be familiar with Scala 2 and know basic sbt commands. More information on Scala tutorial and its toolchain can be found at https://docs.scala-lang.org/ and https://www.scala-sbt.org/learn.html.
+Users should be familiar with Scala 2 and know basic sbt commands. More information on Scala and its toolchain can be found at https://docs.scala-lang.org/ and https://www.scala-sbt.org/learn.html. The code base is developed and tested using Java 8 (also 11) and Scala 12 on MacOS and Linux systems (CentOS and Ubuntu). More recent versions of Java may not be compatible. 
 
 ### <a name="bin"></a> Include in your own project
-To export the compiler, library, and runtime as jars that can be included in your project, you can call `publishLocal`
+To export the compiler, library, and runtime as jars that can be included in your project, call `publishLocal`
 ```
 bash bin/publishLocal.sh
 ```
@@ -38,9 +38,9 @@ The syntax for sending a blocking message is the same as dynamic dispatch in obj
 
 given that `tellMeThis()` and `doThat()` are public methods in Sim2's class. The transpiler converts it to delivering a message to Sim2 and waiting for a reply. When the reply arrives, the function returns and Sim1's variables `secret` and `workDone`  get their values. 
 
-Besides blocking calls, Sims can also send asynchronous messages, with a different syntax `asyncSend(receiver.API(args))`. You need to mark the callee method with annotation `@transparencyPropagating`, see example in `core/src/test/scala/lifterTest1`. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. The non-block message return a Future object, which user can query about the status of the message. `core/src/main/scala/meta/runtime/Future.scala`.
+Besides blocking calls, Sims can also send asynchronous messages, with a different syntax `asyncSend(receiver.API(args))`. You need to mark the callee method with the annotation `@transparencyPropagating`, see the example in `core/src/test/scala/lifterTest1`. For asynchronous messaging, the Sim places the message in its mailbox and continues. Messages are not delivered immediately. The non-block message returns a Future object, which users can query about the status of the message. `core/src/main/scala/meta/runtime/Future.scala`.
 
-Instruction `waitRounds(someTicks)` signals that messages in the Sim's mailbox are ready and agents will wait for the specified ticks. The agent will *not* do anything besides waiting. To process received RPC requests, the receiver agent calls `handleRPC()`. Agents can also send or receive messages directly using the message-passing protocol. Other DSL instructions in ```core/src/main/scala/meta/classLifting/SpecialInstructions.scala``` are experimental and subject to future changes.
+The instruction `waitRounds(someTicks)` signals that messages in the Sim's mailbox are ready and agents will wait for the specified ticks. The agent will *not* do anything besides waiting. To process received RPC requests, the receiver agent calls `handleRPC()`. Agents can also send or receive messages directly using the message-passing protocol. Other DSL instructions in ```core/src/main/scala/meta/classLifting/SpecialInstructions.scala``` are experimental and subject to future changes.
 
 An agent is sequential and processes one message at a time. Therefore, you can not use instructions `handleRPC()`; doing so will trigger a compile-time error.
 
@@ -74,13 +74,13 @@ Here are some tips for writing meta-programs in this framework:
   * default values in a parameter list
 * To lift a class, annotate it with @lift and extend from runtime.Actor. When in doubt, please check how the examples are defined.
 
-### <a name="Simulation"></a> Start Simulation 
-For the compiled version, you can start simulation after generating object programs. The object programs are in folders `/generated*/`. To start a simulation, first select a runtime, such as base (sequential), then create a driver program in the `test` folder in `Base`. 
+### <a name="Simulation"></a> Run locally 
+To execute a simulation locally, create a program in the `test` folder in `Base` that is similar to the existing examples. To test it on a cluster (distributed), follow the same procedure but in `Akka` instead.
 
 ### <a name="Distributed"></a> Run in a cluster 
 The Akka backend enables you to run distributed simulations in a cluster. Make sure you can reach any machine using `ssh` without entering passwords.    
 
-For Akka, update file `Akka/src/main/resources/application.conf` to reflect the cluster setting. More specifically, replace the `localhost` in `remote.artery.canonical.hostnames` and `remote.cluster.seed-nodes` to the ip of the server and the seed machine respectively. Please refer to the Akka home page (https://akka.io/) for more information.
+For Akka, update the file `Akka/src/main/resources/application.conf` to reflect the cluster setting. More specifically, replace the `localhost` in `remote.artery.canonical.hostnames` and `remote.cluster.seed-nodes` with the IP of the server and the seed machine respectively. Please refer to the Akka home page (https://akka.io/) for more information.
 
 ### <a name="Folder"></a> Folder Structure 
 - `core/` contains the compiler
@@ -89,11 +89,13 @@ For Akka, update file `Akka/src/main/resources/application.conf` to reflect the 
 - `gen-core/` contains the object programs generated by tests in `core`
 - `example/` contains the examples using class-lifting and message-passing 
 - `generated/` contains the object programs generated by simulations in `example`
-- `library/` contains user-level library that you can include when designing simulations
+- `library/` contains a user-level library that you can include when designing simulations
 - `lib/` contains jar files for Squid library
 - `ecosim/` contains the legacy implementation of the economic simulation without using message passing 
 - `docs/` contains known issues and their solutions
 
 [1] Zilu Tian, Peter Lindner, Markus Nissl, Christoph Koch, and Val Tannen. 2023. Generalizing Bulk-Synchronous Parallel Processing for Data Science: From Data to Threads and Agent-Based Simulations. Proc. ACM Manag. Data 1, 2, Article 151 (June 2023), 28 pages. https://doi.org/10.1145/3589296
+
 [2] Leslie G. Valiant. 1990. A bridging model for parallel computation. Commun. ACM 33, 8 (Aug. 1990), 103–111. https://doi.org/10.1145/79173.79181
+
 [3] Zilu Tian. 2023. Multi-Stage Vertex-Centric Programming for Agent-Based Simulations. In Proceedings of the 22nd ACM SIGPLAN International Conference on Generative Programming: Concepts and Experiences (GPCE 2023). Association for Computing Machinery, New York, NY, USA, 100–112. https://doi.org/10.1145/3624007.3624057
