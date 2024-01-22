@@ -2,20 +2,23 @@
 
 ## Large-scale agent-based simulation 
 
-CloudCity is a full-stack system designed for large-scale agent-based simulations, following the BSP model. The system contains three parts, frontend (DSL), core (compiler that translates the DSL to Scala), and backend (Akka-based runtime and a single-threaded runtime). We also provide a user-level library that contains some helpful methods, which you can optionally use in your simulation.
+CloudCity is a research prototype (not production-ready) designed for distributed agent-based simulations, following the BSP model (see [1,2]). The system contains three parts, frontend (DSL), core (compiler that translates the DSL to Scala), and backend (Akka-based runtime and a single-threaded runtime) (see [1]).The programming model is described in detail in [3].
+
+Users should be familiar with Scala 2 and know basic sbt commands. More information on Scala tutorial and its toolchain can be found at https://docs.scala-lang.org/ and https://www.scala-sbt.org/learn.html.
 
 ### <a name="bin"></a> Include in your own project
 To export the compiler, library, and runtime as jars that can be included in your project, you can call `publishLocal`
 ```
 bash bin/publishLocal.sh
 ```
-which would create a directory `{user}/.ivy2/local/ch.epfl.data/` that contains folders `cloudcity-{module}_{scala version}`. You can then include the corresponding module in your project by adding the following to your `build.sbt`
+which would create a directory `{user}/.ivy2/local/ch.epfl.data/` that contains folders `cloudcity-{module}_{scala version}`. You can then selectively include the corresponding module. Following modules are for compiler, user-level library, distributed backend, and localhost backend (recommended for local development) respectively. When using the distributed backend, you may need to tune the default resource configurations specified in `/Akka/src/main/resources/` to match that of your hardware. The default configuration is for server development.
 ```
 libraryDependencies += "ch.epfl.data" %% "cloudcity-core" % "2.0-SNAPSHOT",
 libraryDependencies += "ch.epfl.data" %% "cloudcity-library" % "2.0-SNAPSHOT",
 libraryDependencies += "ch.epfl.data" %% "cloudcity-akka" % "2.0-SNAPSHOT",
+libraryDependencies += "ch.epfl.data" %% "cloudcity-base" % "2.0-SNAPSHOT",
 ```
-selecting only the ones you need. Support Scala 2.12*.
+Support Scala 2.12*. Though we provide a compiler for our DSL, you can still choose to program agents directly using the runtime API without compiling your agent definitions.
 
 ### Overview 
 - [Synchronization DSL](#DSL)
@@ -79,14 +82,6 @@ The Akka backend enables you to run distributed simulations in a cluster. Make s
 
 For Akka, update file `Akka/src/main/resources/application.conf` to reflect the cluster setting. More specifically, replace the `localhost` in `remote.artery.canonical.hostnames` and `remote.cluster.seed-nodes` to the ip of the server and the seed machine respectively. Please refer to the Akka home page (https://akka.io/) for more information.
 
-### <a name="bin"></a> Initialization
-After cloning this repo, please initialize the repo with `init.sh`, which generates files for the tests in akka and base projects.
-
-On linux or Mac:
-```
-bash bin/init.sh 
-```
-
 ### <a name="Folder"></a> Folder Structure 
 - `core/` contains the compiler
 - `Akka/` Akka backend
@@ -98,3 +93,7 @@ bash bin/init.sh
 - `lib/` contains jar files for Squid library
 - `ecosim/` contains the legacy implementation of the economic simulation without using message passing 
 - `docs/` contains known issues and their solutions
+
+[1] Zilu Tian, Peter Lindner, Markus Nissl, Christoph Koch, and Val Tannen. 2023. Generalizing Bulk-Synchronous Parallel Processing for Data Science: From Data to Threads and Agent-Based Simulations. Proc. ACM Manag. Data 1, 2, Article 151 (June 2023), 28 pages. https://doi.org/10.1145/3589296
+[2] Leslie G. Valiant. 1990. A bridging model for parallel computation. Commun. ACM 33, 8 (Aug. 1990), 103–111. https://doi.org/10.1145/79173.79181
+[3] Zilu Tian. 2023. Multi-Stage Vertex-Centric Programming for Agent-Based Simulations. In Proceedings of the 22nd ACM SIGPLAN International Conference on Generative Programming: Concepts and Experiences (GPCE 2023). Association for Computing Machinery, New York, NY, USA, 100–112. https://doi.org/10.1145/3624007.3624057
