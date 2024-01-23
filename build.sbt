@@ -1,11 +1,11 @@
 ThisBuild / organization := "ch.epfl.data"
-ThisBuild / scalaVersion := "2.12.8"
+ThisBuild / scalaVersion := "2.12.18"
 ThisBuild / version := "2.0-SNAPSHOT"
 
 val project_name = "CloudCity"
 name := project_name
 
-val paradiseVersion = "2.1.0"
+val paradiseVersion = "2.1.1"
 val breezeVersion = "0.13.2"
 val scalaTestVersion = "3.1.2"
 val squidVersion = "0.4.1-SNAPSHOT"
