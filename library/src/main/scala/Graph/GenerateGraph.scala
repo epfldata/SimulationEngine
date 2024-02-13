@@ -1,13 +1,19 @@
 package cloudcity.lib
-package Graph.GenerateGraph
+package Graph
 
 import scala.util.Random
 import scala.math.floor
 
-trait GenerateGraph
+trait Graph {
+    val g: Map[Long, Iterable[Long]]
+}
 
-object ErdosRenyiGraph extends GenerateGraph {
-    def apply(totalVertices: Int, edgeProb: Double, startingIndex: Int = 0): Map[Long, Iterable[Long]] = {
+object Graph{
+    implicit def toGraph(g: Graph): Map[Long, Iterable[Long]] = g.g
+}
+
+case class ErdosRenyiGraph(totalVertices: Int, edgeProb: Double, startingIndex: Int = 0) extends Graph {
+    val g: Map[Long, Iterable[Long]] = {
         val nodes = Range(startingIndex, totalVertices+startingIndex)
         Range(0, totalVertices).map(i => {
             (i.toLong + startingIndex, nodes.filter(n => {
@@ -17,8 +23,8 @@ object ErdosRenyiGraph extends GenerateGraph {
     }
 }
 
-object SBMGraph extends GenerateGraph {
-    def apply(totalVertices: Int, p: Double, q: Double, blocks: Int, startingIndex: Int = 0): Map[Long, Iterable[Long]] = {
+case class SBMGraph(totalVertices: Int, p: Double, q: Double, blocks: Int, startingIndex: Int = 0) extends Graph {
+    val g: Map[Long, Iterable[Long]] = {
         val verticesPerBlock: Int = floor(totalVertices / blocks).toInt
         var graph: Map[Long, Iterable[Long]] = Map[Long, Iterable[Long]]()
         // The edge probability between two vertices in the same block is p
@@ -46,8 +52,8 @@ object SBMGraph extends GenerateGraph {
     }
 }
 
-object Torus2DGraph extends GenerateGraph {
-    def apply(width: Int, height: Int, startingIndex: Int = 0): Map[Long, IndexedSeq[Long]] = {
+case class Torus2DGraph(width: Int, height: Int, startingIndex: Int = 0) extends Graph {
+    val g: Map[Long, IndexedSeq[Long]] = {
         Range(0, width * height).map(index => {
             val x = index % width
             val y = index / width
@@ -64,8 +70,8 @@ object Torus2DGraph extends GenerateGraph {
     }
 }
 
-object BipartiteGraph extends GenerateGraph {
-    def apply(set1Size: Int, set2Size: Int, startingIndex: Int = 0): Map[Long, Iterable[Long]] = {        
+case class BipartiteGraph(set1Size: Int, set2Size: Int, startingIndex: Int = 0) extends Graph {
+    val g: Map[Long, Iterable[Long]] = {        
         (Range(startingIndex, set1Size + startingIndex).map(i => {
             (i.toLong, Range(set1Size + startingIndex, set2Size).map(_.toLong))
         }) ++ Range(startingIndex + set1Size, startingIndex + set1Size + set2Size).map(i => {

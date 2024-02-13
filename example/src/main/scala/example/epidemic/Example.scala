@@ -3,8 +3,7 @@ package epidemic
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
-        def apply(population: Int, p: Double): IndexedSeq[Actor] = {
-            val socialGraph = cloudcity.lib.Graph.GenerateGraph.ErdosRenyiGraph(population, p)
+        def apply(socialGraph: cloudcity.lib.Graph.Graph): IndexedSeq[Actor] = {
             val citizens = socialGraph.map(i => {
                 val person = new Person(Random.nextInt(90) + 10)
                 person.id = i._1

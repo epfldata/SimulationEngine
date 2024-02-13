@@ -3,7 +3,7 @@ package gameOfLifeRPC
 
 import scala.collection.mutable.{Map => MutMap}
 
-import cloudcity.lib.Graph.GenerateGraph.Torus2DGraph
+import cloudcity.lib.Graph.Torus2DGraph
 
 object MainInit {
     val liftedMain = meta.classLifting.liteLift {
