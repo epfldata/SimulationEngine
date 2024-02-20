@@ -6,7 +6,7 @@ val project_name = "CloudCity"
 name := project_name
 
 val paradiseVersion = "2.1.1"
-val breezeVersion = "0.13.2"
+val breezeVersion = "2.1.0"
 val scalaTestVersion = "3.1.2"
 val squidVersion = "0.4.1-SNAPSHOT"
 val graphVizVersion = "0.10.0"
