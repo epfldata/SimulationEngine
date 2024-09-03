@@ -1,6 +1,7 @@
 package simulation.akka.core
 
 import meta.runtime.{Actor, Message}
+import meta.API.TimeseriesBuilder
 import scala.collection.mutable.{Buffer, Map => MutMap}
 
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
@@ -36,9 +37,8 @@ class Worker {
 
     private var completedAgents: Long = 0
     private var registeredWorkers: AtomicInteger = new AtomicInteger(0)
-    private val logControllerEnabled = simulation.akka.API.OptimizationConfig.logControllerEnabled
 
-    def apply(id: Int, sims: Seq[Actor], totalWorkers: Int): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
+    def apply(id: Int, sims: Seq[Actor], totalWorkers: Int, builder: Option[TimeseriesBuilder]): Behavior[WorkerEvent] = Behaviors.setup { ctx =>
         localSims = sims.map(x => (x.id, x)).toMap
         totalAgents = sims.size
         this.totalWorkers = totalWorkers
@@ -77,18 +77,18 @@ class Worker {
             ctx.system.receptionist ! Receptionist.Register(WorkerStopServiceKey, ctx.self)
         }
 
-        if (logControllerEnabled) {
+        if (builder.isDefined) {
             ctx.system.receptionist ! Receptionist.Subscribe(LogControllerSpec.LoggerAggregateServiceKey, workerSub)
         }
-        worker()
+        worker(builder)
     }
 
     // Consider replacing receivedWorkers with a total workers
-    private def worker(): Behavior[WorkerEvent] =
+    private def worker(builder: Option[TimeseriesBuilder]): Behavior[WorkerEvent] =
         Behaviors.receive[WorkerEvent] { (ctx, message) =>
             message match {
                 case Prepare() => 
-                    worker()
+                    worker(builder)
 
                 case ReceiveAgentMap(wid, nameIds, reply) => 
                     peerWorkers.computeIfAbsent(wid, x => {
@@ -129,7 +129,7 @@ class Worker {
                     if (receivedWorkers.keys().size == totalWorkers-1){
                         ctx.self ! RoundStart()
                     }
-                    worker()
+                    worker(builder)
                 
                 case RoundStart() =>
                     ctx.log.debug(f"Worker ${workerId} starts! Received from ${receivedWorkers.keys().toSet}")
@@ -170,7 +170,7 @@ class Worker {
                         })
                     } 
                     ctx.self ! AgentsCompleted()
-                    worker()
+                    worker(builder)
 
                 case ExpectedReceives(replyTo, acceptedInterval, availability) => 
                     // send out messages to other workers only at the beginning of a round to avoid race condition
@@ -188,13 +188,13 @@ class Worker {
                     if (receivedWorkers.keys().size == totalWorkers-1){
                         ctx.self ! RoundStart()
                     } 
-                    worker()
+                    worker(builder)
                     
                 case AgentsCompleted() =>
                     end = System.currentTimeMillis()
                     ctx.log.debug(f"Worker ${workerId} runs for ${end-start} ms, propose ${proposeInterval}")
-                    if (logControllerEnabled){
-                        loggerRef ! LogControllerSpec.AggregateLog(workerId, logicalClock, localSims.map(s => s._2).map(agent => simulation.akka.API.OptimizationConfig.timeseriesSchema.mapper(agent.SimClone())))
+                    if (builder.isDefined){
+                        loggerRef ! LogControllerSpec.AggregateLog(workerId, logicalClock, localSims.map(s => s._2).map(agent => builder.get.strategy.mapper(agent.SimClone())))
                     }
 
                     sendToRef ! SendTo(workerId, proposeInterval)

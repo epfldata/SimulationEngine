@@ -24,13 +24,12 @@ class Driver {
 
     private var acceptedInterval: Int = 0
     private var availability: Int = simulation.akka.API.OptimizationConfig.availability
-    private val logControllerEnabled = simulation.akka.API.OptimizationConfig.logControllerEnabled
 
     var start: Long = 0
     var end: Long = 0
     var initialStart: Long = 0
 
-    def apply(workers: Int, maxTurn: Long): Behavior[DriverEvent] = Behaviors.setup {ctx =>
+    def apply(workers: Int, maxTurn: Long, logControllerEnabled: Boolean): Behavior[DriverEvent] = Behaviors.setup {ctx =>
         totalWorkers = workers
         totalTurn = maxTurn
         currentTurn = 0 
@@ -71,10 +70,10 @@ class Driver {
         if (logControllerEnabled) {
             ctx.system.receptionist ! Receptionist.Subscribe(LogControllerSpec.LoggerStopServiceKey, workerSub)
         }
-        driver()
+        driver(logControllerEnabled)
     }
 
-    def driver(): Behavior[DriverEvent] = 
+    def driver(logControllerEnabled: Boolean): Behavior[DriverEvent] = 
         Behaviors.receive[DriverEvent] { (ctx, message) => 
             message match { 
                 case InitializeWorkers() =>
@@ -109,7 +108,7 @@ class Driver {
                                 RoundEnd()
                             },
                             timeout=1000.seconds).apply())
-                    driver()
+                    driver(logControllerEnabled)
                 }
 
                 case RoundEnd() =>
@@ -125,7 +124,7 @@ class Driver {
                     } else {
                         ctx.self ! RoundStart()
                     }
-                    driver()
+                    driver(logControllerEnabled)
 
                 case LogControllerFinished() =>
                     Behaviors.stopped {() => 

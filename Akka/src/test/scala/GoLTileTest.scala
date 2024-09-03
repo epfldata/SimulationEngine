@@ -222,6 +222,7 @@ class GoLTileTest extends FlatSpec {
         agents.foreach(a => {
             a.msgGenerator = a.connectedAgentIds.map(i => (i, a.tile.tbs(tiles(i.toInt)))).toMap
         })
-        val snapshot1 = API.Simulate(agents, 200)
+        val conf = Map("role" -> "Standalone", "port" -> 25100, "name" -> "GoLTile", "data" -> "snapshot")
+        val snapshot1 = API.Simulate(agents, 200, conf)
     }
 }
